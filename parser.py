@@ -149,6 +149,14 @@ class ASTGenerator(Transformer):
             "span": [name.start_pos if name else _lparen.start_pos, body["span"][1]],
         }
 
+    def call(self, name, _lparen, args, _rparen):
+        return {
+            "type": "call",
+            "name": name,
+            "args": args.children,
+            "span": [name["span"][0], _rparen.end_pos],
+        }
+
     def conditional(
         self,
         _if: Token,
@@ -184,8 +192,18 @@ if __name__ == "__main__":
     }
     if true then beep else boop
     """
-    # source = "if a < b <= c > d and e or f != g > h then beep else boop"
+    source = """
+    if true then {
+        beep
+        echo(1,2,3_1.9_0e-4)
+    } else {
+        boop
+    }
+    """
     tree = parser.parse(source)
+    print("INPUT:")
+    print(source)
+    print("=" * 80)
     pprint(tree)
     print("=" * 80)
     ast = ASTGenerator().transform(tree)

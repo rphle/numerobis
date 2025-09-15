@@ -1,6 +1,5 @@
 start: stmt*
-
-?stmt: expr | variable | function
+?stmt: expr | variable | function | conditional
 ?expr: logic_or
 
 ?logic_or: logic_and | logic_or OR logic_and -> comp
@@ -13,7 +12,7 @@ start: stmt*
 ?power: index | index POW power -> arith
 
 ?index: call | index "[" expr "]" -> index_op
-?call: atom | call call_args
+?call: atom | atom LPAREN call_args* RPAREN  -> call
 
 ?atom: BOOLEAN       -> boolean
      | FLOAT         -> float
@@ -21,13 +20,13 @@ start: stmt*
      | STRING        -> string
      | NAME          -> name
      | "(" expr ")"
-     | conditional
      | list
      | block
 
+call_args: expr ("," expr)*
+
 function: [NAME] LPAREN [function_params] RPAREN [annotation] ASSIGN expr
 function_params: NAME [annotation] ("," NAME [annotation])*
-call_args: "(" [expr ("," expr)*] ")"
 
 list: "[" [expr ("," expr)*] "]"
 conditional: IF expr THEN expr [ELSE expr]
