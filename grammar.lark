@@ -7,10 +7,10 @@ start: stmt*
 ?logic_and: comp | logic_and AND comp -> comp
 ?comp: arith ( (EQ | NE | LT | GT | LE | GE) arith )*
 
-?arith: term | arith (ADD | SUB) term -> bin_op
-?term: factor | term (MUL | DIV | MOD) factor -> bin_op
+?arith: term | arith (ADD | SUB) term -> arith
+?term: factor | term (MUL | DIV | MOD) factor -> arith
 ?factor: power | ADD factor -> pos | SUB factor -> neg | NOT factor -> not_op
-?power: index | index POW power -> bin_op
+?power: index | index POW power -> arith
 
 ?index: call | index "[" expr "]" -> index_op
 ?call: atom | call call_args

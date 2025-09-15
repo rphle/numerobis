@@ -15,15 +15,15 @@ def _resolve_unary(chain):
 class ASTGenerator(Transformer):
     def _make_annotation(self, annotation):
         if annotation and (ann := annotation.children[1]):
-            name = self.name(ann, _type="annotation")
+            name = self.name(ann, type_="annotation")
             return name
 
     def start(self, *children):
         return list(children)
 
-    def name(self, token, _type="name"):
+    def name(self, token, type_="name"):
         return {
-            "_type": _type,
+            "type": type_,
             "value": token.value,
             "span": [token.start_pos, token.end_pos],
         }
@@ -40,7 +40,6 @@ class ASTGenerator(Transformer):
 
     def float(self, value: Token):
         return {
-            "_type": "expr",
             "type": "float",
             "value": value.value,
             "span": [value.start_pos, value.end_pos],
@@ -48,16 +47,14 @@ class ASTGenerator(Transformer):
 
     def integer(self, value: Token):
         return {
-            "_type": "expr",
             "type": "integer",
             "value": value.value,
             "span": [value.start_pos, value.end_pos],
         }
 
-    def bin_op(self, left: dict, op: Token, right: dict):
+    def arith(self, left: dict, op: Token, right: dict):
         return {
-            "_type": "expr",
-            "type": "bin_op",
+            "type": "arith",
             "left": left,
             "op": self.name(op, "operator"),
             "right": right,
@@ -65,14 +62,46 @@ class ASTGenerator(Transformer):
         }
 
     def comp(self, *args):
-        chain = list(args)
-        for i in range(1, len(chain), 2):
-            chain[i] = self.name(chain[i], "operator")
-        return chain
+        """
+        Handle chained comparison operators like: a < b <= c > d.
+        Converts chains into logical AND expressions:
+        a < b <= c becomes (a < b) && (b <= c)
+        """
+
+        def make_comp(left, op, right):
+            return {
+                "type": "comp",
+                "op": self.name(op, "operator"),
+                "left": left,
+                "right": right,
+                "span": [left["span"][0], right["span"][1]],
+            }
+
+        if len(args) == 3:
+            return make_comp(args[0], args[1], args[2])
+
+        chainable_ops = {"<", "<=", ">", ">="}
+        equality_ops = {"==", "!="}
+        operators = [str(args[i]) for i in range(1, len(args), 2)]
+        all_chainable = all(op in chainable_ops for op in operators)
+        all_equality = all(op in equality_ops for op in operators)
+
+        expr = make_comp(args[0], args[1], args[2])
+
+        if all_chainable or all_equality:
+            # Build nested logical AND chain with left linking
+            for i in range(3, len(args), 2):
+                next_comp = make_comp(args[i - 1], args[i], args[i + 1])
+                expr = make_comp(expr, args[i], next_comp)
+        else:
+            # Build nested comparison chain without left linking
+            for i in range(3, len(args), 2):
+                expr = make_comp(expr, args[i], args[i + 1])
+
+        return expr
 
     def variable(self, name: Token, annotation: Tree, _assign: Token, value: dict):
         return {
-            "_type": "stmt",
             "type": "variable",
             "name": self.name(name),
             "annotation": self._make_annotation(annotation),
@@ -82,7 +111,6 @@ class ASTGenerator(Transformer):
 
     def block(self, lbrace: Token, body: Tree, rbrace: Token):
         return {
-            "_type": "expr",
             "type": "block",
             "children": body.children,
             "span": [lbrace.start_pos, rbrace.end_pos],
@@ -106,7 +134,6 @@ class ASTGenerator(Transformer):
             for param, annotation in batched(params.children, 2)
         ]
         return {
-            "_type": "stmt",
             "type": "function",
             "name": self.name(name) if name else None,
             "params": params_list,
@@ -120,17 +147,19 @@ class ASTGenerator(Transformer):
         _if: Token,
         condition: Tree,
         _then: Token,
-        then_branch: Tree,
+        then_branch: dict,
         _else: Token | None,
-        else_branch: Tree | None = None,
+        else_branch: dict | None = None,
     ):
         return {
-            "_type": "stmt",
             "type": "conditional",
             "condition": condition,
             "then_branch": then_branch,
             "else_branch": else_branch,
-            "span": [_if.start_pos, else_branch["span"][1]],
+            "span": [
+                _if.start_pos,
+                else_branch["span"][1] if else_branch else then_branch["span"][1],
+            ],
         }
 
 

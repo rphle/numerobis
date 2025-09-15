@@ -1,137 +1,223 @@
 [
   {
-    "_type": "stmt",
     "type": "conditional",
-    "condition": [
-      [
-        [
-          {
-            "_type": "name",
-            "value": "a",
-            "span": [
-              3,
-              4
-            ]
-          },
-          {
-            "_type": "operator",
-            "value": "<",
-            "span": [
-              5,
-              6
-            ]
-          },
-          {
-            "_type": "name",
-            "value": "b",
-            "span": [
-              7,
-              8
-            ]
-          },
-          {
-            "_type": "operator",
-            "value": "<=",
-            "span": [
-              9,
-              11
-            ]
-          },
-          {
-            "_type": "name",
-            "value": "c",
-            "span": [
-              12,
-              13
-            ]
-          },
-          {
-            "_type": "operator",
-            "value": ">",
-            "span": [
-              14,
-              15
-            ]
-          },
-          {
-            "_type": "name",
-            "value": "d",
-            "span": [
-              16,
-              17
-            ]
-          }
-        ],
-        {
-          "_type": "operator",
-          "value": "and",
-          "span": [
-            18,
-            21
-          ]
-        },
-        {
-          "_type": "name",
-          "value": "e",
-          "span": [
-            22,
-            23
-          ]
-        }
-      ],
-      {
-        "_type": "operator",
+    "condition": {
+      "type": "comp",
+      "op": {
+        "type": "operator",
         "value": "or",
         "span": [
           24,
           26
         ]
       },
-      [
-        {
-          "_type": "name",
-          "value": "f",
+      "left": {
+        "type": "comp",
+        "op": {
+          "type": "operator",
+          "value": "and",
           "span": [
-            27,
-            28
+            18,
+            21
           ]
         },
-        {
-          "_type": "operator",
-          "value": "!=",
+        "left": {
+          "type": "comp",
+          "op": {
+            "type": "operator",
+            "value": ">",
+            "span": [
+              14,
+              15
+            ]
+          },
+          "left": {
+            "type": "comp",
+            "op": {
+              "type": "operator",
+              "value": "<=",
+              "span": [
+                9,
+                11
+              ]
+            },
+            "left": {
+              "type": "comp",
+              "op": {
+                "type": "operator",
+                "value": "<",
+                "span": [
+                  5,
+                  6
+                ]
+              },
+              "left": {
+                "type": "name",
+                "value": "a",
+                "span": [
+                  3,
+                  4
+                ]
+              },
+              "right": {
+                "type": "name",
+                "value": "b",
+                "span": [
+                  7,
+                  8
+                ]
+              },
+              "span": [
+                3,
+                8
+              ]
+            },
+            "right": {
+              "type": "comp",
+              "op": {
+                "type": "operator",
+                "value": "<=",
+                "span": [
+                  9,
+                  11
+                ]
+              },
+              "left": {
+                "type": "name",
+                "value": "b",
+                "span": [
+                  7,
+                  8
+                ]
+              },
+              "right": {
+                "type": "name",
+                "value": "c",
+                "span": [
+                  12,
+                  13
+                ]
+              },
+              "span": [
+                7,
+                13
+              ]
+            },
+            "span": [
+              3,
+              13
+            ]
+          },
+          "right": {
+            "type": "comp",
+            "op": {
+              "type": "operator",
+              "value": ">",
+              "span": [
+                14,
+                15
+              ]
+            },
+            "left": {
+              "type": "name",
+              "value": "c",
+              "span": [
+                12,
+                13
+              ]
+            },
+            "right": {
+              "type": "name",
+              "value": "d",
+              "span": [
+                16,
+                17
+              ]
+            },
+            "span": [
+              12,
+              17
+            ]
+          },
           "span": [
-            29,
-            31
+            3,
+            17
           ]
         },
-        {
-          "_type": "name",
-          "value": "g",
+        "right": {
+          "type": "name",
+          "value": "e",
           "span": [
-            32,
-            33
+            22,
+            23
           ]
         },
-        {
-          "_type": "operator",
+        "span": [
+          3,
+          23
+        ]
+      },
+      "right": {
+        "type": "comp",
+        "op": {
+          "type": "operator",
           "value": ">",
           "span": [
             34,
             35
           ]
         },
-        {
-          "_type": "name",
+        "left": {
+          "type": "comp",
+          "op": {
+            "type": "operator",
+            "value": "!=",
+            "span": [
+              29,
+              31
+            ]
+          },
+          "left": {
+            "type": "name",
+            "value": "f",
+            "span": [
+              27,
+              28
+            ]
+          },
+          "right": {
+            "type": "name",
+            "value": "g",
+            "span": [
+              32,
+              33
+            ]
+          },
+          "span": [
+            27,
+            33
+          ]
+        },
+        "right": {
+          "type": "name",
           "value": "h",
           "span": [
             36,
             37
           ]
-        }
+        },
+        "span": [
+          27,
+          37
+        ]
+      },
+      "span": [
+        3,
+        37
       ]
-    ],
+    },
     "then_branch": {
-      "_type": "name",
+      "type": "name",
       "value": "beep",
       "span": [
         43,
@@ -139,7 +225,7 @@
       ]
     },
     "else_branch": {
-      "_type": "name",
+      "type": "name",
       "value": "boop",
       "span": [
         53,
