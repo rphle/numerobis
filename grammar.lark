@@ -3,8 +3,8 @@ start: stmt*
 ?stmt: expr | variable | function
 ?expr: logic_or
 
-?logic_or: logic_and | logic_or OR logic_and -> bin_op
-?logic_and: comp | logic_and AND comp -> bin_op
+?logic_or: logic_and | logic_or OR logic_and -> comp
+?logic_and: comp | logic_and AND comp -> comp
 ?comp: arith ( (EQ | NE | LT | GT | LE | GE) arith )*
 
 ?arith: term | arith (ADD | SUB) term -> bin_op
@@ -30,7 +30,7 @@ function_params: NAME [annotation] ("," NAME [annotation])*
 call_args: "(" [expr ("," expr)*] ")"
 
 list: "[" [expr ("," expr)*] "]"
-conditional: IF expr THEN expr ELSE expr
+conditional: IF expr THEN expr [ELSE expr]
 variable: NAME [annotation] ASSIGN expr
 
 block: LBRACE block_body RBRACE   -> block

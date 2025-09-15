@@ -1,2 +1,154 @@
 [
-  
+  {
+    "_type": "stmt",
+    "type": "conditional",
+    "condition": [
+      [
+        [
+          {
+            "_type": "name",
+            "value": "a",
+            "span": [
+              3,
+              4
+            ]
+          },
+          {
+            "_type": "operator",
+            "value": "<",
+            "span": [
+              5,
+              6
+            ]
+          },
+          {
+            "_type": "name",
+            "value": "b",
+            "span": [
+              7,
+              8
+            ]
+          },
+          {
+            "_type": "operator",
+            "value": "<=",
+            "span": [
+              9,
+              11
+            ]
+          },
+          {
+            "_type": "name",
+            "value": "c",
+            "span": [
+              12,
+              13
+            ]
+          },
+          {
+            "_type": "operator",
+            "value": ">",
+            "span": [
+              14,
+              15
+            ]
+          },
+          {
+            "_type": "name",
+            "value": "d",
+            "span": [
+              16,
+              17
+            ]
+          }
+        ],
+        {
+          "_type": "operator",
+          "value": "and",
+          "span": [
+            18,
+            21
+          ]
+        },
+        {
+          "_type": "name",
+          "value": "e",
+          "span": [
+            22,
+            23
+          ]
+        }
+      ],
+      {
+        "_type": "operator",
+        "value": "or",
+        "span": [
+          24,
+          26
+        ]
+      },
+      [
+        {
+          "_type": "name",
+          "value": "f",
+          "span": [
+            27,
+            28
+          ]
+        },
+        {
+          "_type": "operator",
+          "value": "!=",
+          "span": [
+            29,
+            31
+          ]
+        },
+        {
+          "_type": "name",
+          "value": "g",
+          "span": [
+            32,
+            33
+          ]
+        },
+        {
+          "_type": "operator",
+          "value": ">",
+          "span": [
+            34,
+            35
+          ]
+        },
+        {
+          "_type": "name",
+          "value": "h",
+          "span": [
+            36,
+            37
+          ]
+        }
+      ]
+    ],
+    "then_branch": {
+      "_type": "name",
+      "value": "beep",
+      "span": [
+        43,
+        47
+      ]
+    },
+    "else_branch": {
+      "_type": "name",
+      "value": "boop",
+      "span": [
+        53,
+        57
+      ]
+    },
+    "span": [
+      0,
+      57
+    ]
+  }
+]

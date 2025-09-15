@@ -13,20 +13,20 @@ def _resolve_unary(chain):
 
 @v_args(inline=True)
 class ASTGenerator(Transformer):
-    def _make_name(self, token, _type="name"):
+    def _make_annotation(self, annotation):
+        if annotation and (ann := annotation.children[1]):
+            name = self.name(ann, _type="annotation")
+            return name
+
+    def start(self, *children):
+        return list(children)
+
+    def name(self, token, _type="name"):
         return {
             "_type": _type,
             "value": token.value,
             "span": [token.start_pos, token.end_pos],
         }
-
-    def _make_annotation(self, annotation):
-        if annotation and (ann := annotation.children[1]):
-            name = self._make_name(ann, _type="annotation")
-            return name
-
-    def start(self, *children):
-        return list(children)
 
     def pos(self, _add: Token, value: dict):
         value["span"][0] = _add.start_pos
@@ -59,16 +59,22 @@ class ASTGenerator(Transformer):
             "_type": "expr",
             "type": "bin_op",
             "left": left,
-            "op": self._make_name(op),
+            "op": self.name(op, "operator"),
             "right": right,
             "span": [left["span"][0], right["span"][1]],
         }
+
+    def comp(self, *args):
+        chain = list(args)
+        for i in range(1, len(chain), 2):
+            chain[i] = self.name(chain[i], "operator")
+        return chain
 
     def variable(self, name: Token, annotation: Tree, _assign: Token, value: dict):
         return {
             "_type": "stmt",
             "type": "variable",
-            "name": self._make_name(name),
+            "name": self.name(name),
             "annotation": self._make_annotation(annotation),
             "value": value,
             "span": [name.start_pos, value["span"][1]],
@@ -94,7 +100,7 @@ class ASTGenerator(Transformer):
     ):
         params_list = [
             {
-                "name": self._make_name(param),
+                "name": self.name(param),
                 "annotation": self._make_annotation(annotation),
             }
             for param, annotation in batched(params.children, 2)
@@ -102,11 +108,29 @@ class ASTGenerator(Transformer):
         return {
             "_type": "stmt",
             "type": "function",
-            "name": self._make_name(name) if name else None,
+            "name": self.name(name) if name else None,
             "params": params_list,
             "annotation": self._make_annotation(annotation),
             "body": body,
             "span": [name.start_pos if name else _lparen.start_pos, body["span"][1]],
+        }
+
+    def conditional(
+        self,
+        _if: Token,
+        condition: Tree,
+        _then: Token,
+        then_branch: Tree,
+        _else: Token | None,
+        else_branch: Tree | None = None,
+    ):
+        return {
+            "_type": "stmt",
+            "type": "conditional",
+            "condition": condition,
+            "then_branch": then_branch,
+            "else_branch": else_branch,
+            "span": [_if.start_pos, else_branch["span"][1]],
         }
 
 
@@ -122,9 +146,9 @@ if __name__ == "__main__":
     (x: haha, y: beep, z): boop = {
         1+1
     }
-    # if x > 0 > -1 then beep
+    # if x > 0 > -1 then beep else boop
     """
-    source = "if x > 0 > -1 then beep"
+    source = "if a < b <= c > d and e or f != g > h then beep else boop"
     tree = parser.parse(source)
     pprint(tree)
     print("=" * 80)
