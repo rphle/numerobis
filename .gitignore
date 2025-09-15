@@ -1,0 +1,11 @@
+__pycache__
+*.egg-info
+.ruff_cache
+
+build
+wheels
+dist
+
+TODO.md
+NOTES.md
+test.py
