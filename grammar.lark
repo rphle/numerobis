@@ -38,9 +38,9 @@ block_body: (stmt ";"?)*
 
 annotation: COLON NAME
 
-IF: "if"
-THEN: "then"
-ELSE: "else"
+IF.2: "if"
+THEN.2: "then"
+ELSE.2: "else"
 
 ADD: "+"
 SUB: "-"

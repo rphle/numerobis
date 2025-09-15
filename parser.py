@@ -28,6 +28,13 @@ class ASTGenerator(Transformer):
             "span": [token.start_pos, token.end_pos],
         }
 
+    def boolean(self, token):
+        return {
+            "type": "boolean",
+            "value": token.value == "true",
+            "span": [token.start_pos, token.end_pos],
+        }
+
     def pos(self, _add: Token, value: dict):
         value["span"][0] = _add.start_pos
         value["value"] = _resolve_unary(_add.value + value["value"])
@@ -175,9 +182,9 @@ if __name__ == "__main__":
     (x: haha, y: beep, z): boop = {
         1+1
     }
-    # if x > 0 > -1 then beep else boop
+    if true then beep else boop
     """
-    source = "if a < b <= c > d and e or f != g > h then beep else boop"
+    # source = "if a < b <= c > d and e or f != g > h then beep else boop"
     tree = parser.parse(source)
     pprint(tree)
     print("=" * 80)
