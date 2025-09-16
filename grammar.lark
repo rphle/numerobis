@@ -23,10 +23,10 @@ start: stmt*
      | list
      | block
 
-call_args: expr ("," expr)*
+call_args: [NAME "="] expr ("," [NAME "="] expr)*
 
 function: [NAME] LPAREN [function_params] RPAREN [annotation] ASSIGN expr
-function_params: NAME [annotation] ("," NAME [annotation])*
+function_params: NAME [annotation] ["=" expr] ("," NAME [annotation] ["=" expr])*
 
 list: "[" [expr ("," expr)*] "]"
 conditional: IF expr THEN expr [ELSE expr]

@@ -137,8 +137,9 @@ class ASTGenerator(Transformer):
             {
                 "name": self.name(param),
                 "annotation": self._make_annotation(annotation),
+                "default": default if default else None,
             }
-            for param, annotation in batched(params.children, 2)
+            for param, annotation, default in batched(params.children, 3)
         ]
         return {
             "type": "function",
@@ -153,7 +154,10 @@ class ASTGenerator(Transformer):
         return {
             "type": "call",
             "name": name,
-            "args": args.children,
+            "args": [
+                a | ({"name": n.value if n else None})
+                for n, a in batched(args.children, 2)
+            ],
             "span": [name["span"][0], _rparen.end_pos],
         }
 
@@ -180,7 +184,7 @@ class ASTGenerator(Transformer):
 
 if __name__ == "__main__":
     grammar = open("grammar.lark", "r").read()
-    parser = Lark(grammar, parser="earley", maybe_placeholders=True)
+    parser = Lark(grammar, parser="earley", maybe_placeholders=True, lexer="standard")
     source = """
     1-1
     x: lol = {
@@ -191,15 +195,15 @@ if __name__ == "__main__":
         1+1
     }
     if true then beep else boop
-    """
-    source = """
+
     if true then {
         beep
-        echo(1,2,3_1.9_0e-4)
+        echo(1,a=2)
     } else {
         boop
     }
     """
+    # source = "3--4"
     tree = parser.parse(source)
     print("INPUT:")
     print(source)

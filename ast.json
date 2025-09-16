@@ -1,240 +1,350 @@
 [
   {
-    "type": "conditional",
-    "condition": {
-      "type": "comp",
-      "op": {
-        "type": "operator",
-        "value": "or",
-        "span": [
-          24,
-          26
-        ]
-      },
-      "left": {
-        "type": "comp",
-        "op": {
-          "type": "operator",
-          "value": "and",
-          "span": [
-            18,
-            21
-          ]
-        },
-        "left": {
-          "type": "comp",
-          "op": {
-            "type": "operator",
-            "value": ">",
-            "span": [
-              14,
-              15
-            ]
-          },
+    "type": "arith",
+    "left": {
+      "type": "integer",
+      "value": "1",
+      "span": [
+        5,
+        6
+      ]
+    },
+    "op": {
+      "type": "operator",
+      "value": "-",
+      "span": [
+        6,
+        7
+      ]
+    },
+    "right": {
+      "type": "integer",
+      "value": "1",
+      "span": [
+        7,
+        8
+      ]
+    },
+    "span": [
+      5,
+      8
+    ]
+  },
+  {
+    "type": "variable",
+    "name": {
+      "type": "name",
+      "value": "x",
+      "span": [
+        13,
+        14
+      ]
+    },
+    "annotation": {
+      "type": "annotation",
+      "value": "lol",
+      "span": [
+        16,
+        19
+      ]
+    },
+    "value": {
+      "type": "block",
+      "children": [
+        {
+          "type": "arith",
           "left": {
-            "type": "comp",
-            "op": {
-              "type": "operator",
-              "value": "<=",
-              "span": [
-                9,
-                11
-              ]
-            },
-            "left": {
-              "type": "comp",
-              "op": {
-                "type": "operator",
-                "value": "<",
-                "span": [
-                  5,
-                  6
-                ]
-              },
-              "left": {
-                "type": "name",
-                "value": "a",
-                "span": [
-                  3,
-                  4
-                ]
-              },
-              "right": {
-                "type": "name",
-                "value": "b",
-                "span": [
-                  7,
-                  8
-                ]
-              },
-              "span": [
-                3,
-                8
-              ]
-            },
-            "right": {
-              "type": "comp",
-              "op": {
-                "type": "operator",
-                "value": "<=",
-                "span": [
-                  9,
-                  11
-                ]
-              },
-              "left": {
-                "type": "name",
-                "value": "b",
-                "span": [
-                  7,
-                  8
-                ]
-              },
-              "right": {
-                "type": "name",
-                "value": "c",
-                "span": [
-                  12,
-                  13
-                ]
-              },
-              "span": [
-                7,
-                13
-              ]
-            },
-            "span": [
-              3,
-              13
-            ]
-          },
-          "right": {
-            "type": "comp",
-            "op": {
-              "type": "operator",
-              "value": ">",
-              "span": [
-                14,
-                15
-              ]
-            },
-            "left": {
-              "type": "name",
-              "value": "c",
-              "span": [
-                12,
-                13
-              ]
-            },
-            "right": {
-              "type": "name",
-              "value": "d",
-              "span": [
-                16,
-                17
-              ]
-            },
-            "span": [
-              12,
-              17
-            ]
-          },
-          "span": [
-            3,
-            17
-          ]
-        },
-        "right": {
-          "type": "name",
-          "value": "e",
-          "span": [
-            22,
-            23
-          ]
-        },
-        "span": [
-          3,
-          23
-        ]
-      },
-      "right": {
-        "type": "comp",
-        "op": {
-          "type": "operator",
-          "value": ">",
-          "span": [
-            34,
-            35
-          ]
-        },
-        "left": {
-          "type": "comp",
-          "op": {
-            "type": "operator",
-            "value": "!=",
-            "span": [
-              29,
-              31
-            ]
-          },
-          "left": {
-            "type": "name",
-            "value": "f",
-            "span": [
-              27,
-              28
-            ]
-          },
-          "right": {
-            "type": "name",
-            "value": "g",
+            "type": "integer",
+            "value": "1",
             "span": [
               32,
               33
             ]
           },
+          "op": {
+            "type": "operator",
+            "value": "+",
+            "span": [
+              34,
+              35
+            ]
+          },
+          "right": {
+            "type": "integer",
+            "value": "2",
+            "span": [
+              36,
+              37
+            ]
+          },
           "span": [
-            27,
-            33
-          ]
-        },
-        "right": {
-          "type": "name",
-          "value": "h",
-          "span": [
-            36,
+            32,
             37
           ]
         },
-        "span": [
-          27,
-          37
-        ]
-      },
+        {
+          "type": "arith",
+          "left": {
+            "type": "integer",
+            "value": "3",
+            "span": [
+              46,
+              47
+            ]
+          },
+          "op": {
+            "type": "operator",
+            "value": "-",
+            "span": [
+              47,
+              48
+            ]
+          },
+          "right": {
+            "type": "integer",
+            "value": "-4",
+            "span": [
+              48,
+              50
+            ]
+          },
+          "span": [
+            46,
+            50
+          ]
+        }
+      ],
       "span": [
-        3,
-        37
+        22,
+        56
+      ]
+    },
+    "span": [
+      13,
+      56
+    ]
+  },
+  {
+    "type": "function",
+    "name": null,
+    "params": [
+      {
+        "name": {
+          "type": "name",
+          "value": "x",
+          "span": [
+            62,
+            63
+          ]
+        },
+        "annotation": {
+          "type": "annotation",
+          "value": "haha",
+          "span": [
+            65,
+            69
+          ]
+        },
+        "default": null
+      },
+      {
+        "name": {
+          "type": "name",
+          "value": "y",
+          "span": [
+            71,
+            72
+          ]
+        },
+        "annotation": {
+          "type": "annotation",
+          "value": "beep",
+          "span": [
+            74,
+            78
+          ]
+        },
+        "default": null
+      },
+      {
+        "name": {
+          "type": "name",
+          "value": "z",
+          "span": [
+            80,
+            81
+          ]
+        },
+        "annotation": null,
+        "default": null
+      }
+    ],
+    "annotation": {
+      "type": "annotation",
+      "value": "boop",
+      "span": [
+        84,
+        88
+      ]
+    },
+    "body": {
+      "type": "block",
+      "children": [
+        {
+          "type": "arith",
+          "left": {
+            "type": "integer",
+            "value": "1",
+            "span": [
+              101,
+              102
+            ]
+          },
+          "op": {
+            "type": "operator",
+            "value": "+",
+            "span": [
+              102,
+              103
+            ]
+          },
+          "right": {
+            "type": "integer",
+            "value": "1",
+            "span": [
+              103,
+              104
+            ]
+          },
+          "span": [
+            101,
+            104
+          ]
+        }
+      ],
+      "span": [
+        91,
+        110
+      ]
+    },
+    "span": [
+      61,
+      110
+    ]
+  },
+  {
+    "type": "conditional",
+    "condition": {
+      "type": "name",
+      "value": "true",
+      "span": [
+        118,
+        122
       ]
     },
     "then_branch": {
       "type": "name",
       "value": "beep",
       "span": [
-        43,
-        47
+        128,
+        132
       ]
     },
     "else_branch": {
       "type": "name",
       "value": "boop",
       "span": [
-        53,
-        57
+        138,
+        142
       ]
     },
     "span": [
-      0,
-      57
+      115,
+      142
+    ]
+  },
+  {
+    "type": "conditional",
+    "condition": {
+      "type": "name",
+      "value": "true",
+      "span": [
+        151,
+        155
+      ]
+    },
+    "then_branch": {
+      "type": "block",
+      "children": [
+        {
+          "type": "name",
+          "value": "beep",
+          "span": [
+            171,
+            175
+          ]
+        },
+        {
+          "type": "call",
+          "name": {
+            "type": "name",
+            "value": "echo",
+            "span": [
+              184,
+              188
+            ]
+          },
+          "args": [
+            {
+              "type": "integer",
+              "value": "1",
+              "span": [
+                189,
+                190
+              ],
+              "name": null
+            },
+            {
+              "type": "integer",
+              "value": "2",
+              "span": [
+                193,
+                194
+              ],
+              "name": "a"
+            }
+          ],
+          "span": [
+            184,
+            195
+          ]
+        }
+      ],
+      "span": [
+        161,
+        201
+      ]
+    },
+    "else_branch": {
+      "type": "block",
+      "children": [
+        {
+          "type": "name",
+          "value": "boop",
+          "span": [
+            217,
+            221
+          ]
+        }
+      ],
+      "span": [
+        207,
+        227
+      ]
+    },
+    "span": [
+      148,
+      227
     ]
   }
 ]
