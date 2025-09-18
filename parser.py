@@ -2,6 +2,10 @@ from classes import Location, Token, Tree
 from lexer import LexToken
 
 
+class Completed(Exception):
+    pass
+
+
 class State:
     i: int
     grammar: dict
@@ -109,6 +113,7 @@ def parse(stream: list[LexToken]):
         state.i = start
         tree = []
         converged = list(grammar.keys())
+        completed = False
 
         while True:
             matches = {}
@@ -121,12 +126,20 @@ def parse(stream: list[LexToken]):
             if matches:
                 tree.append(matches)
                 converged = [x for x in converged if x in tuple(matches.keys())]
-                state.step()
+                if state.i + 1 < len(ast):
+                    state.step()
+                else:
+                    completed = True
+                    break
             else:
                 if len(converged) != 1 or len(tree) != len(grammar[converged[0]]):
                     converged = None
                     print("[NO MATCH FOUND]")
                 break
+
+        if completed:
+            print("[COMPLETED]")
+            break
 
         if converged is not None:
             tree = [step[converged[0]] for step in tree]
