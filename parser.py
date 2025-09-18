@@ -1,3 +1,5 @@
+from collections import defaultdict
+
 from classes import Location, Token, Tree
 from lexer import LexToken
 
@@ -75,10 +77,15 @@ class OneOf(Pattern):
 class Ref(Pattern):
     def __init__(self, value: str):
         self.value = value
+        self.prev_i = defaultdict(lambda: -1)
 
     def match(self, value, state):
         if isinstance(value, Tree) and value.type == self.value:
             return value
+        # if self.prev_i[value.type] == state.i:
+        #     return
+        self.prev_i[value.type] = state.i
+
         return grammar[self.value].match(value, state=state)
 
     def __repr__(self):
@@ -132,16 +139,16 @@ def parse(stream: list[LexToken]):
                     completed = True
                     break
             else:
+                if state.i + 1 >= len(ast):
+                    completed = True
+                    break
                 if len(converged) != 1 or len(tree) != len(grammar[converged[0]]):
                     converged = None
                     print("[NO MATCH FOUND]")
                 break
 
-        if completed:
-            print("[COMPLETED]")
-            break
-
         if converged is not None:
+            converged = [x for x in converged if len(grammar[x]) == len(tree)]
             tree = [step[converged[0]] for step in tree]
             tree = Tree(
                 type=converged[0],
@@ -157,5 +164,9 @@ def parse(stream: list[LexToken]):
             print("=" * 80)
 
             ast = [tree] + ast[state.i :]
+
+            if completed:
+                print("[COMPLETED]")
+                break
         else:
             break
