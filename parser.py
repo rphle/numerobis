@@ -1,5 +1,3 @@
-from collections import defaultdict
-
 from classes import Location, Token, Tree
 from lexer import LexToken
 
@@ -12,15 +10,20 @@ class State:
     i: int
     grammar: dict
     max: int
+    stack: list
 
-    def __init__(self, i: int, grammar: dict, max: int = 0):
+    def __init__(self, i: int, grammar: dict, max: int = 0, stack: list = []):
         self.i = i
         self.grammar = grammar
         self.max = max
+        self.stack = stack
 
     def step(self, n: int = 1):
         self.i += n
         self.max = max(self.i, self.max)
+
+    def add(self, value: str):
+        self.stack.append(value)
 
 
 class Pattern:
@@ -77,15 +80,14 @@ class OneOf(Pattern):
 class Ref(Pattern):
     def __init__(self, value: str):
         self.value = value
-        self.prev_i = defaultdict(lambda: -1)
 
     def match(self, value, state):
         if isinstance(value, Tree) and value.type == self.value:
             return value
-        # if self.prev_i[value.type] == state.i:
-        #     return
-        self.prev_i[value.type] = state.i
 
+        if self.value in state.stack:
+            return
+        state.add(self.value)
         return grammar[self.value].match(value, state=state)
 
     def __repr__(self):
@@ -127,7 +129,9 @@ def parse(stream: list[LexToken]):
             for name, pttrn in grammar.items():
                 if name.startswith("$") or name not in converged:
                     continue
-                if match := pttrn.match(ast[state.i], state=state):
+                if match := pttrn.match(
+                    ast[state.i], state=State(**(state.__dict__ | {"stack": [name]}))
+                ):
                     matches[name] = match
 
             if matches:
@@ -143,12 +147,12 @@ def parse(stream: list[LexToken]):
                     completed = True
                     break
                 if len(converged) != 1 or len(tree) != len(grammar[converged[0]]):
-                    converged = None
+                    converged = []
                     print("[NO MATCH FOUND]")
                 break
 
-        if converged is not None:
-            converged = [x for x in converged if len(grammar[x]) == len(tree)]
+        converged = [x for x in converged if len(grammar[x]) == len(tree)]
+        if converged:
             tree = [step[converged[0]] for step in tree]
             tree = Tree(
                 type=converged[0],
@@ -169,4 +173,5 @@ def parse(stream: list[LexToken]):
                 print("[COMPLETED]")
                 break
         else:
+            print("[NO MATCH FOUND]")
             break
