@@ -1,0 +1,17 @@
+f()()
+12-1e2
+x: lol = {
+    1 + 2
+    3--4
+}
+(x: haha, y: beep, z): boop = {
+    1+1
+}
+if true then beep else boop
+
+if true then {
+    beep
+    echo(1,a=2)
+} else {
+    boop
+}
