@@ -34,7 +34,7 @@ tokens = reserved + (
     "RBRACE",
     "COMMA",
     "PERIOD",
-    "SEMI",
+    "SEMICOLON",
     "COLON",
     # Hacks
     "WHITESPACE",
@@ -78,7 +78,7 @@ t_LBRACE = r"\{"
 t_RBRACE = r"\}"
 t_COMMA = r","
 t_PERIOD = r"\."
-t_SEMI = r";"
+t_SEMICOLON = r";"
 t_COLON = r":"
 
 t_WHITESPACE = r"\s+"

@@ -39,7 +39,13 @@ class Parser:
         if ignore_whitespace:
             return next(
                 islice(
-                    (tok for tok in self.tokens if tok.type != "WHITESPACE"), n - 1, n
+                    (
+                        tok
+                        for tok in self.tokens
+                        if tok.type not in {"WHITESPACE", "SEMICOLON"}
+                    ),
+                    n - 1,
+                    n,
                 ),
                 EOF,
             )
