@@ -12,8 +12,25 @@ class AstNode:
 
 
 @dataclass(kw_only=True)
+class Block(AstNode):
+    body: list[AstNode]
+
+
+@dataclass(kw_only=True)
 class Identifier(AstNode):
     name: str
+
+
+@dataclass(kw_only=True)
+class If(AstNode):
+    condition: AstNode
+    then_branch: AstNode
+    else_branch: AstNode | None = None
+
+
+@dataclass(kw_only=True)
+class Boolean(AstNode):
+    value: bool
 
 
 @dataclass(kw_only=True)

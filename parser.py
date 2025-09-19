@@ -4,10 +4,13 @@ from astnodes import (
     Assign,
     AstNode,
     BinOp,
+    Block,
+    Boolean,
     BoolOp,
     Compare,
     Float,
     Identifier,
+    If,
     Integer,
 )
 from classes import Location
@@ -62,12 +65,34 @@ class Parser:
 
     def statement(self) -> AstNode:
         first = self._peek()
-        if first and first.type == "ID" and len(self.tokens) > 1:
-            second = self._peek(2)
-            if second.type in {"EQUALS", "COLON"}:
-                return self.assignment()
+        if first.type != "EOF":
+            if first.type == "ID" and len(self.tokens) > 1:
+                """Variable declaration"""
+                second = self._peek(2)
+                if second.type in {"EQUALS", "COLON"}:
+                    return self.assignment()
+
+        return self.expression()
+
+    def expression(self) -> AstNode:
+        first = self._peek()
+        if first.type != "EOF":
+            if first.type == "LBRACE":
+                """Block"""
+                return self.block()
+            elif first.type == "IF":
+                """If statement/expression"""
+                return self.ifthen()
 
         return self.logic_or()
+
+    def block(self) -> AstNode:
+        start = self._consume()
+        body = []
+        while self.tokens and self._peek().type != "RBRACE":
+            body.append(self.statement())
+        end = self._consume()
+        return Block(body=body, loc=nodeloc(start, end))
 
     def assignment(self) -> AstNode:
         id_token = self._consume()
@@ -75,8 +100,8 @@ class Parser:
         if self._peek().type == "COLON":
             self._consume()
             type_token = self._consume()
-        equals_token = self._consume()
-        expr = self.logic_or()
+        _equals_token = self._consume()
+        expr = self.expression()
 
         return Assign(
             target=Identifier(name=id_token.value, loc=id_token.loc),
@@ -85,6 +110,23 @@ class Parser:
             if type_token
             else None,
             loc=nodeloc(id_token, expr),
+        )
+
+    def ifthen(self) -> AstNode:
+        self._consume()
+        condition = self.expression()
+        self._consume()
+        then_branch = self.expression()
+        else_branch = None
+        if self._peek().type == "ELSE":
+            self._consume()
+            else_branch = self.expression()
+
+        return If(
+            condition=condition,
+            then_branch=then_branch,
+            else_branch=else_branch,
+            loc=nodeloc(condition, else_branch if else_branch else then_branch),
         )
 
     def logic_or(self) -> AstNode:
@@ -142,6 +184,8 @@ class Parser:
         tok = self._consume()
         if tok.type == "NUMBER":
             return self._parse_number(tok)
+        elif tok.type in {"TRUE", "FALSE"}:
+            return Boolean(value=tok.value == "TRUE", loc=tok.loc)
         elif tok.type == "ID":
             return Identifier(name=tok.value, loc=tok.loc)
         elif tok.type == "LPAREN":
