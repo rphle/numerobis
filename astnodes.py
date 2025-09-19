@@ -26,3 +26,17 @@ class BinOp(AstNode):
     op: Token
     left: AstNode
     right: AstNode
+
+
+@dataclass(kw_only=True)
+class BoolOp(AstNode):
+    op: Token
+    left: AstNode
+    right: AstNode
+
+
+@dataclass(kw_only=True)
+class Compare(AstNode):
+    ops: list[Token]
+    left: AstNode
+    right: list[AstNode]

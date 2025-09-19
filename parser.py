@@ -1,4 +1,4 @@
-from astnodes import AstNode, BinOp, Float, Integer
+from astnodes import AstNode, BinOp, BoolOp, Float, Integer
 from classes import Location
 from lexer import Token
 
@@ -19,15 +19,35 @@ class Parser:
 
     def _consume(self) -> Token:
         self.current_token = self.tokens.pop(0)
+        while self.current_token.type == "WHITESPACE":
+            self.current_token = self.tokens.pop(0)
         return self.current_token
 
-    def _ahead(self) -> Token:
-        return self.tokens[0]
+    def _ahead(self, whitespace: bool = False) -> Token:
+        if whitespace:
+            return self.tokens[0]
+        return next(tok for tok in self.tokens if tok.type != "WHITESPACE")
 
     def start(self) -> AstNode:
-        return self.arith()
+        return self.logic_or()
 
-    def arith(self):
+    def logic_or(self) -> AstNode:
+        node = self.logic_and()
+        while self.tokens and self._ahead().type == "OR":
+            op_token = self._consume()
+            right = self.logic_and()
+            node = BoolOp(op=op_token, left=node, right=right, loc=nodeloc(node, right))
+        return node
+
+    def logic_and(self) -> AstNode:
+        node = self.arith()
+        while self.tokens and self._ahead().type == "AND":
+            op_token = self._consume()
+            right = self.arith()
+            node = BoolOp(op=op_token, left=node, right=right, loc=nodeloc(node, right))
+        return node
+
+    def arith(self) -> AstNode:
         node = self.term()
         while self.tokens and self._ahead().type in {"PLUS", "MINUS"}:
             op_token = self._consume()
@@ -35,7 +55,7 @@ class Parser:
             node = BinOp(op=op_token, left=node, right=right, loc=nodeloc(node, right))
         return node
 
-    def term(self):
+    def term(self) -> AstNode:
         node = self.factor()
         while self.tokens and self._ahead().type in {"TIMES", "DIVIDE", "MOD", "POWER"}:
             op_token = self._consume()
@@ -50,7 +70,7 @@ class Parser:
         elif tok.type == "FLOAT":
             return Float(value=tok.value, loc=tok.loc)
         elif tok.type == "LPAREN":
-            node = self.arith()
+            node = self.logic_or()
             assert self._consume().type == "RPAREN"
             return node
         else:
