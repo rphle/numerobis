@@ -14,11 +14,13 @@ class AstNode:
 @dataclass(kw_only=True)
 class Integer(AstNode):
     value: str
+    exponent: str
 
 
 @dataclass(kw_only=True)
 class Float(AstNode):
     value: str
+    exponent: str
 
 
 @dataclass(kw_only=True)

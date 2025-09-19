@@ -92,13 +92,24 @@ class Parser:
 
     def factor(self) -> AstNode:
         tok = self._consume()
-        if tok.type == "INTEGER":
-            return Integer(value=tok.value, loc=tok.loc)
-        elif tok.type == "FLOAT":
-            return Float(value=tok.value, loc=tok.loc)
+        if tok.type == "NUMBER":
+            return self._parse_number(tok)
         elif tok.type == "LPAREN":
             node = self.logic_or()
             assert self._consume().type == "RPAREN"
             return node
         else:
             raise Exception(f"Unexpected token: {tok.type}")
+
+    def _parse_number(self, token: Token):
+        split = token.value.lower().split("e")
+        number = split[0]
+        exponent = split[1] if len(split) > 1 else ""
+
+        if "." in exponent:
+            raise Exception(f"Invalid number literal: {token.value}")
+
+        if "." in number:
+            return Float(value=number, exponent=exponent, loc=token.loc)
+        else:
+            return Integer(value=number, exponent=exponent, loc=token.loc)

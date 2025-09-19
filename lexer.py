@@ -8,8 +8,7 @@ reserved = ("IF", "THEN", "ELSE", "TRUE", "FALSE", "OR", "AND", "NOT", "XOR")
 tokens = reserved + (
     # Literals (identifier, integer, float, string, boolean)
     "ID",
-    "INTEGER",
-    "FLOAT",
+    "NUMBER",
     "STRING",
     # Operators (+,-,*,/,%,^,or,and,xor, !, <, <=, >, >=, ==, !=)
     "PLUS",
@@ -38,7 +37,6 @@ tokens = reserved + (
     "SEMI",
     "COLON",
     # Hacks
-    "INVALID_E",
     "WHITESPACE",
 )
 
@@ -83,14 +81,6 @@ t_PERIOD = r"\."
 t_SEMI = r";"
 t_COLON = r":"
 
-
-# Hacks (wow, regex is ugly)
-def t_INVALID_E(t):
-    r"((\d+(_\d+)*)?\.\d+(_\d+)* | \d+(_\d+)*) [eE][+-]? (\d+(_\d+)*)? \. \d+(_\d+)*"
-    print(t)
-    sys.exit(1)
-
-
 t_WHITESPACE = r"\s+"
 
 
@@ -106,10 +96,8 @@ def t_ID(t):
     return t
 
 
-# Integer literal
-t_INTEGER = r"\d+(_\d+)*([eE][+-]?\d+(_\d+)*)?(?!\.)"
-# Floating literal
-t_FLOAT = r"(\d+(_\d+)*)?\.\d+(_\d+)*([eE][+-]?\d+(_\d+)*)?"
+# Number literal
+t_NUMBER = r"\d+(_\d+)* (\.\d+(_\d+)*)? ([eE][+-]? \d+(_\d+)* (\.\d+(_\d+)*)?)?"
 # String literal
 t_STRING = r"\"([^\\\n]|(\\.))*?\""
 
