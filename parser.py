@@ -1,4 +1,15 @@
-from astnodes import AstNode, BinOp, BoolOp, Compare, Float, Integer
+from itertools import islice
+
+from astnodes import (
+    Assign,
+    AstNode,
+    BinOp,
+    BoolOp,
+    Compare,
+    Float,
+    Identifier,
+    Integer,
+)
 from classes import Location
 from lexer import Token
 
@@ -7,7 +18,7 @@ def nodeloc(*nodes: Token | AstNode):
     return Location(
         line=nodes[0].loc.line,
         col=nodes[0].loc.col,
-        start=nodes[-1].loc.start,
+        start=nodes[0].loc.start,
         end=nodes[-1].loc.end,
     )
 
@@ -15,25 +26,64 @@ def nodeloc(*nodes: Token | AstNode):
 class Parser:
     def __init__(self, tokens: list[Token]):
         self.tokens = tokens
-        self.current_token = None
+        self.tok = None
 
     def _consume(self) -> Token:
-        self.current_token = self.tokens.pop(0)
-        while self.current_token.type == "WHITESPACE":
-            self.current_token = self.tokens.pop(0)
-        return self.current_token
+        self.tok = self.tokens.pop(0)
+        while self.tok.type in {"WHITESPACE", "SEMICOLON"}:
+            self.tok = self.tokens.pop(0)
+        return self.tok
 
-    def _ahead(self, whitespace: bool = False) -> Token:
-        if whitespace:
-            return self.tokens[0]
-        return next(tok for tok in self.tokens if tok.type != "WHITESPACE")
+    def _peek(self, n: int = 1, ignore_whitespace=True) -> Token:
+        EOF = Token(type="EOF", value="EOF", loc=Location())
+        if ignore_whitespace:
+            return next(
+                islice(
+                    (tok for tok in self.tokens if tok.type != "WHITESPACE"), n - 1, n
+                ),
+                EOF,
+            )
+        else:
+            return self.tokens[n - 1] if self.tokens else EOF
 
-    def start(self) -> AstNode:
+    def start(self) -> list[AstNode]:
+        statements = []
+        while self.tokens:
+            stmt = self.statement()
+            statements.append(stmt)
+
+        return statements
+
+    def statement(self) -> AstNode:
+        first = self._peek()
+        if first and first.type == "ID" and len(self.tokens) > 1:
+            second = self._peek(2)
+            if second.type in {"EQUALS", "COLON"}:
+                return self.assignment()
+
         return self.logic_or()
+
+    def assignment(self) -> AstNode:
+        id_token = self._consume()
+        type_token = None
+        if self._peek().type == "COLON":
+            self._consume()
+            type_token = self._consume()
+        equals_token = self._consume()
+        expr = self.logic_or()
+
+        return Assign(
+            target=Identifier(name=id_token.value, loc=id_token.loc),
+            value=expr,
+            type=Identifier(name=type_token.value, loc=type_token.loc)
+            if type_token
+            else None,
+            loc=nodeloc(id_token, expr),
+        )
 
     def logic_or(self) -> AstNode:
         node = self.logic_and()
-        while self.tokens and self._ahead().type == "OR":
+        while self.tokens and self._peek().type == "OR":
             op_token = self._consume()
             right = self.logic_and()
             node = BoolOp(op=op_token, left=node, right=right, loc=nodeloc(node, right))
@@ -41,7 +91,7 @@ class Parser:
 
     def logic_and(self) -> AstNode:
         node = self.comparison()
-        while self.tokens and self._ahead().type == "AND":
+        while self.tokens and self._peek().type == "AND":
             op_token = self._consume()
             right = self.comparison()
             node = BoolOp(op=op_token, left=node, right=right, loc=nodeloc(node, right))
@@ -51,15 +101,7 @@ class Parser:
         node = self.arith()
         ops = []
         comparators = []
-        # Accept chains like a < b <= c
-        while self.tokens and self._ahead().type in {
-            "LT",
-            "LE",
-            "GT",
-            "GE",
-            "EQ",
-            "NE",
-        }:
+        while self.tokens and self._peek().type in {"LT", "LE", "GT", "GE", "EQ", "NE"}:
             op_token = self._consume()
             right = self.arith()
             ops.append(op_token)
@@ -76,7 +118,7 @@ class Parser:
 
     def arith(self) -> AstNode:
         node = self.term()
-        while self.tokens and self._ahead().type in {"PLUS", "MINUS"}:
+        while self.tokens and self._peek().type in {"PLUS", "MINUS"}:
             op_token = self._consume()
             right = self.term()
             node = BinOp(op=op_token, left=node, right=right, loc=nodeloc(node, right))
@@ -84,7 +126,7 @@ class Parser:
 
     def term(self) -> AstNode:
         node = self.factor()
-        while self.tokens and self._ahead().type in {"TIMES", "DIVIDE", "MOD", "POWER"}:
+        while self.tokens and self._peek().type in {"TIMES", "DIVIDE", "MOD", "POWER"}:
             op_token = self._consume()
             right = self.factor()
             node = BinOp(op=op_token, left=node, right=right, loc=nodeloc(node, right))
@@ -94,6 +136,8 @@ class Parser:
         tok = self._consume()
         if tok.type == "NUMBER":
             return self._parse_number(tok)
+        elif tok.type == "ID":
+            return Identifier(name=tok.value, loc=tok.loc)
         elif tok.type == "LPAREN":
             node = self.logic_or()
             assert self._consume().type == "RPAREN"
@@ -101,14 +145,12 @@ class Parser:
         else:
             raise Exception(f"Unexpected token: {tok.type}")
 
-    def _parse_number(self, token: Token):
+    def _parse_number(self, token: Token) -> AstNode:
         split = token.value.lower().split("e")
         number = split[0]
         exponent = split[1] if len(split) > 1 else ""
-
         if "." in exponent:
             raise Exception(f"Invalid number literal: {token.value}")
-
         if "." in number:
             return Float(value=number, exponent=exponent, loc=token.loc)
         else:

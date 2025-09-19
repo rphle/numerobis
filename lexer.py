@@ -144,12 +144,4 @@ def lex(source: str) -> list[Token]:
         print(token)
         output.append(token)
 
-    output.append(
-        Token(
-            type="EOF",
-            value="",
-            loc=Location(),
-        )
-    )
-
     return output

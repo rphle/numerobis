@@ -12,6 +12,11 @@ class AstNode:
 
 
 @dataclass(kw_only=True)
+class Identifier(AstNode):
+    name: str
+
+
+@dataclass(kw_only=True)
 class Integer(AstNode):
     value: str
     exponent: str
@@ -42,3 +47,10 @@ class Compare(AstNode):
     ops: list[Token]
     left: AstNode
     comparators: list[AstNode]
+
+
+@dataclass(kw_only=True)
+class Assign(AstNode):
+    target: AstNode
+    type: Identifier | None
+    value: AstNode
