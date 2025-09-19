@@ -1,4 +1,4 @@
-from astnodes import AstNode, BinOp, BoolOp, Float, Integer
+from astnodes import AstNode, BinOp, BoolOp, Compare, Float, Integer
 from classes import Location
 from lexer import Token
 
@@ -40,12 +40,39 @@ class Parser:
         return node
 
     def logic_and(self) -> AstNode:
-        node = self.arith()
+        node = self.comparison()
         while self.tokens and self._ahead().type == "AND":
             op_token = self._consume()
-            right = self.arith()
+            right = self.comparison()
             node = BoolOp(op=op_token, left=node, right=right, loc=nodeloc(node, right))
         return node
+
+    def comparison(self) -> AstNode:
+        node = self.arith()
+        ops = []
+        comparators = []
+        # Accept chains like a < b <= c
+        while self.tokens and self._ahead().type in {
+            "LT",
+            "LE",
+            "GT",
+            "GE",
+            "EQ",
+            "NE",
+        }:
+            op_token = self._consume()
+            right = self.arith()
+            ops.append(op_token)
+            comparators.append(right)
+        if ops:
+            return Compare(
+                left=node,
+                ops=ops,
+                comparators=comparators,
+                loc=nodeloc(node, comparators[-1]),
+            )
+        else:
+            return node
 
     def arith(self) -> AstNode:
         node = self.term()

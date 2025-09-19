@@ -39,4 +39,4 @@ class BoolOp(AstNode):
 class Compare(AstNode):
     ops: list[Token]
     left: AstNode
-    right: list[AstNode]
+    comparators: list[AstNode]
