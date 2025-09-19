@@ -1,14 +1,7 @@
 import sys
-from dataclasses import dataclass
 
 import lex as plylex
 from classes import Location, Token
-
-
-@dataclass
-class LexToken(Token):
-    pass
-
 
 reserved = ("IF", "THEN", "ELSE", "TRUE", "FALSE")
 
@@ -50,7 +43,7 @@ tokens = reserved + (
     "COLON",
     # Hacks
     "INVALID_E",
-    "SPACE",
+    "WHITESPACE",
 )
 
 
@@ -102,7 +95,7 @@ def t_INVALID_E(t):
     sys.exit(1)
 
 
-t_SPACE = r"\s+"
+t_WHITESPACE = r"\s+"
 
 
 # Identifiers and reserved words
@@ -140,8 +133,8 @@ def t_error(t):
 lexer = plylex.lex()
 
 
-def lex(source: str) -> list[LexToken]:
-    output: list[LexToken] = []
+def lex(source: str) -> list[Token]:
+    output: list[Token] = []
     lexer.input(source)
 
     last_newline_pos = [0, 0]
@@ -154,7 +147,7 @@ def lex(source: str) -> list[LexToken]:
             last_newline_pos.append(tok.lexpos + len(tok.value))
             last_newline_pos.pop(0)
 
-        token = LexToken(
+        token = Token(
             type=tok.type if tok.type != "NEWLINE" else "WHITESPACE",
             value=tok.value,
             loc=Location(
@@ -166,5 +159,13 @@ def lex(source: str) -> list[LexToken]:
         )
         print(token)
         output.append(token)
+
+    output.append(
+        Token(
+            type="EOF",
+            value="",
+            loc=Location(),
+        )
+    )
 
     return output
