@@ -11,9 +11,11 @@ from astnodes import (
     CallArg,
     Compare,
     Float,
+    Function,
     Identifier,
     If,
     Integer,
+    Param,
 )
 from classes import Location
 from lexer import Token
@@ -31,7 +33,6 @@ def nodeloc(*nodes: Token | AstNode):
 class Parser:
     def __init__(self, tokens: list[Token]):
         self.tokens = tokens
-        self.tok = None
 
     def _consume(self, *types: str) -> Token:
         if self._peek().type == "EOF":
@@ -80,6 +81,13 @@ class Parser:
         if first.type == "ID" and self._peek(2).type in {"ASSIGN", "COLON"}:
             """Variable declaration"""
             return self.assignment()
+        elif (
+            first.type == "ID"
+            and self._peek(2).type == "LPAREN"
+            and self._check_function(start=3)
+        ):
+            """Function declaration"""
+            return self.function()
         return self.expression()
 
     def expression(self) -> AstNode:
@@ -118,6 +126,54 @@ class Parser:
             else None,
             loc=nodeloc(name, expr),
         )
+
+    def function(self) -> AstNode:
+        name = self._make_id(self._consume("ID"))
+        return_type = None
+
+        self._consume("LPAREN")
+
+        params = []
+        while self._peek().type != "RPAREN":
+            p = {"name": self._make_id(self._consume("ID"))}
+
+            if self._peek().type == "COLON":
+                self._consume("COLON")
+                p["type"] = self._make_id(self._consume("ID"))
+
+            if self._peek().type == "ASSIGN":
+                self._consume("ASSIGN")
+                p["default"] = self.expression()  # type: ignore
+
+            params.append(
+                Param(
+                    name=p["name"],
+                    type=p.get("type"),
+                    default=p.get("default"),  # type: ignore
+                    loc=nodeloc(p["name"], p.get("default", p.get("type", p["name"]))),
+                )
+            )
+
+            if self._peek().type == "RPAREN":
+                break
+            self._consume("COMMA")
+
+        self._consume("RPAREN")
+        self._consume("COLON", "ASSIGN")
+        if self.tok.type == "COLON":
+            return_type = self._make_id(self._consume("ID"))
+            self._consume("ASSIGN")
+
+        body = self.expression()
+
+        node = Function(
+            name=name,
+            params=params,
+            return_type=return_type,
+            body=body,
+            loc=nodeloc(name, body),
+        )
+        return node
 
     def conditional(self) -> AstNode:
         self._consume()
@@ -180,14 +236,14 @@ class Parser:
         return node
 
     def term(self) -> AstNode:
-        node = self.factor()
+        node = self.call()
         while self.tokens and self._peek().type in {"TIMES", "DIVIDE", "MOD", "POWER"}:
             op_token = self._consume()
-            right = self.factor()
+            right = self.call()
             node = BinOp(op=op_token, left=node, right=right, loc=nodeloc(node, right))
         return node
 
-    def factor(self) -> AstNode:
+    def call(self) -> AstNode:
         node = self.atom()
         while self._peek().type == "LPAREN":
             self._consume("LPAREN")
@@ -195,8 +251,7 @@ class Parser:
             while self._peek().type != "RPAREN":
                 name = None
                 if self._peek(2).type == "ASSIGN":
-                    name = self._consume("ID")
-                    name = Identifier(name=name.value, loc=name.loc)
+                    name = self._make_id(self._consume("ID"))
                     self._consume("ASSIGN")
                 arg = self.expression()
 
@@ -221,13 +276,16 @@ class Parser:
         elif tok.type in {"TRUE", "FALSE"}:
             return Boolean(value=tok.value == "TRUE", loc=tok.loc)
         elif tok.type == "ID":
-            return Identifier(name=tok.value, loc=tok.loc)
+            return self._make_id(tok)
         elif tok.type == "LPAREN":
             node = self.expression()
             assert self._consume().type == "RPAREN"
             return node
         else:
             raise Exception(f"Unexpected token: {tok.type}")
+
+    def _make_id(self, tok: Token) -> Identifier:
+        return Identifier(name=tok.value, loc=tok.loc)
 
     def _parse_number(self, token: Token) -> AstNode:
         split = token.value.lower().split("e")
@@ -239,3 +297,17 @@ class Parser:
             return Float(value=number, exponent=exponent, loc=token.loc)
         else:
             return Integer(value=number, exponent=exponent, loc=token.loc)
+
+    def _check_function(self, start: int = 3):
+        i = start
+        balance = 1
+
+        while True:
+            tok = self._peek(i).type
+            if balance == 0:
+                return tok in {"COLON", "ASSIGN"}
+            elif tok in ["LPAREN", "RPAREN"]:
+                balance += 1 if tok == "LPAREN" else -1
+            elif tok == "EOF":
+                raise Exception("Unexpected EOF")
+            i += 1
