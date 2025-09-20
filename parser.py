@@ -1,4 +1,5 @@
 from itertools import islice
+from typing import Literal, Optional
 
 from astnodes import (
     Assign,
@@ -82,6 +83,12 @@ class Parser:
         if first.type == "ID" and self._peek(2).type in {"ASSIGN", "COLON"}:
             """Variable declaration"""
             return self.assignment()
+        elif (
+            first.type == "ID"
+            and self._peek(2, ignore_whitespace=False).type == "LPAREN"
+        ):
+            """Function definition or call"""
+            return self.func_or_call()
         return self.expression()
 
     def expression(self) -> AstNode:
@@ -92,17 +99,14 @@ class Parser:
         elif first.type == "IF":
             """Conditional"""
             return self.conditional()
-        elif (
-            first.type == "ID"
-            and self._peek(2, ignore_whitespace=False).type == "LPAREN"
-        ):
-            """Function definition or call"""
-            return self.func_or_call()
+
         return self.logic_or()
 
-    def func_or_call(self) -> AstNode:
-        name = self._consume()
-        self._consume()  # lparen
+    def func_or_call(
+        self, type_: Optional[Literal["function", "call"]] = None
+    ) -> AstNode:
+        name = self._consume("ID")
+        self._consume("LPAREN")
 
         return_type = None
         params = []
@@ -112,6 +116,10 @@ class Parser:
             p = {}
             first = self._consume()
             second = self._peek()
+
+            if first.type == "RPAREN":
+                break
+
             if second.type == "COLON":
                 # Type-annotated function parameter
                 if first.type == "ID":
@@ -151,8 +159,10 @@ class Parser:
             if self._consume("COMMA", "RPAREN").type == "RPAREN":
                 break
 
-        if self._peek().type in {"ASSIGN", "COLON"} and all(
-            "name" in p for p in params
+        if (
+            self._peek().type in {"ASSIGN", "COLON"}
+            and all("name" in p for p in params)
+            and type_ in {None, "function"}
         ):
             # Function definition
             if self._consume().type == "COLON":
@@ -190,7 +200,7 @@ class Parser:
             # -or-
             # Call with type annotations (syntax error), we parse it as a function call
             raise SyntaxError(f"Unexpected token {colon}")
-        else:
+        elif type_ in {None, "call"}:
             # Function call
             args = [
                 CallArg(
@@ -207,6 +217,8 @@ class Parser:
                 args=args,
                 loc=nodeloc(name, name),
             )
+        else:
+            raise SyntaxError("Function/call distinction error")
 
     def block(self) -> AstNode:
         start = self._consume()
