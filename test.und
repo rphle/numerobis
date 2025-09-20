@@ -1,10 +1,11 @@
 f()()
 12-1e2
+x: lol = 1
 x: lol = {
     1 + 2
-    3--4
+    3-4
 }
-(x: haha, y: beep, z): boop = {
+fn fun(x: haha, y: beep, z, d=123+0): boop = {
     1+1
 }
 if true then beep else boop
@@ -15,3 +16,23 @@ if true then {
 } else {
     boop
 }
+
+f(x) = 1;
+
+fun(a=(if true then 1 else 2))();
+
+
+# Simple comment
+-x;         # another comment
++x;
+
+--x;
+---x;
+
+-f(x);
+-(if a then 1 else -1);
+-(x + y);
+
+# Logical NOT
+not x      # # a# complicated # comm\ent
+not not x

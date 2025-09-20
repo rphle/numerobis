@@ -104,7 +104,7 @@ t_STRING = r"\"([^\\\n]|(\\.))*?\""
 
 # Comments
 def t_comment(t):
-    r"/\*(.|\n)*?\*/"
+    r"\#.*"
     t.lexer.lineno += t.value.count("\n")
 
 

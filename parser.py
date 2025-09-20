@@ -17,6 +17,7 @@ from astnodes import (
     Integer,
     Operator,
     Param,
+    UnaryOp,
 )
 from classes import Location
 from lexer import Token
@@ -40,14 +41,14 @@ class Parser:
             raise Exception("Unexpected EOF")
 
         self.tok = self.tokens.pop(0)
-        while self.tok.type in {"WHITESPACE", "SEMICOLON"}:
+        while self.tok.type == "WHITESPACE":
             self.tok = self.tokens.pop(0)
         if types and (self.tok.type not in types):
             raise SyntaxError(f"Unexpected token {self.tok}")
         return self.tok
 
     def _clear(self):
-        while self._peek(ignore_whitespace=False).type in {"WHITESPACE", "SEMICOLON"}:
+        while self._peek(ignore_whitespace=False).type == "WHITESPACE":
             self.tokens.pop(0)
 
     def _peek(self, n: int = 1, ignore_whitespace=True) -> Token:
@@ -55,11 +56,7 @@ class Parser:
         if ignore_whitespace:
             return next(
                 islice(
-                    (
-                        tok
-                        for tok in self.tokens
-                        if tok.type not in {"WHITESPACE", "SEMICOLON"}
-                    ),
+                    (tok for tok in self.tokens if tok.type != "WHITESPACE"),
                     n - 1,
                     n,
                 ),
@@ -73,6 +70,9 @@ class Parser:
         while self._peek().type != "EOF":
             stmt = self.statement()
             statements.append(stmt)
+
+            if self._peek().type == "SEMICOLON":
+                self._consume("SEMICOLON")
         return statements
 
     def statement(self) -> AstNode:
@@ -202,12 +202,19 @@ class Parser:
         return node
 
     def logic_and(self) -> AstNode:
-        node = self.comparison()
+        node = self.logic_not()
         while self.tokens and self._peek().type == "AND":
             op = self._make_op(self._consume())
-            right = self.comparison()
+            right = self.logic_not()
             node = BoolOp(op=op, left=node, right=right, loc=nodeloc(node, right))
         return node
+
+    def logic_not(self) -> AstNode:
+        if self._peek().type == "NOT":
+            op = self._make_op(self._consume())
+            operand = self.logic_not()
+            return UnaryOp(op=op, operand=operand, loc=nodeloc(op, operand))
+        return self.comparison()
 
     def comparison(self) -> AstNode:
         node = self.arith()
@@ -237,12 +244,29 @@ class Parser:
         return node
 
     def term(self) -> AstNode:
-        node = self.call()
+        node = self.unary()
         while self.tokens and self._peek().type in {"TIMES", "DIVIDE", "MOD", "POWER"}:
             op = self._make_op(self._consume())
-            right = self.call()
+            right = self.unary()
             node = BinOp(op=op, left=node, right=right, loc=nodeloc(node, right))
         return node
+
+    def unary(self) -> AstNode:
+        if self._peek().type in {"PLUS", "MINUS"}:
+            ops = []
+            while self._peek().type in {"PLUS", "MINUS"}:
+                op_token = self._consume()
+                ops.append(op_token)
+
+            operand = self.call()
+
+            if sum(1 for op in ops if op.type == "MINUS") % 2 == 1:
+                op = self._make_op(next(op for op in ops if op.type == "MINUS"))
+                return UnaryOp(op=op, operand=operand, loc=nodeloc(op, operand))
+            else:
+                return operand
+
+        return self.call()
 
     def call(self) -> AstNode:
         node = self.atom()

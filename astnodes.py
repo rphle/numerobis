@@ -51,6 +51,12 @@ class Operator(AstNode):
 
 
 @dataclass(kw_only=True)
+class UnaryOp(AstNode):
+    op: Operator
+    operand: AstNode
+
+
+@dataclass(kw_only=True)
 class BinOp(AstNode):
     op: Operator
     left: AstNode
