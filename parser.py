@@ -82,7 +82,7 @@ class Parser:
                 return self.block()
             elif first.type == "IF":
                 """If statement/expression"""
-                return self.ifthen()
+                return self.conditional()
 
         return self.logic_or()
 
@@ -112,7 +112,7 @@ class Parser:
             loc=nodeloc(id_token, expr),
         )
 
-    def ifthen(self) -> AstNode:
+    def conditional(self) -> AstNode:
         self._consume()
         condition = self.expression()
         self._consume()
