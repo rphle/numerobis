@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 
-from classes import Location, Token
+from classes import Location
 
 
 @dataclass(kw_only=True)
@@ -46,22 +46,27 @@ class Float(AstNode):
 
 
 @dataclass(kw_only=True)
+class Operator(AstNode):
+    name: str
+
+
+@dataclass(kw_only=True)
 class BinOp(AstNode):
-    op: Token
+    op: Operator
     left: AstNode
     right: AstNode
 
 
 @dataclass(kw_only=True)
 class BoolOp(AstNode):
-    op: Token
+    op: Operator
     left: AstNode
     right: AstNode
 
 
 @dataclass(kw_only=True)
 class Compare(AstNode):
-    ops: list[Token]
+    ops: list[Operator]
     left: AstNode
     comparators: list[AstNode]
 

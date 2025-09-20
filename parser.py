@@ -15,6 +15,7 @@ from astnodes import (
     Identifier,
     If,
     Integer,
+    Operator,
     Param,
 )
 from classes import Location
@@ -195,17 +196,17 @@ class Parser:
     def logic_or(self) -> AstNode:
         node = self.logic_and()
         while self.tokens and self._peek().type == "OR":
-            op_token = self._consume()
+            op = self._make_op(self._consume())
             right = self.logic_and()
-            node = BoolOp(op=op_token, left=node, right=right, loc=nodeloc(node, right))
+            node = BoolOp(op=op, left=node, right=right, loc=nodeloc(node, right))
         return node
 
     def logic_and(self) -> AstNode:
         node = self.comparison()
         while self.tokens and self._peek().type == "AND":
-            op_token = self._consume()
+            op = self._make_op(self._consume())
             right = self.comparison()
-            node = BoolOp(op=op_token, left=node, right=right, loc=nodeloc(node, right))
+            node = BoolOp(op=op, left=node, right=right, loc=nodeloc(node, right))
         return node
 
     def comparison(self) -> AstNode:
@@ -213,9 +214,9 @@ class Parser:
         ops = []
         comparators = []
         while self.tokens and self._peek().type in {"LT", "LE", "GT", "GE", "EQ", "NE"}:
-            op_token = self._consume()
+            op = self._make_op(self._consume())
             right = self.arith()
-            ops.append(op_token)
+            ops.append(op)
             comparators.append(right)
         if ops:
             return Compare(
@@ -230,17 +231,17 @@ class Parser:
     def arith(self) -> AstNode:
         node = self.term()
         while self.tokens and self._peek().type in {"PLUS", "MINUS"}:
-            op_token = self._consume()
+            op = self._make_op(self._consume())
             right = self.term()
-            node = BinOp(op=op_token, left=node, right=right, loc=nodeloc(node, right))
+            node = BinOp(op=op, left=node, right=right, loc=nodeloc(node, right))
         return node
 
     def term(self) -> AstNode:
         node = self.call()
         while self.tokens and self._peek().type in {"TIMES", "DIVIDE", "MOD", "POWER"}:
-            op_token = self._consume()
+            op = self._make_op(self._consume())
             right = self.call()
-            node = BinOp(op=op_token, left=node, right=right, loc=nodeloc(node, right))
+            node = BinOp(op=op, left=node, right=right, loc=nodeloc(node, right))
         return node
 
     def call(self) -> AstNode:
@@ -286,6 +287,9 @@ class Parser:
 
     def _make_id(self, tok: Token) -> Identifier:
         return Identifier(name=tok.value, loc=tok.loc)
+
+    def _make_op(self, tok: Token) -> Operator:
+        return Operator(name=tok.type.lower(), loc=tok.loc)
 
     def _parse_number(self, token: Token) -> AstNode:
         split = token.value.lower().split("e")
