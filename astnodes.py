@@ -71,3 +71,30 @@ class Assign(AstNode):
     target: AstNode
     type: Identifier | None
     value: AstNode
+
+
+@dataclass(kw_only=True)
+class Param(AstNode):
+    name: Identifier
+    type: Identifier | None
+    default: AstNode
+
+
+@dataclass(kw_only=True)
+class Function(AstNode):
+    name: Identifier
+    params: list[Param]
+    return_type: Identifier | None
+    body: AstNode
+
+
+@dataclass(kw_only=True)
+class CallArg(AstNode):
+    name: Identifier | None
+    value: AstNode
+
+
+@dataclass(kw_only=True)
+class Call(AstNode):
+    callee: Identifier
+    args: list[CallArg]
