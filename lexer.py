@@ -24,7 +24,7 @@ tokens = reserved + (
     "EQ",
     "NE",
     # Assignment (=)
-    "EQUALS",
+    "ASSIGN",
     # Delimiters ( ) [ ] { } , . ; :
     "LPAREN",
     "RPAREN",
@@ -67,7 +67,7 @@ t_EQ = r"=="
 t_NE = r"!="
 
 # Assignment operators
-t_EQUALS = r"="
+t_ASSIGN = r"="
 
 # Delimiters
 t_LPAREN = r"\("

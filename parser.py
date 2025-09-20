@@ -79,7 +79,7 @@ class Parser:
         self._clear()
         first = self._peek()
 
-        if first.type == "ID" and self._peek(2).type in {"EQUALS", "COLON"}:
+        if first.type == "ID" and self._peek(2).type in {"ASSIGN", "COLON"}:
             """Variable declaration"""
             return self.assignment()
         return self.expression()
@@ -108,8 +108,8 @@ class Parser:
         params = []
 
         while True:
+            # parse parameters/arguments
             p = {}
-
             first = self._consume()
             second = self._peek()
             if second.type == "COLON":
@@ -125,11 +125,11 @@ class Parser:
                 else:
                     raise SyntaxError(f"Unexpected token {third}")
 
-                if self._peek().type == "EQUALS":
+                if self._peek().type == "ASSIGN":
                     p["_assign"] = self._consume()
                     p["value"] = self.expression()
 
-            elif second.type == "EQUALS":
+            elif second.type == "ASSIGN":
                 # Function parameter with default value or keyword argument
                 if first.type == "ID":
                     p["name"] = first
@@ -151,7 +151,7 @@ class Parser:
             if self._consume("COMMA", "RPAREN").type == "RPAREN":
                 break
 
-        if self._peek().type in {"EQUALS", "COLON"} and all(
+        if self._peek().type in {"ASSIGN", "COLON"} and all(
             "name" in p for p in params
         ):
             # Function definition
