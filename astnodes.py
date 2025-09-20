@@ -96,5 +96,5 @@ class CallArg(AstNode):
 
 @dataclass(kw_only=True)
 class Call(AstNode):
-    callee: Identifier
+    callee: AstNode
     args: list[CallArg]

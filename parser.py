@@ -1,5 +1,4 @@
 from itertools import islice
-from typing import Literal, Optional
 
 from astnodes import (
     Assign,
@@ -12,11 +11,9 @@ from astnodes import (
     CallArg,
     Compare,
     Float,
-    Function,
     Identifier,
     If,
     Integer,
-    Param,
 )
 from classes import Location
 from lexer import Token
@@ -83,12 +80,6 @@ class Parser:
         if first.type == "ID" and self._peek(2).type in {"ASSIGN", "COLON"}:
             """Variable declaration"""
             return self.assignment()
-        elif (
-            first.type == "ID"
-            and self._peek(2, ignore_whitespace=False).type == "LPAREN"
-        ):
-            """Function definition or call"""
-            return self.func_or_call()
         return self.expression()
 
     def expression(self) -> AstNode:
@@ -101,124 +92,6 @@ class Parser:
             return self.conditional()
 
         return self.logic_or()
-
-    def func_or_call(
-        self, type_: Optional[Literal["function", "call"]] = None
-    ) -> AstNode:
-        name = self._consume("ID")
-        self._consume("LPAREN")
-
-        return_type = None
-        params = []
-
-        while True:
-            # parse parameters/arguments
-            p = {}
-            first = self._consume()
-            second = self._peek()
-
-            if first.type == "RPAREN":
-                break
-
-            if second.type == "COLON":
-                # Type-annotated function parameter
-                if first.type == "ID":
-                    p["name"] = first
-                else:
-                    raise SyntaxError(f"Unexpected token {first}")
-                p["_colon"] = self._consume()
-
-                if (third := self._consume()).type == "ID":
-                    p["type"] = third
-                else:
-                    raise SyntaxError(f"Unexpected token {third}")
-
-                if self._peek().type == "ASSIGN":
-                    p["_assign"] = self._consume()
-                    p["value"] = self.expression()
-
-            elif second.type == "ASSIGN":
-                # Function parameter with default value or keyword argument
-                if first.type == "ID":
-                    p["name"] = first
-                else:
-                    raise SyntaxError(f"Unexpected token {first}")
-                p["_assign"] = self._consume()
-                p["value"] = self.expression()
-
-            elif second.type in {"COMMA", "RPAREN"}:
-                # Basic function parameter
-                if first.type == "ID":
-                    p["name"] = first
-                else:
-                    p["value"] = first
-            else:
-                raise SyntaxError(f"Unexpected token {first}")
-
-            params.append(p)
-            if self._consume("COMMA", "RPAREN").type == "RPAREN":
-                break
-
-        if (
-            self._peek().type in {"ASSIGN", "COLON"}
-            and all("name" in p for p in params)
-            and type_ in {None, "function"}
-        ):
-            # Function definition
-            if self._consume().type == "COLON":
-                # Parse return type
-                if self._peek().type == "ID":
-                    self._consume()
-                    return_type = self._consume()
-                    return_type = Identifier(
-                        name=return_type.value, loc=return_type.loc
-                    )
-                else:
-                    raise SyntaxError(f"Unexpected token {self._peek()}")
-
-            body = self.expression()
-
-            params = [
-                Param(
-                    name=Identifier(name=p["name"].value, loc=p["name"].loc),
-                    type=p.get("type"),
-                    default=p.get("value"),
-                    loc=nodeloc(p["name"], p.get("value", p.get("type", p["name"]))),
-                )
-                for p in params
-            ]
-
-            return Function(
-                name=Identifier(name=name.value, loc=name.loc),
-                params=params,
-                return_type=return_type,
-                body=body,
-                loc=nodeloc(name, body),
-            )
-        elif colon := next((p["_colon"] for p in params if "_colon" in p), None):
-            # Function definition with type annotations but without body
-            # -or-
-            # Call with type annotations (syntax error), we parse it as a function call
-            raise SyntaxError(f"Unexpected token {colon}")
-        elif type_ in {None, "call"}:
-            # Function call
-            args = [
-                CallArg(
-                    name=Identifier(name=p["name"].value, loc=p["name"].loc)
-                    if "name" in p
-                    else None,
-                    value=p.get("value"),
-                    loc=nodeloc(p.get("name", p["value"]), p["value"]),
-                )
-                for p in params
-            ]
-            return Call(
-                callee=Identifier(name=name.value, loc=name.loc),
-                args=args,
-                loc=nodeloc(name, name),
-            )
-        else:
-            raise SyntaxError("Function/call distinction error")
 
     def block(self) -> AstNode:
         start = self._consume()
@@ -315,6 +188,33 @@ class Parser:
         return node
 
     def factor(self) -> AstNode:
+        node = self.atom()
+        while self._peek().type == "LPAREN":
+            self._consume("LPAREN")
+            args = []
+            while self._peek().type != "RPAREN":
+                name = None
+                if self._peek(2).type == "ASSIGN":
+                    name = self._consume("ID")
+                    name = Identifier(name=name.value, loc=name.loc)
+                    self._consume("ASSIGN")
+                arg = self.expression()
+
+                args.append(
+                    CallArg(
+                        name=name, value=arg, loc=nodeloc(name if name else arg, arg)
+                    )
+                )
+
+                if self._peek().type == "RPAREN":
+                    break
+                self._consume("COMMA")
+
+            end = self._consume("RPAREN")
+            node = Call(callee=node, args=args, loc=nodeloc(node, end))
+        return node
+
+    def atom(self) -> AstNode:
         tok = self._consume()
         if tok.type == "NUMBER":
             return self._parse_number(tok)
@@ -323,11 +223,8 @@ class Parser:
         elif tok.type == "ID":
             return Identifier(name=tok.value, loc=tok.loc)
         elif tok.type == "LPAREN":
-            node = self.logic_or()
+            node = self.expression()
             assert self._consume().type == "RPAREN"
-            return node
-        elif tok.type == "COMMA":
-            node = self.logic_or()
             return node
         else:
             raise Exception(f"Unexpected token: {tok.type}")
