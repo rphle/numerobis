@@ -113,6 +113,9 @@ class Parser:
         body = []
         while self.tokens and self._peek().type != "RBRACE":
             body.append(self.statement())
+            if self._peek().type == "SEMICOLON":
+                self._consume("SEMICOLON")
+
         end = self._consume()
         return Block(body=body, loc=nodeloc(start, end))
 
