@@ -10,6 +10,7 @@ from astnodes import (
     Call,
     CallArg,
     Compare,
+    Conversion,
     Float,
     Function,
     Identifier,
@@ -100,7 +101,7 @@ class Parser:
             """Conditional"""
             return self.conditional()
 
-        return self.logic_or()
+        return self.conversion()
 
     def block(self) -> AstNode:
         start = self._consume()
@@ -192,6 +193,14 @@ class Parser:
             else_branch=else_branch,
             loc=nodeloc(condition, else_branch if else_branch else then_branch),
         )
+
+    def conversion(self) -> AstNode:
+        node = self.logic_or()
+        if len(self.tokens) >= 2 and self._peek().type == "CONVERSION":
+            op = self._make_op(self._consume())
+            unit = self.unit()
+            node = Conversion(op=op, value=node, unit=unit, loc=nodeloc(node, unit[-1]))
+        return node
 
     def _logic_chain(self, subrule, op_type: str) -> AstNode:
         node = subrule()

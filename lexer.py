@@ -23,6 +23,7 @@ tokens = reserved + (
     "GE",
     "EQ",
     "NE",
+    "CONVERSION",
     # Assignment (=)
     "ASSIGN",
     # Delimiters ( ) [ ] { } , . ; :
@@ -66,6 +67,7 @@ t_LE = r"<="
 t_GE = r">="
 t_EQ = r"=="
 t_NE = r"!="
+t_CONVERSION = r"->"
 
 # Assignment operators
 t_ASSIGN = r"="

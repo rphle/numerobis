@@ -58,3 +58,6 @@ not not x;
 5α
 1.23e4m
 4.5E-3kg
+
+my_var = 10;
+my_var -> kg

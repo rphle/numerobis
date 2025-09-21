@@ -80,6 +80,13 @@ class Compare(AstNode):
 
 
 @dataclass(kw_only=True)
+class Conversion(AstNode):
+    op: Operator
+    value: AstNode
+    unit: list[AstNode]
+
+
+@dataclass(kw_only=True)
 class Assign(AstNode):
     target: AstNode
     type: Identifier | None
