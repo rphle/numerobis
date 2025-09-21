@@ -10,6 +10,7 @@ reserved = (
     "FOR",
     "IN",
     "DO",
+    "WHILE",
     "TRUE",
     "FALSE",
     "OR",
@@ -39,6 +40,7 @@ tokens = reserved + (
     "EQ",
     "NE",
     "CONVERSION",
+    "NOTBANG",
     # Assignment (=)
     "ASSIGN",
     # Delimiters ( ) [ ] { } , . ; :
@@ -73,17 +75,18 @@ t_DIVIDE = r"/"
 t_INTDIVIDE = r"//"
 t_MOD = r"%"
 t_POWER = r"\^"
-t_OR = r"or"
-t_AND = r"and"
-t_NOT = r"not|!"
-t_XOR = r"xor"
-t_LT = r"<"
-t_GT = r">"
-t_LE = r"<="
-t_GE = r">="
+t_CONVERSION = r"\(?->"
+
+# Comparison operators
 t_EQ = r"=="
 t_NE = r"!="
-t_CONVERSION = r"\(?->"
+t_LE = r"<="
+t_GE = r">="
+t_LT = r"<"
+t_GT = r">"
+
+# Logical operators
+t_NOTBANG = r"!"  # separate token for !
 
 # Assignment operators
 t_ASSIGN = r"="

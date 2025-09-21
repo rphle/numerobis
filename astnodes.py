@@ -112,6 +112,12 @@ class ForLoop(AstNode):
 
 
 @dataclass(kw_only=True)
+class WhileLoop(AstNode):
+    condition: AstNode
+    body: AstNode
+
+
+@dataclass(kw_only=True)
 class UnitDeclaration(AstNode):
     name: Identifier
     unit: Unit

@@ -23,6 +23,7 @@ from astnodes import (
     UnaryOp,
     Unit,
     UnitDeclaration,
+    WhileLoop,
 )
 from classes import Location
 from exceptions import uSyntaxError
@@ -113,6 +114,9 @@ class Parser:
         elif first.type == "FOR":
             """For loop"""
             return self.forloop()
+        elif first.type == "WHILE":
+            """While loop"""
+            return self.whileloop()
         elif (
             first.type == "ID"
             and self._peek(2).type == "LPAREN"
@@ -252,7 +256,7 @@ class Parser:
         )
 
     def forloop(self) -> AstNode:
-        self._consume("FOR")
+        _for = self._consume("FOR")
         var = self._make_id(self._consume("ID"))
         self._consume("IN")
         iterable = self.expression()
@@ -262,7 +266,18 @@ class Parser:
             var=var,
             iterable=iterable,
             body=body,
-            loc=nodeloc(var, body),
+            loc=nodeloc(_for, body),
+        )
+
+    def whileloop(self) -> AstNode:
+        _while = self._consume("WHILE")
+        condition = self.expression()
+        self._consume("DO")
+        body = self.block()
+        return WhileLoop(
+            condition=condition,
+            body=body,
+            loc=nodeloc(_while, body),
         )
 
     def conversion(self) -> AstNode:
@@ -300,8 +315,9 @@ class Parser:
         return self._logic_chain(self.logic_not, "AND")
 
     def logic_not(self) -> AstNode:
-        if self._peek().type == "NOT":
+        if self._peek().type in {"NOT", "NOTBANG"}:
             op = self._make_op(self._consume())
+            op.name = "not"
             operand = self.logic_not()
             return UnaryOp(op=op, operand=operand, loc=nodeloc(op, operand))
         return self.comparison()

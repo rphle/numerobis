@@ -5,3 +5,13 @@ for x in my_list do {
   echo(x)
   i = i + x
 }
+
+while true do
+  echo("infinite loop")
+
+tries = 0
+while input() != 42 do {
+  tries = tries + 1
+  echo("you lose!, try again!")
+}
+echo("you win!")
