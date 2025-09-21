@@ -1,0 +1,23 @@
+f()()
+
+fn fun(x: haha, y: beep, z, d=123+0): boop = {
+    1+1
+}
+
+
+f(a: number, b: number): number = a + b * 2
+g(a: number, b: number, c: number = 0): number = a + b + c
+
+hello(name: string): string = { output = "Hello, " + name + "!"; echo(output) }
+
+# Functions return the last expression by default; explicit return can override
+fibonacci(n: number): number = {
+    if n <= 1:
+        return n
+    fibonacci(n - 1) + fibonacci(n - 2)
+}
+distance(speed: velocity, time: time): distance = speed * time
+
+
+f(x) = 1;
+fun(a=(if true then 1 else 2))();

@@ -6,8 +6,7 @@ build
 wheels
 dist
 
-TODO.md
-NOTES.md
+notes/
 test.py
 
-ast.json
+snapshots.json

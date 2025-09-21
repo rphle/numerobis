@@ -123,7 +123,7 @@ def t_error(t):
 lexer = plylex.lex()
 
 
-def lex(source: str) -> list[Token]:
+def lex(source: str, debug=False) -> list[Token]:
     output: list[Token] = []
     lexer.input(source)
 
@@ -147,7 +147,10 @@ def lex(source: str) -> list[Token]:
                 end=tok.lexpos + len(tok.value),
             ),
         )
-        print(token)
+        if debug:
+            print(token)
+            print("=" * 80)
+
         output.append(token)
 
     return output
