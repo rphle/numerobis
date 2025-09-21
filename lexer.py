@@ -36,6 +36,7 @@ tokens = reserved + (
     "PERIOD",
     "SEMICOLON",
     "COLON",
+    "AMPERSAND",
     # Hacks
     "WHITESPACE",
 )
@@ -80,6 +81,7 @@ t_COMMA = r","
 t_PERIOD = r"\."
 t_SEMICOLON = r";"
 t_COLON = r":"
+t_AMPERSAND = r"&"
 
 t_WHITESPACE = r"\s+"
 
@@ -91,7 +93,7 @@ for r in reserved:
 
 
 def t_ID(t):
-    r"[A-Za-z_][\w_]*"
+    r"(?:[^\W\d]|°)[\w°]*"
     t.type = reserved_map.get(t.value, "ID")
     return t
 

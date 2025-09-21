@@ -37,12 +37,14 @@ class Boolean(AstNode):
 class Integer(AstNode):
     value: str
     exponent: str
+    unit: list[AstNode]
 
 
 @dataclass(kw_only=True)
 class Float(AstNode):
     value: str
     exponent: str
+    unit: list[AstNode]
 
 
 @dataclass(kw_only=True)

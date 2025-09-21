@@ -297,7 +297,9 @@ class Parser:
     def atom(self) -> AstNode:
         tok = self._consume()
         if tok.type == "NUMBER":
-            return self._parse_number(tok)
+            num = self._parse_number(tok)
+            num.unit = self.unit()
+            return num
         elif tok.type in {"TRUE", "FALSE"}:
             return Boolean(value=tok.value == "TRUE", loc=tok.loc)
         elif tok.type == "ID":
@@ -309,22 +311,84 @@ class Parser:
         else:
             raise Exception(f"Unexpected token: {tok.type}")
 
+    def unit(self):
+        """
+        Parse units after a number. A unit either follows a number directly or is separated from it by a whitespace.
+        Units are chains of identifiers and numbers, separated by operators.
+        An identifier following a number is considered a multiplication.
+        The allowed operators are multiplication (*), division (/) and exponentiation (^).
+        A unit may start with an ampersand (&).
+        If the entire unit is enclosed in parentheses, it ends as soon as the closing parenthesis is encountered.
+        """
+        u = []
+        parenthesized = False
+        balance = 0
+        start = self._peek(ignore_whitespace=False)
+
+        if start.type == "WHITESPACE" and start.value == " ":
+            self._clear()
+            start = self._peek()
+
+        if start.type == "AMPERSAND":
+            self._consume("AMPERSAND")
+            start = self._peek()
+
+        if start.type in {"LPAREN", "ID"}:
+            if start.type == "LPAREN":
+                parenthesized = True
+
+            while (tok := self._peek(ignore_whitespace=False)).type != "WHITESPACE":
+                match tok.type:
+                    case "ID":
+                        if tok.value.startswith("_"):
+                            raise Exception(f"Unexpected token: {tok.type}")
+                        if len(u) > 0 and isinstance(u[-1], (Integer, Float)):
+                            u.append(Operator(name="times"))
+                        u.append(self._make_id(self._consume()))
+                    case "NUMBER":
+                        u.append(self._parse_number(self._consume()))
+                    case "DIVIDE" | "TIMES" | "POWER":
+                        if len(u) == 0 or isinstance(u[-1], Operator):
+                            raise Exception(f"Unexpected token: {tok.type}")
+                        u.append(self._make_op(self._consume()))
+                    case "LPAREN" | "RPAREN":
+                        if tok.type == "RPAREN" and (
+                            balance == 0 or (len(u) > 0 and isinstance(u[-1], Operator))
+                        ):
+                            raise Exception(f"Unexpected token: {tok.type}")
+
+                        balance += 1 if tok.type == "LPAREN" else -1
+                        u.append(self._consume("LPAREN", "RPAREN"))
+                        if balance == 0 and parenthesized:
+                            break
+                    case "EOF":
+                        if balance == 0:
+                            break
+                        raise Exception(f"Unexpected token: {tok.type}")
+                    case _:
+                        raise Exception(f"Unexpected token: {tok.type}")
+
+            if parenthesized:
+                u = u[1:-1]
+
+        return u
+
     def _make_id(self, tok: Token) -> Identifier:
         return Identifier(name=tok.value, loc=tok.loc)
 
     def _make_op(self, tok: Token) -> Operator:
         return Operator(name=tok.type.lower(), loc=tok.loc)
 
-    def _parse_number(self, token: Token) -> AstNode:
+    def _parse_number(self, token: Token) -> Float | Integer:
         split = token.value.lower().split("e")
         number = split[0]
         exponent = split[1] if len(split) > 1 else ""
         if "." in exponent:
             raise Exception(f"Invalid number literal: {token.value}")
         if "." in number:
-            return Float(value=number, exponent=exponent, loc=token.loc)
+            return Float(value=number, exponent=exponent, unit=[], loc=token.loc)
         else:
-            return Integer(value=number, exponent=exponent, loc=token.loc)
+            return Integer(value=number, exponent=exponent, unit=[], loc=token.loc)
 
     def _check_function(self, start: int = 3):
         i = start
