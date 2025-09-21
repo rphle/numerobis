@@ -47,7 +47,9 @@ class Parser:
         while self.tok.type == "WHITESPACE":
             self.tok = self.tokens.pop(0)
         if types and (self.tok.type not in types):
-            raise SyntaxError(f"Unexpected token {self.tok}")
+            raise SyntaxError(
+                f"Unexpected token {self.tok} at line {self.tok.loc.line}, column {self.tok.loc.col}"
+            )
         return self.tok
 
     def _clear(self):
@@ -95,29 +97,32 @@ class Parser:
         ):
             """Function declaration"""
             return self.function()
+        return self.block()
+
+    def block(self) -> AstNode:
+        """
+        Blocks are a mix of statements and expressions, mostly to allow cleaner control structure syntax
+        """
+        if self._peek().type == "LBRACE":
+            start = self._consume("LBRACE")
+            body = []
+            while self.tokens and self._peek().type != "RBRACE":
+                body.append(self.statement())
+                if self._peek().type == "SEMICOLON":
+                    self._consume("SEMICOLON")
+
+            end = self._consume("RBRACE")
+            return Block(body=body, loc=nodeloc(start, end))
+
         return self.expression()
 
     def expression(self) -> AstNode:
         first = self._peek()
-        if first.type == "LBRACE":
-            """Block"""
-            return self.block()
-        elif first.type == "IF":
+        if first.type == "IF":
             """Conditional"""
             return self.conditional()
 
         return self.conversion()
-
-    def block(self) -> AstNode:
-        start = self._consume()
-        body = []
-        while self.tokens and self._peek().type != "RBRACE":
-            body.append(self.statement())
-            if self._peek().type == "SEMICOLON":
-                self._consume("SEMICOLON")
-
-        end = self._consume()
-        return Block(body=body, loc=nodeloc(start, end))
 
     def assignment(self) -> AstNode:
         name = self._consume()
@@ -126,7 +131,7 @@ class Parser:
             self._consume()
             type_token = self._consume()
         _equals_token = self._consume()
-        expr = self.expression()
+        expr = self.block()
 
         return Assign(
             target=Identifier(name=name.value, loc=name.loc),
@@ -186,7 +191,7 @@ class Parser:
             return_type = self._make_id(self._consume("ID"))
             self._consume("ASSIGN")
 
-        body = self.expression()
+        body = self.block()
 
         node = Function(
             name=name,
@@ -198,14 +203,14 @@ class Parser:
         return node
 
     def conditional(self) -> AstNode:
-        self._consume()
+        self._consume("IF")
         condition = self.expression()
-        self._consume()
-        then_branch = self.expression()
+        self._consume("THEN")
+        then_branch = self.block()
         else_branch = None
         if self._peek().type == "ELSE":
-            self._consume()
-            else_branch = self.expression()
+            self._consume("ELSE")
+            else_branch = self.block()
 
         return If(
             condition=condition,
@@ -352,7 +357,7 @@ class Parser:
         elif tok.type == "STRING":
             return String(value=tok.value, loc=tok.loc)
         elif tok.type == "LPAREN":
-            node = self.expression()
+            node = self.block()
             self._consume("RPAREN")
             return node
         else:
