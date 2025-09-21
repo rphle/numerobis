@@ -48,6 +48,11 @@ class Float(AstNode):
 
 
 @dataclass(kw_only=True)
+class String(AstNode):
+    value: str
+
+
+@dataclass(kw_only=True)
 class Operator(AstNode):
     name: str
 

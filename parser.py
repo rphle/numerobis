@@ -18,6 +18,7 @@ from astnodes import (
     Integer,
     Operator,
     Param,
+    String,
     UnaryOp,
     UnitDeclaration,
 )
@@ -336,6 +337,8 @@ class Parser:
             return Boolean(value=tok.value == "TRUE", loc=tok.loc)
         elif tok.type == "ID":
             return self._make_id(tok)
+        elif tok.type == "STRING":
+            return String(value=tok.value, loc=tok.loc)
         elif tok.type == "LPAREN":
             node = self.expression()
             assert self._consume().type == "RPAREN"
