@@ -94,6 +94,12 @@ class Assign(AstNode):
 
 
 @dataclass(kw_only=True)
+class UnitDeclaration(AstNode):
+    name: Identifier
+    unit: list[AstNode]
+
+
+@dataclass(kw_only=True)
 class Param(AstNode):
     name: Identifier
     type: Identifier | None

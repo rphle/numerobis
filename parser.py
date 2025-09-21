@@ -19,6 +19,7 @@ from astnodes import (
     Operator,
     Param,
     UnaryOp,
+    UnitDeclaration,
 )
 from classes import Location
 from lexer import Token
@@ -83,6 +84,9 @@ class Parser:
         if first.type == "ID" and self._peek(2).type in {"ASSIGN", "COLON"}:
             """Variable declaration"""
             return self.assignment()
+        elif first.type == "UNIT":
+            """Unit declaration"""
+            return self.unit_decl()
         elif (
             first.type == "ID"
             and self._peek(2).type == "LPAREN"
@@ -127,6 +131,18 @@ class Parser:
             if type_token
             else None,
             loc=nodeloc(name, expr),
+        )
+
+    def unit_decl(self) -> AstNode:
+        start = self._consume("UNIT")
+        name = self._consume("ID")
+        self._consume("ASSIGN")
+        unit = self.unit()
+
+        return UnitDeclaration(
+            name=self._make_id(name),
+            unit=unit,
+            loc=nodeloc(start, unit[-1]),
         )
 
     def function(self) -> AstNode:
@@ -401,7 +417,7 @@ class Parser:
         exponent = split[1] if len(split) > 1 else ""
         if "." in exponent:
             raise Exception(f"Invalid number literal: {token.value}")
-        if "." in number:
+        if "." in number or exponent.startswith("-"):
             return Float(value=number, exponent=exponent, unit=[], loc=token.loc)
         else:
             return Integer(value=number, exponent=exponent, unit=[], loc=token.loc)
