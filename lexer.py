@@ -3,7 +3,21 @@ import sys
 import lex as plylex
 from classes import Location, Token
 
-reserved = ("IF", "THEN", "ELSE", "TRUE", "FALSE", "OR", "AND", "NOT", "XOR", "UNIT")
+reserved = (
+    "IF",
+    "THEN",
+    "ELSE",
+    "FOR",
+    "IN",
+    "DO",
+    "TRUE",
+    "FALSE",
+    "OR",
+    "AND",
+    "NOT",
+    "XOR",
+    "UNIT",
+)
 
 tokens = reserved + (
     # Literals (identifier, integer, float, string, boolean)

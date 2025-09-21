@@ -105,6 +105,13 @@ class Assign(AstNode):
 
 
 @dataclass(kw_only=True)
+class ForLoop(AstNode):
+    var: Identifier
+    iterable: AstNode
+    body: AstNode
+
+
+@dataclass(kw_only=True)
 class UnitDeclaration(AstNode):
     name: Identifier
     unit: Unit

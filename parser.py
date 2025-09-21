@@ -12,6 +12,7 @@ from astnodes import (
     Compare,
     Conversion,
     Float,
+    ForLoop,
     Function,
     Identifier,
     If,
@@ -109,6 +110,9 @@ class Parser:
         elif first.type == "IF":
             """Conditional statement"""
             return self.conditional()
+        elif first.type == "FOR":
+            """For loop"""
+            return self.forloop()
         elif (
             first.type == "ID"
             and self._peek(2).type == "LPAREN"
@@ -142,8 +146,7 @@ class Parser:
             return self.conditional(expression=True)
         elif first.type == "AMPERSAND":
             """Reference unit namespace"""
-            self._consume("AMPERSAND")
-            return self.unit()
+            return self.unit(is_reference=True)
 
         return self.conversion()
 
@@ -246,6 +249,20 @@ class Parser:
             then_branch=then_branch,
             else_branch=else_branch,
             loc=nodeloc(condition, else_branch if else_branch else then_branch),
+        )
+
+    def forloop(self) -> AstNode:
+        self._consume("FOR")
+        var = self._make_id(self._consume("ID"))
+        self._consume("IN")
+        iterable = self.expression()
+        self._consume("DO")
+        body = self.block()
+        return ForLoop(
+            var=var,
+            iterable=iterable,
+            body=body,
+            loc=nodeloc(var, body),
         )
 
     def conversion(self) -> AstNode:
@@ -412,7 +429,7 @@ class Parser:
 
         if start.type == "AMPERSAND" or is_reference:
             self._consume("AMPERSAND")
-            start = self._peek()
+            start = self._peek(ignore_whitespace=False)
 
         if is_reference and start.type not in {"LPAREN", "ID"}:
             uSyntaxError(

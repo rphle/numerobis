@@ -1,0 +1,7 @@
+for i in interval(0, 10) do echo(i)
+
+i = 0
+for x in my_list do {
+  echo(x)
+  i = i + x
+}
