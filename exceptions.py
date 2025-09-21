@@ -8,13 +8,16 @@ from classes import Location, Token
 
 class uException:
     def __init__(
-        self, message, path: str = None, loc: AstNode | Token | Location = None
+        self,
+        message,
+        path: str | None = None,
+        loc: AstNode | Token | Location | None = None,
     ):
         if isinstance(loc, (AstNode, Token)):
             loc = loc.loc
         console = rich.console.Console()
         console.print(
-            f'[reset][dim]\[at "{path if path else "<unknown>"}"'
+            rf'[reset][dim]\[at "{path if path else "<unknown>"}"'
             + (f", line {loc.line}, column {loc.col}]" if loc else "]")
             + "[/dim]",
             # highlight=False,

@@ -33,3 +33,7 @@ unit N = kg*m/s^2
 unit x = m
 
 speed (-> km/h)
+
+speed = 5m/s -> km/h
+echo(speed (-> km/h))
+echo(&((m*kg)/(s^2)))

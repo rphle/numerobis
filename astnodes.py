@@ -22,6 +22,11 @@ class Identifier(AstNode):
 
 
 @dataclass(kw_only=True)
+class Unit(AstNode):
+    unit: list[AstNode]
+
+
+@dataclass(kw_only=True)
 class If(AstNode):
     condition: AstNode
     then_branch: AstNode
@@ -37,14 +42,14 @@ class Boolean(AstNode):
 class Integer(AstNode):
     value: str
     exponent: str
-    unit: list[AstNode]
+    unit: Unit | None
 
 
 @dataclass(kw_only=True)
 class Float(AstNode):
     value: str
     exponent: str
-    unit: list[AstNode]
+    unit: Unit | None
 
 
 @dataclass(kw_only=True)
@@ -88,7 +93,7 @@ class Compare(AstNode):
 class Conversion(AstNode):
     op: Operator
     value: AstNode
-    unit: list[AstNode]
+    unit: Unit
     display_only: bool = False
 
 
@@ -102,7 +107,7 @@ class Assign(AstNode):
 @dataclass(kw_only=True)
 class UnitDeclaration(AstNode):
     name: Identifier
-    unit: list[AstNode]
+    unit: Unit
 
 
 @dataclass(kw_only=True)

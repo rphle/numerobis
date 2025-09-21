@@ -20,6 +20,7 @@ from astnodes import (
     Param,
     String,
     UnaryOp,
+    Unit,
     UnitDeclaration,
 )
 from classes import Location
@@ -37,10 +38,12 @@ def nodeloc(*nodes: Token | AstNode):
 
 
 class Errors:
-    def __init__(self, path: str):
+    def __init__(self, path: str | None):
         self.path = path
 
-    def unexpected(self, tok: Token, value: str = None, loc: Location = None):
+    def unexpected(
+        self, tok: Token, value: str | None = None, loc: Location | None = None
+    ):
         uSyntaxError(
             f"Unexpected token: '{value or tok.value}'",
             path=self.path,
@@ -49,7 +52,7 @@ class Errors:
 
 
 class Parser:
-    def __init__(self, tokens: list[Token], path: str = None):
+    def __init__(self, tokens: list[Token], path: str | None = None):
         self.tokens = tokens
         self.path = path
         self.errors = Errors(path)
@@ -137,6 +140,10 @@ class Parser:
         if first.type == "IF":
             """Conditional expression"""
             return self.conditional(expression=True)
+        elif first.type == "AMPERSAND":
+            """Reference unit namespace"""
+            self._consume("AMPERSAND")
+            return self.unit()
 
         return self.conversion()
 
@@ -167,7 +174,7 @@ class Parser:
         return UnitDeclaration(
             name=self._make_id(name),
             unit=unit,
-            loc=nodeloc(start, unit[-1]),
+            loc=nodeloc(start, unit.unit[-1]),
         )
 
     def function(self) -> AstNode:
@@ -253,7 +260,7 @@ class Parser:
                 unit=unit,
                 display_only=display_only,
                 loc=nodeloc(
-                    node, unit[-1] if not display_only else self._consume("RPAREN")
+                    node, unit.unit[-1] if not display_only else self._consume("RPAREN")
                 ),
             )
         return node
@@ -382,8 +389,10 @@ class Parser:
             node = self.block()
             self._consume("RPAREN")
             return node
+        else:
+            raise SyntaxError(f"Unexpected token {tok}")
 
-    def unit(self):
+    def unit(self, is_reference: bool = False) -> Unit:
         """
         Parse units after a number. A unit either follows a number directly or is separated from it by a whitespace.
         Units are chains of identifiers and numbers, separated by operators.
@@ -401,9 +410,16 @@ class Parser:
             self._clear()
             start = self._peek()
 
-        if start.type == "AMPERSAND":
+        if start.type == "AMPERSAND" or is_reference:
             self._consume("AMPERSAND")
             start = self._peek()
+
+        if is_reference and start.type not in {"LPAREN", "ID"}:
+            uSyntaxError(
+                message="Expected unit",
+                path=self.path,
+                loc=Location(line=self.tok.loc.line, col=self.tok.loc.col + 1),
+            )
 
         if start.type in {"LPAREN", "ID"}:
             if start.type == "LPAREN":
@@ -450,7 +466,7 @@ class Parser:
             if parenthesized:
                 u = u[1:-1]
 
-        return u
+        return Unit(unit=u)
 
     def _make_id(self, tok: Token) -> Identifier:
         return Identifier(name=tok.value, loc=tok.loc)
@@ -460,16 +476,16 @@ class Parser:
 
     def _parse_number(self, token: Token) -> Float | Integer:
         split = token.value.lower().split("e")
-        number = split[0]
+        number = split[0].replace("_", "")
         exponent = split[1] if len(split) > 1 else ""
         if "." in exponent:
             uSyntaxError(
                 f"Invalid number literal: {token.value}", path=self.path, loc=token.loc
             )
         if "." in number or exponent.startswith("-"):
-            return Float(value=number, exponent=exponent, unit=[], loc=token.loc)
+            return Float(value=number, exponent=exponent, unit=None, loc=token.loc)
         else:
-            return Integer(value=number, exponent=exponent, unit=[], loc=token.loc)
+            return Integer(value=number, exponent=exponent, unit=None, loc=token.loc)
 
     def _check_function(self, start: int = 3):
         i = start

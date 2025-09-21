@@ -13,7 +13,7 @@ console = Console()
 
 snapshots = {}
 
-tests = os.listdir("tests")
+tests = sorted(os.listdir("tests"))
 if len(sys.argv) > 1:
     tests = [test for test in tests if test.startswith(sys.argv[1])]
 
