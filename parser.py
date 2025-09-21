@@ -193,21 +193,22 @@ class Parser:
             loc=nodeloc(condition, else_branch if else_branch else then_branch),
         )
 
-    def logic_or(self) -> AstNode:
-        node = self.logic_and()
-        while self.tokens and self._peek().type == "OR":
+    def _logic_chain(self, subrule, op_type: str) -> AstNode:
+        node = subrule()
+        while self.tokens and self._peek().type == op_type:
             op = self._make_op(self._consume())
-            right = self.logic_and()
+            right = subrule()
             node = BoolOp(op=op, left=node, right=right, loc=nodeloc(node, right))
         return node
 
+    def logic_or(self) -> AstNode:
+        return self._logic_chain(self.logic_xor, "OR")
+
+    def logic_xor(self) -> AstNode:
+        return self._logic_chain(self.logic_and, "XOR")
+
     def logic_and(self) -> AstNode:
-        node = self.logic_not()
-        while self.tokens and self._peek().type == "AND":
-            op = self._make_op(self._consume())
-            right = self.logic_not()
-            node = BoolOp(op=op, left=node, right=right, loc=nodeloc(node, right))
-        return node
+        return self._logic_chain(self.logic_not, "AND")
 
     def logic_not(self) -> AstNode:
         if self._peek().type == "NOT":

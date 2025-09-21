@@ -10,7 +10,7 @@ fn fun(x: haha, y: beep, z, d=123+0): boop = {
 }
 if true then beep else boop
 
-if true then {
+if true xor false then {
     beep
     echo(1,a=2)
 } else {
