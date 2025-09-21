@@ -125,6 +125,8 @@ lexer = plylex.lex()
 
 def lex(source: str, debug=False) -> list[Token]:
     output: list[Token] = []
+    lexer.lineno = 1
+    lexer.lexpos = 0
     lexer.input(source)
 
     last_newline_pos = [0, 0]
@@ -142,15 +144,17 @@ def lex(source: str, debug=False) -> list[Token]:
             value=tok.value,
             loc=Location(
                 line=tok.lineno,
-                col=tok.lexpos - last_newline_pos[-1],
+                col=tok.lexpos - last_newline_pos[-1] + 1,
                 start=tok.lexpos,
                 end=tok.lexpos + len(tok.value),
             ),
         )
         if debug:
             print(token)
-            print("=" * 80)
 
         output.append(token)
+
+    if debug:
+        print("=" * 80)
 
     return output
