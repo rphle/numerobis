@@ -90,6 +90,9 @@ class Parser:
         elif first.type == "UNIT":
             """Unit declaration"""
             return self.unit_decl()
+        elif first.type == "IF":
+            """Conditional statement"""
+            return self.conditional()
         elif (
             first.type == "ID"
             and self._peek(2).type == "LPAREN"
@@ -119,8 +122,8 @@ class Parser:
     def expression(self) -> AstNode:
         first = self._peek()
         if first.type == "IF":
-            """Conditional"""
-            return self.conditional()
+            """Conditional expression"""
+            return self.conditional(expression=True)
 
         return self.conversion()
 
@@ -202,15 +205,17 @@ class Parser:
         )
         return node
 
-    def conditional(self) -> AstNode:
+    def conditional(self, expression: bool = False) -> AstNode:
         self._consume("IF")
         condition = self.expression()
         self._consume("THEN")
-        then_branch = self.block()
+        then_branch = self.block() if not expression else self.expression()
         else_branch = None
         if self._peek().type == "ELSE":
             self._consume("ELSE")
-            else_branch = self.block()
+            else_branch = self.block() if not expression else self.expression()
+        elif expression:
+            raise SyntaxError("Conditional expression must have an else branch")
 
         return If(
             condition=condition,

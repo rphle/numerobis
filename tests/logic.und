@@ -18,7 +18,7 @@ else
 
 if user_input == 42 then
   {
-    win = true
+    win = (if user_input == 42 then true else false)
     echo("you win!")
   }
 else
