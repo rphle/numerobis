@@ -58,6 +58,11 @@ class String(AstNode):
 
 
 @dataclass(kw_only=True)
+class List(AstNode):
+    items: list[AstNode]
+
+
+@dataclass(kw_only=True)
 class Operator(AstNode):
     name: str
 

@@ -17,6 +17,7 @@ from astnodes import (
     Identifier,
     If,
     Integer,
+    List,
     Operator,
     Param,
     String,
@@ -151,6 +152,9 @@ class Parser:
         elif first.type == "AMPERSAND":
             """Reference unit namespace"""
             return self.unit(is_reference=True)
+        elif first.type == "LBRACKET":
+            """List literal"""
+            return self.list()
 
         return self.conversion()
 
@@ -406,24 +410,39 @@ class Parser:
             node = Call(callee=node, args=args, loc=nodeloc(node, end))
         return node
 
+    def list(self) -> AstNode:
+        start = self._consume("LBRACKET")
+        items = []
+        while self._peek().type != "RBRACKET":
+            item = self.expression()
+            items.append(item)
+            if self._peek().type == "RBRACKET":
+                break
+            self._consume("COMMA")
+
+        end = self._consume("RBRACKET")
+        node = List(items=items, loc=nodeloc(start, end))
+        return node
+
     def atom(self) -> AstNode:
         tok = self._consume("NUMBER", "TRUE", "FALSE", "ID", "STRING", "LPAREN")
-        if tok.type == "NUMBER":
-            num = self._parse_number(tok)
-            num.unit = self.unit()
-            return num
-        elif tok.type in {"TRUE", "FALSE"}:
-            return Boolean(value=tok.value == "TRUE", loc=tok.loc)
-        elif tok.type == "ID":
-            return self._make_id(tok)
-        elif tok.type == "STRING":
-            return String(value=tok.value, loc=tok.loc)
-        elif tok.type == "LPAREN":
-            node = self.block()
-            self._consume("RPAREN")
-            return node
-        else:
-            raise SyntaxError(f"Unexpected token {tok}")
+        match tok.type:
+            case "NUMBER":
+                num = self._parse_number(tok)
+                num.unit = self.unit()
+                return num
+            case "TRUE" | "FALSE":
+                return Boolean(value=tok.value == "TRUE", loc=tok.loc)
+            case "ID":
+                return self._make_id(tok)
+            case "STRING":
+                return String(value=tok.value, loc=tok.loc)
+            case "LPAREN":
+                node = self.block()
+                self._consume("RPAREN")
+                return node
+            case _:
+                raise SyntaxError(f"Unexpected token {tok}")
 
     def unit(self, is_reference: bool = False) -> Unit:
         """
