@@ -21,7 +21,7 @@ for test in tests:
     source = open(f"tests/{test}", "r").read()
 
     lexed = lex(source, debug=False)
-    parser = Parser(lexed)
+    parser = Parser(lexed, path=test)
     try:
         parsed = parser.start()
     except Exception as e:

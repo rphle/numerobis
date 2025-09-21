@@ -23,6 +23,7 @@ from astnodes import (
     UnitDeclaration,
 )
 from classes import Location
+from exceptions import uSyntaxError
 from lexer import Token
 
 
@@ -31,25 +32,37 @@ def nodeloc(*nodes: Token | AstNode):
         line=nodes[0].loc.line,
         col=nodes[0].loc.col,
         start=nodes[0].loc.start,
-        end=nodes[-1].loc.end,
+        span=(nodes[-1].loc.start - nodes[0].loc.start) + nodes[-1].loc.span,
     )
 
 
+class Errors:
+    def __init__(self, path: str):
+        self.path = path
+
+    def unexpected(self, tok: Token, value: str = None, loc: Location = None):
+        uSyntaxError(
+            f"Unexpected token: '{value or tok.value}'",
+            path=self.path,
+            loc=loc or tok.loc,
+        )
+
+
 class Parser:
-    def __init__(self, tokens: list[Token]):
+    def __init__(self, tokens: list[Token], path: str = None):
         self.tokens = tokens
+        self.path = path
+        self.errors = Errors(path)
 
     def _consume(self, *types: str) -> Token:
         if self._peek().type == "EOF":
-            raise Exception("Unexpected EOF")
+            uSyntaxError("Unexpected EOF", path=self.path)
 
         self.tok = self.tokens.pop(0)
         while self.tok.type == "WHITESPACE":
             self.tok = self.tokens.pop(0)
         if types and (self.tok.type not in types):
-            raise SyntaxError(
-                f"Unexpected token {self.tok} at line {self.tok.loc.line}, column {self.tok.loc.col}"
-            )
+            self.errors.unexpected(self.tok)
         return self.tok
 
     def _clear(self):
@@ -206,7 +219,7 @@ class Parser:
         return node
 
     def conditional(self, expression: bool = False) -> AstNode:
-        self._consume("IF")
+        _if = self._consume("IF")
         condition = self.expression()
         self._consume("THEN")
         then_branch = self.block() if not expression else self.expression()
@@ -215,7 +228,11 @@ class Parser:
             self._consume("ELSE")
             else_branch = self.block() if not expression else self.expression()
         elif expression:
-            raise SyntaxError("Conditional expression must have an else branch")
+            uSyntaxError(
+                "Conditional expression must have an else branch",
+                path=self.path,
+                loc=nodeloc(_if, then_branch),
+            )
 
         return If(
             condition=condition,
@@ -350,7 +367,7 @@ class Parser:
         return node
 
     def atom(self) -> AstNode:
-        tok = self._consume()
+        tok = self._consume("NUMBER", "TRUE", "FALSE", "ID", "STRING", "LPAREN")
         if tok.type == "NUMBER":
             num = self._parse_number(tok)
             num.unit = self.unit()
@@ -365,8 +382,6 @@ class Parser:
             node = self.block()
             self._consume("RPAREN")
             return node
-        else:
-            raise Exception(f"Unexpected token: {tok.type}")
 
     def unit(self):
         """
@@ -398,7 +413,13 @@ class Parser:
                 match tok.type:
                     case "ID":
                         if tok.value.startswith("_"):
-                            raise Exception(f"Unexpected token: {tok.type}")
+                            self.errors.unexpected(
+                                self.tok,
+                                value="_",
+                                loc=Location(
+                                    line=tok.loc.line, col=tok.loc.col, span=1
+                                ),
+                            )
                         if len(u) > 0 and isinstance(u[-1], (Integer, Float)):
                             u.append(Operator(name="times"))
                         u.append(self._make_id(self._consume()))
@@ -406,14 +427,14 @@ class Parser:
                         u.append(self._parse_number(self._consume()))
                     case "DIVIDE" | "TIMES" | "POWER":
                         if len(u) == 0 or isinstance(u[-1], Operator):
-                            raise Exception(f"Unexpected token: {tok.type}")
+                            self.errors.unexpected(tok)
                         u.append(self._make_op(self._consume()))
                     case "LPAREN" | "RPAREN":
                         if tok.type == "RPAREN":
                             if balance == 0:
                                 break
                             elif len(u) > 0 and isinstance(u[-1], Operator):
-                                raise Exception(f"Unexpected token: {tok.type}")
+                                self.errors.unexpected(tok)
 
                         balance += 1 if tok.type == "LPAREN" else -1
                         u.append(self._consume("LPAREN", "RPAREN"))
@@ -422,9 +443,9 @@ class Parser:
                     case "EOF":
                         if balance == 0:
                             break
-                        raise Exception(f"Unexpected token: {tok.type}")
+                        self.errors.unexpected(tok)
                     case _:
-                        raise Exception(f"Unexpected token: {tok.type}")
+                        self.errors.unexpected(tok)
 
             if parenthesized:
                 u = u[1:-1]
@@ -442,7 +463,9 @@ class Parser:
         number = split[0]
         exponent = split[1] if len(split) > 1 else ""
         if "." in exponent:
-            raise Exception(f"Invalid number literal: {token.value}")
+            uSyntaxError(
+                f"Invalid number literal: {token.value}", path=self.path, loc=token.loc
+            )
         if "." in number or exponent.startswith("-"):
             return Float(value=number, exponent=exponent, unit=[], loc=token.loc)
         else:
@@ -459,5 +482,5 @@ class Parser:
             elif tok in ["LPAREN", "RPAREN"]:
                 balance += 1 if tok == "LPAREN" else -1
             elif tok == "EOF":
-                raise Exception("Unexpected EOF")
+                uSyntaxError("Unexpected EOF", path=self.path)
             i += 1

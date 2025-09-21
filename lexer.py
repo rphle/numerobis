@@ -146,7 +146,7 @@ def lex(source: str, debug=False) -> list[Token]:
                 line=tok.lineno,
                 col=tok.lexpos - last_newline_pos[-1] + 1,
                 start=tok.lexpos,
-                end=tok.lexpos + len(tok.value),
+                span=len(tok.value),
             ),
         )
         if debug:

@@ -6,7 +6,7 @@ class Location:
     line: int = -1
     col: int = -1
     start: int = -1
-    end: int = -1
+    span: int = 0
 
 
 @dataclass
