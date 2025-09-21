@@ -1,3 +1,8 @@
+5 + 3 * 2
+10 - 4 / 2
+2^3 + 1
+2 + 3 * 4^2
+
 f()()
 12-1e2
 x: lol = 1
@@ -17,6 +22,12 @@ if true xor false then {
     boop
 }
 
+if 5 > 3 then 1 else 0;
+if 10 >= 10 then 1 else 0;
+if true and false then 1 else 0;
+if true or false then 1 else 0;
+if false and (1/0) then 1 else 0;
+
 f(x) = 1;
 
 fun(a=(if true then 1 else 2))();
@@ -35,7 +46,7 @@ fun(a=(if true then 1 else 2))();
 
 # Logical NOT
 not x      # # a# complicated # comm\ent
-not not x;
+not ! x;
 
 
 # Units

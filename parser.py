@@ -245,19 +245,25 @@ class Parser:
         else:
             return node
 
-    def arith(self) -> AstNode:
-        node = self.term()
-        while self.tokens and self._peek().type in {"PLUS", "MINUS"}:
+    def _bin_chain(self, subrule, ops: set[str]) -> AstNode:
+        node = subrule()
+        while self.tokens and self._peek().type in ops:
             op = self._make_op(self._consume())
-            right = self.term()
+            right = subrule()
             node = BinOp(op=op, left=node, right=right, loc=nodeloc(node, right))
         return node
 
+    def arith(self) -> AstNode:
+        return self._bin_chain(self.term, {"PLUS", "MINUS"})
+
     def term(self) -> AstNode:
+        return self._bin_chain(self.power, {"TIMES", "DIVIDE", "INTDIVIDE", "MOD"})
+
+    def power(self) -> AstNode:
         node = self.unary()
-        while self.tokens and self._peek().type in {"TIMES", "DIVIDE", "MOD", "POWER"}:
+        if self.tokens and self._peek().type == "POWER":
             op = self._make_op(self._consume())
-            right = self.unary()
+            right = self.power()  # right-associative
             node = BinOp(op=op, left=node, right=right, loc=nodeloc(node, right))
         return node
 
