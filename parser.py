@@ -214,9 +214,18 @@ class Parser:
     def conversion(self) -> AstNode:
         node = self.logic_or()
         if len(self.tokens) >= 2 and self._peek().type == "CONVERSION":
-            op = self._make_op(self._consume())
+            op = self._make_op(self._consume("CONVERSION"))
+            display_only = self.tok.value.startswith("(")
             unit = self.unit()
-            node = Conversion(op=op, value=node, unit=unit, loc=nodeloc(node, unit[-1]))
+            node = Conversion(
+                op=op,
+                value=node,
+                unit=unit,
+                display_only=display_only,
+                loc=nodeloc(
+                    node, unit[-1] if not display_only else self._consume("RPAREN")
+                ),
+            )
         return node
 
     def _logic_chain(self, subrule, op_type: str) -> AstNode:
@@ -341,7 +350,7 @@ class Parser:
             return String(value=tok.value, loc=tok.loc)
         elif tok.type == "LPAREN":
             node = self.expression()
-            assert self._consume().type == "RPAREN"
+            self._consume("RPAREN")
             return node
         else:
             raise Exception(f"Unexpected token: {tok.type}")
@@ -387,10 +396,11 @@ class Parser:
                             raise Exception(f"Unexpected token: {tok.type}")
                         u.append(self._make_op(self._consume()))
                     case "LPAREN" | "RPAREN":
-                        if tok.type == "RPAREN" and (
-                            balance == 0 or (len(u) > 0 and isinstance(u[-1], Operator))
-                        ):
-                            raise Exception(f"Unexpected token: {tok.type}")
+                        if tok.type == "RPAREN":
+                            if balance == 0:
+                                break
+                            elif len(u) > 0 and isinstance(u[-1], Operator):
+                                raise Exception(f"Unexpected token: {tok.type}")
 
                         balance += 1 if tok.type == "LPAREN" else -1
                         u.append(self._consume("LPAREN", "RPAREN"))

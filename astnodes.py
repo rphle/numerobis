@@ -89,6 +89,7 @@ class Conversion(AstNode):
     op: Operator
     value: AstNode
     unit: list[AstNode]
+    display_only: bool = False
 
 
 @dataclass(kw_only=True)

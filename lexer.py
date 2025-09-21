@@ -69,7 +69,7 @@ t_LE = r"<="
 t_GE = r">="
 t_EQ = r"=="
 t_NE = r"!="
-t_CONVERSION = r"->"
+t_CONVERSION = r"\(?->"
 
 # Assignment operators
 t_ASSIGN = r"="
