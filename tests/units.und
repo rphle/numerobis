@@ -36,4 +36,4 @@ speed (-> km/h)
 
 speed = 5m/s -> km/h
 echo(speed (-> km/h))
-echo(&((m*kg)/(s^2)))
+echo(@((m*kg)/(s^2)))

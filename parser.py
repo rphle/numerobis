@@ -167,7 +167,7 @@ class Parser:
         if first.type == "IF":
             """Conditional expression"""
             return self.conditional(expression=True)
-        elif first.type == "AMPERSAND":
+        elif first.type == "AT":
             """Reference unit namespace"""
             return self.unit(is_reference=True)
 
@@ -529,7 +529,7 @@ class Parser:
         Units are chains of identifiers and numbers, separated by operators.
         An identifier following a number is considered a multiplication.
         The allowed operators are multiplication (*), division (/) and exponentiation (^).
-        A unit may start with an ampersand (&).
+        A unit may start with an AT (&).
         If the entire unit is enclosed in parentheses, it ends as soon as the closing parenthesis is encountered.
         """
         u = []
@@ -541,8 +541,8 @@ class Parser:
             self._clear()
             start = self._peek()
 
-        if start.type == "AMPERSAND" or is_reference:
-            self._consume("AMPERSAND")
+        if start.type == "AT" or is_reference:
+            self._consume("AT")
             start = self._peek(ignore_whitespace=False)
 
         if is_reference and start.type not in {"LPAREN", "ID"}:

@@ -57,7 +57,7 @@ tokens = reserved + (
     "PERIOD",
     "SEMICOLON",
     "COLON",
-    "AMPERSAND",
+    "AT",
     # Hacks
     "WHITESPACE",
 )
@@ -105,7 +105,7 @@ t_COMMA = r","
 t_PERIOD = r"\."
 t_SEMICOLON = r";"
 t_COLON = r":"
-t_AMPERSAND = r"&"
+t_AT = r"@"
 
 t_WHITESPACE = r"\s+"
 
