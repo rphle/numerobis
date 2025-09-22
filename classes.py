@@ -60,7 +60,7 @@ class ParserTemplate:
                 EOF,
             )
         else:
-            return self.tokens[n - 1] if self.tokens else EOF
+            return self.tokens[n - 1] if len(self.tokens) >= n else EOF
 
     def _make_id(self, tok: Token) -> Identifier:
         return Identifier(name=tok.value, loc=tok.loc)
