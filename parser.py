@@ -21,6 +21,7 @@ from astnodes import (
     Operator,
     Param,
     String,
+    Tuple,
     UnaryOp,
     Unit,
     UnitDeclaration,
@@ -60,12 +61,12 @@ class Parser:
         self.path = path
         self.errors = Errors(path)
 
-    def _consume(self, *types: str) -> Token:
+    def _consume(self, *types: str, ignore_whitespace=True) -> Token:
         if self._peek().type == "EOF":
             uSyntaxError("Unexpected EOF", path=self.path)
 
         self.tok = self.tokens.pop(0)
-        while self.tok.type == "WHITESPACE":
+        while ignore_whitespace and self.tok.type == "WHITESPACE":
             self.tok = self.tokens.pop(0)
         if types and (self.tok.type not in types):
             self.errors.unexpected(self.tok)
@@ -152,9 +153,6 @@ class Parser:
         elif first.type == "AMPERSAND":
             """Reference unit namespace"""
             return self.unit(is_reference=True)
-        elif first.type == "LBRACKET":
-            """List literal"""
-            return self.list()
 
         return self.conversion()
 
@@ -386,7 +384,7 @@ class Parser:
 
     def call(self) -> AstNode:
         node = self.atom()
-        while self._peek().type == "LPAREN":
+        while self._peek(ignore_whitespace=False).type == "LPAREN":
             self._consume("LPAREN")
             args = []
             while self._peek().type != "RPAREN":
@@ -411,7 +409,7 @@ class Parser:
         return node
 
     def list(self) -> AstNode:
-        start = self._consume("LBRACKET")
+        start = self.tok
         items = []
         while self._peek().type != "RBRACKET":
             item = self.expression()
@@ -421,11 +419,34 @@ class Parser:
             self._consume("COMMA")
 
         end = self._consume("RBRACKET")
-        node = List(items=items, loc=nodeloc(start, end))
-        return node
+        return List(items=items, loc=nodeloc(start, end))
+
+    def tuple(self) -> AstNode:
+        """Tuple literal `([...])` or simple `()`"""
+        start = self.tok
+        self._consume("LBRACKET")
+
+        items = []
+        while self._peek().type != "RBRACKET":
+            item = self.expression()
+
+            items.append(item)
+            if self._peek().type == "RBRACKET":
+                break
+            self._consume("COMMA")
+
+        self._consume("RBRACKET")
+        if self._peek(ignore_whitespace=False).type == "WHITESPACE":
+            self._consume("RPAREN")
+            return List(items=items, loc=nodeloc(start, self.tok))
+
+        end = self._consume("RPAREN")
+        return Tuple(items=items, loc=nodeloc(start, end))
 
     def atom(self) -> AstNode:
-        tok = self._consume("NUMBER", "TRUE", "FALSE", "ID", "STRING", "LPAREN")
+        tok = self._consume(
+            "NUMBER", "TRUE", "FALSE", "ID", "STRING", "LBRACKET", "LPAREN"
+        )
         match tok.type:
             case "NUMBER":
                 num = self._parse_number(tok)
@@ -437,10 +458,16 @@ class Parser:
                 return self._make_id(tok)
             case "STRING":
                 return String(value=tok.value, loc=tok.loc)
+            case "LBRACKET":
+                """List literal"""
+                return self.list()
             case "LPAREN":
-                node = self.block()
-                self._consume("RPAREN")
-                return node
+                if self._peek(ignore_whitespace=False).type != "LBRACKET":
+                    node = self.block()
+                    self._consume("RPAREN")
+                    return node
+                else:
+                    return self.tuple()
             case _:
                 raise SyntaxError(f"Unexpected token {tok}")
 

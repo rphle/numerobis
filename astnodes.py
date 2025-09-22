@@ -63,6 +63,11 @@ class List(AstNode):
 
 
 @dataclass(kw_only=True)
+class Tuple(AstNode):
+    items: list[AstNode]
+
+
+@dataclass(kw_only=True)
 class Operator(AstNode):
     name: str
 
