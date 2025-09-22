@@ -7,9 +7,11 @@ from astnodes import (
     Block,
     Boolean,
     BoolOp,
+    Break,
     Call,
     CallArg,
     Compare,
+    Continue,
     Conversion,
     Float,
     ForLoop,
@@ -21,6 +23,7 @@ from astnodes import (
     List,
     Operator,
     Param,
+    Return,
     Slice,
     String,
     Tuple,
@@ -121,6 +124,14 @@ class Parser:
         elif first.type == "WHILE":
             """While loop"""
             return self.whileloop()
+        elif first.type == "BREAK":
+            """Break statement"""
+            self._consume("BREAK")
+            return Break(loc=self.tok.loc)
+        elif first.type == "CONTINUE":
+            """Continue statement"""
+            self._consume("CONTINUE")
+            return Continue(loc=self.tok.loc)
         elif (
             first.type == "ID"
             and self._peek(2).type == "LPAREN"
@@ -144,6 +155,10 @@ class Parser:
 
             end = self._consume("RBRACE")
             return Block(body=body, loc=nodeloc(start, end))
+        elif self._peek().type == "RETURN":
+            """Return statement"""
+            ret = self._consume("RETURN")
+            return Return(value=self.expression(), loc=ret.loc)
 
         return self.expression()
 

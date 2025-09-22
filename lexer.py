@@ -18,6 +18,9 @@ reserved = (
     "NOT",
     "XOR",
     "UNIT",
+    "BREAK",
+    "CONTINUE",
+    "RETURN",
 )
 
 tokens = reserved + (

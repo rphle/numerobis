@@ -171,3 +171,18 @@ class Slice(AstNode):
     start: AstNode
     stop: AstNode | None
     step: AstNode
+
+
+@dataclass(kw_only=True)
+class Break(AstNode):
+    pass
+
+
+@dataclass(kw_only=True)
+class Continue(AstNode):
+    pass
+
+
+@dataclass(kw_only=True)
+class Return(AstNode):
+    value: AstNode | None
