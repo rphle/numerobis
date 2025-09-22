@@ -158,3 +158,16 @@ class CallArg(AstNode):
 class Call(AstNode):
     callee: AstNode
     args: list[CallArg]
+
+
+@dataclass(kw_only=True)
+class Index(AstNode):
+    iterable: AstNode
+    index: AstNode
+
+
+@dataclass(kw_only=True)
+class Slice(AstNode):
+    start: AstNode
+    stop: AstNode | None
+    step: AstNode

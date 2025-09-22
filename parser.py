@@ -16,10 +16,12 @@ from astnodes import (
     Function,
     Identifier,
     If,
+    Index,
     Integer,
     List,
     Operator,
     Param,
+    Slice,
     String,
     Tuple,
     UnaryOp,
@@ -380,7 +382,42 @@ class Parser:
             else:
                 return operand
 
-        return self.call()
+        return self.index()
+
+    def index(self) -> AstNode:
+        node = self.call()
+        if self._peek(ignore_whitespace=False).type == "LBRACKET":
+            self._consume("LBRACKET")
+
+            index = []
+            while True:
+                if self._peek().type == "RBRACKET" or len(index) >= 3:
+                    break
+
+                if self._peek().type == "COLON":
+                    index.append(None)
+                    self._consume("COLON")
+                else:
+                    index.append(self.expression())
+
+                    if len(index) < 2 and self._peek().type == "COLON":
+                        self._consume("COLON")
+                    else:
+                        pass
+
+            end = self._consume("RBRACKET")
+
+            if len(index) == 1 and index[0] is not None:
+                index = index[0]
+            else:
+                index += [None] * (3 - len(index))
+                index = Slice(
+                    start=index[0],
+                    stop=index[1],
+                    step=index[2],
+                )
+            node = Index(iterable=node, index=index, loc=nodeloc(node, end))
+        return node
 
     def call(self) -> AstNode:
         node = self.atom()
