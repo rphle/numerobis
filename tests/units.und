@@ -1,5 +1,5 @@
 # Units
-8(5m/s^2)
+8(5*m / s^2)
 4kg*m/s^2
 1N*m
 1W/m^2
@@ -37,3 +37,8 @@ speed (-> km/h)
 speed = 5m/s -> km/h
 echo(speed (-> km/h))
 echo(@((m*kg)/(s^2)))
+
+5 (kg * m)
+
+unit dollar(year=2025) = base_dollar * inflation(year)
+unit length(m, factor=1) = base_length * m * factor

@@ -1,5 +1,3 @@
-from itertools import islice
-
 from astnodes import (
     Assign,
     AstNode,
@@ -13,87 +11,32 @@ from astnodes import (
     Compare,
     Continue,
     Conversion,
-    Float,
     ForLoop,
     Function,
     Identifier,
     If,
     Index,
-    Integer,
     List,
-    Operator,
+    Location,
     Param,
     Return,
     Slice,
     String,
+    Token,
     Tuple,
     UnaryOp,
     Unit,
     UnitDeclaration,
     WhileLoop,
 )
-from classes import Location
+from classes import ParserTemplate, nodeloc
 from exceptions import uSyntaxError
-from lexer import Token
+from unitparser import UnitParser
 
 
-def nodeloc(*nodes: Token | AstNode):
-    return Location(
-        line=nodes[0].loc.line,
-        col=nodes[0].loc.col,
-        start=nodes[0].loc.start,
-        span=(nodes[-1].loc.start - nodes[0].loc.start) + nodes[-1].loc.span,
-    )
-
-
-class Errors:
-    def __init__(self, path: str | None):
-        self.path = path
-
-    def unexpected(
-        self, tok: Token, value: str | None = None, loc: Location | None = None
-    ):
-        uSyntaxError(
-            f"Unexpected token: '{value or tok.value}'",
-            path=self.path,
-            loc=loc or tok.loc,
-        )
-
-
-class Parser:
+class Parser(ParserTemplate):
     def __init__(self, tokens: list[Token], path: str | None = None):
-        self.tokens = tokens
-        self.path = path
-        self.errors = Errors(path)
-
-    def _consume(self, *types: str, ignore_whitespace=True) -> Token:
-        if self._peek().type == "EOF":
-            uSyntaxError("Unexpected EOF", path=self.path)
-
-        self.tok = self.tokens.pop(0)
-        while ignore_whitespace and self.tok.type == "WHITESPACE":
-            self.tok = self.tokens.pop(0)
-        if types and (self.tok.type not in types):
-            self.errors.unexpected(self.tok)
-        return self.tok
-
-    def _clear(self):
-        while self._peek(ignore_whitespace=False).type == "WHITESPACE":
-            self.tokens.pop(0)
-
-    def _peek(self, n: int = 1, ignore_whitespace=True) -> Token:
-        EOF = Token(type="EOF", value="EOF", loc=Location())
-        if ignore_whitespace:
-            return next(
-                islice(
-                    (tok for tok in self.tokens if tok.type != "WHITESPACE"),
-                    n - 1,
-                    n,
-                ),
-                EOF,
-            )
-        else:
-            return self.tokens[n - 1] if self.tokens else EOF
+        super().__init__(tokens=tokens, path=path)
 
     def start(self) -> list[AstNode]:
         statements = []
@@ -169,7 +112,14 @@ class Parser:
             return self.conditional(expression=True)
         elif first.type == "AT":
             """Reference unit namespace"""
-            return self.unit(is_reference=True)
+            if self._peek(2, ignore_whitespace=False).type not in {"LPAREN", "ID"}:
+                uSyntaxError(
+                    message="Expected unit",
+                    path=self.path,
+                    loc=Location(line=self.tok.loc.line, col=self.tok.loc.col + 1),
+                )
+            self._consume("AT")
+            return self.unit()
 
         return self.conversion()
 
@@ -194,13 +144,42 @@ class Parser:
     def unit_decl(self) -> AstNode:
         start = self._consume("UNIT")
         name = self._consume("ID")
+
+        params = []
+        if self._peek().type == "LPAREN":
+            """
+            Parse unit parameters
+            """
+            self._consume("LPAREN")
+            while self._peek().type != "RPAREN":
+                p: dict[str, AstNode] = {}
+                p["name"] = self._make_id(self._consume("ID"))
+                if self._peek().type == "ASSIGN":
+                    self._consume("ASSIGN")
+                    p["default"] = self._parse_number(self._consume("NUMBER"))
+                params.append(
+                    Param(
+                        name=p["name"],
+                        default=p.get("default"),
+                        type=None,
+                        loc=nodeloc(p["name"], p.get("default", p["name"])),
+                    )
+                )
+
+                if self._peek().type == "COMMA":
+                    self._consume("COMMA")
+
+            self._consume("RPAREN")
+
         self._consume("ASSIGN")
-        unit = self.unit()
+        self._clear()
+        unit = self.unit(parenthesized=True)
 
         return UnitDeclaration(
             name=self._make_id(name),
-            unit=unit,
-            loc=nodeloc(start, unit.unit[-1]),
+            params=params,
+            value=unit,
+            loc=nodeloc(start, unit),
         )
 
     def function(self) -> AstNode:
@@ -311,7 +290,7 @@ class Parser:
                 unit=unit,
                 display_only=display_only,
                 loc=nodeloc(
-                    node, unit.unit[-1] if not display_only else self._consume("RPAREN")
+                    node, unit if not display_only else self._consume("RPAREN")
                 ),
             )
         return node
@@ -495,6 +474,14 @@ class Parser:
         end = self._consume("RPAREN")
         return Tuple(items=items, loc=nodeloc(start, end))
 
+    def unit(self, parenthesized: bool = False) -> Unit:
+        parser = UnitParser(
+            tokens=self.tokens, path=self.path, parenthesized=parenthesized
+        )
+        unit = parser.start()
+        self.tokens = parser.tokens
+        return unit
+
     def atom(self) -> AstNode:
         tok = self._consume(
             "NUMBER", "TRUE", "FALSE", "ID", "STRING", "LBRACKET", "LPAREN"
@@ -502,7 +489,11 @@ class Parser:
         match tok.type:
             case "NUMBER":
                 num = self._parse_number(tok)
-                num.unit = self.unit()
+                if self._peek(ignore_whitespace=False).type in {"LPAREN", "ID"} or (
+                    self._peek(2, ignore_whitespace=False).type in {"LPAREN", "ID"}
+                    and self._peek(ignore_whitespace=False).value == " "
+                ):
+                    num.unit = self.unit()
                 return num
             case "TRUE" | "FALSE":
                 return Boolean(value=tok.value == "TRUE", loc=tok.loc)
@@ -522,101 +513,6 @@ class Parser:
                     return self.tuple()
             case _:
                 raise SyntaxError(f"Unexpected token {tok}")
-
-    def unit(self, is_reference: bool = False) -> Unit:
-        """
-        Parse units after a number. A unit either follows a number directly or is separated from it by a whitespace.
-        Units are chains of identifiers and numbers, separated by operators.
-        An identifier following a number is considered a multiplication.
-        The allowed operators are multiplication (*), division (/) and exponentiation (^).
-        A unit may start with an AT (&).
-        If the entire unit is enclosed in parentheses, it ends as soon as the closing parenthesis is encountered.
-        """
-        u = []
-        parenthesized = False
-        balance = 0
-        start = self._peek(ignore_whitespace=False)
-
-        if start.type == "WHITESPACE" and start.value == " ":
-            self._clear()
-            start = self._peek()
-
-        if start.type == "AT" or is_reference:
-            self._consume("AT")
-            start = self._peek(ignore_whitespace=False)
-
-        if is_reference and start.type not in {"LPAREN", "ID"}:
-            uSyntaxError(
-                message="Expected unit",
-                path=self.path,
-                loc=Location(line=self.tok.loc.line, col=self.tok.loc.col + 1),
-            )
-
-        if start.type in {"LPAREN", "ID"}:
-            if start.type == "LPAREN":
-                parenthesized = True
-
-            while (tok := self._peek(ignore_whitespace=False)).type != "WHITESPACE":
-                match tok.type:
-                    case "ID":
-                        if tok.value.startswith("_"):
-                            self.errors.unexpected(
-                                self.tok,
-                                value="_",
-                                loc=Location(
-                                    line=tok.loc.line, col=tok.loc.col, span=1
-                                ),
-                            )
-                        if len(u) > 0 and isinstance(u[-1], (Integer, Float)):
-                            u.append(Operator(name="times"))
-                        u.append(self._make_id(self._consume()))
-                    case "NUMBER":
-                        u.append(self._parse_number(self._consume()))
-                    case "DIVIDE" | "TIMES" | "POWER":
-                        if len(u) == 0 or isinstance(u[-1], Operator):
-                            self.errors.unexpected(tok)
-                        u.append(self._make_op(self._consume()))
-                    case "LPAREN" | "RPAREN":
-                        if tok.type == "RPAREN":
-                            if balance == 0:
-                                break
-                            elif len(u) > 0 and isinstance(u[-1], Operator):
-                                self.errors.unexpected(tok)
-
-                        balance += 1 if tok.type == "LPAREN" else -1
-                        u.append(self._consume("LPAREN", "RPAREN"))
-                        if balance == 0 and parenthesized:
-                            break
-                    case "EOF":
-                        if balance == 0:
-                            break
-                        self.errors.unexpected(tok)
-                    case _:
-                        self.errors.unexpected(tok)
-
-            if parenthesized:
-                u = u[1:-1]
-
-        return Unit(unit=u)
-
-    def _make_id(self, tok: Token) -> Identifier:
-        return Identifier(name=tok.value, loc=tok.loc)
-
-    def _make_op(self, tok: Token) -> Operator:
-        return Operator(name=tok.type.lower(), loc=tok.loc)
-
-    def _parse_number(self, token: Token) -> Float | Integer:
-        split = token.value.lower().split("e")
-        number = split[0].replace("_", "")
-        exponent = split[1] if len(split) > 1 else ""
-        if "." in exponent:
-            uSyntaxError(
-                f"Invalid number literal: {token.value}", path=self.path, loc=token.loc
-            )
-        if "." in number or exponent.startswith("-"):
-            return Float(value=number, exponent=exponent, unit=None, loc=token.loc)
-        else:
-            return Integer(value=number, exponent=exponent, unit=None, loc=token.loc)
 
     def _check_function(self, start: int = 3):
         i = start

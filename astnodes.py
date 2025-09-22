@@ -1,6 +1,22 @@
 from dataclasses import dataclass, field
 
-from classes import Location
+
+@dataclass
+class Location:
+    line: int = -1
+    col: int = -1
+    start: int = -1
+    span: int = 0
+
+
+@dataclass
+class Token:
+    type: str
+    value: str
+    loc: Location = field(default_factory=lambda: Location(), repr=False)
+
+    def __bool__(self):
+        return True
 
 
 @dataclass(kw_only=True)
@@ -23,7 +39,7 @@ class Identifier(AstNode):
 
 @dataclass(kw_only=True)
 class Unit(AstNode):
-    unit: list[AstNode]
+    unit: AstNode
 
 
 @dataclass(kw_only=True)
@@ -130,14 +146,15 @@ class WhileLoop(AstNode):
 @dataclass(kw_only=True)
 class UnitDeclaration(AstNode):
     name: Identifier
-    unit: Unit
+    params: list["Param"]
+    value: Unit
 
 
 @dataclass(kw_only=True)
 class Param(AstNode):
     name: Identifier
     type: Identifier | None
-    default: AstNode
+    default: AstNode | None
 
 
 @dataclass(kw_only=True)

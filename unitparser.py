@@ -1,0 +1,114 @@
+from astnodes import AstNode, BinOp, Call, CallArg, UnaryOp, Unit
+from classes import ParserTemplate, Token, nodeloc
+
+
+class UnitParser(ParserTemplate):
+    def __init__(
+        self,
+        tokens: list[Token],
+        path: str | None = None,
+        parenthesized: bool = False,
+    ):
+        super().__init__(tokens=tokens, path=path)
+        self.parenthesized = parenthesized
+
+    def peek(self, n: int = 1, ignore_whitespace: bool | None = None):
+        return self._peek(
+            n=n,
+            ignore_whitespace=self.parenthesized
+            if not ignore_whitespace
+            else ignore_whitespace,
+        )
+
+    def start(self) -> Unit:
+        self._clear()
+        truly_parenthesized = False
+        if self._peek().type == "LPAREN" and not self.parenthesized:
+            self._consume("LPAREN")
+            self.parenthesized = True
+            truly_parenthesized = True
+
+        unit = self.expression()
+
+        if self.parenthesized and truly_parenthesized:
+            self._consume("RPAREN")
+        return Unit(unit=unit, loc=unit.loc)
+
+    def expression(self) -> AstNode:
+        return self.term()
+
+    def term(self) -> AstNode:
+        node = self.power()
+        while self.tokens and self.peek().type in {"TIMES", "DIVIDE"}:
+            op = self._make_op(self._consume())
+            right = self.power()
+            node = BinOp(op=op, left=node, right=right, loc=nodeloc(node, right))
+        return node
+
+    def power(self) -> AstNode:
+        node = self.unary()
+        if self.tokens and self.peek().type == "POWER":
+            op = self._make_op(self._consume())
+            right = self.power()  # right-associative
+            node = BinOp(op=op, left=node, right=right, loc=nodeloc(node, right))
+        return node
+
+    def unary(self) -> AstNode:
+        if self.peek().type in {"PLUS", "MINUS"}:
+            ops = []
+            while self.peek().type in {"PLUS", "MINUS"}:
+                op_token = self._consume()
+                ops.append(op_token)
+
+            operand = self.call()
+
+            if sum(1 for op in ops if op.type == "MINUS") % 2 == 1:
+                op = self._make_op(next(op for op in ops if op.type == "MINUS"))
+                return UnaryOp(op=op, operand=operand, loc=nodeloc(op, operand))
+            else:
+                return operand
+
+        return self.call()
+
+    def call(self) -> AstNode:
+        node = self.atom()
+        while self.peek(ignore_whitespace=False).type == "LPAREN":
+            self._consume("LPAREN")
+            args = []
+            while self.peek().type != "RPAREN":
+                name = None
+                if self.peek(2).type == "ASSIGN":
+                    name = self._make_id(self._consume("ID"))
+                    self._consume("ASSIGN")
+                arg = self.expression()
+
+                args.append(
+                    CallArg(
+                        name=name, value=arg, loc=nodeloc(name if name else arg, arg)
+                    )
+                )
+
+                if self.peek().type == "RPAREN":
+                    break
+                self._consume("COMMA")
+
+            end = self._consume("RPAREN")
+            node = Call(callee=node, args=args, loc=nodeloc(node, end))
+        return node
+
+    def atom(self) -> AstNode:
+        tok = self._consume(
+            "NUMBER", "TRUE", "FALSE", "ID", "STRING", "LBRACKET", "LPAREN"
+        )
+        match tok.type:
+            case "NUMBER":
+                num = self._parse_number(tok)
+                return num
+            case "ID":
+                return self._make_id(tok)
+            case "LPAREN":
+                node = self.expression()
+                self._consume("RPAREN")
+                return node
+            case _:
+                raise SyntaxError(f"Unexpected token {tok}")
