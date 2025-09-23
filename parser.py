@@ -113,9 +113,9 @@ class Parser(ParserTemplate):
         elif first.type == "AT":
             """Reference unit namespace"""
             if self._peek(2, ignore_whitespace=False).type not in {"LPAREN", "ID"}:
-                uSyntaxError(
+                self.errors.throw(
+                    uSyntaxError,
                     message="Expected unit",
-                    path=self.path,
                     loc=Location(line=self.tok.loc.line, col=self.tok.loc.col + 1),
                 )
             self._consume("AT")
@@ -240,9 +240,9 @@ class Parser(ParserTemplate):
             self._consume("ELSE")
             else_branch = self.block() if not expression else self.expression()
         elif expression:
-            uSyntaxError(
-                "Conditional expression must have an else branch",
-                path=self.path,
+            self.errors.throw(
+                uSyntaxError,
+                message="Conditional expression must have an else branch",
                 loc=nodeloc(_if, then_branch),
             )
 
@@ -523,5 +523,5 @@ class Parser(ParserTemplate):
             elif tok in ["LPAREN", "RPAREN"]:
                 balance += 1 if tok == "LPAREN" else -1
             elif tok == "EOF":
-                uSyntaxError("Unexpected EOF", path=self.path)
+                self.errors.unexpectedEOF()
             i += 1
