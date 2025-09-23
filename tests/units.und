@@ -40,5 +40,5 @@ echo(@((m*kg)/(s^2)))
 
 5 (kg * m)
 
-unit dollar(year=2025) = base_dollar * inflation(@year)
-unit length(m, factor=1) = base_length * @m * @factor
+unit dollar[year=2025] = base_dollar * inflation[year=@year]
+unit length[m, factor=1] = base_length * @m * @factor

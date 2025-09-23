@@ -147,11 +147,16 @@ class Parser(ParserTemplate):
 
         params = []
         if self._peek().type == "LPAREN":
+            self.errors.unexpectedToken(
+                self._peek(),
+                help="Did you mean to define a parameterized unit? Use brackets […] instead of parentheses.",
+            )
+        if self._peek().type == "LBRACKET":
             """
             Parse unit parameters
             """
-            self._consume("LPAREN")
-            while self._peek().type != "RPAREN":
+            self._consume("LBRACKET")
+            while self._peek().type != "RBRACKET":
                 p: dict[str, AstNode] = {}
                 p["name"] = self._make_id(self._consume("ID"))
                 if self._peek().type == "ASSIGN":
@@ -169,7 +174,7 @@ class Parser(ParserTemplate):
                 if self._peek().type == "COMMA":
                     self._consume("COMMA")
 
-            self._consume("RPAREN")
+            self._consume("RBRACKET")
 
         self._consume("ASSIGN")
         self._clear()

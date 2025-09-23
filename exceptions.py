@@ -1,6 +1,7 @@
 import sys
 
 import rich
+import rich.markup
 
 from astnodes import AstNode
 from classes import Location, Token
@@ -27,7 +28,11 @@ class uException:
             f"[red][bold]{self.__class__.__name__.removeprefix('u')}[/bold]: {message}[/red]",
             highlight=False,
         )
-        console.print(f"[bold]help:[/bold] {help}" if help else "")
+        if help:
+            console.print(
+                f"[bold]help:[/bold] {rich.markup.escape(help)}",
+                highlight=False,
+            )
         sys.exit(1)
 
 
@@ -40,11 +45,15 @@ class Exceptions:
         self.path = path
 
     def unexpectedToken(
-        self, tok: Token, value: str | None = None, loc: Location | None = None
+        self,
+        tok: Token,
+        help: str | None = None,
+        loc: Location | None = None,
     ):
         uSyntaxError(
-            f"Unexpected token: '{value or tok.value}'",
+            f"Unexpected token: '{tok.value}'",
             path=self.path,
+            help=help,
             loc=loc or tok.loc,
         )
 

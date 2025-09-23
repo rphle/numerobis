@@ -73,10 +73,16 @@ class UnitParser(ParserTemplate):
 
     def call(self) -> AstNode:
         node = self.atom()
-        while self.peek(ignore_whitespace=False).type == "LPAREN":
-            self._consume("LPAREN")
+        if self.peek(ignore_whitespace=False).type == "LPAREN":
+            self.errors.unexpectedToken(
+                self.peek(),
+                help="Did you mean to call a parameterized unit? Use brackets […] instead of parentheses.",
+            )
+
+        while self.peek(ignore_whitespace=False).type == "LBRACKET":
+            self._consume("LBRACKET")
             args = []
-            while self.peek().type != "RPAREN":
+            while self.peek().type != "RBRACKET":
                 name = None
                 if self.peek(2).type == "ASSIGN":
                     name = self._make_id(self._consume("ID"))
@@ -89,11 +95,11 @@ class UnitParser(ParserTemplate):
                     )
                 )
 
-                if self.peek().type == "RPAREN":
+                if self.peek().type == "RBRACKET":
                     break
                 self._consume("COMMA")
 
-            end = self._consume("RPAREN")
+            end = self._consume("RBRACKET")
             node = Call(callee=node, args=args, loc=nodeloc(node, end))
         return node
 
@@ -111,7 +117,6 @@ class UnitParser(ParserTemplate):
                 return node
             case "AT":
                 """Reference parameter"""
-                print("BEEEEEP")
                 if self._peek(ignore_whitespace=False).type != "ID":
                     uSyntaxError(
                         message="Expected identifier",
