@@ -173,7 +173,7 @@ class Parser(ParserTemplate):
 
         self._consume("ASSIGN")
         self._clear()
-        unit = self.unit(parenthesized=True)
+        unit = self.unit(standalone=True)
 
         return UnitDeclaration(
             name=self._make_id(name),
@@ -474,10 +474,8 @@ class Parser(ParserTemplate):
         end = self._consume("RPAREN")
         return Tuple(items=items, loc=nodeloc(start, end))
 
-    def unit(self, parenthesized: bool = False) -> Unit:
-        parser = UnitParser(
-            tokens=self.tokens, path=self.path, parenthesized=parenthesized
-        )
+    def unit(self, standalone: bool = False) -> Unit:
+        parser = UnitParser(tokens=self.tokens, path=self.path, standalone=standalone)
         unit = parser.start()
         self.tokens = parser.tokens
         return unit
@@ -506,7 +504,7 @@ class Parser(ParserTemplate):
                 return self.list()
             case "LPAREN":
                 if self._peek(ignore_whitespace=False).type != "LBRACKET":
-                    node = self.block()
+                    node = self.expression()
                     self._consume("RPAREN")
                     return node
                 else:

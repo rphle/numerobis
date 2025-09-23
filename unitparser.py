@@ -1,5 +1,6 @@
-from astnodes import AstNode, BinOp, Call, CallArg, UnaryOp, Unit
+from astnodes import AstNode, BinOp, Call, CallArg, Location, UnaryOp, Unit
 from classes import ParserTemplate, Token, nodeloc
+from exceptions import uSyntaxError
 
 
 class UnitParser(ParserTemplate):
@@ -7,30 +8,30 @@ class UnitParser(ParserTemplate):
         self,
         tokens: list[Token],
         path: str | None = None,
-        parenthesized: bool = False,
+        standalone: bool = False,
     ):
         super().__init__(tokens=tokens, path=path)
-        self.parenthesized = parenthesized
+        self.standalone = standalone
 
     def peek(self, n: int = 1, ignore_whitespace: bool | None = None):
         return self._peek(
             n=n,
-            ignore_whitespace=self.parenthesized
+            ignore_whitespace=self.standalone
             if not ignore_whitespace
             else ignore_whitespace,
         )
 
     def start(self) -> Unit:
         self._clear()
-        truly_parenthesized = False
-        if self._peek().type == "LPAREN" and not self.parenthesized:
+        parenthesized = False
+        if self._peek().type == "LPAREN" and not self.standalone:
             self._consume("LPAREN")
-            self.parenthesized = True
-            truly_parenthesized = True
+            self.standalone = True
+            parenthesized = True
 
         unit = self.expression()
 
-        if self.parenthesized and truly_parenthesized:
+        if self.standalone and parenthesized:
             self._consume("RPAREN")
         return Unit(unit=unit, loc=unit.loc)
 
@@ -97,9 +98,7 @@ class UnitParser(ParserTemplate):
         return node
 
     def atom(self) -> AstNode:
-        tok = self._consume(
-            "NUMBER", "TRUE", "FALSE", "ID", "STRING", "LBRACKET", "LPAREN"
-        )
+        tok = self._consume("NUMBER", "ID", "LPAREN", "AT")
         match tok.type:
             case "NUMBER":
                 num = self._parse_number(tok)
@@ -110,5 +109,23 @@ class UnitParser(ParserTemplate):
                 node = self.expression()
                 self._consume("RPAREN")
                 return node
+            case "AT":
+                """Reference parameter"""
+                print("BEEEEEP")
+                if self._peek(ignore_whitespace=False).type != "ID":
+                    uSyntaxError(
+                        message="Expected identifier",
+                        path=self.path,
+                        loc=Location(line=self.tok.loc.line, col=self.tok.loc.col + 1),
+                    )
+                if not self.standalone:
+                    uSyntaxError(
+                        message="Parameters can only be referenced in unit declarations",
+                        path=self.path,
+                        loc=Location(line=self.tok.loc.line, col=self.tok.loc.col + 1),
+                    )
+                node = self._consume("ID")
+                node.value = "@" + node.value
+                return self._make_id(node)
             case _:
                 raise SyntaxError(f"Unexpected token {tok}")
