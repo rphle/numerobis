@@ -124,20 +124,19 @@ class Parser(ParserTemplate):
         return self.conversion()
 
     def assignment(self) -> AstNode:
-        name = self._consume()
+        name = self._consume("ID")
         type_token = None
         if self._peek().type == "COLON":
-            self._consume()
-            type_token = self._consume()
-        _equals_token = self._consume()
+            self._consume("COLON")
+            type_token = self.unit(standalone=True)
+
+        self._consume("ASSIGN")
         expr = self.block()
 
         return Assign(
             target=Identifier(name=name.value, loc=name.loc),
             value=expr,
-            type=Identifier(name=type_token.value, loc=type_token.loc)
-            if type_token
-            else None,
+            type=type_token if type_token else None,
             loc=nodeloc(name, expr),
         )
 
@@ -195,11 +194,12 @@ class Parser(ParserTemplate):
 
         params = []
         while self._peek().type != "RPAREN":
-            p = {"name": self._make_id(self._consume("ID"))}
+            p = {}
+            p["name"] = self._make_id(self._consume("ID"))
 
             if self._peek().type == "COLON":
                 self._consume("COLON")
-                p["type"] = self._make_id(self._consume("ID"))
+                p["type"] = self.unit(standalone=True)
 
             if self._peek().type == "ASSIGN":
                 self._consume("ASSIGN")
@@ -221,7 +221,7 @@ class Parser(ParserTemplate):
         self._consume("RPAREN")
         self._consume("COLON", "ASSIGN")
         if self.tok.type == "COLON":
-            return_type = self._make_id(self._consume("ID"))
+            return_type = self.unit(standalone=True)
             self._consume("ASSIGN")
 
         body = self.block()

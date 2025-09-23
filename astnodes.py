@@ -126,7 +126,7 @@ class Conversion(AstNode):
 @dataclass(kw_only=True)
 class Assign(AstNode):
     target: AstNode
-    type: Identifier | None
+    type: Unit | None
     value: AstNode
 
 
@@ -153,7 +153,7 @@ class UnitDeclaration(AstNode):
 @dataclass(kw_only=True)
 class Param(AstNode):
     name: Identifier
-    type: Identifier | None
+    type: Unit | None
     default: AstNode | None
 
 
@@ -161,7 +161,7 @@ class Param(AstNode):
 class Function(AstNode):
     name: Identifier
     params: list[Param]
-    return_type: Identifier | None
+    return_type: Unit | None
     body: AstNode
 
 
