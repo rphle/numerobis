@@ -204,15 +204,17 @@ class Parser(ParserTemplate):
 
             self._consume("RBRACKET")
 
-        self._consume("ASSIGN")
-        self._clear()
-        unit = self.unit(standalone=True)
+        unit = None
+        if self._peek().type == "ASSIGN":
+            self._consume("ASSIGN")
+            self._clear()
+            unit = self.unit(standalone=True)
 
         return UnitDefinition(
             name=self._make_id(name),
             params=params,
             value=unit,
-            loc=nodeloc(start, unit),
+            loc=nodeloc(start, unit or name),
         )
 
     def function(self) -> AstNode:
@@ -317,7 +319,7 @@ class Parser(ParserTemplate):
         if len(self.tokens) >= 2 and self._peek().type == "CONVERSION":
             op = self._make_op(self._consume("CONVERSION"))
             display_only = self.tok.value.startswith("(")
-            unit = self.unit()
+            unit = self.unit(standalone=True)
             node = Conversion(
                 op=op,
                 value=node,
