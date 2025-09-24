@@ -18,6 +18,7 @@ reserved = (
     "NOT",
     "XOR",
     "UNIT",
+    "DIMENSION",
     "BREAK",
     "CONTINUE",
     "RETURN",

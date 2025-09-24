@@ -144,10 +144,16 @@ class WhileLoop(AstNode):
 
 
 @dataclass(kw_only=True)
-class UnitDeclaration(AstNode):
+class UnitDefinition(AstNode):
     name: Identifier
     params: list["Param"]
     value: Unit
+
+
+@dataclass(kw_only=True)
+class DimensionDefinition(AstNode):
+    name: Identifier
+    value: Unit | None = None
 
 
 @dataclass(kw_only=True)

@@ -11,6 +11,7 @@ from astnodes import (
     Compare,
     Continue,
     Conversion,
+    DimensionDefinition,
     ForLoop,
     Function,
     Identifier,
@@ -26,7 +27,7 @@ from astnodes import (
     Tuple,
     UnaryOp,
     Unit,
-    UnitDeclaration,
+    UnitDefinition,
     WhileLoop,
 )
 from classes import ParserTemplate, nodeloc
@@ -55,9 +56,12 @@ class Parser(ParserTemplate):
         if first.type == "ID" and self._peek(2).type in {"ASSIGN", "COLON"}:
             """Variable declaration"""
             return self.assignment()
+        elif first.type == "DIMENSION":
+            """Dimension declaration"""
+            return self.dimension_def()
         elif first.type == "UNIT":
             """Unit declaration"""
-            return self.unit_decl()
+            return self.unit_def()
         elif first.type == "IF":
             """Conditional statement"""
             return self.conditional()
@@ -140,7 +144,22 @@ class Parser(ParserTemplate):
             loc=nodeloc(name, expr),
         )
 
-    def unit_decl(self) -> AstNode:
+    def dimension_def(self) -> AstNode:
+        start = self._consume("DIMENSION")
+        name = self._consume("ID")
+        value = None
+        if self._peek().type == "ASSIGN":
+            self._consume("ASSIGN")
+            self._clear()
+            value = self.unit(standalone=True)
+
+        return DimensionDefinition(
+            name=self._make_id(name),
+            value=value,
+            loc=nodeloc(start, value or name),
+        )
+
+    def unit_def(self) -> AstNode:
         start = self._consume("UNIT")
         name = self._consume("ID")
 
@@ -158,9 +177,17 @@ class Parser(ParserTemplate):
             while self._peek().type != "RBRACKET":
                 p: dict[str, AstNode] = {}
                 p["name"] = self._make_id(self._consume("ID"))
+                if self._peek().type in {"ASSIGN", "COMMA"}:
+                    self.errors.unexpectedToken(
+                        self._peek(), help="Unit parameters must have type annotations"
+                    )
+                self._consume("COLON")
+                p["type"] = self.unit(standalone=True)
+
                 if self._peek().type == "ASSIGN":
                     self._consume("ASSIGN")
                     p["default"] = self._parse_number(self._consume("NUMBER"))
+
                 params.append(
                     Param(
                         name=p["name"],
@@ -172,6 +199,8 @@ class Parser(ParserTemplate):
 
                 if self._peek().type == "COMMA":
                     self._consume("COMMA")
+                else:
+                    break
 
             self._consume("RBRACKET")
 
@@ -179,7 +208,7 @@ class Parser(ParserTemplate):
         self._clear()
         unit = self.unit(standalone=True)
 
-        return UnitDeclaration(
+        return UnitDefinition(
             name=self._make_id(name),
             params=params,
             value=unit,
