@@ -1,3 +1,5 @@
+import dataclasses
+
 from astnodes import (
     Assign,
     AstNode,
@@ -163,6 +165,11 @@ class Parser(ParserTemplate):
         start = self._consume("UNIT")
         name = self._consume("ID")
 
+        dimension = None
+        if self._peek().type == "COLON":
+            self._consume("COLON")
+            dimension = self._make_id(self._consume("ID"))
+
         params = []
         if self._peek().type == "LPAREN":
             self.errors.unexpectedToken(
@@ -212,6 +219,7 @@ class Parser(ParserTemplate):
 
         return UnitDefinition(
             name=self._make_id(name),
+            dimension=dimension,
             params=params,
             value=unit,
             loc=nodeloc(start, unit or name),
@@ -350,8 +358,9 @@ class Parser(ParserTemplate):
 
     def logic_not(self) -> AstNode:
         if self._peek().type in {"NOT", "NOTBANG"}:
-            op = self._make_op(self._consume())
-            op.name = "not"
+            self._consume("NOT", "NOTBANG")
+            self.tok.value = "not"
+            op = self._make_op(self.tok)
             operand = self.logic_not()
             return UnaryOp(op=op, operand=operand, loc=nodeloc(op, operand))
         return self.comparison()
@@ -527,7 +536,7 @@ class Parser(ParserTemplate):
                     self._peek(2, ignore_whitespace=False).type in {"LPAREN", "ID"}
                     and self._peek(ignore_whitespace=False).value == " "
                 ):
-                    num.unit = self.unit()
+                    num = dataclasses.replace(num, unit=self.unit())
                 return num
             case "TRUE" | "FALSE":
                 return Boolean(value=tok.value == "TRUE", loc=tok.loc)
