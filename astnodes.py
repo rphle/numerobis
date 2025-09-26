@@ -13,7 +13,7 @@ class Location:
 class Token:
     type: str
     value: str
-    loc: Location = field(default_factory=lambda: Location(), repr=False)
+    loc: Location = field(default_factory=lambda: Location(), repr=False, compare=False)
 
     def __bool__(self):
         return True
@@ -21,7 +21,7 @@ class Token:
 
 @dataclass(kw_only=True, frozen=True)
 class AstNode:
-    loc: Location = field(default_factory=lambda: Location(), repr=False)
+    loc: Location = field(default_factory=lambda: Location(), repr=False, compare=False)
 
     def __bool__(self):
         return True
