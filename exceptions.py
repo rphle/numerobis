@@ -40,6 +40,14 @@ class uSyntaxError(uException):
     pass
 
 
+class uNameError(uException):
+    pass
+
+
+class uDimensionError(uException):
+    pass
+
+
 class Exceptions:
     def __init__(self, path: str | None):
         self.path = path
