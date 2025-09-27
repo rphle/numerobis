@@ -36,6 +36,10 @@ class uException:
         sys.exit(1)
 
 
+class uError(uException):
+    pass
+
+
 class uSyntaxError(uException):
     pass
 

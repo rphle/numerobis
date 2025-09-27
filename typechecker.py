@@ -8,7 +8,9 @@ from astnodes import (
     AstNode,
     BinOp,
     DimensionDefinition,
+    Float,
     Identifier,
+    Integer,
     Operator,
     Scalar,
     Unit,
@@ -43,35 +45,38 @@ class Typechecker:
             match node:
                 case Operator():
                     e = 1 if node.name == "times" else -1
-                case Scalar():
-                    if not (
-                        (node.value in {"1", "1.0"} and node.exponent == "")
-                        or node.exponent == "0"
-                    ):
-                        res.append(node if e == 1 else E(base=node, exponent=e))
+                case Scalar() if not (
+                    (node.value in {"1", "1.0"} and not node.exponent)
+                    or node.exponent == "0"
+                ):
+                    res.append(node if e == 1 else E(base=node, exponent=e))
                 case Identifier():
                     res.append(node if e == 1 else E(base=node, exponent=e))
                 case BinOp():
                     # only possible BinOp is 'power'
                     base = self.normalize([node.left])[0]
-                    exponent = {"Integer": int, "Float": float}[
-                        type(node.right).__name__
-                    ](
+                    exp_type = type(node.right).__name__
+                    exponent = {"Integer": int, "Float": float}[exp_type](
                         f"{node.right.value}{'e' if node.right.exponent else ''}{node.right.exponent}"  # type: ignore
                     )
-
-                    res.append(
-                        E(
-                            base=base,
-                            exponent=exponent * e,
-                        )
-                    )
+                    res.append(E(base=base, exponent=exponent * e))
                 case Unit():
                     u = self.normalize(node.unit)
-                    res.append(u if e == 1 else E(base=list(u), exponent=e))
-                case _:
-                    raise ValueError(f"Unknown node: {node}")
-
+                    if e == -1:
+                        res.extend(
+                            [
+                                E(
+                                    base=item.base if isinstance(item, E) else item,
+                                    exponent=(
+                                        item.exponent if isinstance(item, E) else 1
+                                    )
+                                    * e,
+                                )
+                                for item in u
+                            ]
+                        )
+                    else:
+                        res.extend(u)
         return res
 
     def flatten(
@@ -82,10 +87,9 @@ class Typechecker:
         """
         Resolve everything to base units/dimensions
         """
-        if not typ.endswith("s"):
-            typ += "s"  # type: ignore
-
+        typ = typ if typ.endswith("s") else f"{typ}s"  # type: ignore
         res = []
+
         for node in nodes:
             match node:
                 case Scalar():
@@ -104,16 +108,14 @@ class Typechecker:
                         list(node.base) if isinstance(node.base, list) else [node.base],
                         typ,
                     )
-                    if len(base) == 1:
-                        base = base[0]
-                        if isinstance(base, E):
-                            node = dataclasses.replace(
-                                node,
-                                exponent=node.exponent * base.exponent,
-                                base=base.base,
+                    for item in base:
+                        res.append(
+                            E(
+                                base=item.base if isinstance(item, E) else item,
+                                exponent=(item.exponent if isinstance(item, E) else 1)
+                                * node.exponent,
                             )
-
-                    res.append(node)
+                        )
                 case list():
                     res.extend(self.flatten(node, typ))
                 case _:
@@ -121,31 +123,51 @@ class Typechecker:
 
         return res
 
-    def dimensionize(
-        self,
-        nodes: list[Scalar | Identifier | E | list],
-    ):
-        """
-        Resolve units to dimensions
-        """
+    def simplify(self, nodes: list[Scalar | Identifier | E]):
+        """Combine like terms by summing exponents"""
+        groups = {}
+        for node in nodes:
+            if isinstance(node, (E, Identifier)):
+                base = node.base if isinstance(node, E) else node
+                key = (
+                    type(base).__name__,
+                    base.name if isinstance(base, Identifier) else str(base),
+                )
+                exp = node.exponent if isinstance(node, E) else 1
+                groups.setdefault(key, {"base": base, "exponent": 0})
+                groups[key]["exponent"] += exp
+
+        return [
+            E(base=g["base"], exponent=g["exponent"])
+            if g["exponent"] != 1
+            else g["base"]
+            for g in groups.values()
+            if g["exponent"] != 0
+        ]
+
+    def dimensionize(self, nodes: list[Scalar | Identifier | E | list]):
+        """Resolve units to dimensions"""
         res = []
         for node in nodes:
             match node:
                 case Identifier():
                     if node.name not in self.units:
                         self.errors.throw(
-                            uNameError,
-                            f"undefined unit '{node.name}'",
-                            loc=node.loc,
+                            uNameError, f"undefined unit '{node.name}'", loc=node.loc
                         )
-                    dim = self.units[node.name]["dimension"]
-                    res.extend(dim)
+                    res.extend(self.units[node.name]["dimension"])
                 case E():
                     base = self.dimensionize(
-                        list(node.base) if isinstance(node.base, tuple) else [node.base]
+                        list(node.base) if isinstance(node.base, list) else [node.base]
                     )
-                    base = base[0] if len(base) == 1 else tuple(base)
-                    res.append(dataclasses.replace(node, base=base))
+                    for item in base:
+                        res.append(
+                            E(
+                                base=item.base if isinstance(item, E) else item,
+                                exponent=(item.exponent if isinstance(item, E) else 1)
+                                * node.exponent,
+                            )
+                        )
                 case _:
                     res.append(node)
 
@@ -155,11 +177,7 @@ class Typechecker:
         normalized = []
         if node.value:
             normalized = self.flatten(self.normalize(node.value.unit), typ="dimension")
-
-        self.dimensions[node.name.name] = {
-            "name": node.name,
-            "normalized": normalized,
-        }
+        self.dimensions[node.name.name] = {"name": node.name, "normalized": normalized}
 
     def unit_def(self, node):
         normalized = []
@@ -175,18 +193,17 @@ class Typechecker:
             dimension = [node.dimension]
         elif node.value:
             normalized = self.flatten(self.normalize(node.value.unit), typ="unit")
-            dimension = self.dimensionize(normalized)
+            dimension = self.simplify(self.dimensionize(normalized))
 
-            if (
-                node.dimension
-                and self.dimensions[node.dimension.name]["normalized"] != dimension
-            ):
-                print(self.dimensions[node.dimension.name]["normalized"])
-                print(dimension)
-                self.errors.throw(
-                    uDimensionError,
-                    f"unit '{node.name.name}' is not of dimension '{node.dimension.name}'",
+            if node.dimension:
+                expected = self.simplify(
+                    self.dimensions[node.dimension.name]["normalized"]
                 )
+                if expected != dimension:
+                    self.errors.throw(
+                        uDimensionError,
+                        f"unit '{node.name.name}' is not of dimension '{node.dimension.name}'",
+                    )
 
         self.units[node.name.name] = {
             "name": node.name,
@@ -195,13 +212,29 @@ class Typechecker:
             "dimension": dimension,
         }
 
+    def bin_op(self, node: BinOp):
+        rich.print(node)
+        sides = [{"unit": [], "dim": []} for _ in range(2)]
+
+        for i, side in enumerate((node.left, node.right)):
+            if isinstance(side, (Integer, Float)):
+                sides[i]["unit"] = self.normalize(getattr(side.unit, "unit", []))
+                sides[i]["dim"] = self.simplify(
+                    self.dimensionize(self.flatten(sides[i]["unit"], "unit"))
+                )
+
+        print("Left dimension:", sides[0]["dim"])
+        print("Right dimension:", sides[1]["dim"])
+
     def start(self):
-        for node in ast:
+        for node in self.ast:
             match node:
                 case DimensionDefinition():
                     self.dimension_def(node)
                 case UnitDefinition():
                     self.unit_def(node)
+                case BinOp():
+                    self.bin_op(node)
 
 
 if __name__ == "__main__":
@@ -214,8 +247,3 @@ if __name__ == "__main__":
 
     tc = Typechecker(ast, path)
     tc.start()
-
-    print()
-    rich.print("DIMENSIONS:", tc.dimensions)
-    print()
-    rich.print("UNITS:", tc.units)
