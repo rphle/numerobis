@@ -3,8 +3,6 @@ from astnodes import (
     BinOp,
     Call,
     CallArg,
-    Float,
-    Integer,
     Location,
     UnaryOp,
     Unit,
@@ -64,12 +62,12 @@ class UnitParser(ParserTemplate):
         node = self.unary()
         if self.tokens and self.peek().type == "POWER":
             op = self._make_op(self._consume())
-            if not isinstance(self.peek(), (Integer, Float)):
+            if self.peek().type != "NUMBER":
                 self.errors.unexpectedToken(
                     self.peek(),
                     help="Exponent must be a dimensionless scalar",
                 )
-            right = self._parse_number(self._consume("INTEGER", "FLOAT"))
+            right = self._parse_number(self._consume("NUMBER"))
             node = BinOp(op=op, left=node, right=right, loc=nodeloc(node, right))
         return node
 
@@ -125,13 +123,17 @@ class UnitParser(ParserTemplate):
         return node
 
     def atom(self) -> AstNode:
-        tok = self._consume("NUMBER", "ID", "AT")
+        tok = self._consume("NUMBER", "ID", "AT", "LPAREN")
         match tok.type:
             case "NUMBER":
                 num = self._parse_number(tok)
                 return num
             case "ID":
                 return self._make_id(tok)
+            case "LPAREN":
+                node = self.expression()
+                self._consume("RPAREN")
+                return self._make_unit(node)
             case "AT":
                 """Reference parameter"""
                 if self._peek(ignore_whitespace=False).type != "ID":
