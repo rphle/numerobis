@@ -1,6 +1,6 @@
 import sys
 
-import rich
+import rich.console
 import rich.markup
 
 from astnodes import AstNode

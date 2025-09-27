@@ -33,18 +33,22 @@ class UnitParser(ParserTemplate):
 
         if self.standalone and parenthesized:
             self._consume("RPAREN")
-        return Unit(unit=unit, loc=unit.loc)
+        return self._make_unit(unit)
 
-    def expression(self) -> AstNode:
-        return self.term()
+    def expression(self) -> list[AstNode]:
+        nodes = [self.power()]
 
-    def term(self) -> AstNode:
-        node = self.power()
         while self.tokens and self.peek().type in {"TIMES", "DIVIDE"}:
-            op = self._make_op(self._consume())
-            right = self.power()
-            node = BinOp(op=op, left=node, right=right, loc=nodeloc(node, right))
-        return node
+            nodes.append(self._make_op(self._consume()))
+            nodes.append(self.power())
+
+        if self.peek().type in {"PLUS", "MINUS", "MOD", "INTDIVIDE"}:
+            self.errors.unexpectedToken(
+                self.peek(),
+                help=f"{self.peek().value} is not a valid operator in unit expressions",
+            )
+
+        return nodes
 
     def power(self) -> AstNode:
         node = self.unary()
@@ -91,7 +95,9 @@ class UnitParser(ParserTemplate):
 
                 args.append(
                     CallArg(
-                        name=name, value=arg, loc=nodeloc(name if name else arg, arg)
+                        name=name,
+                        value=self._make_unit(arg),
+                        loc=nodeloc(name if name else arg[0], arg[-1]),
                     )
                 )
 
@@ -104,17 +110,13 @@ class UnitParser(ParserTemplate):
         return node
 
     def atom(self) -> AstNode:
-        tok = self._consume("NUMBER", "ID", "LPAREN", "AT")
+        tok = self._consume("NUMBER", "ID", "AT")
         match tok.type:
             case "NUMBER":
                 num = self._parse_number(tok)
                 return num
             case "ID":
                 return self._make_id(tok)
-            case "LPAREN":
-                node = self.expression()
-                self._consume("RPAREN")
-                return node
             case "AT":
                 """Reference parameter"""
                 if self._peek(ignore_whitespace=False).type != "ID":
@@ -134,3 +136,6 @@ class UnitParser(ParserTemplate):
                 return self._make_id(node)
             case _:
                 raise SyntaxError(f"Unexpected token {tok}")
+
+    def _make_unit(self, unit: list[AstNode]) -> Unit:
+        return Unit(unit=unit, loc=nodeloc(unit[0], unit[-1]))

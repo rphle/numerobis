@@ -39,7 +39,7 @@ class Identifier(AstNode):
 
 @dataclass(kw_only=True, frozen=True)
 class Unit(AstNode):
-    unit: AstNode
+    unit: list[AstNode]
 
 
 @dataclass(kw_only=True, frozen=True)
