@@ -1,4 +1,14 @@
-from astnodes import AstNode, BinOp, Call, CallArg, Location, UnaryOp, Unit
+from astnodes import (
+    AstNode,
+    BinOp,
+    Call,
+    CallArg,
+    Float,
+    Integer,
+    Location,
+    UnaryOp,
+    Unit,
+)
 from classes import ParserTemplate, Token, nodeloc
 from exceptions import uSyntaxError
 
@@ -54,7 +64,12 @@ class UnitParser(ParserTemplate):
         node = self.unary()
         if self.tokens and self.peek().type == "POWER":
             op = self._make_op(self._consume())
-            right = self.power()  # right-associative
+            if not isinstance(self.peek(), (Integer, Float)):
+                self.errors.unexpectedToken(
+                    self.peek(),
+                    help="Exponent must be a dimensionless scalar",
+                )
+            right = self._parse_number(self._consume("INTEGER", "FLOAT"))
             node = BinOp(op=op, left=node, right=right, loc=nodeloc(node, right))
         return node
 
