@@ -55,6 +55,12 @@ class Boolean(AstNode):
 
 
 @dataclass(kw_only=True, frozen=True)
+class Scalar(AstNode):
+    value: str
+    exponent: str
+
+
+@dataclass(kw_only=True, frozen=True)
 class Integer(AstNode):
     value: str
     exponent: str

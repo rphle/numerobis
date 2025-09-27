@@ -1,12 +1,4 @@
-from astnodes import (
-    AstNode,
-    BinOp,
-    Call,
-    CallArg,
-    Location,
-    UnaryOp,
-    Unit,
-)
+from astnodes import AstNode, BinOp, Call, CallArg, Location, Scalar, UnaryOp, Unit
 from classes import ParserTemplate, Token, nodeloc
 from exceptions import uSyntaxError
 
@@ -127,6 +119,7 @@ class UnitParser(ParserTemplate):
         match tok.type:
             case "NUMBER":
                 num = self._parse_number(tok)
+                num = Scalar(value=num.value, exponent=num.exponent, loc=num.loc)
                 return num
             case "ID":
                 return self._make_id(tok)
