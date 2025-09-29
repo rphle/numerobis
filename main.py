@@ -3,11 +3,10 @@ import os
 import pickle
 import sys
 from hashlib import sha512
-from parser import Parser
 
 from rich.console import Console
 
-from lexer import lex
+from module import Module
 
 console = Console()
 
@@ -18,21 +17,19 @@ if len(sys.argv) > 1:
     tests = [test for test in tests if test.startswith(sys.argv[1])]
 
 for test in tests:
-    source = open(f"tests/{test}", "r").read()
+    m = Module(path="tests/" + test)
 
-    lexed = lex(source, debug=False)
-    parser = Parser(lexed, path=test)
     try:
-        parsed = parser.start()
+        m.parse()
     except Exception as e:
         console.print(f"Error parsing {test}:", style="bold red")
         raise e
 
-    snapshots[test] = sha512(pickle.dumps(parsed)).hexdigest()
+    snapshots[test] = sha512(pickle.dumps(m.ast)).hexdigest()
 
     print()
     console.print(test, "=" * 40, style="bold green")
-    console.print(parsed)
+    console.print(m.ast)
 
 
 if os.path.isfile("snapshots.json"):

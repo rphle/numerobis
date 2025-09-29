@@ -1,12 +1,23 @@
 from dataclasses import dataclass, field
 
 
+def nodeloc(*nodes: "Token | AstNode"):
+    return Location(
+        line=nodes[0].loc.line,
+        col=nodes[0].loc.col,
+        start=nodes[0].loc.start,
+        end_line=nodes[-1].loc.end_line,
+        end_col=nodes[-1].loc.end_col,
+    )
+
+
 @dataclass
 class Location:
     line: int = -1
     col: int = -1
     start: int = -1
-    span: int = 0
+    end_line: int = -1
+    end_col: int = -1
 
 
 @dataclass

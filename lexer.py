@@ -1,150 +1,147 @@
 import sys
 
 import lex as plylex
-from classes import Location, Token
-
-reserved = (
-    "IF",
-    "THEN",
-    "ELSE",
-    "FOR",
-    "IN",
-    "DO",
-    "WHILE",
-    "TRUE",
-    "FALSE",
-    "OR",
-    "AND",
-    "NOT",
-    "XOR",
-    "UNIT",
-    "DIMENSION",
-    "BREAK",
-    "CONTINUE",
-    "RETURN",
-)
-
-tokens = reserved + (
-    # Literals (identifier, integer, float, string, boolean)
-    "ID",
-    "NUMBER",
-    "STRING",
-    # Operators (+,-,*,/,%,^,or,and,xor, !, <, <=, >, >=, ==, !=)
-    "PLUS",
-    "MINUS",
-    "TIMES",
-    "DIVIDE",
-    "INTDIVIDE",
-    "MOD",
-    "POWER",
-    "LT",
-    "LE",
-    "GT",
-    "GE",
-    "EQ",
-    "NE",
-    "CONVERSION",
-    "NOTBANG",
-    # Assignment (=)
-    "ASSIGN",
-    # Delimiters ( ) [ ] { } , . ; :
-    "LPAREN",
-    "RPAREN",
-    "LBRACKET",
-    "RBRACKET",
-    "LBRACE",
-    "RBRACE",
-    "COMMA",
-    "PERIOD",
-    "SEMICOLON",
-    "COLON",
-    "AT",
-    # Hacks
-    "WHITESPACE",
-)
+from astnodes import Location, Token
+from classes import ModuleMeta
+from exceptions import Exceptions
 
 
-# Newlines
-def t_NEWLINE(t):
-    r"\n+"
-    t.lexer.lineno += t.value.count("\n")
-    return t
+class LexTokens:
+    def __init__(self, module: ModuleMeta):
+        self.errors = Exceptions(module=module)
+
+    reserved = (
+        "IF",
+        "THEN",
+        "ELSE",
+        "FOR",
+        "IN",
+        "DO",
+        "WHILE",
+        "TRUE",
+        "FALSE",
+        "OR",
+        "AND",
+        "NOT",
+        "XOR",
+        "UNIT",
+        "DIMENSION",
+        "BREAK",
+        "CONTINUE",
+        "RETURN",
+    )
+
+    tokens = reserved + (
+        # Literals (identifier, integer, float, string, boolean)
+        "ID",
+        "NUMBER",
+        "STRING",
+        # Operators (+,-,*,/,%,^,or,and,xor, !, <, <=, >, >=, ==, !=)
+        "PLUS",
+        "MINUS",
+        "TIMES",
+        "DIVIDE",
+        "INTDIVIDE",
+        "MOD",
+        "POWER",
+        "LT",
+        "LE",
+        "GT",
+        "GE",
+        "EQ",
+        "NE",
+        "CONVERSION",
+        "NOTBANG",
+        # Assignment (=)
+        "ASSIGN",
+        # Delimiters ( ) [ ] { } , . ; :
+        "LPAREN",
+        "RPAREN",
+        "LBRACKET",
+        "RBRACKET",
+        "LBRACE",
+        "RBRACE",
+        "COMMA",
+        "PERIOD",
+        "SEMICOLON",
+        "COLON",
+        "AT",
+        # Hacks
+        "WHITESPACE",
+    )
+
+    # Operators
+    t_PLUS = r"\+"
+    t_MINUS = r"-"
+    t_TIMES = r"\*"
+    t_DIVIDE = r"/"
+    t_INTDIVIDE = r"//"
+    t_MOD = r"%"
+    t_POWER = r"\^"
+    t_CONVERSION = r"\(?->"
+
+    # Comparison operators
+    t_EQ = r"=="
+    t_NE = r"!="
+    t_LE = r"<="
+    t_GE = r">="
+    t_LT = r"<"
+    t_GT = r">"
+
+    # Logical operators
+    t_NOTBANG = r"!"  # separate token for !
+
+    # Assignment operators
+    t_ASSIGN = r"="
+
+    # Delimiters
+    t_LPAREN = r"\("
+    t_RPAREN = r"\)"
+    t_LBRACKET = r"\["
+    t_RBRACKET = r"\]"
+    t_LBRACE = r"\{"
+    t_RBRACE = r"\}"
+    t_COMMA = r","
+    t_PERIOD = r"\."
+    t_SEMICOLON = r";"
+    t_COLON = r":"
+    t_AT = r"@"
+
+    t_WHITESPACE = r"\s+"
+
+    # Identifiers and reserved words
+    reserved_map = {}
+    for r in reserved:
+        reserved_map[r.lower()] = r
+
+    def t_ID(self, t):
+        r"(?:[^\W\d]|°)[\w°]*"
+        t.type = self.reserved_map.get(t.value, "ID")
+        return t
+
+    # Number literal
+    t_NUMBER = r"\d+(_\d+)* (\.\d+(_\d+)*)? ([eE][+-]? \d+(_\d+)* (\.\d+(_\d+)*)?)?"
+    # String literal
+    t_STRING = r"\"([^\\\n]|(\\.))*?\""
+
+    def t_NEWLINE(self, t):
+        r"\n+"
+        t.lexer.lineno += t.value.count("\n")
+        return t
+
+    def t_comment(self, t):
+        r"\#.*"
+        t.lexer.lineno += t.value.count("\n")
+
+    def t_error(self, t):
+        print("Illegal character %s" % repr(t.value[0]))
+        print(t)
+        sys.exit(1)
 
 
-# Operators
-t_PLUS = r"\+"
-t_MINUS = r"-"
-t_TIMES = r"\*"
-t_DIVIDE = r"/"
-t_INTDIVIDE = r"//"
-t_MOD = r"%"
-t_POWER = r"\^"
-t_CONVERSION = r"\(?->"
+def lex(source: str, module: ModuleMeta, debug=False) -> list[Token]:
+    lexer = plylex.lex(module=LexTokens(module=module))
 
-# Comparison operators
-t_EQ = r"=="
-t_NE = r"!="
-t_LE = r"<="
-t_GE = r">="
-t_LT = r"<"
-t_GT = r">"
-
-# Logical operators
-t_NOTBANG = r"!"  # separate token for !
-
-# Assignment operators
-t_ASSIGN = r"="
-
-# Delimiters
-t_LPAREN = r"\("
-t_RPAREN = r"\)"
-t_LBRACKET = r"\["
-t_RBRACKET = r"\]"
-t_LBRACE = r"\{"
-t_RBRACE = r"\}"
-t_COMMA = r","
-t_PERIOD = r"\."
-t_SEMICOLON = r";"
-t_COLON = r":"
-t_AT = r"@"
-
-t_WHITESPACE = r"\s+"
-
-
-# Identifiers and reserved words
-reserved_map = {}
-for r in reserved:
-    reserved_map[r.lower()] = r
-
-
-def t_ID(t):
-    r"(?:[^\W\d]|°)[\w°]*"
-    t.type = reserved_map.get(t.value, "ID")
-    return t
-
-
-# Number literal
-t_NUMBER = r"\d+(_\d+)* (\.\d+(_\d+)*)? ([eE][+-]? \d+(_\d+)* (\.\d+(_\d+)*)?)?"
-# String literal
-t_STRING = r"\"([^\\\n]|(\\.))*?\""
-
-
-# Comments
-def t_comment(t):
-    r"\#.*"
-    t.lexer.lineno += t.value.count("\n")
-
-
-def t_error(t):
-    print("Illegal character %s" % repr(t.value[0]))
-    print(t)
-    sys.exit(1)
-
-
-lexer = plylex.lex()
-
-
-def lex(source: str, debug=False) -> list[Token]:
     output: list[Token] = []
     lexer.lineno = 1
     lexer.lexpos = 0
@@ -167,7 +164,8 @@ def lex(source: str, debug=False) -> list[Token]:
                 line=tok.lineno,
                 col=tok.lexpos - last_newline_pos[-1] + 1,
                 start=tok.lexpos,
-                span=len(tok.value),
+                end_line=tok.lineno,
+                end_col=tok.lexpos - last_newline_pos[-1] + len(tok.value),
             ),
         )
         if debug:

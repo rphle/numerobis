@@ -1,5 +1,18 @@
-from astnodes import AstNode, BinOp, Call, CallArg, Location, Scalar, UnaryOp, Unit
-from classes import ParserTemplate, Token, nodeloc
+from parser.template import ParserTemplate
+
+from astnodes import (
+    AstNode,
+    BinOp,
+    Call,
+    CallArg,
+    Location,
+    Scalar,
+    Token,
+    UnaryOp,
+    Unit,
+    nodeloc,
+)
+from classes import ModuleMeta
 from exceptions import uSyntaxError
 
 
@@ -7,10 +20,10 @@ class UnitParser(ParserTemplate):
     def __init__(
         self,
         tokens: list[Token],
-        path: str | None = None,
+        module: ModuleMeta,
         standalone: bool = False,
     ):
-        super().__init__(tokens=tokens, path=path)
+        super().__init__(tokens=tokens, module=module)
         self.standalone = standalone
 
     def peek(self, n: int = 1, ignore_whitespace: bool | None = None):
@@ -132,13 +145,13 @@ class UnitParser(ParserTemplate):
                 if self._peek(ignore_whitespace=False).type != "ID":
                     uSyntaxError(
                         message="Expected identifier",
-                        path=self.path,
+                        module=self.module,
                         loc=Location(line=self.tok.loc.line, col=self.tok.loc.col + 1),
                     )
                 if not self.standalone:
                     uSyntaxError(
                         message="Parameters can only be referenced in unit declarations",
-                        path=self.path,
+                        module=self.module,
                         loc=Location(line=self.tok.loc.line, col=self.tok.loc.col + 1),
                     )
                 node = self._consume("ID")

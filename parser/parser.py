@@ -1,4 +1,6 @@
 import dataclasses
+from parser.template import ParserTemplate
+from parser.unitparser import UnitParser
 
 from astnodes import (
     Assign,
@@ -31,15 +33,15 @@ from astnodes import (
     Unit,
     UnitDefinition,
     WhileLoop,
+    nodeloc,
 )
-from classes import ParserTemplate, nodeloc
+from classes import ModuleMeta
 from exceptions import uSyntaxError
-from unitparser import UnitParser
 
 
 class Parser(ParserTemplate):
-    def __init__(self, tokens: list[Token], path: str | None = None):
-        super().__init__(tokens=tokens, path=path)
+    def __init__(self, tokens: list[Token], module: ModuleMeta):
+        super().__init__(tokens=tokens, module=module)
 
     def start(self) -> list[AstNode]:
         statements = []
@@ -520,7 +522,9 @@ class Parser(ParserTemplate):
         return Tuple(items=items, loc=nodeloc(start, end))
 
     def unit(self, standalone: bool = False) -> Unit:
-        parser = UnitParser(tokens=self.tokens, path=self.path, standalone=standalone)
+        parser = UnitParser(
+            tokens=self.tokens, module=self.module, standalone=standalone
+        )
         unit = parser.start()
         self.tokens = parser.tokens
         return unit

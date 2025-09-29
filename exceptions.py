@@ -3,29 +3,29 @@ import sys
 import rich.console
 import rich.markup
 
-from astnodes import AstNode
-from classes import Location, Token
+from astnodes import AstNode, BinOp, Location, Token
+from classes import ModuleMeta
 
 
 class uException:
     def __init__(
         self,
         message,
+        module: ModuleMeta,
         help: str | None = None,
-        path: str | None = None,
-        loc: AstNode | Token | Location | None = None,
+        loc: Location | None = None,
     ):
         if isinstance(loc, (AstNode, Token)):
             loc = loc.loc
         console = rich.console.Console()
         console.print(
-            rf'[reset][dim]\[at "{path if path else "<unknown>"}"'
-            + (f", line {loc.line}, column {loc.col}]" if loc else "]")
+            rf'[reset][dim]\[at "{module.path if module.path else "<unknown>"}"'
+            + (f", line {loc.line}, col {loc.col}]" if loc else "]")
             + "[/dim]",
             # highlight=False,
         )
         console.print(
-            f"[red][bold]{self.__class__.__name__.removeprefix('u')}[/bold]: {message}[/red]",
+            f"[red][bold]{self.__class__.__name__.removeprefix('u').replace('_', ' ')}[/bold]: {message}[/red]",
             highlight=False,
         )
         if help:
@@ -48,13 +48,13 @@ class uNameError(uException):
     pass
 
 
-class uDimensionError(uException):
+class Dimension_Mismatch(uException):
     pass
 
 
 class Exceptions:
-    def __init__(self, path: str | None):
-        self.path = path
+    def __init__(self, module: ModuleMeta):
+        self.module = module
 
     def unexpectedToken(
         self,
@@ -64,7 +64,7 @@ class Exceptions:
     ):
         uSyntaxError(
             f"Unexpected token: '{tok.value}'",
-            path=self.path,
+            module=self.module,
             help=help,
             loc=loc or tok.loc,
         )
@@ -72,8 +72,21 @@ class Exceptions:
     def unexpectedEOF(self, loc: Location | None = None):
         uSyntaxError(
             "Unexpected EOF",
-            path=self.path,
+            module=self.module,
             loc=loc,
+        )
+
+    def binOpMismatch(self, node: BinOp, data: list[dict]):
+        names = {
+            "plus": "addition",
+            "minus": "subtraction",
+            "times": "multiplication",
+            "divide": "division",
+        }
+        Dimension_Mismatch(
+            f"incompatible dimensions in {names[node.op.name]} {data[0]['dim']} to {data[1]['dim']}",
+            module=self.module,
+            loc=node.loc,
         )
 
     def throw(
@@ -83,4 +96,4 @@ class Exceptions:
         help: str | None = None,
         loc: Location | None = None,
     ):
-        exception(message=message, help=help, path=self.path, loc=loc)
+        exception(message=message, module=self.module, help=help, loc=loc)
