@@ -19,6 +19,20 @@ class Location:
     end_line: int = -1
     end_col: int = -1
 
+    def split(self) -> list["Location"]:
+        """
+        Split a multi-line position span into individual line positions.
+        """
+        return [
+            Location(
+                line=line,
+                col=self.col if line == self.line else 1,
+                end_line=line,
+                end_col=-1 if line != self.end_line else self.end_col,
+            )
+            for line in range(self.line, self.end_line + 1)
+        ]
+
 
 @dataclass
 class Token:

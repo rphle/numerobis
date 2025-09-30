@@ -540,7 +540,8 @@ class Parser(ParserTemplate):
                     self._peek(2, ignore_whitespace=False).type in {"LPAREN", "ID"}
                     and self._peek(ignore_whitespace=False).value == " "
                 ):
-                    num = dataclasses.replace(num, unit=self.unit())
+                    unit = self.unit()
+                    num = dataclasses.replace(num, unit=unit, loc=nodeloc(num, unit))
                 return num
             case "TRUE" | "FALSE":
                 return Boolean(value=tok.value == "TRUE", loc=tok.loc)
@@ -555,6 +556,7 @@ class Parser(ParserTemplate):
                 if self._peek(ignore_whitespace=False).type != "LBRACKET":
                     node = self.expression()
                     self._consume("RPAREN")
+                    node = dataclasses.replace(node, loc=nodeloc(node, self.tok))
                     return node
                 else:
                     return self.tuple()

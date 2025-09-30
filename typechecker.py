@@ -1,5 +1,4 @@
 import dataclasses
-from parser import Parser
 from typing import Literal
 
 import rich
@@ -16,8 +15,8 @@ from astnodes import (
     Unit,
     UnitDefinition,
 )
-from exceptions import Exceptions, uDimensionError, uNameError
-from lexer import lex
+from classes import ModuleMeta
+from exceptions import Dimension_Mismatch, Exceptions, uNameError
 
 
 @dataclasses.dataclass(kw_only=True, frozen=True)
@@ -27,10 +26,10 @@ class E:
 
 
 class Typechecker:
-    def __init__(self, ast: list[AstNode], path: str | None = None):
+    def __init__(self, ast: list[AstNode], module: ModuleMeta):
         self.ast = ast
-        self.path = path
-        self.errors = Exceptions(path)
+        self.module = module
+        self.errors = Exceptions(module=module)
 
         self.dimensions = {}
         self.units = {}
@@ -173,6 +172,24 @@ class Typechecker:
 
         return res
 
+    def format_dimension(self, dims) -> str:
+        num, denom = [], []
+
+        for d in dims:
+            name = d.base.name if hasattr(d, "base") else d.name
+            exp = getattr(d, "exponent", 1)
+
+            target = num if exp > 0 else denom
+            exp = abs(exp)
+            target.append(name if exp == 1 else f"{name}^{exp}")
+
+        num_str = " * ".join(num) or "1"
+        return (
+            f"{num_str} / {denom[0] if len(denom) == 1 else '(' + '·'.join(denom) + ')'}"
+            if denom
+            else num_str
+        )
+
     def dimension_def(self, node):
         normalized = []
         if node.value:
@@ -201,7 +218,7 @@ class Typechecker:
                 )
                 if expected != dimension:
                     self.errors.throw(
-                        uDimensionError,
+                        Dimension_Mismatch,
                         f"unit '{node.name.name}' is not of dimension '{node.dimension.name}'",
                     )
 
@@ -223,6 +240,10 @@ class Typechecker:
                     self.dimensionize(self.flatten(sides[i]["unit"], "unit"))
                 )
 
+        if sides[0]["dim"] != sides[1]["dim"]:
+            texts = [self.format_dimension(side["dim"]) for side in sides]
+            self.errors.binOpMismatch(node, texts)
+
         print("Left dimension:", sides[0]["dim"])
         print("Right dimension:", sides[1]["dim"])
 
@@ -235,15 +256,3 @@ class Typechecker:
                     self.unit_def(node)
                 case BinOp():
                     self.bin_op(node)
-
-
-if __name__ == "__main__":
-    path = "tests/test.und"
-    source = open(path, "r").read()
-
-    lexed = lex(source, debug=False)
-    parser = Parser(lexed)
-    ast = parser.start()
-
-    tc = Typechecker(ast, path)
-    tc.start()

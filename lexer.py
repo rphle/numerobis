@@ -1,5 +1,3 @@
-import sys
-
 import lex as plylex
 from astnodes import Location, Token
 from classes import ModuleMeta
@@ -7,9 +5,6 @@ from exceptions import Exceptions
 
 
 class LexTokens:
-    def __init__(self, module: ModuleMeta):
-        self.errors = Exceptions(module=module)
-
     reserved = (
         "IF",
         "THEN",
@@ -134,13 +129,15 @@ class LexTokens:
         t.lexer.lineno += t.value.count("\n")
 
     def t_error(self, t):
-        print("Illegal character %s" % repr(t.value[0]))
-        print(t)
-        sys.exit(1)
+        t.value = t.value[0]
+        e = SyntaxError()
+        e.tok = t  # type: ignore
+        raise e
 
 
 def lex(source: str, module: ModuleMeta, debug=False) -> list[Token]:
-    lexer = plylex.lex(module=LexTokens(module=module))
+    lexer = plylex.lex(module=LexTokens())
+    errors = Exceptions(module=module)
 
     output: list[Token] = []
     lexer.lineno = 1
@@ -148,8 +145,14 @@ def lex(source: str, module: ModuleMeta, debug=False) -> list[Token]:
     lexer.input(source)
 
     last_newline_pos = [0, 0]
+    errored = False
     while True:
-        tok = lexer.token()
+        try:
+            tok = lexer.token()
+        except SyntaxError as e:
+            tok = e.tok  # type: ignore
+            errored = True
+
         if not tok:
             break
 
@@ -170,6 +173,9 @@ def lex(source: str, module: ModuleMeta, debug=False) -> list[Token]:
         )
         if debug:
             print(token)
+
+        if errored:
+            errors.unexpectedToken(token)
 
         output.append(token)
 

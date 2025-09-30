@@ -1,3 +1,4 @@
+import dataclasses
 from parser.template import ParserTemplate
 
 from astnodes import (
@@ -139,7 +140,9 @@ class UnitParser(ParserTemplate):
             case "LPAREN":
                 node = self.expression()
                 self._consume("RPAREN")
-                return self._make_unit(node)
+                unit = self._make_unit(node)
+                unit = dataclasses.replace(unit, loc=nodeloc(unit, self.tok))
+                return unit
             case "AT":
                 """Reference parameter"""
                 if self._peek(ignore_whitespace=False).type != "ID":
