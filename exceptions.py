@@ -18,58 +18,68 @@ class uException:
         exit: bool = True,
     ):
         console = rich.console.Console()
+        error_type = self.__class__.__name__.removeprefix("u").replace("_", " ")
+
+        # Header
+        console.print()
+        location = f"{module.path or '<unknown>'}" + (
+            f":{loc.line}:{loc.col}" if loc else ""
+        )
         console.print(
-            rf'[reset][dim]\[at "{module.path if module.path else "<unknown>"}"'
-            + (f", line {loc.line}, col {loc.col}]" if loc else "]")
-            + "[/dim]",
+            f"[bold red]{error_type}[/bold red] [dim]at {location}[/dim]",
             highlight=False,
         )
+        console.print(f"  {message}", highlight=False)
 
-        if (
-            preview
-            and loc is not None
-            and module.source
-            and 0 < loc.end_line <= len(module.source.splitlines())
-        ):
-            for line in loc.split():
+        # Code preview
+        source_lines = module.source.splitlines()
+        if preview and loc and module.source and 0 < loc.end_line <= len(source_lines):
+            console.print()
+
+            locs = loc.split()
+            for i, line in enumerate(locs):
                 line.end_line = (
-                    line.end_line
-                    if line.end_line > 0
-                    else len(module.source.splitlines())
+                    line.end_line if line.end_line > 0 else len(source_lines)
                 )
                 line.end_col = (
                     line.end_col
                     if line.end_col > 0
-                    else len(module.source.splitlines()[line.line - 1]) + 1
+                    else len(source_lines[line.line - 1]) + 1
                 )
 
-                src = module.source.splitlines()[line.line - 1]
+                src = source_lines[line.line - 1]
                 start = max(0, line.col - 30)
                 end = min(len(src), line.end_col + 30)
 
                 highlighted = (
                     f"{rich.markup.escape(src[start : line.col - 1])}"
-                    f"[red]{rich.markup.escape(src[line.col - 1 : line.end_col])}[/red]"
+                    f"[red bold]{rich.markup.escape(src[line.col - 1 : line.end_col])}[/red bold]"
                     f"{rich.markup.escape(src[line.end_col : end])}"
                 )
                 prefix = "..." if start > 0 else ""
                 suffix = "..." if end < len(src) else ""
 
                 console.print(
-                    f"[dim]{line.line}|[/dim]   {prefix}{highlighted}{suffix}\n"
-                    f"{' ' * len(f'{line.line}|   {prefix}{src[start : line.col - 1]}')}[red bold]{'^' * (line.end_col - line.col + 1)}[/bold red]",
+                    f"[dim]    {line.line} │[/dim]   {prefix}{highlighted}{suffix}",
                     highlight=False,
                 )
 
-        console.print(
-            f"[red][bold]{self.__class__.__name__.removeprefix('u').replace('_', ' ')}[/bold]: {message}[/red]",
-            highlight=False,
-        )
+                underline = "─" * (line.end_col - line.col + 1)
+                if i == 0:
+                    underline = "╰" + underline[1:]
+                if i == len(locs) - 1:
+                    underline = underline[:-1] + "╯"
+                marker = f"{' ' * len(f'{prefix}{src[start : line.col - 1]}')}[red bold]{underline}[/bold red]"
+
+                console.print(
+                    f"[dim]    {' ' * len(str(line.line))} │[/dim]   {marker}",
+                    highlight=False,
+                )
+
         if help:
-            console.print(
-                f"[bold]help:[/bold] {rich.markup.escape(help)}",
-                highlight=False,
-            )
+            console.print(f"  [dim]{help}[/dim]", highlight=False)
+
+        console.print()
         if exit:
             sys.exit(1)
 
@@ -100,7 +110,7 @@ class Exceptions:
         help: str | None = None,
     ):
         uSyntaxError(
-            f"Unexpected token: '{tok.value}'",
+            f"unexpected token '{tok.value}'",
             module=self.module,
             help=help,
             loc=tok.loc,
@@ -108,29 +118,22 @@ class Exceptions:
 
     def unexpectedEOF(self, loc: Location | None = None):
         uSyntaxError(
-            "Unexpected EOF",
+            "unexpected end of file",
             module=self.module,
             loc=loc,
         )
 
     def binOpMismatch(self, node: BinOp, texts: list[str]):
-        names = {
+        operation = {
             "plus": "addition",
             "minus": "subtraction",
-            "times": "multiplication",
-            "divide": "division",
-        }
+        }[node.op.name]
+
         Dimension_Mismatch(
-            f"incompatible dimensions in {names[node.op.name]}",
+            f"incompatible dimensions in {operation}: [{texts[0]}] vs [{texts[1]}]",
             module=self.module,
             loc=node.loc,
-            exit=False,
         )
-
-        print("   left hand side:", texts[0])
-        print("  right hand side:", texts[1])
-
-        sys.exit(1)
 
     def throw(
         self,

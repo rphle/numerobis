@@ -1,7 +1,6 @@
 import dataclasses
+from difflib import get_close_matches
 from typing import Literal
-
-import rich
 
 from astnodes import (
     AstNode,
@@ -33,6 +32,10 @@ class Typechecker:
 
         self.dimensions = {}
         self.units = {}
+
+    def _get_suggestion(self, name: str, available: dict) -> str | None:
+        matches = get_close_matches(name, available.keys(), n=1, cutoff=0.6)
+        return matches[0] if matches else None
 
     def normalize(self, nodes):
         """
@@ -95,9 +98,13 @@ class Typechecker:
                     res.append(node)
                 case Identifier():
                     if node.name not in getattr(self, typ):
+                        suggestion = self._get_suggestion(node.name, getattr(self, typ))
                         self.errors.throw(
                             uNameError,
                             f"undefined {typ[:-1]} '{node.name}'",
+                            help=f"did you mean '{suggestion}'?"
+                            if suggestion
+                            else None,
                             loc=node.loc,
                         )
                     dim = self.flatten(getattr(self, typ)[node.name]["normalized"], typ)
@@ -151,8 +158,14 @@ class Typechecker:
             match node:
                 case Identifier():
                     if node.name not in self.units:
+                        suggestion = self._get_suggestion(node.name, self.units)
                         self.errors.throw(
-                            uNameError, f"undefined unit '{node.name}'", loc=node.loc
+                            uNameError,
+                            f"undefined unit '{node.name}'",
+                            help=f"did you mean '{suggestion}'?"
+                            if suggestion
+                            else None,
+                            loc=node.loc,
                         )
                     res.extend(self.units[node.name]["dimension"])
                 case E():
@@ -177,17 +190,19 @@ class Typechecker:
 
         for d in dims:
             name = d.base.name if hasattr(d, "base") else d.name
-            exp = getattr(d, "exponent", 1)
-
-            target = num if exp > 0 else denom
-            exp = abs(exp)
-            target.append(name if exp == 1 else f"{name}^{exp}")
+            exp = abs(getattr(d, "exponent", 1))
+            target = num if getattr(d, "exponent", 1) > 0 else denom
+            target.append(
+                name if exp == 1 else f"{name}^{int(exp) if exp == int(exp) else exp}"
+            )
 
         num_str = " * ".join(num) or "1"
+        if not denom:
+            return num_str
         return (
-            f"{num_str} / {denom[0] if len(denom) == 1 else '(' + '·'.join(denom) + ')'}"
-            if denom
-            else num_str
+            f"{num_str} / {denom[0]}"
+            if len(denom) == 1
+            else f"{num_str} / ({' * '.join(denom)})"
         )
 
     def dimension_def(self, node):
@@ -202,9 +217,11 @@ class Typechecker:
 
         if node.dimension and not node.value:
             if node.dimension.name not in self.dimensions:
+                suggestion = self._get_suggestion(node.dimension.name, self.dimensions)
                 self.errors.throw(
                     uNameError,
                     f"undefined dimension '{node.dimension.name}'",
+                    help=f"did you mean '{suggestion}'?" if suggestion else None,
                     loc=node.dimension.loc,
                 )
             dimension = [node.dimension]
@@ -213,13 +230,29 @@ class Typechecker:
             dimension = self.simplify(self.dimensionize(normalized))
 
             if node.dimension:
+                if node.dimension.name not in self.dimensions:
+                    suggestion = self._get_suggestion(
+                        node.dimension.name, self.dimensions
+                    )
+                    self.errors.throw(
+                        uNameError,
+                        f"undefined dimension '{node.dimension.name}'",
+                        help=f"did you mean '{suggestion}'?" if suggestion else None,
+                        loc=node.dimension.loc,
+                    )
+
                 expected = self.simplify(
                     self.dimensions[node.dimension.name]["normalized"]
                 )
                 if expected != dimension:
+                    expected_str, actual_str = (
+                        self.format_dimension(expected),
+                        self.format_dimension(dimension),
+                    )
                     self.errors.throw(
                         Dimension_Mismatch,
-                        f"unit '{node.name.name}' is not of dimension '{node.dimension.name}'",
+                        f"unit '{node.name.name}' declared as '{node.dimension.name}' [{expected_str}] but has dimension [{actual_str}]",
+                        loc=node.name.loc,
                     )
 
         self.units[node.name.name] = {
@@ -230,7 +263,8 @@ class Typechecker:
         }
 
     def bin_op(self, node: BinOp):
-        rich.print(node)
+        if node.op.name not in {"plus", "minus"}:
+            return
         sides = [{"unit": [], "dim": []} for _ in range(2)]
 
         for i, side in enumerate((node.left, node.right)):
@@ -243,9 +277,6 @@ class Typechecker:
         if sides[0]["dim"] != sides[1]["dim"]:
             texts = [self.format_dimension(side["dim"]) for side in sides]
             self.errors.binOpMismatch(node, texts)
-
-        print("Left dimension:", sides[0]["dim"])
-        print("Right dimension:", sides[1]["dim"])
 
     def start(self):
         for node in self.ast:
