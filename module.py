@@ -1,8 +1,8 @@
 from parser.parser import Parser
 
 from classes import ModuleMeta
+from dimchecker import Dimchecker
 from lexer import lex
-from typechecker import Typechecker
 
 
 class Module:
@@ -14,6 +14,6 @@ class Module:
         parser = Parser(lexed, module=self.meta)
         self.ast = parser.start()
 
-    def typecheck(self):
-        tc = Typechecker(self.ast, module=self.meta)
+    def dimcheck(self):
+        tc = Dimchecker(self.ast, module=self.meta)
         tc.start()

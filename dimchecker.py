@@ -24,14 +24,27 @@ class E:
     exponent: float
 
 
-class Typechecker:
+@dataclasses.dataclass(kw_only=True, frozen=True)
+class NodeType:
+    typ: str
+    dimension: list
+    unit: list | None = None
+
+
+@dataclasses.dataclass(kw_only=True, frozen=True)
+class Namespaces:
+    names: dict[str, NodeType] = dataclasses.field(default_factory=dict)
+    dimensions: dict[str, NodeType] = dataclasses.field(default_factory=dict)
+    units: dict[str, NodeType] = dataclasses.field(default_factory=dict)
+
+
+class Dimchecker:
     def __init__(self, ast: list[AstNode], module: ModuleMeta):
         self.ast = ast
         self.module = module
         self.errors = Exceptions(module=module)
 
-        self.dimensions = {}
-        self.units = {}
+        self.ns = Namespaces()
 
     def _get_suggestion(self, name: str, available: dict) -> str | None:
         matches = get_close_matches(name, available.keys(), n=1, cutoff=0.6)
@@ -90,6 +103,7 @@ class Typechecker:
         Resolve everything to base units/dimensions
         """
         typ = typ if typ.endswith("s") else f"{typ}s"  # type: ignore
+        ns = getattr(self.ns, typ)
         res = []
 
         for node in nodes:
@@ -97,8 +111,8 @@ class Typechecker:
                 case Scalar():
                     res.append(node)
                 case Identifier():
-                    if node.name not in getattr(self, typ):
-                        suggestion = self._get_suggestion(node.name, getattr(self, typ))
+                    if node.name not in ns:
+                        suggestion = self._get_suggestion(node.name, ns)
                         self.errors.throw(
                             uNameError,
                             f"undefined {typ[:-1]} '{node.name}'",
@@ -107,12 +121,14 @@ class Typechecker:
                             else None,
                             loc=node.loc,
                         )
-                    dim = self.flatten(getattr(self, typ)[node.name]["normalized"], typ)
+                    dim = self.flatten(
+                        getattr(ns[node.name], typ.removesuffix("s")), typ=typ
+                    )
                     res.extend(dim or [node])
                 case E():
                     base = self.flatten(
                         list(node.base) if isinstance(node.base, list) else [node.base],
-                        typ,
+                        typ=typ,
                     )
                     for item in base:
                         res.append(
@@ -123,7 +139,7 @@ class Typechecker:
                             )
                         )
                 case list():
-                    res.extend(self.flatten(node, typ))
+                    res.extend(self.flatten(node, typ=typ))
                 case _:
                     raise ValueError(f"Unknown node: {node}")
 
@@ -157,8 +173,8 @@ class Typechecker:
         for node in nodes:
             match node:
                 case Identifier():
-                    if node.name not in self.units:
-                        suggestion = self._get_suggestion(node.name, self.units)
+                    if node.name not in self.ns.units:
+                        suggestion = self._get_suggestion(node.name, self.ns.units)
                         self.errors.throw(
                             uNameError,
                             f"undefined unit '{node.name}'",
@@ -167,7 +183,7 @@ class Typechecker:
                             else None,
                             loc=node.loc,
                         )
-                    res.extend(self.units[node.name]["dimension"])
+                    res.extend(self.ns.units[node.name].dimension)
                 case E():
                     base = self.dimensionize(
                         list(node.base) if isinstance(node.base, list) else [node.base]
@@ -209,15 +225,21 @@ class Typechecker:
         normalized = []
         if node.value:
             normalized = self.flatten(self.normalize(node.value.unit), typ="dimension")
-        self.dimensions[node.name.name] = {"name": node.name, "normalized": normalized}
+            normalized = self.simplify(normalized)
+        self.ns.dimensions[node.name.name] = NodeType(
+            typ="dimension",
+            dimension=normalized,
+        )
 
     def unit_def(self, node):
         normalized = []
         dimension: list[Scalar | Identifier | E | list] = []
 
         if node.dimension and not node.value:
-            if node.dimension.name not in self.dimensions:
-                suggestion = self._get_suggestion(node.dimension.name, self.dimensions)
+            if node.dimension.name not in self.ns.dimensions:
+                suggestion = self._get_suggestion(
+                    node.dimension.name, self.ns.dimensions
+                )
                 self.errors.throw(
                     uNameError,
                     f"undefined dimension '{node.dimension.name}'",
@@ -230,9 +252,9 @@ class Typechecker:
             dimension = self.simplify(self.dimensionize(normalized))
 
             if node.dimension:
-                if node.dimension.name not in self.dimensions:
+                if node.dimension.name not in self.ns.dimensions:
                     suggestion = self._get_suggestion(
-                        node.dimension.name, self.dimensions
+                        node.dimension.name, self.ns.dimensions
                     )
                     self.errors.throw(
                         uNameError,
@@ -241,9 +263,8 @@ class Typechecker:
                         loc=node.dimension.loc,
                     )
 
-                expected = self.simplify(
-                    self.dimensions[node.dimension.name]["normalized"]
-                )
+                expected = self.ns.dimensions[node.dimension.name].dimension
+
                 if expected != dimension:
                     expected_str, actual_str = (
                         self.format_dimension(expected),
@@ -255,12 +276,9 @@ class Typechecker:
                         loc=node.name.loc,
                     )
 
-        self.units[node.name.name] = {
-            "name": node.name,
-            "value": getattr(node.value, "unit", None),
-            "normalized": normalized,
-            "dimension": dimension,
-        }
+        self.ns.units[node.name.name] = NodeType(
+            typ="unit", dimension=dimension, unit=normalized
+        )
 
     def bin_op(self, node: BinOp):
         if node.op.name not in {"plus", "minus"}:
@@ -271,7 +289,7 @@ class Typechecker:
             if isinstance(side, (Integer, Float)):
                 sides[i]["unit"] = self.normalize(getattr(side.unit, "unit", []))
                 sides[i]["dim"] = self.simplify(
-                    self.dimensionize(self.flatten(sides[i]["unit"], "unit"))
+                    self.dimensionize(self.flatten(sides[i]["unit"], typ="unit"))
                 )
 
         if sides[0]["dim"] != sides[1]["dim"]:

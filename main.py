@@ -19,11 +19,8 @@ if len(sys.argv) > 1:
 for test in tests:
     m = Module(path="tests/" + test)
 
-    try:
-        m.parse()
-    except Exception as e:
-        console.print(f"Error parsing {test}:", style="bold red")
-        raise e
+    m.parse()
+    m.dimcheck()
 
     snapshots[test] = sha512(pickle.dumps(m.ast)).hexdigest()
 
