@@ -100,6 +100,18 @@ class Dimension_Mismatch(uException):
     pass
 
 
+class uCircularImport(uException):
+    pass
+
+
+class uImportError(uException):
+    pass
+
+
+class uModuleNotFound(uException):
+    pass
+
+
 class Exceptions:
     def __init__(self, module: ModuleMeta):
         self.module = module

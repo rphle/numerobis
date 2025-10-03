@@ -3,31 +3,29 @@ import os
 import pickle
 import sys
 from hashlib import sha512
+from pathlib import Path
 
 from rich.console import Console
 
-from module import Module
+from module_system import ModuleSystem
 
 console = Console()
 
 snapshots = {}
+tests_dir = Path("tests")
+tests = sorted(os.listdir(tests_dir))
 
-tests = sorted(os.listdir("tests"))
+
 if len(sys.argv) > 1:
     tests = [test for test in tests if test.startswith(sys.argv[1])]
 
+module_system = ModuleSystem()
 for test in tests:
-    m = Module(path="tests/" + test)
-
-    m.parse()
-    m.dimcheck()
-
-    snapshots[test] = sha512(pickle.dumps(m.ast)).hexdigest()
-
+    module_info = module_system.load(str(tests_dir / test))
+    snapshots[test] = sha512(pickle.dumps(module_info.module.ast)).hexdigest()
     print()
-    console.print(test, "=" * 40, style="bold green")
-    console.print(m.ast)
-
+    console.print(f"{test} {'=' * 40}", style="bold green")
+    console.print(module_info.module.ast)
 
 if os.path.isfile("snapshots.json"):
     with open("snapshots.json", "r") as saved:

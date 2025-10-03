@@ -241,3 +241,16 @@ class Continue(AstNode):
 @dataclass(kw_only=True, frozen=True)
 class Return(AstNode):
     value: AstNode | None
+
+
+@dataclass(kw_only=True, frozen=True)
+class Import(AstNode):
+    module: Identifier
+    alias: Identifier | None = None
+
+
+@dataclass(kw_only=True, frozen=True)
+class FromImport(AstNode):
+    module: Identifier
+    names: list[Identifier] | None = None  # None means import *
+    aliases: list[Identifier | None] | None = None

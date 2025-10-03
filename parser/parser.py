@@ -17,9 +17,11 @@ from astnodes import (
     Conversion,
     DimensionDefinition,
     ForLoop,
+    FromImport,
     Function,
     Identifier,
     If,
+    Import,
     Index,
     List,
     Location,
@@ -83,6 +85,12 @@ class Parser(ParserTemplate):
             """Continue statement"""
             self._consume("CONTINUE")
             return Continue(loc=self.tok.loc)
+        elif first.type == "IMPORT":
+            """Import statement"""
+            return self.import_stmt()
+        elif first.type == "FROM":
+            """From import statement"""
+            return self.from_import_stmt()
         elif (
             first.type == "ID"
             and self._peek(2).type == "LPAREN"
@@ -576,3 +584,54 @@ class Parser(ParserTemplate):
             elif tok == "EOF":
                 self.errors.unexpectedEOF()
             i += 1
+
+    def import_stmt(self) -> Import:
+        start = self._consume("IMPORT")
+        module_name = self._consume("ID")
+        module = self._make_id(module_name)
+
+        alias = None
+        if self._peek().type == "ID" and self._peek().value == "as":
+            self._consume("ID")  # consume 'as'
+            alias_name = self._consume("ID")
+            alias = self._make_id(alias_name)
+
+        return Import(module=module, alias=alias, loc=nodeloc(start, alias or module))
+
+    def from_import_stmt(self) -> FromImport:
+        start = self._consume("FROM")
+        module_name = self._consume("ID")
+        module = self._make_id(module_name)
+
+        self._consume("IMPORT")
+
+        names = []
+        aliases = []
+
+        # Check for 'import *'
+        if self._peek().type == "TIMES":
+            self._consume("TIMES")
+            return FromImport(
+                module=module, names=None, aliases=None, loc=nodeloc(start, self.tok)
+            )
+
+        while True:
+            name_tok = self._consume("ID")
+            name = self._make_id(name_tok)
+            names.append(name)
+
+            alias = None
+            if self._peek().type == "ID" and self._peek().value == "as":
+                self._consume("ID")  # consume 'as'
+                alias_tok = self._consume("ID")
+                alias = self._make_id(alias_tok)
+            aliases.append(alias)
+
+            if self._peek().type != "COMMA":
+                break
+            self._consume("COMMA")
+
+        end = aliases[-1] if aliases[-1] else names[-1]
+        return FromImport(
+            module=module, names=names, aliases=aliases, loc=nodeloc(start, end)
+        )

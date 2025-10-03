@@ -1,3 +1,4 @@
+
 import lex as plylex
 from astnodes import Location, Token
 from classes import ModuleMeta
@@ -24,6 +25,8 @@ class LexTokens:
         "BREAK",
         "CONTINUE",
         "RETURN",
+        "IMPORT",
+        "FROM",
     )
 
     tokens = reserved + (
@@ -183,3 +186,4 @@ def lex(source: str, module: ModuleMeta, debug=False) -> list[Token]:
         print("=" * 80)
 
     return output
+
