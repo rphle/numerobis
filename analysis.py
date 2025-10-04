@@ -39,7 +39,7 @@ def analyze(module: ModuleMeta):
                 else:
                     dimension = normalized
 
-                dimension = self.simplify(dimension)
+                dimension = simplify(dimension)
 
                 return dimension, normalized
 
@@ -146,28 +146,6 @@ def analyze(module: ModuleMeta):
 
                 return res
 
-            def simplify(self, nodes: list):
-                """Combine like terms by summing exponents"""
-                groups = {}
-
-                for node in nodes:
-                    if isinstance(node, (E, Identifier)):
-                        base = node.base if isinstance(node, E) else node
-                        key = (type(base).__name__, getattr(base, "name", str(base)))
-                        exp = getattr(node, "exponent", 1)
-
-                        if key not in groups:
-                            groups[key] = {"base": base, "exponent": 0}
-                        groups[key]["exponent"] += exp
-
-                return [
-                    E(base=g["base"], exponent=g["exponent"])
-                    if g["exponent"] != 1
-                    else g["base"]
-                    for g in groups.values()
-                    if g["exponent"] != 0
-                ]
-
             def dimensionize(self, nodes: list):
                 """Convert units to their dimensions, filtering out all scalar expressions"""
                 res = []
@@ -222,17 +200,43 @@ def analyze(module: ModuleMeta):
     return _analyze
 
 
+def simplify(nodes: list):
+    """Combine like terms by summing exponents"""
+    groups = {}
+
+    for node in nodes:
+        if isinstance(node, (E, Identifier)):
+            base = node.base if isinstance(node, E) else node
+            key = (type(base).__name__, getattr(base, "name", str(base)))
+            exp = getattr(node, "exponent", 1)
+
+            if key not in groups:
+                groups[key] = {"base": base, "exponent": 0}
+            groups[key]["exponent"] += exp
+
+    return [
+        E(base=g["base"], exponent=g["exponent"]) if g["exponent"] != 1 else g["base"]
+        for g in groups.values()
+        if g["exponent"] != 0
+    ]
+
+
 def format_dimension(dims) -> str:
     """Format dimension for error messages"""
     num, denom = [], []
 
     for d in dims:
-        if hasattr(d, "base"):
-            name = getattr(d.base, "name", getattr(d.base, "value", str(d.base)))
-        else:
-            name = getattr(d, "name", getattr(d, "value", str(d)))
+        exp = 1
+        name = None
+        if isinstance(d, E):
+            if isinstance(d.base, list):
+                name = format_dimension(d.base)
+                name = f"({name})" if len(d.base) > 1 else name
+            exp = abs(d.exponent)
+            d = d.base
 
-        exp = abs(getattr(d, "exponent", 1))
+        name = getattr(d, "name", getattr(d, "value", str(d))) if name is None else name
+
         target = num if getattr(d, "exponent", 1) > 0 else denom
         target.append(
             name if exp == 1 else f"{name}^{int(exp) if exp == int(exp) else exp}"

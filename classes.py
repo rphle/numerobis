@@ -15,7 +15,7 @@ class ModuleMeta:
 
 @dataclasses.dataclass(kw_only=True, frozen=True)
 class E:
-    base: AstNode | list | "E"
+    base: "AstNode | list | E"
     exponent: float
 
 
@@ -25,6 +25,7 @@ class NodeType:
     dimension: list
     unit: list | None = None
     dimensionless: bool = False
+    value: Any = None
 
 
 @dataclasses.dataclass(kw_only=True, frozen=True)

@@ -3,7 +3,6 @@ from parser.template import ParserTemplate
 from parser.unitparser import UnitParser
 
 from astnodes import (
-    Assign,
     AstNode,
     BinOp,
     Block,
@@ -34,6 +33,7 @@ from astnodes import (
     UnaryOp,
     Unit,
     UnitDefinition,
+    Variable,
     WhileLoop,
     nodeloc,
 )
@@ -61,7 +61,7 @@ class Parser(ParserTemplate):
 
         if first.type == "ID" and self._peek(2).type in {"ASSIGN", "COLON"}:
             """Variable declaration"""
-            return self.assignment()
+            return self.variable()
         elif first.type == "DIMENSION":
             """Dimension declaration"""
             return self.dimension_def()
@@ -139,7 +139,7 @@ class Parser(ParserTemplate):
 
         return self.conversion()
 
-    def assignment(self) -> AstNode:
+    def variable(self) -> AstNode:
         name = self._consume("ID")
         type_token = None
         if self._peek().type == "COLON":
@@ -149,8 +149,8 @@ class Parser(ParserTemplate):
         self._consume("ASSIGN")
         expr = self.block()
 
-        return Assign(
-            target=Identifier(name=name.value, loc=name.loc),
+        return Variable(
+            name=Identifier(name=name.value, loc=name.loc),
             value=expr,
             type=type_token if type_token else None,
             loc=nodeloc(name, expr),

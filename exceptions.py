@@ -3,7 +3,7 @@ import sys
 import rich.console
 import rich.markup
 
-from astnodes import BinOp, Location, Token
+from astnodes import BinOp, Identifier, Location, Token
 from classes import ModuleMeta
 
 
@@ -145,6 +145,13 @@ class Exceptions:
             f"incompatible dimensions in {operation}: [{texts[0]}] vs [{texts[1]}]",
             module=self.module,
             loc=node.loc,
+        )
+
+    def nameError(self, name: Identifier):
+        uNameError(
+            f"name '{name.name}' is not defined",
+            module=self.module,
+            loc=name.loc,
         )
 
     def throw(

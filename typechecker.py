@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-from analysis import analyze, format_dimension
+from analysis import analyze, format_dimension, simplify
 from astnodes import (
-    Assign,
     AstNode,
     BinOp,
+    Boolean,
     Call,
     Conversion,
     DimensionDefinition,
@@ -19,9 +19,10 @@ from astnodes import (
     List,
     UnaryOp,
     UnitDefinition,
+    Variable,
     WhileLoop,
 )
-from classes import Env, ModuleMeta, Namespaces, NodeType
+from classes import E, Env, ModuleMeta, Namespaces, NodeType
 from exceptions import Dimension_Mismatch, Exceptions, uNameError
 from utils import camel2snake_pattern
 
@@ -40,31 +41,65 @@ class Typechecker:
 
         self.analyze = analyze(module)
 
-    def assign_(self, node: Assign, env: Env):
-        pass
-
     def bin_op_(self, node: BinOp, env: Env):
         """Check dimensional consistency in addition and subtraction operations"""
-        sides = [self.check(side, env=env._()) for side in (node.left, node.right)]
+        left, right = [
+            self.check(side, env=env._()) for side in (node.left, node.right)
+        ]
 
-        try:
-            if (
-                node.op.name in {"plus", "minus"}
-                and sides[0].dimension != sides[1].dimension
-            ):
-                dim_strs = [format_dimension(side.dimension) for side in sides]
+        if node.op.name in {"plus", "minus"}:
+            if left.dimension != right.dimension:
+                dim_strs = [format_dimension(side.dimension) for side in (left, right)]
                 self.errors.binOpMismatch(node, dim_strs)
-        except Exception as e:
-            print(node)
-            raise e
 
-        return NodeType(typ=sides[0].typ, dimension=sides[0].dimension)
+            return NodeType(typ=left.typ, dimension=left.dimension)
+        elif node.op.name in {"times", "divide"}:
+            if node.op.name == "times":
+                r = right.dimension
+            else:
+                r = [
+                    E(
+                        base=comp.base if isinstance(comp, E) else comp,
+                        exponent=(comp.exponent if isinstance(comp, E) else 1) * -1,
+                    )
+                    for comp in right.dimension
+                ]
+            dimension = simplify(left.dimension + r)
+
+            return NodeType(typ=left.typ, dimension=dimension)
+        elif node.op.name == "power":
+            assert right.typ in {"Float", "Integer"}
+            dimension = [
+                E(
+                    base=comp.base if isinstance(comp, E) else comp,
+                    exponent=(comp.exponent if isinstance(comp, E) else 1)
+                    * right.value,
+                )
+                for comp in left.dimension
+            ]
+            return NodeType(typ=left.typ, dimension=dimension)
+        else:
+            raise NotImplementedError(f"BinOp {node.op.name} not implemented!")
+
+    def boolean_(self, node: Boolean, env: Env):
+        return NodeType(typ="Boolean", dimension=[], dimensionless=True)
 
     def call_(self, node: Call, env: Env):
         pass
 
     def conversion_(self, node: Conversion, env: Env):
-        pass
+        value = self.check(node.value, env=env._())
+
+        target, _ = self.analyze("unit")(node.unit, env=env._())
+
+        if value.dimension != target and not value.dimensionless:
+            self.errors.throw(
+                Dimension_Mismatch,
+                f"Cannot convert [{format_dimension(value.dimension)}] to [{format_dimension(target)}]",
+                loc=node.loc,
+            )
+
+        return NodeType(typ="dimension", dimension=value.dimension)
 
     def dimension_definition_(self, node: DimensionDefinition, env: Env):
         """Process dimension definitions"""
@@ -89,7 +124,10 @@ class Typechecker:
         pass
 
     def identifier_(self, node: Identifier, env: Env):
-        pass
+        try:
+            return env.get("names")(node.name)
+        except KeyError:
+            self.errors.nameError(node)
 
     def if_(self, node: If, env: Env):
         pass
@@ -99,7 +137,12 @@ class Typechecker:
 
     def number_(self, node: Integer | Float, env: Env):
         dimension, unit = self.analyze("unit")(node.unit, env=env)
-        return NodeType(typ=type(node).__name__, dimension=dimension, unit=unit)
+        return NodeType(
+            typ=type(node).__name__,
+            dimension=dimension,
+            unit=unit,
+            value=float(node.value) ** float(node.exponent if node.exponent else 1),
+        )
 
     def unary_op_(self, node: UnaryOp, env: Env):
         pass
@@ -147,6 +190,30 @@ class Typechecker:
                 typ="unit",
                 dimension=dimension or [node.dimension],
                 unit=normalized,
+            ),
+        )
+
+    def variable_(self, node: Variable, env: Env):
+        value = self.check(node.value, env=env._())
+
+        if node.type:
+            annotation, _ = self.analyze("unit")(node.type, env=env)
+
+            if value.dimension != annotation:
+                expected_str = format_dimension(annotation)
+                actual_str = format_dimension(value.dimension)
+                self.errors.throw(
+                    Dimension_Mismatch,
+                    f"'{node.name.name}' declared as '{format_dimension(node.type.unit)}' [{expected_str}] but has dimension [{actual_str}]",
+                    loc=node.loc,
+                )
+
+        env.set("names")(
+            name=node.name.name,
+            value=NodeType(
+                typ=value.typ,
+                dimension=value.dimension,
+                dimensionless=value.dimension == [],
             ),
         )
 

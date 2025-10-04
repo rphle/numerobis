@@ -155,8 +155,8 @@ class Conversion(AstNode):
 
 
 @dataclass(kw_only=True, frozen=True)
-class Assign(AstNode):
-    target: AstNode
+class Variable(AstNode):
+    name: Identifier
     type: Unit | None
     value: AstNode
 
