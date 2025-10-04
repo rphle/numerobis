@@ -54,6 +54,9 @@ class Typechecker:
 
             return NodeType(typ=left.typ, dimension=left.dimension)
         elif node.op.name in {"times", "divide"}:
+            if right.dimensionless and left.dimensionless:
+                return NodeType(typ=left.typ, dimension=[], dimensionless=True)
+
             if node.op.name == "times":
                 r = right.dimension
             else:
@@ -143,6 +146,7 @@ class Typechecker:
             typ=type(node).__name__,
             dimension=dimension,
             unit=unit,
+            dimensionless=dimension == [],
             value=float(node.value) ** float(node.exponent if node.exponent else 1),
         )
 

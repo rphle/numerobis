@@ -212,7 +212,7 @@ def simplify(nodes: list):
 
             if key not in groups:
                 groups[key] = {"base": base, "exponent": 0.0}
-            groups[key]["exponent"] += float(exp)
+            groups[key]["exponent"] += exp
 
     return [
         E(base=g["base"], exponent=g["exponent"]) if g["exponent"] != 1 else g["base"]
