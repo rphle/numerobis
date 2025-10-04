@@ -1,4 +1,3 @@
-
 import lex as plylex
 from astnodes import Location, Token
 from classes import ModuleMeta
@@ -128,7 +127,7 @@ class LexTokens:
         return t
 
     def t_comment(self, t):
-        r"\#.*"
+        r"(\#\[ (.|\n)* \]\#) | (\#.*)"
         t.lexer.lineno += t.value.count("\n")
 
     def t_error(self, t):
@@ -186,4 +185,3 @@ def lex(source: str, module: ModuleMeta, debug=False) -> list[Token]:
         print("=" * 80)
 
     return output
-
