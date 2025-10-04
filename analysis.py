@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Literal, Union
+from typing import Literal
 
 from astnodes import (
     AstNode,
@@ -43,7 +43,7 @@ def analyze(module: ModuleMeta):
 
                 return dimension, normalized
 
-            def normalize(self, nodes: list[AstNode]) -> list[Union[AstNode, E]]:
+            def normalize(self, nodes: list[AstNode]) -> list[AstNode | E]:
                 """Normalize divisions to multiplications by inverse and filter trivial scalars"""
                 res = []
                 e = 1

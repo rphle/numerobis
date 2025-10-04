@@ -2,7 +2,7 @@ import dataclasses
 from dataclasses import dataclass
 from difflib import get_close_matches
 from hashlib import sha256
-from typing import Any, Literal, Union
+from typing import Any, Literal
 
 from astnodes import AstNode
 
@@ -15,7 +15,7 @@ class ModuleMeta:
 
 @dataclasses.dataclass(kw_only=True, frozen=True)
 class E:
-    base: Union[AstNode, list, "E"]
+    base: AstNode | list | "E"
     exponent: float
 
 

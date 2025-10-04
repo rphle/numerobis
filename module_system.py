@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 from functools import lru_cache
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Optional
 
 from astnodes import AstNode, FromImport, Import
 from classes import ModuleMeta
@@ -17,7 +17,7 @@ class ModuleInfo:
     module: "Module"
     path: Path
     namespaces: "Namespaces"
-    exports: Dict[str, "NodeType"] = field(default_factory=dict)
+    exports: dict[str, "NodeType"] = field(default_factory=dict)
     is_stdlib: bool = False
 
 
@@ -27,7 +27,7 @@ class ModuleResolver:
     def __init__(
         self,
         stdlib_path: Optional[str] = None,
-        search_paths: Optional[List[str]] = None,
+        search_paths: Optional[list[str]] = None,
     ):
         self.stdlib_path = (
             Path(stdlib_path) if stdlib_path else Path(__file__).parent / "stdlib"
@@ -60,11 +60,11 @@ class ModuleSystem:
     def __init__(
         self,
         stdlib_path: Optional[str] = None,
-        search_paths: Optional[List[str]] = None,
+        search_paths: Optional[list[str]] = None,
     ):
         self.resolver = ModuleResolver(stdlib_path, search_paths)
-        self.loaded_modules: Dict[Path, ModuleInfo] = {}
-        self.loading_stack: List[Path] = []
+        self.loaded_modules: dict[Path, ModuleInfo] = {}
+        self.loading_stack: list[Path] = []
 
     def _check_circular_import(self, path: Path):
         """Check for circular imports and raise error if found"""
@@ -132,7 +132,7 @@ class ModuleSystem:
 
         return module_info
 
-    def _process_imports(self, ast: List[AstNode], current_module: ModuleInfo):
+    def _process_imports(self, ast: list[AstNode], current_module: ModuleInfo):
         """Process all import statements in an AST"""
         for node in ast:
             if isinstance(node, Import):
@@ -182,13 +182,13 @@ class ModuleSystem:
                 )
 
     def _merge_with_prefix(
-        self, target_ns: "Namespaces", exports: Dict[str, "NodeType"], prefix: str
+        self, target_ns: "Namespaces", exports: dict[str, "NodeType"], prefix: str
     ):
         """Merge exports into target namespace with a prefix"""
         for name, node_type in exports.items():
             self._add_to_namespace(target_ns, f"{prefix}.{name}", node_type)
 
-    def _merge_all(self, target_ns: "Namespaces", exports: Dict[str, "NodeType"]):
+    def _merge_all(self, target_ns: "Namespaces", exports: dict[str, "NodeType"]):
         """Merge all public exports into target namespace"""
         for name, node_type in exports.items():
             if not name.startswith("_"):
@@ -205,7 +205,7 @@ class ModuleSystem:
         target_namespace = namespace_map.get(node_type.typ, target_ns.names)
         target_namespace[name] = node_type
 
-    def _create_exports(self, module_info: ModuleInfo) -> Dict[str, "NodeType"]:
+    def _create_exports(self, module_info: ModuleInfo) -> dict[str, "NodeType"]:
         """Create the public interface for a module"""
         exports = {}
         for namespace in (

@@ -6,13 +6,20 @@ from astnodes import (
     AstNode,
     BinOp,
     Call,
+    Conversion,
     DimensionDefinition,
     Float,
+    ForLoop,
     FromImport,
+    Function,
     Identifier,
+    If,
     Import,
     Integer,
+    List,
+    UnaryOp,
     UnitDefinition,
+    WhileLoop,
 )
 from classes import Env, ModuleMeta, Namespaces, NodeType
 from exceptions import Dimension_Mismatch, Exceptions, uNameError
@@ -33,6 +40,32 @@ class Typechecker:
 
         self.analyze = analyze(module)
 
+    def assign_(self, node: Assign, env: Env):
+        pass
+
+    def bin_op_(self, node: BinOp, env: Env):
+        """Check dimensional consistency in addition and subtraction operations"""
+        sides = [self.check(side, env=env._()) for side in (node.left, node.right)]
+
+        try:
+            if (
+                node.op.name in {"plus", "minus"}
+                and sides[0].dimension != sides[1].dimension
+            ):
+                dim_strs = [format_dimension(side.dimension) for side in sides]
+                self.errors.binOpMismatch(node, dim_strs)
+        except Exception as e:
+            print(node)
+            raise e
+
+        return NodeType(typ=sides[0].typ, dimension=sides[0].dimension)
+
+    def call_(self, node: Call, env: Env):
+        pass
+
+    def conversion_(self, node: Conversion, env: Env):
+        pass
+
     def dimension_definition_(self, node: DimensionDefinition, env: Env):
         """Process dimension definitions"""
         dimension = []
@@ -48,6 +81,28 @@ class Typechecker:
                 dimensionless=dimension == [],
             ),
         )
+
+    def for_loop_(self, node: ForLoop, env: Env):
+        pass
+
+    def function_(self, node: Function, env: Env):
+        pass
+
+    def identifier_(self, node: Identifier, env: Env):
+        pass
+
+    def if_(self, node: If, env: Env):
+        pass
+
+    def list_(self, node: List, env: Env):
+        pass
+
+    def number_(self, node: Integer | Float, env: Env):
+        dimension, unit = self.analyze("unit")(node.unit, env=env)
+        return NodeType(typ=type(node).__name__, dimension=dimension, unit=unit)
+
+    def unary_op_(self, node: UnaryOp, env: Env):
+        pass
 
     def unit_definition_(self, node: UnitDefinition, env: Env):
         """Process unit definitions with proper dimension checking"""
@@ -95,40 +150,17 @@ class Typechecker:
             ),
         )
 
-    def bin_op_(self, node: BinOp, env: Env):
-        """Check dimensional consistency in addition and subtraction operations"""
-        sides = [self.check(side, env=env._()) for side in (node.left, node.right)]
-
-        if (
-            node.op.name in {"plus", "minus"}
-            and sides[0].dimension != sides[1].dimension
-        ):
-            dim_strs = [format_dimension(side.dimension) for side in sides]
-            self.errors.binOpMismatch(node, dim_strs)
-
-        return NodeType(typ=sides[0].typ, dimension=sides[0].dimension)
-
-    def number_(self, node: Integer | Float, env: Env):
-        dimension, unit = self.analyze("unit")(node.unit, env=env)
-        return NodeType(typ=type(node).__name__, dimension=dimension, unit=unit)
-
-    def identifier_(self, node: Identifier, env: Env):
-        pass
-
-    def call_(self, node: Call, env: Env):
-        pass
-
-    def assign_(self, node: Call, env: Env):
+    def while_loop_(self, node: WhileLoop, env: Env):
         pass
 
     def check(self, node, env: Env) -> NodeType:
         match node:
             case Integer() | Float():
                 return self.number_(node, env=env._())
-            case DimensionDefinition() | UnitDefinition() | BinOp() | Call() | Assign():
-                name = camel2snake_pattern.sub("_", type(node).__name__).lower() + "_"
-                return getattr(self, name)(node, env=env._())
             case _:
+                name = camel2snake_pattern.sub("_", type(node).__name__).lower() + "_"
+                if hasattr(self, name):
+                    return getattr(self, name)(node, env=env._())
                 raise NotImplementedError(f"Type {type(node).__name__} not implemented")
 
     def start(self):
