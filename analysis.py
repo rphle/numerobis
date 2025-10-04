@@ -211,8 +211,8 @@ def simplify(nodes: list):
             exp = getattr(node, "exponent", 1)
 
             if key not in groups:
-                groups[key] = {"base": base, "exponent": 0}
-            groups[key]["exponent"] += exp
+                groups[key] = {"base": base, "exponent": 0.0}
+            groups[key]["exponent"] += float(exp)
 
     return [
         E(base=g["base"], exponent=g["exponent"]) if g["exponent"] != 1 else g["base"]
@@ -232,7 +232,7 @@ def format_dimension(dims) -> str:
             if isinstance(d.base, list):
                 name = format_dimension(d.base)
                 name = f"({name})" if len(d.base) > 1 else name
-            exp = abs(d.exponent)
+            exp = d.exponent
             d = d.base
 
         name = getattr(d, "name", getattr(d, "value", str(d))) if name is None else name

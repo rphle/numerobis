@@ -57,27 +57,29 @@ class Typechecker:
             if node.op.name == "times":
                 r = right.dimension
             else:
-                r = [
-                    E(
-                        base=comp.base if isinstance(comp, E) else comp,
-                        exponent=(comp.exponent if isinstance(comp, E) else 1) * -1,
-                    )
-                    for comp in right.dimension
-                ]
+                base = (
+                    right.dimension[0] if len(right.dimension) == 1 else right.dimension
+                )
+                r = [E(base=base, exponent=-1.0)]
+
             dimension = simplify(left.dimension + r)
 
             return NodeType(typ=left.typ, dimension=dimension)
         elif node.op.name == "power":
             assert right.typ in {"Float", "Integer"}
-            dimension = [
-                E(
-                    base=comp.base if isinstance(comp, E) else comp,
-                    exponent=(comp.exponent if isinstance(comp, E) else 1)
-                    * right.value,
-                )
-                for comp in left.dimension
-            ]
-            return NodeType(typ=left.typ, dimension=dimension)
+            dimension = []
+            for item in left.dimension:
+                if isinstance(item, E):
+                    dimension.append(
+                        E(base=item.base, exponent=item.exponent * right.value)
+                    )
+                else:
+                    dimension.append(E(base=item, exponent=right.value))
+
+            return NodeType(
+                typ=left.typ,
+                dimension=simplify(dimension),
+            )
         else:
             raise NotImplementedError(f"BinOp {node.op.name} not implemented!")
 
@@ -92,7 +94,7 @@ class Typechecker:
 
         target, _ = self.analyze("unit")(node.unit, env=env._())
 
-        if value.dimension != target and not value.dimensionless:
+        if value.dimension != target:
             self.errors.throw(
                 Dimension_Mismatch,
                 f"Cannot convert [{format_dimension(value.dimension)}] to [{format_dimension(target)}]",
