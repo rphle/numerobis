@@ -43,8 +43,8 @@ class Typechecker:
             name=node.name.name,
             value=NodeType(
                 typ="dimension",
-                dimension=dimension,
-                dimensionless=len(dimension) == 0,
+                dimension=dimension or [node.name],
+                dimensionless=dimension == [],
             ),
         )
 
@@ -70,15 +70,13 @@ class Typechecker:
 
                 dim_info = env.get("dimensions")(node.dimension.name)
 
-                if dim_info.dimensionless:
-                    expected = []
-                elif not dim_info.dimension:
+                if not dim_info.dimension:
                     # For base dimensions, the expected dimension is the dimension name itself
                     expected = [Identifier(name=node.dimension.name)]
                 else:
                     expected = dim_info.dimension
 
-                if expected != dimension:
+                if expected != dimension and len(dimension) > 0:
                     expected_str = format_dimension(expected)
                     actual_str = format_dimension(dimension)
                     self.errors.throw(
@@ -89,7 +87,11 @@ class Typechecker:
 
         env.set("units")(
             name=node.name.name,
-            value=NodeType(typ="unit", dimension=dimension, unit=normalized),
+            value=NodeType(
+                typ="unit",
+                dimension=dimension or [node.dimension],
+                unit=normalized,
+            ),
         )
 
     def bin_op(self, node: BinOp, env: Env):
@@ -100,26 +102,19 @@ class Typechecker:
             node.op.name in {"plus", "minus"}
             and sides[0].dimension != sides[1].dimension
         ):
-            dim_strs = [format_dimension(side) for side in sides]
+            dim_strs = [format_dimension(side.dimension) for side in sides]
             self.errors.binOpMismatch(node, dim_strs)
 
         return NodeType(typ=sides[0].typ, dimension=sides[0].dimension)
 
     def number(self, node: Integer | Float, env: Env):
         dimension, unit = self.analyze("unit")(node.unit, env=env)
-        return NodeType(
-            typ=type(node).__name__,
-            dimension=dimension,
-            unit=unit,
-            dimensionless=len(dimension) == 0,
-        )
+        return NodeType(typ=type(node).__name__, dimension=dimension, unit=unit)
 
     def call(self, node: Call, env: Env):
-        """Check dimensional consistency in function calls"""
         pass
 
     def assignment(self, node: Call, env: Env):
-        """Check dimensional consistency in function calls"""
         pass
 
     def check(self, node, env: Env) -> NodeType:

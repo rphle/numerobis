@@ -35,9 +35,11 @@ def analyze(module: ModuleMeta):
                 normalized = self.flatten(self.normalize(value))
 
                 if self.typ == "unit":
-                    value = self.dimensionize(normalized)
+                    dimension = self.dimensionize(normalized)
+                else:
+                    dimension = normalized
 
-                dimension = self._filter_dimensionless_identifiers(self.simplify(value))
+                dimension = self.simplify(dimension)
 
                 return dimension, normalized
 
@@ -113,12 +115,11 @@ def analyze(module: ModuleMeta):
                                     loc=node.loc,
                                 )
 
-                            resolved = self.flatten(
-                                getattr(
-                                    self.env.get(self.typs)(node.name),
-                                    typ.removesuffix("s"),
-                                )
-                            )
+                            resolved = self.env.get(self.typs)(node.name)
+                            if not resolved.dimensionless:
+                                resolved = self.flatten(getattr(resolved, self.typ))
+                            else:
+                                resolved = getattr(resolved, self.typ)
                             res.extend(resolved or [node])
 
                         case E():
@@ -184,7 +185,12 @@ def analyze(module: ModuleMeta):
                                     else None,
                                     loc=node.loc,
                                 )
-                            res.extend(self.env.get("units")(node.name).dimension)
+                            resolved = self.env.get("units")(node.name)
+                            res.extend(
+                                resolved.dimension
+                                if not resolved.dimensionless
+                                else [node]
+                            )
 
                         case E():
                             if isinstance(node.base, (Scalar, Integer, Float)):
@@ -210,22 +216,6 @@ def analyze(module: ModuleMeta):
                             res.append(node)
 
                 return res
-
-            def _filter_dimensionless_identifiers(self, dimension_list: list) -> list:
-                def is_dimensionless(item):
-                    if isinstance(item, Identifier):
-                        return (
-                            item.name in self.env.dimensions
-                            and self.env.get("dimensions")(item.name).dimensionless
-                        )
-                    if hasattr(item, "base") and isinstance(item.base, Identifier):
-                        return (
-                            item.base.name in self.env.dimensions
-                            and self.env.get("dimensions")(item.base.name).dimensionless
-                        )
-                    return False
-
-                return [item for item in dimension_list if not is_dimensionless(item)]
 
         return lambda node, env: analysis(node=node, env=env).run()
 
