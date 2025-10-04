@@ -16,6 +16,7 @@ from astnodes import (
 )
 from classes import Env, ModuleMeta, Namespaces, NodeType
 from exceptions import Dimension_Mismatch, Exceptions, uNameError
+from utils import camel2snake_pattern
 
 
 class Typechecker:
@@ -32,7 +33,7 @@ class Typechecker:
 
         self.analyze = analyze(module)
 
-    def dimension_def(self, node: DimensionDefinition, env: Env):
+    def dimension_definition_(self, node: DimensionDefinition, env: Env):
         """Process dimension definitions"""
         dimension = []
 
@@ -48,7 +49,7 @@ class Typechecker:
             ),
         )
 
-    def unit_def(self, node: UnitDefinition, env: Env):
+    def unit_definition_(self, node: UnitDefinition, env: Env):
         """Process unit definitions with proper dimension checking"""
         normalized = []
         dimension = []
@@ -94,7 +95,7 @@ class Typechecker:
             ),
         )
 
-    def bin_op(self, node: BinOp, env: Env):
+    def bin_op_(self, node: BinOp, env: Env):
         """Check dimensional consistency in addition and subtraction operations"""
         sides = [self.check(side, env=env._()) for side in (node.left, node.right)]
 
@@ -107,28 +108,26 @@ class Typechecker:
 
         return NodeType(typ=sides[0].typ, dimension=sides[0].dimension)
 
-    def number(self, node: Integer | Float, env: Env):
+    def number_(self, node: Integer | Float, env: Env):
         dimension, unit = self.analyze("unit")(node.unit, env=env)
         return NodeType(typ=type(node).__name__, dimension=dimension, unit=unit)
 
-    def call(self, node: Call, env: Env):
+    def identifier_(self, node: Identifier, env: Env):
         pass
 
-    def assignment(self, node: Call, env: Env):
+    def call_(self, node: Call, env: Env):
+        pass
+
+    def assign_(self, node: Call, env: Env):
         pass
 
     def check(self, node, env: Env) -> NodeType:
         match node:
             case Integer() | Float():
-                return self.number(node, env=env._())
+                return self.number_(node, env=env._())
             case DimensionDefinition() | UnitDefinition() | BinOp() | Call() | Assign():
-                return {
-                    "DimensionDefinition": self.dimension_def,
-                    "UnitDefinition": self.unit_def,
-                    "BinOp": self.bin_op,
-                    "Call": self.call,
-                    "Assign": self.assignment,
-                }[type(node).__name__](node, env=env._())
+                name = camel2snake_pattern.sub("_", type(node).__name__).lower() + "_"
+                return getattr(self, name)(node, env=env._())
             case _:
                 raise NotImplementedError(f"Type {type(node).__name__} not implemented")
 
