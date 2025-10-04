@@ -5,9 +5,9 @@ from typing import Dict, List, Optional
 
 from astnodes import AstNode, FromImport, Import
 from classes import ModuleMeta
-from dimchecker import Namespaces, NodeType
 from exceptions import uCircularImport, uImportError, uModuleNotFound
 from module import Module
+from typechecker import Namespaces, NodeType
 
 
 @dataclass
@@ -163,6 +163,7 @@ class ModuleSystem:
                         if len(imported_module.exports) > 5
                         else ""
                     )
+                    print(list(imported_module.exports.keys()))
                     uImportError(
                         f"Cannot import name '{name.name}' from '{node.module.name}'",
                         module=ModuleMeta(str(current_module.path), ""),
@@ -170,11 +171,10 @@ class ModuleSystem:
                         loc=name.loc,
                     )
 
-                local_name = (
-                    node.aliases[i].name
-                    if node.aliases and i < len(node.aliases) and node.aliases[i]
-                    else name.name
+                alias = (
+                    node.aliases[i] if node.aliases and i < len(node.aliases) else None
                 )
+                local_name = alias.name if alias is not None else name.name
                 self._add_to_namespace(
                     current_module.namespaces,
                     local_name,
@@ -215,7 +215,7 @@ class ModuleSystem:
         ):
             exports.update(
                 {
-                    name: item
+                    name.split("-")[0]: item
                     for name, item in namespace.items()
                     if not name.startswith("_")
                 }

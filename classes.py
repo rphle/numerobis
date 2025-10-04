@@ -1,7 +1,93 @@
+import dataclasses
 from dataclasses import dataclass
+from difflib import get_close_matches
+from hashlib import sha256
+from typing import Any, Literal, Union
+
+from astnodes import AstNode
 
 
 @dataclass
 class ModuleMeta:
     path: str
     source: str
+
+
+@dataclasses.dataclass(kw_only=True, frozen=True)
+class E:
+    base: Union[AstNode, list, "E"]
+    exponent: float
+
+
+@dataclasses.dataclass(kw_only=True, frozen=True)
+class NodeType:
+    typ: str
+    dimension: list
+    unit: list | None = None
+    dimensionless: bool = False
+
+
+@dataclasses.dataclass(kw_only=True, frozen=True)
+class Namespaces:
+    names: dict[str, NodeType] = dataclasses.field(default_factory=dict)
+    dimensions: dict[str, NodeType] = dataclasses.field(default_factory=dict)
+    units: dict[str, NodeType] = dataclasses.field(default_factory=dict)
+
+    def __call__(self, name: str) -> dict[str, NodeType]:
+        return getattr(self, name)
+
+
+class Env:
+    def __init__(
+        self,
+        glob: Namespaces,
+        names: dict = {},
+        dimensions: dict = {},
+        units: dict = {},
+        level: int = -1,
+    ):
+        self.glob: Namespaces = glob
+
+        self.names: dict[str, str] = names
+        self.dimensions: dict[str, str] = dimensions
+        self.units: dict[str, str] = units
+
+        self.level = level
+
+    def _(self):
+        return Env(
+            self.glob, self.names, self.dimensions, self.units, level=self.level + 1
+        )
+
+    def suggest(self, namespace: Literal["names", "dimensions", "units"]):
+        """Get suggestion for misspelled name"""
+
+        available_keys = getattr(self, namespace).keys()
+
+        def _suggest(name: str) -> str | None:
+            matches = get_close_matches(name, available_keys, n=1, cutoff=0.6)
+            return matches[0] if matches else None
+
+        return _suggest
+
+    def get(self, namespace: Literal["names", "dimensions", "units"]):
+        def _get(name: str) -> NodeType:
+            return self.glob(namespace)[self(namespace)[name]]
+
+        return _get
+
+    def set(self, namespace: Literal["names", "dimensions", "units"]):
+        def _set(name: str, value: Any):
+            _hash = f"{'.' if self.level > 0 else ''}{name}-{sha256(name.encode()).hexdigest()}"
+            self.glob(namespace)[_hash] = value
+            self(namespace)[name] = _hash
+
+        return _set
+
+    def __call__(self, namespace: str) -> dict[str, str]:
+        return getattr(self, namespace)
+
+    def __repr__(self):
+        return "\n".join(
+            f"{name} = {self(name)}" for name in {"names", "dimensions", "units"}
+        )

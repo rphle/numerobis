@@ -1,7 +1,8 @@
 from parser.parser import Parser
 
+from typechecker import Namespaces, Typechecker
+
 from classes import ModuleMeta
-from dimchecker import Dimchecker, Namespaces
 from lexer import lex
 
 
@@ -16,7 +17,9 @@ class Module:
         self.ast = parser.start()
 
     def dimcheck(self, namespaces: Namespaces | None = None):
-        self._dimchecker = Dimchecker(self.ast, module=self.meta, namespaces=namespaces)
+        self._dimchecker = Typechecker(
+            self.ast, module=self.meta, namespaces=namespaces
+        )
         self._dimchecker.start()
 
         return self._dimchecker
