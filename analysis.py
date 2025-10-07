@@ -26,19 +26,14 @@ def analyze(module: ModuleMeta):
                 self.env: Env = env
                 self.node: Unit = node
 
-            def run(self) -> tuple[list, list]:
+            def run(self) -> list:
                 value = self.node.unit
 
                 normalized = self.flatten(self.normalize(value))
 
-                if self.typ == "unit":
-                    dimension = self.dimensionize(normalized)
-                else:
-                    dimension = normalized
+                dimension = simplify(normalized)
 
-                dimension = simplify(dimension)
-
-                return dimension, normalized
+                return dimension
 
             def normalize(self, nodes: list[AstNode]) -> list[AstNode | E]:
                 """Normalize divisions to multiplications by inverse and filter trivial scalars"""
@@ -98,8 +93,6 @@ def analyze(module: ModuleMeta):
 
                 for node in nodes:
                     match node:
-                        case Scalar():
-                            res.append(node)
                         case Identifier():
                             if node.name not in self.env(self.typs):
                                 suggestion = self.env.suggest(self.typs)(node.name)
@@ -114,8 +107,7 @@ def analyze(module: ModuleMeta):
                                 )
 
                             resolved = self.env.get(self.typs)(node.name)
-                            resolved = getattr(resolved, self.typ)
-                            res.extend(resolved or [node])
+                            res.extend(resolved.dimension or [node])
 
                         case E():
                             base_nodes = (
@@ -136,57 +128,6 @@ def analyze(module: ModuleMeta):
                                 )
                         case list():
                             res.extend(self.flatten(node))
-                        case _:
-                            raise ValueError(f"Unknown node: {node}")
-
-                return res
-
-            def dimensionize(self, nodes: list):
-                """Convert units to their dimensions, filtering out all scalar expressions"""
-                res = []
-
-                for node in nodes:
-                    match node:
-                        case Identifier():
-                            if node.name not in self.env.units:
-                                suggestion = self.env.suggest("units")(node.name)
-                                self.errors.throw(
-                                    uNameError,
-                                    f"undefined unit '{node.name}'",
-                                    help=f"did you mean '{suggestion}'?"
-                                    if suggestion
-                                    else None,
-                                    loc=node.loc,
-                                )
-                            resolved = self.env.get("units")(node.name)
-                            res.extend(
-                                resolved.dimension
-                                if not resolved.dimensionless
-                                else [node]
-                            )
-
-                        case E():
-                            if isinstance(node.base, (Scalar, Integer, Float)):
-                                continue
-
-                            base = (
-                                [node.base]
-                                if not isinstance(node.base, list)
-                                else node.base
-                            )
-                            base = self.dimensionize(base)
-                            for item in base:
-                                res.append(
-                                    E(
-                                        base=item.base if isinstance(item, E) else item,
-                                        exponent=(
-                                            item.exponent if isinstance(item, E) else 1
-                                        )
-                                        * node.exponent,
-                                    )
-                                )
-                        case _:
-                            res.append(node)
 
                 return res
 
@@ -232,7 +173,7 @@ def format_dimension(dims) -> str:
 
         name = getattr(d, "name", getattr(d, "value", str(d))) if name is None else name
 
-        target = num if getattr(d, "exponent", 1) > 0 else denom
+        target = num if float(getattr(d, "exponent", 1) or 1) > 0 else denom
         target.append(
             name if exp == 1 else f"{name}^{int(exp) if exp == int(exp) else exp}"
         )

@@ -17,6 +17,7 @@ from astnodes import (
     Import,
     Integer,
     List,
+    String,
     UnaryOp,
     UnitDefinition,
     Variable,
@@ -95,9 +96,9 @@ class Typechecker:
     def conversion_(self, node: Conversion, env: Env):
         value = self.check(node.value, env=env._())
 
-        target, _ = self.analyze("unit")(node.unit, env=env._())
+        target = self.analyze("unit")(node.unit, env=env._())
 
-        if value.dimension != target:
+        if value.dimension != target and not value.dimensionless:
             self.errors.throw(
                 Dimension_Mismatch,
                 f"Cannot convert [{format_dimension(value.dimension)}] to [{format_dimension(target)}]",
@@ -118,7 +119,7 @@ class Typechecker:
         dimension = []
 
         if node.value:
-            dimension, _ = self.analyze("dimension")(node.value, env=env)
+            dimension = self.analyze("dimension")(node.value, env=env)
 
         env.set("dimensions")(
             name=node.name.name,
@@ -148,13 +149,19 @@ class Typechecker:
         pass
 
     def number_(self, node: Integer | Float, env: Env):
-        dimension, unit = self.analyze("unit")(node.unit, env=env)
+        dimension = self.analyze("unit")(node.unit, env=env)
         return NodeType(
             typ=type(node).__name__,
             dimension=dimension,
-            unit=unit,
             dimensionless=dimension == [],
             value=float(node.value) ** float(node.exponent if node.exponent else 1),
+        )
+
+    def string_(self, node: String, env: Env):
+        return NodeType(
+            typ="String",
+            dimension=[],
+            value=node.value,
         )
 
     def unary_op_(self, node: UnaryOp, env: Env):
@@ -170,13 +177,12 @@ class Typechecker:
                 loc=node.name.loc,
             )
 
-        normalized = []
         dimension = []
 
         if node.dimension and not node.value:
             dimension = [node.dimension]
         elif node.value:
-            dimension, normalized = self.analyze("unit")(node.value, env=env)
+            dimension = self.analyze("unit")(node.value, env=env)
 
             if node.dimension:
                 if node.dimension.name not in env.dimensions:
@@ -207,18 +213,14 @@ class Typechecker:
 
         env.set("units")(
             name=node.name.name,
-            value=NodeType(
-                typ="unit",
-                dimension=dimension or [node.dimension],
-                unit=normalized,
-            ),
+            value=NodeType(typ="unit", dimension=dimension or [node.dimension]),
         )
 
     def variable_(self, node: Variable, env: Env):
         value = self.check(node.value, env=env._())
 
         if node.type:
-            annotation, _ = self.analyze("unit")(node.type, env=env)
+            annotation = self.analyze("unit")(node.type, env=env)
 
             if value.dimension != annotation:
                 expected_str = format_dimension(annotation)

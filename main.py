@@ -7,7 +7,7 @@ from pathlib import Path
 
 from rich.console import Console
 
-from module_system import ModuleSystem
+from module import Module
 
 console = Console()
 
@@ -19,15 +19,16 @@ tests = sorted(os.listdir(tests_dir))
 if len(sys.argv) > 1:
     tests = [test for test in tests if test.startswith(sys.argv[1])]
 
-module_system = ModuleSystem()
 for test in tests:
     print()
     console.print(f"{test} {'=' * 40}", style="bold green")
 
-    module_info = module_system.load(str(tests_dir / test))
-    snapshots[test] = sha512(pickle.dumps(module_info.module.ast)).hexdigest()
+    mod = Module(path=tests_dir / test)
+    mod.process()
 
-    console.print(module_info.module.ast)
+    snapshots[test] = sha512(pickle.dumps(mod.ast)).hexdigest()
+
+    console.print(mod.ast)
 
 if os.path.isfile("snapshots.json"):
     with open("snapshots.json", "r") as saved:

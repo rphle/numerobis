@@ -24,7 +24,6 @@ class E:
 class NodeType:
     typ: str
     dimension: list
-    unit: list | None = None
     dimensionless: bool = False
     value: Any = None
 
