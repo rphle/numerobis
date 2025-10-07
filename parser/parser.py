@@ -1,4 +1,5 @@
 import dataclasses
+import math
 from parser.template import ParserTemplate
 from parser.unitparser import UnitParser
 
@@ -615,13 +616,35 @@ class Parser(ParserTemplate):
                 module=module, names=None, aliases=None, loc=nodeloc(start, self.tok)
             )
 
+        i = 0
+        atted_until = -1
         while True:
+            self._clear()
             if self._peek().type == "AT":
+                if atted_until >= i:
+                    self.errors.throw(
+                        uSyntaxError,
+                        "'@' cannot be used within a list of identifiers",
+                        loc=self._peek(ignore_whitespace=False).loc,
+                    )
+                # parse unit namespace references
                 self._consume("AT")
-                name_tok = self._consume("ID", ignore_whitespace=False)
+                match self._peek(ignore_whitespace=False).type:
+                    case "LPAREN":
+                        self._consume("LPAREN")
+                        atted_until = math.inf
+                    case "ID":
+                        atted_until = i
+                    case _:
+                        self.errors.throw(
+                            uSyntaxError,
+                            "Expected identifier or list of identifiers after '@'",
+                            loc=self._peek(ignore_whitespace=False).loc,
+                        )
+
+            name_tok = self._consume("ID", ignore_whitespace=False)
+            if atted_until >= i:
                 name_tok.value = "@" + name_tok.value
-            else:
-                name_tok = self._consume("ID")
             name = self._make_id(name_tok)
             names.append(name)
 
@@ -632,9 +655,14 @@ class Parser(ParserTemplate):
                 alias = self._make_id(alias_tok)
             aliases.append(alias)
 
+            if self._peek().type == "RPAREN":
+                self._consume("RPAREN")
+                atted_until = -1
             if self._peek().type != "COMMA":
                 break
             self._consume("COMMA")
+
+            i += 1
 
         end = aliases[-1] if aliases[-1] else names[-1]
         return FromImport(

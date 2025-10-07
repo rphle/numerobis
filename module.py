@@ -10,7 +10,7 @@ from typechecker import Namespaces, Typechecker
 
 
 class Module:
-    def __init__(self, path: str):
+    def __init__(self, path: str | Path):
         self.meta = ModuleMeta(Path(path), open(path, "r", encoding="utf-8").read())
         self.errors = Exceptions(module=self.meta)
 
@@ -27,6 +27,9 @@ class Module:
         self.ast = parser.start()
 
     def resolve_imports(self):
+        if len(self.ast) == 0:
+            return
+
         # Find and verifiy import nodes first
         nodes: list[Import | FromImport] = []
         while isinstance((node := self.ast[0]), (Import, FromImport)):
@@ -45,7 +48,7 @@ class Module:
         paths = []
         for i, node in enumerate(nodes):
             try:
-                paths.append(resolver.resolve(node.module.name))
+                paths.append(resolver.resolve(node.module.name.removeprefix("@")))
             except FileNotFoundError:
                 self.errors.throw(
                     exception=uModuleNotFound,
@@ -66,15 +69,22 @@ class Module:
                     for name in node.names:
                         if name.name.startswith("@"):
                             # unit/dimension
-                            n = name.name[1:]
+                            n = name.name.removeprefix("@")
                             typ = (
                                 "dimensions"
                                 if n in module.namespaces.dimensions
                                 else "units"
                             )
-                            getattr(self.namespaces, typ)[n] = getattr(
-                                module.namespaces, typ
-                            )[n]
+                            try:
+                                getattr(self.namespaces, typ)[n] = getattr(
+                                    module.namespaces, typ
+                                )[n]
+                            except KeyError:
+                                self.errors.throw(
+                                    exception=uImportError,
+                                    message=f"failed to resolve import: unit or dimension '{name.name.removeprefix('@')}' does not exist",
+                                    loc=name.loc,
+                                )
                         else:
                             # import name
                             try:
