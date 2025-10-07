@@ -1,7 +1,8 @@
 import dataclasses
+import uuid
 from dataclasses import dataclass
 from difflib import get_close_matches
-from hashlib import sha256
+from pathlib import Path
 from typing import Any, Literal
 
 from astnodes import AstNode
@@ -9,7 +10,7 @@ from astnodes import AstNode
 
 @dataclass
 class ModuleMeta:
-    path: str
+    path: Path
     source: str
 
 
@@ -33,6 +34,12 @@ class Namespaces:
     names: dict[str, NodeType] = dataclasses.field(default_factory=dict)
     dimensions: dict[str, NodeType] = dataclasses.field(default_factory=dict)
     units: dict[str, NodeType] = dataclasses.field(default_factory=dict)
+    imports: dict[str, "Namespaces"] = dataclasses.field(default_factory=dict)
+
+    def update(self, other: "Namespaces"):
+        self.names.update(other.names)
+        self.dimensions.update(other.dimensions)
+        self.units.update(other.units)
 
     def __call__(self, name: str) -> dict[str, NodeType]:
         return getattr(self, name)
@@ -79,7 +86,10 @@ class Env:
 
     def set(self, namespace: Literal["names", "dimensions", "units"]):
         def _set(name: str, value: Any):
-            _hash = f"{'.' if self.level > 0 else ''}{name}-{sha256(name.encode()).hexdigest()}"
+            if self.level > 0:
+                _hash = f"{name}-{uuid.uuid1()}"
+            else:
+                _hash = name
             self.glob(namespace)[_hash] = value
             self(namespace)[name] = _hash
 

@@ -89,14 +89,14 @@ class Scalar(AstNode):
 class Integer(AstNode):
     value: str
     exponent: str
-    unit: Unit | None
+    unit: Unit
 
 
 @dataclass(kw_only=True, frozen=True)
 class Float(AstNode):
     value: str
     exponent: str
-    unit: Unit | None
+    unit: Unit
 
 
 @dataclass(kw_only=True, frozen=True)

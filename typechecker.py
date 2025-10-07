@@ -32,12 +32,12 @@ class Typechecker:
         self,
         ast: list[AstNode],
         module: ModuleMeta,
-        namespaces: Namespaces | None = None,
+        namespaces: Namespaces = Namespaces(),
     ):
         self.ast = ast
         self.module = module
         self.errors = Exceptions(module=module)
-        self.ns = namespaces or Namespaces()
+        self.namespaces = namespaces
 
         self.analyze = analyze(module)
 
@@ -108,6 +108,13 @@ class Typechecker:
 
     def dimension_definition_(self, node: DimensionDefinition, env: Env):
         """Process dimension definitions"""
+        if node.name.name in env.units or node.name.name in env.dimensions:
+            self.errors.throw(
+                uNameError,
+                f"'{node.name.name}' already defined",
+                loc=node.name.loc,
+            )
+
         dimension = []
 
         if node.value:
@@ -155,6 +162,14 @@ class Typechecker:
 
     def unit_definition_(self, node: UnitDefinition, env: Env):
         """Process unit definitions with proper dimension checking"""
+
+        if node.name.name in env.units or node.name.name in env.dimensions:
+            self.errors.throw(
+                uNameError,
+                f"'{node.name.name}' already defined",
+                loc=node.name.loc,
+            )
+
         normalized = []
         dimension = []
 
@@ -238,10 +253,10 @@ class Typechecker:
 
     def start(self):
         env = Env(
-            glob=self.ns,
+            glob=self.namespaces,
             level=-1,
             **{
-                n: {k: k for k in list(getattr(self.ns, n).keys())}
+                n: {k: k for k in list(getattr(self.namespaces, n).keys())}
                 for n in ("names", "units", "dimensions")
             },
         )

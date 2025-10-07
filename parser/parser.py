@@ -616,7 +616,12 @@ class Parser(ParserTemplate):
             )
 
         while True:
-            name_tok = self._consume("ID")
+            if self._peek().type == "AT":
+                self._consume("AT")
+                name_tok = self._consume("ID", ignore_whitespace=False)
+                name_tok.value = "@" + name_tok.value
+            else:
+                name_tok = self._consume("ID")
             name = self._make_id(name_tok)
             names.append(name)
 

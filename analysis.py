@@ -19,17 +19,14 @@ from exceptions import Exceptions, uNameError
 def analyze(module: ModuleMeta):
     def _analyze(typ: Literal["unit", "dimension"]):
         class analysis:
-            def __init__(self, node: Unit | None, env: Env):
+            def __init__(self, node: Unit, env: Env):
                 self.typ: Literal["unit", "dimension"] = typ
                 self.typs: Literal["units", "dimensions"] = typ + "s"
                 self.errors = Exceptions(module=module)
                 self.env: Env = env
-                self.node: Unit | None = node
+                self.node: Unit = node
 
             def run(self) -> tuple[list, list]:
-                if self.node is None:
-                    return [], []
-
                 value = self.node.unit
 
                 normalized = self.flatten(self.normalize(value))
@@ -106,6 +103,7 @@ def analyze(module: ModuleMeta):
                         case Identifier():
                             if node.name not in self.env(self.typs):
                                 suggestion = self.env.suggest(self.typs)(node.name)
+
                                 self.errors.throw(
                                     uNameError,
                                     f"undefined {self.typ} '{node.name}'",
@@ -116,10 +114,7 @@ def analyze(module: ModuleMeta):
                                 )
 
                             resolved = self.env.get(self.typs)(node.name)
-                            if not resolved.dimensionless:
-                                resolved = self.flatten(getattr(resolved, self.typ))
-                            else:
-                                resolved = getattr(resolved, self.typ)
+                            resolved = getattr(resolved, self.typ)
                             res.extend(resolved or [node])
 
                         case E():

@@ -21,10 +21,12 @@ if len(sys.argv) > 1:
 
 module_system = ModuleSystem()
 for test in tests:
-    module_info = module_system.load(str(tests_dir / test))
-    snapshots[test] = sha512(pickle.dumps(module_info.module.ast)).hexdigest()
     print()
     console.print(f"{test} {'=' * 40}", style="bold green")
+
+    module_info = module_system.load(str(tests_dir / test))
+    snapshots[test] = sha512(pickle.dumps(module_info.module.ast)).hexdigest()
+
     console.print(module_info.module.ast)
 
 if os.path.isfile("snapshots.json"):
