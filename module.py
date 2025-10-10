@@ -6,7 +6,7 @@ from classes import ModuleMeta
 from exceptions import Exceptions, uImportError, uModuleNotFound, uSyntaxError
 from lexer import lex
 from module_resolver import ModuleResolver
-from typechecker import Namespaces, Typechecker
+from typechecker.typechecker import Namespaces, Typechecker
 
 
 class Module:

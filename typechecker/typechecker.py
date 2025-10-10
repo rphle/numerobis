@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from analysis import analyze, format_dimension, simplify
 from astnodes import (
     AstNode,
     BinOp,
@@ -25,6 +24,7 @@ from astnodes import (
 )
 from classes import E, Env, ModuleMeta, Namespaces, NodeType
 from exceptions import Dimension_Mismatch, Exceptions, uNameError
+from typechecker.analysis import analyze, format_dimension, simplify
 from utils import camel2snake_pattern
 
 
@@ -87,9 +87,6 @@ class Typechecker:
         else:
             raise NotImplementedError(f"BinOp {node.op.name} not implemented!")
 
-    def boolean_(self, node: Boolean, env: Env):
-        return NodeType(typ="Boolean", dimension=[], dimensionless=True)
-
     def call_(self, node: Call, env: Env):
         pass
 
@@ -143,9 +140,6 @@ class Typechecker:
             self.errors.nameError(node)
 
     def if_(self, node: If, env: Env):
-        pass
-
-    def list_(self, node: List, env: Env):
         pass
 
     def number_(self, node: Integer | Float, env: Env):
@@ -247,6 +241,10 @@ class Typechecker:
         match node:
             case Integer() | Float():
                 return self.number_(node, env=env._())
+            case String() | List() | Boolean():
+                return NodeType(
+                    typ=type(node).__name__, dimension=[], dimensionless=True
+                )
             case _:
                 name = camel2snake_pattern.sub("_", type(node).__name__).lower() + "_"
                 if hasattr(self, name):
