@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Any, Literal
 
 from astnodes import AstNode
+from typechecker.types import NodeType
 
 
 @dataclass
@@ -18,14 +19,6 @@ class ModuleMeta:
 class E:
     base: "AstNode | list | E"
     exponent: float
-
-
-@dataclasses.dataclass(kw_only=True, frozen=True)
-class NodeType:
-    typ: str
-    dimension: list
-    dimensionless: bool = False
-    value: Any = None
 
 
 @dataclasses.dataclass(kw_only=True, frozen=True)

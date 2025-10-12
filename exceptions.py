@@ -96,6 +96,10 @@ class uNameError(uException):
     pass
 
 
+class uTypeError(uException):
+    pass
+
+
 class Dimension_Mismatch(uException):
     pass
 
@@ -137,12 +141,29 @@ class Exceptions:
 
     def binOpMismatch(self, node: BinOp, texts: list[str]):
         operation = {
-            "plus": "addition",
-            "minus": "subtraction",
+            "add": "addition",
+            "sub": "subtraction",
         }[node.op.name]
 
         Dimension_Mismatch(
             f"incompatible dimensions in {operation}: [{texts[0]}] vs [{texts[1]}]",
+            module=self.module,
+            loc=node.loc,
+        )
+
+    def binOpTypeMismatch(self, node: BinOp, left, right):
+        operation = {
+            "add": "+",
+            "sub": "-",
+            "mul": "*",
+            "div": "/",
+            "pow": "^",
+            "mod": "%",
+            "intdiv": "//",
+        }[node.op.name]
+
+        uTypeError(
+            f"unsupported operand type(s) for '{operation}': '{left.typ}' and '{right.typ}'",
             module=self.module,
             loc=node.loc,
         )

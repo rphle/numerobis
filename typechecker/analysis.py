@@ -43,7 +43,7 @@ def analyze(module: ModuleMeta):
                 for node in nodes:
                     match node:
                         case Operator():
-                            e = 1 if node.name == "times" else -1
+                            e = 1 if node.name == "mul" else -1
                         case Scalar() | Integer() | Float() if self._is_trivial_scalar(
                             node
                         ):
@@ -53,7 +53,7 @@ def analyze(module: ModuleMeta):
                         case Identifier():
                             res.append(node if e == 1 else E(base=node, exponent=e))
                         case BinOp():
-                            # only possible BinOp is 'power'
+                            # only possible BinOp is 'pow'
                             base = self.normalize([node.left])[0]
                             exponent = self._extract_numeric_value(node.right)  # type: ignore
                             res.append(E(base=base, exponent=exponent * e))

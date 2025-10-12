@@ -44,7 +44,17 @@ class ParserTemplate:
         return Identifier(name=tok.value, loc=tok.loc)
 
     def _make_op(self, tok: Token) -> Operator:
-        return Operator(name=tok.type.lower(), loc=tok.loc)
+        names = {
+            "plus": "add",
+            "minus": "sub",
+            "times": "mul",
+            "divide": "div",
+            "intdivide": "intdiv",
+            "power": "pow",
+            "modulo": "mod",
+        }
+        name = tok.type.lower()
+        return Operator(name=names.get(name, name), loc=tok.loc)
 
     def _parse_number(self, token: Token) -> Float | Integer:
         split = token.value.lower().split("e")

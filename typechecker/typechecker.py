@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from astnodes import (
     AstNode,
     BinOp,
@@ -22,9 +20,10 @@ from astnodes import (
     Variable,
     WhileLoop,
 )
-from classes import E, Env, ModuleMeta, Namespaces, NodeType
-from exceptions import Dimension_Mismatch, Exceptions, uNameError
+from classes import E, Env, ModuleMeta, Namespaces
+from exceptions import Dimension_Mismatch, Exceptions, uNameError, uTypeError
 from typechecker.analysis import analyze, format_dimension, simplify
+from typechecker.types import FunctionSignature, NodeType, types
 from utils import camel2snake_pattern
 
 
@@ -48,17 +47,36 @@ class Typechecker:
             self.check(side, env=env._()) for side in (node.left, node.right)
         ]
 
-        if node.op.name in {"plus", "minus"}:
+        def _check_field(field):
+            if isinstance(field, FunctionSignature):
+                if field.params[0].typ != left.typ or field.params[1].typ != right.typ:
+                    self.errors.binOpTypeMismatch(node, left, right)
+            else:
+                self.errors.throw(
+                    uTypeError,
+                    f"'__{node.op.name}__' must be a method of '{left.typ}', not an attribute",
+                )
+
+        if field := types[left.typ][f"__{node.op.name}__"]:
+            _check_field(field)
+        elif (field := types[right.typ][f"__r{node.op.name}__"]) or (
+            field := types[right.typ][f"__{node.op.name}__"]
+        ):
+            _check_field(field)
+        else:
+            self.errors.binOpTypeMismatch(node, left, right)
+
+        if node.op.name in {"add", "sub"}:
             if left.dimension != right.dimension:
                 dim_strs = [format_dimension(side.dimension) for side in (left, right)]
                 self.errors.binOpMismatch(node, dim_strs)
 
             return NodeType(typ=left.typ, dimension=left.dimension)
-        elif node.op.name in {"times", "divide"}:
+        elif node.op.name in {"mul", "div"}:
             if right.dimensionless and left.dimensionless:
                 return NodeType(typ=left.typ, dimension=[], dimensionless=True)
 
-            if node.op.name == "times":
+            if node.op.name == "mul":
                 r = right.dimension
             else:
                 base = (
@@ -69,7 +87,7 @@ class Typechecker:
             dimension = simplify(left.dimension + r)
 
             return NodeType(typ=left.typ, dimension=dimension)
-        elif node.op.name == "power":
+        elif node.op.name == "pow":
             assert right.typ in {"Float", "Integer"}
             dimension = []
             for item in left.dimension:
@@ -159,7 +177,17 @@ class Typechecker:
         )
 
     def unary_op_(self, node: UnaryOp, env: Env):
-        pass
+        if node.op.name == "sub":
+            operand = self.check(node.operand, env=env._())
+            if operand.typ not in ("Integer", "Float"):
+                self.errors.throw(
+                    uTypeError,
+                    f"bad operand type for unary -: '{operand.typ}'",
+                    loc=node.loc,
+                )
+
+            return operand
+        return node
 
     def unit_definition_(self, node: UnitDefinition, env: Env):
         """Process unit definitions with proper dimension checking"""
