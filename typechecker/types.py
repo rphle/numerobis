@@ -1,16 +1,25 @@
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any
 
 
-@dataclass(kw_only=True, frozen=True)
+class Maybe:
+    pass
+
+
 class NodeType:
-    typ: str
-    dimension: list = field(default_factory=list)
-    dimensionless: bool = False
-    value: Any = None
+    typ2: set[str]
+    dimension2: set[tuple]
+    dimensionless: bool
+    value: Any
+
+    def __init__(self, typ2, dimension2=set(), dimensionless2=False, value2=None):
+        self.typ2 = typ2 if isinstance(typ2, set) else {typ2}
+        self.dimension2 = dimension2
+        self.dimensionless2 = dimensionless2
+        self.value2 = value2
 
 
-@dataclass(kw_only=True, frozen=True)
+@dataclass(frozen=True)
 class FunctionSignature:
     params: list[NodeType]
     returns: NodeType
@@ -25,11 +34,11 @@ class Struct:
 
 
 class _types:
-    Integer = NodeType(typ="Integer")
-    Float = NodeType(typ="Float")
-    String = NodeType(typ="String")
-    Boolean = NodeType(typ="Boolean")
-    List = NodeType(typ="List")
+    Integer = NodeType("Integer")
+    Float = NodeType("Float")
+    String = NodeType("String")
+    Boolean = NodeType("Boolean")
+    List = NodeType("List")
 
 
 types: dict[str, Struct] = {

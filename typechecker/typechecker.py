@@ -1,3 +1,6 @@
+import itertools
+
+import utils
 from astnodes import (
     AstNode,
     BinOp,
@@ -24,7 +27,6 @@ from classes import E, Env, ModuleMeta, Namespaces
 from exceptions import Dimension_Mismatch, Exceptions, uNameError, uTypeError
 from typechecker.analysis import analyze, format_dimension, simplify
 from typechecker.types import FunctionSignature, NodeType, types
-from utils import camel2snake_pattern
 
 
 class Typechecker:
@@ -41,40 +43,53 @@ class Typechecker:
 
         self.analyze = analyze(module)
 
+    def _check_binop(self, node: BinOp, left: NodeType, right: NodeType):
+        fields: dict[str, list[tuple[str, FunctionSignature | NodeType | None]]] = {
+            "left": [(typ, types[typ][f"__{node.op.name}__"]) for typ in left.typ2],
+            "right": [
+                (
+                    typ,
+                    types[typ][f"__r{node.op.name}__"]
+                    or types[typ][f"__{node.op.name}__"],
+                )
+                for typ in right.typ2
+            ],
+        }
+
+        for field in set(itertools.chain(fields.values())):
+            if not isinstance(field, FunctionSignature):
+                self.errors.throw(
+                    uTypeError,
+                    f"'__{node.op.name}__' must be a method of '{field}', not an attribute",
+                )
+
+        for lname, l, rname, r in itertools.product(*fields.values()):
+            assert isinstance(l, FunctionSignature) and isinstance(r, FunctionSignature)
+            if l.params[0].typ2 != left.typ2 or r.params[1].typ2 != right.typ2:
+                uTypeError(
+                    f"unsupported operand type(s) for '{utils.operators[node.op.name]}': '{left.typ2}' and '{right.typ2}'"
+                    f"\n    {lname} and {rname}",
+                    module=self.module,
+                    loc=node.loc,
+                )
+
     def bin_op_(self, node: BinOp, env: Env):
         """Check dimensional consistency in addition and subtraction operations"""
         left, right = [
             self.check(side, env=env._()) for side in (node.left, node.right)
         ]
 
-        def _check_field(field):
-            if isinstance(field, FunctionSignature):
-                if field.params[0].typ != left.typ or field.params[1].typ != right.typ:
-                    self.errors.binOpTypeMismatch(node, left, right)
-            else:
-                self.errors.throw(
-                    uTypeError,
-                    f"'__{node.op.name}__' must be a method of '{left.typ}', not an attribute",
-                )
-
-        if field := types[left.typ][f"__{node.op.name}__"]:
-            _check_field(field)
-        elif (field := types[right.typ][f"__r{node.op.name}__"]) or (
-            field := types[right.typ][f"__{node.op.name}__"]
-        ):
-            _check_field(field)
-        else:
-            self.errors.binOpTypeMismatch(node, left, right)
+        self._check_binop(node, left, right)
 
         if node.op.name in {"add", "sub"}:
-            if left.dimension != right.dimension:
-                dim_strs = [format_dimension(side.dimension) for side in (left, right)]
+            if left.dimension2 != right.dimension2:
+                dim_strs = [format_dimension(side.dimension2) for side in (left, right)]
                 self.errors.binOpMismatch(node, dim_strs)
 
-            return NodeType(typ=left.typ, dimension=left.dimension)
+            return NodeType(left.typ2, dimension2=left.dimension2)
         elif node.op.name in {"mul", "div"}:
             if right.dimensionless and left.dimensionless:
-                return NodeType(typ=left.typ, dimension=[], dimensionless=True)
+                return NodeType(typ=left.typ, dimension2=set(), dimensionless=True)
 
             if node.op.name == "mul":
                 r = right.dimension
@@ -139,9 +154,9 @@ class Typechecker:
         env.set("dimensions")(
             name=node.name.name,
             value=NodeType(
-                typ="dimension",
-                dimension=dimension or [node.name],
-                dimensionless=dimension == [],
+                "dimension",
+                dimension2=dimension or [node.name],
+                dimensionless2=dimension == [],
             ),
         )
 
@@ -274,7 +289,10 @@ class Typechecker:
                     typ=type(node).__name__, dimension=[], dimensionless=True
                 )
             case _:
-                name = camel2snake_pattern.sub("_", type(node).__name__).lower() + "_"
+                name = (
+                    utils.camel2snake_pattern.sub("_", type(node).__name__).lower()
+                    + "_"
+                )
                 if hasattr(self, name):
                     return getattr(self, name)(node, env=env._())
                 raise NotImplementedError(f"Type {type(node).__name__} not implemented")

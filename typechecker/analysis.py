@@ -107,7 +107,7 @@ def analyze(module: ModuleMeta):
                                 )
 
                             resolved = self.env.get(self.typs)(node.name)
-                            res.extend(resolved.dimension or [node])
+                            res.extend(resolved.dimension2[0] or [node])
 
                         case E():
                             base_nodes = (
