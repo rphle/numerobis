@@ -92,8 +92,16 @@ class Module:
                                     module.namespaces.names[name.name]
                                 )
                             except KeyError:
+                                help = [
+                                    ns
+                                    for ns in ("units", "dimensions")
+                                    if name.name in module.namespaces(ns)
+                                ]
                                 self.errors.throw(
                                     exception=uImportError,
+                                    help=f"the module does export a {help[0][:-1]} named '{name.name}', did you forget the '@' prefix?"
+                                    if help
+                                    else "",
                                     message=f"failed to resolve import: name '{name.name}' does not exist",
                                     loc=name.loc,
                                 )
