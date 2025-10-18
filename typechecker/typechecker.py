@@ -202,7 +202,7 @@ class Typechecker:
         dimension = []
 
         if node.dimension and not node.value:
-            dimension = [node.dimension]
+            dimension = self.analyze("dimension")([node.dimension], env=env)
         elif node.value:
             dimension = self.analyze("unit")(node.value, env=env)
 
