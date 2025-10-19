@@ -3,7 +3,7 @@ import sys
 import rich.console
 import rich.markup
 
-from astnodes import BinOp, Identifier, Location, Token
+from astnodes import BinOp, BoolOp, Identifier, Location, Token
 from classes import ModuleMeta
 from typechecker.utils import format_dimension, repr_dimension
 
@@ -61,7 +61,7 @@ class uException:
                 suffix = "..." if end < len(src) else ""
 
                 console.print(
-                    f"[dim]    {line.line} │[/dim]   {prefix}{highlighted}{suffix}",
+                    f"[dim]{(min(5 - len(str(line.line)), 4) * ' ')}{line.line} │[/dim]   {prefix}{highlighted}{suffix}",
                     highlight=False,
                 )
 
@@ -73,7 +73,7 @@ class uException:
                 marker = f"{' ' * len(f'{prefix}{src[start : line.col - 1]}')}[red bold]{underline}[/bold red]"
 
                 console.print(
-                    f"[dim]    {' ' * len(str(line.line))} │[/dim]   {marker}",
+                    f"[dim]      │[/dim]   {marker}",
                     highlight=False,
                 )
 
@@ -164,7 +164,7 @@ class Exceptions:
             loc=node.loc,
         )
 
-    def binOpTypeMismatch(self, node: BinOp, left, right):
+    def binOpTypeMismatch(self, node: BinOp | BoolOp, left, right):
         operation = {
             "add": "+",
             "sub": "-",
@@ -173,7 +173,7 @@ class Exceptions:
             "pow": "^",
             "mod": "%",
             "intdiv": "//",
-        }[node.op.name]
+        }.get(node.op.name, node.op.name)
 
         uTypeError(
             f"unsupported operand type(s) for '{operation}': '{left.typ}' and '{right.typ}'",
