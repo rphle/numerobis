@@ -129,8 +129,59 @@ class Typechecker:
 
         return checked
 
+    def bool_op_(self, node: BoolOp, env: Env):
+        left, right = [
+            self.check(side, env=env._()) for side in (node.left, node.right)
+        ]
+
+        if (
+            "__bool__" not in types[left.typ].fields
+            or "__bool__" not in types[right.typ].fields
+        ):
+            self.errors.binOpTypeMismatch(node, left, right)
+
+        return NodeType(typ="Bool")
+
     def call_(self, node: Call, env: Env):
         pass
+
+    def compare_(self, node: Compare, env: Env):
+        comparators = [node.left] + node.comparators
+        for i in range(len(comparators) - 1):
+            op, sides = node.ops[i], (comparators[i], comparators[i + 1])
+
+            left, right = [self.check(side, env=env._()) for side in sides]
+
+            def _check_field(field):
+                if isinstance(field, FunctionSignature):
+                    if field.check_args(left, right):
+                        return True
+                elif isinstance(field, Overload):
+                    return any(func.check_args(left, right) for func in field.functions)
+
+            for field in (
+                types[left.typ][f"__{op.name}__"],
+                types[right.typ][f"__r{op.name}__"],
+                types[right.typ][f"__{op.name}__"],
+            ):
+                if _check_field(field):
+                    break
+            else:
+                ops = {
+                    "eq": "==",
+                    "lt": "<",
+                    "gt": ">",
+                    "le": "<=",
+                    "ge": ">=",
+                    "ne": "!=",
+                }
+                self.errors.throw(
+                    uTypeError,
+                    f"'{ops[op.name]}' not supported between '{left.typ}' and '{right.typ}'",
+                    loc=sides[0].loc.merge(sides[1].loc),
+                )
+
+        return NodeType(typ="Bool")
 
     def conversion_(self, node: Conversion, env: Env):
         value = self.check(node.value, env=env._())

@@ -40,46 +40,34 @@ class Struct:
 
 
 class _types:
-    Integer = NodeType(typ="Integer")
+    Int = NodeType(typ="Int")
     Float = NodeType(typ="Float")
-    String = NodeType(typ="String")
-    Boolean = NodeType(typ="Boolean")
+    Str = NodeType(typ="Str")
+    Bool = NodeType(typ="Bool")
     List = NodeType(typ="List")
 
 
 _numberoverload = Overload(
-    FunctionSignature(params=[_types.Integer, _types.Integer], returns=_types.Integer),
-    FunctionSignature(params=[_types.Integer, _types.Float], returns=_types.Float),
+    FunctionSignature(params=[_types.Int, _types.Int], returns=_types.Int),
+    FunctionSignature(params=[_types.Int, _types.Float], returns=_types.Float),
+    FunctionSignature(params=[_types.Float, _types.Float], returns=_types.Float),
 )
+_bool = FunctionSignature(params=[], returns=_types.Bool)
+_ops = ["add", "sub", "mul", "div", "mod", "pow", "eq", "lt", "gt", "le", "ge", "ne"]
 
 types: dict[str, Struct] = {
-    "Integer": Struct(
-        {
-            "__add__": _numberoverload,
-            "__sub__": _numberoverload,
-            "__mul__": _numberoverload,
-            "__div__": _numberoverload,
-            "__mod__": _numberoverload,
-            "__pow__": _numberoverload,
-        },
-    ),
+    "Int": Struct({"__bool__": _bool, **{f"__{op}__": _numberoverload for op in _ops}}),
     "Float": Struct(
-        {
-            "__add__": _numberoverload,
-            "__sub__": _numberoverload,
-            "__mul__": _numberoverload,
-            "__div__": _numberoverload,
-            "__mod__": _numberoverload,
-            "__pow__": _numberoverload,
-        },
+        {"__bool__": _bool, **{f"__{op}__": _numberoverload for op in _ops}}
     ),
-    "String": Struct(
+    "Bool": Struct({"__bool__": _bool}),
+    "Str": Struct(
         {
             "__add__": FunctionSignature(
-                params=[_types.String, _types.String], returns=_types.String
+                params=[_types.Str, _types.Str], returns=_types.Str
             ),
             "__mul__": FunctionSignature(
-                params=[_types.String, _types.Integer], returns=_types.String
+                params=[_types.Str, _types.Int], returns=_types.Str
             ),
         },
     ),
@@ -89,7 +77,7 @@ types: dict[str, Struct] = {
                 params=[_types.List, _types.List], returns=_types.List
             ),
             "__mul__": FunctionSignature(
-                params=[_types.List, _types.Integer], returns=_types.List
+                params=[_types.List, _types.Int], returns=_types.List
             ),
         },
     ),
