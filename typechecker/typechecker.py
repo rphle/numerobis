@@ -1,6 +1,7 @@
 from astnodes import (
     AstNode,
     BinOp,
+    Block,
     Boolean,
     Call,
     Conversion,
@@ -22,8 +23,9 @@ from astnodes import (
 )
 from classes import E, Env, ModuleMeta, Namespaces
 from exceptions import Dimension_Mismatch, Exceptions, uNameError, uTypeError
-from typechecker.analysis import analyze, format_dimension, simplify
-from typechecker.types import FunctionSignature, NodeType, types
+from typechecker.analysis import analyze, simplify
+from typechecker.types import FunctionSignature, NodeType, Overload, types
+from typechecker.utils import format_dimension
 from utils import camel2snake_pattern
 
 
@@ -41,7 +43,7 @@ class Typechecker:
 
         self.analyze = analyze(module)
 
-    def bin_op_(self, node: BinOp, env: Env):
+    def bin_op_(self, node: BinOp, env: Env) -> NodeType:
         """Check dimensional consistency in addition and subtraction operations"""
         left, right = [
             self.check(side, env=env._()) for side in (node.left, node.right)
@@ -49,61 +51,83 @@ class Typechecker:
 
         def _check_field(field):
             if isinstance(field, FunctionSignature):
-                if field.params[0].typ != left.typ or field.params[1].typ != right.typ:
-                    self.errors.binOpTypeMismatch(node, left, right)
-            else:
-                self.errors.throw(
-                    uTypeError,
-                    f"'__{node.op.name}__' must be a method of '{left.typ}', not an attribute",
-                )
+                if field.check_args(left, right):
+                    return True
+            elif isinstance(field, Overload):
+                return any(func.check_args(left, right) for func in field.functions)
 
-        if field := types[left.typ][f"__{node.op.name}__"]:
-            _check_field(field)
-        elif (field := types[right.typ][f"__r{node.op.name}__"]) or (
-            field := types[right.typ][f"__{node.op.name}__"]
+        for field in (
+            types[left.typ][f"__{node.op.name}__"],
+            types[right.typ][f"__r{node.op.name}__"],
+            types[right.typ][f"__{node.op.name}__"],
         ):
-            _check_field(field)
+            if _check_field(field):
+                break
         else:
             self.errors.binOpTypeMismatch(node, left, right)
 
-        if node.op.name in {"add", "sub"}:
-            if left.dimension != right.dimension:
-                dim_strs = [format_dimension(side.dimension) for side in (left, right)]
-                self.errors.binOpMismatch(node, dim_strs)
-
-            return NodeType(typ=left.typ, dimension=left.dimension)
-        elif node.op.name in {"mul", "div"}:
-            if right.dimensionless and left.dimensionless:
-                return NodeType(typ=left.typ, dimension=[], dimensionless=True)
-
-            if node.op.name == "mul":
-                r = right.dimension
-            else:
-                base = (
-                    right.dimension[0] if len(right.dimension) == 1 else right.dimension
-                )
-                r = [E(base=base, exponent=-1.0)]
-
-            dimension = simplify(left.dimension + r)
-
-            return NodeType(typ=left.typ, dimension=dimension)
-        elif node.op.name == "pow":
-            assert right.typ in {"Float", "Integer"}
-            dimension = []
-            for item in left.dimension:
-                if isinstance(item, E):
-                    dimension.append(
-                        E(base=item.base, exponent=item.exponent * right.value)
+        match node.op.name:
+            case "add" | "sub":
+                if left.dimension != right.dimension:
+                    self.errors.binOpMismatch(
+                        node, left, right, env=env.export("dimensions")
                     )
-                else:
-                    dimension.append(E(base=item, exponent=right.value))
 
-            return NodeType(
-                typ=left.typ,
-                dimension=simplify(dimension),
-            )
-        else:
-            raise NotImplementedError(f"BinOp {node.op.name} not implemented!")
+                return NodeType(typ=left.typ, dimension=left.dimension)
+            case "mul" | "div":
+                if right.dimensionless and left.dimensionless:
+                    return NodeType(typ=left.typ, dimension=[], dimensionless=True)
+
+                if node.op.name == "mul":
+                    r = right.dimension
+                else:
+                    base = (
+                        right.dimension[0]
+                        if len(right.dimension) == 1
+                        else right.dimension
+                    )
+                    r = [E(base=base, exponent=-1.0)]
+
+                dimension = simplify(left.dimension + r)
+
+                return NodeType(typ=left.typ, dimension=dimension)
+            case "pow":
+                assert right.typ in {"Float", "Integer"}
+                if not right.dimensionless:
+                    self.errors.throw(
+                        uTypeError,
+                        f"Right operand of pow must be dimensionless, got [{format_dimension(right.dimension)}]",
+                        loc=node.right.loc,
+                    )
+                dimension = []
+                for item in left.dimension:
+                    if isinstance(item, E):
+                        dimension.append(
+                            E(base=item.base, exponent=item.exponent * right.value)
+                        )
+                    else:
+                        dimension.append(E(base=item, exponent=right.value))
+
+                return NodeType(
+                    typ=left.typ,
+                    dimension=simplify(dimension),
+                )
+            case "mod":
+                if left.dimension != right.dimension:
+                    self.errors.binOpMismatch(
+                        node, left, right, env=env.export("dimensions")
+                    )
+
+                return NodeType(typ=left.typ, dimension=left.dimension)
+            case _:
+                raise NotImplementedError(f"BinOp {node.op.name} not implemented!")
+
+    def block_(self, node: Block, env: Env):
+        checked = None
+        for statement in node.body:
+            checked = self.check(statement, env=env._())
+
+        return checked
 
     def call_(self, node: Call, env: Env):
         pass

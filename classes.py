@@ -87,6 +87,9 @@ class Env:
 
         return _set
 
+    def export(self, namespace: str) -> dict[str, NodeType]:
+        return {name: self.glob(namespace)[name] for name in self(namespace)}
+
     def __call__(self, namespace: str) -> dict[str, str]:
         return getattr(self, namespace)
 

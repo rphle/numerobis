@@ -5,6 +5,7 @@ import rich.markup
 
 from astnodes import BinOp, Identifier, Location, Token
 from classes import ModuleMeta
+from typechecker.utils import format_dimension, repr_dimension
 
 
 class uException:
@@ -139,14 +140,26 @@ class Exceptions:
             loc=loc,
         )
 
-    def binOpMismatch(self, node: BinOp, texts: list[str]):
+    def binOpMismatch(self, node: BinOp, left, right, env: dict):
         operation = {
             "add": "addition",
             "sub": "subtraction",
         }[node.op.name]
 
+        left, right = [
+            "[/bold]] / [[bold]".join(
+                [
+                    format_dimension(dim)
+                    if not isinstance(dim, int)
+                    else f"{dim} more …"
+                    for dim in repr_dimension(side.dimension, env=env)
+                ]
+            )
+            for side in (left, right)
+        ]
+
         Dimension_Mismatch(
-            f"incompatible dimensions in {operation}: [{texts[0]}] vs [{texts[1]}]",
+            f"incompatible dimensions in {operation}: [[bold]{left}[/bold]] vs [[bold]{right}[/bold]]",
             module=self.module,
             loc=node.loc,
         )

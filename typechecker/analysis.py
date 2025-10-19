@@ -19,12 +19,12 @@ from exceptions import Exceptions, uNameError
 def analyze(module: ModuleMeta):
     def _analyze(typ: Literal["unit", "dimension"]):
         class analysis:
-            def __init__(self, node: Unit, env: Env):
+            def __init__(self, node: Unit | list, env: Env):
                 self.typ: Literal["unit", "dimension"] = typ
                 self.typs: Literal["units", "dimensions"] = typ + "s"
                 self.errors = Exceptions(module=module)
                 self.env: Env = env
-                self.node: Unit = node
+                self.node: Unit = node if isinstance(node, Unit) else Unit(unit=node)
 
             def run(self) -> list:
                 value = self.node.unit
@@ -155,32 +155,3 @@ def simplify(nodes: list):
         for g in groups.values()
         if g["exponent"] != 0
     ]
-
-
-def format_dimension(dims) -> str:
-    """Format dimension for error messages"""
-    num, denom = [], []
-
-    for d in dims:
-        exp = 1
-        name = None
-        if isinstance(d, E):
-            if isinstance(d.base, list):
-                name = format_dimension(d.base)
-                name = f"({name})" if len(d.base) > 1 else name
-            exp = d.exponent
-            d = d.base
-
-        name = getattr(d, "name", getattr(d, "value", str(d))) if name is None else name
-
-        target = num if float(getattr(d, "exponent", 1) or 1) > 0 else denom
-        target.append(
-            name if exp == 1 else f"{name}^{int(exp) if exp == int(exp) else exp}"
-        )
-
-    num_str = " * ".join(num) or "1"
-    if not denom:
-        return num_str
-
-    denom_str = denom[0] if len(denom) == 1 else f"({' * '.join(denom)})"
-    return f"{num_str} / {denom_str}"
