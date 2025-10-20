@@ -157,7 +157,8 @@ def lex(source: str, module: ModuleMeta, debug=False) -> list[Token]:
             break
 
         if tok.value.count("\n"):
-            last_newline_pos.append(tok.lexpos + len(tok.value))
+            npos = len(tok.value) - tok.value[::-1].find("\n")
+            last_newline_pos.append(tok.lexpos + npos)
             last_newline_pos.pop(0)
 
         token = Token(
