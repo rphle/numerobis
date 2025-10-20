@@ -104,7 +104,10 @@ class LexTokens:
     t_COLON = r":"
     t_AT = r"@"
 
-    t_WHITESPACE = r"\s+"
+    def t_WHITESPACE(self, t):
+        r"[\n\s]+"
+        t.lexer.lineno += t.value.count("\n")
+        return t
 
     # Identifiers and reserved words
     reserved_map = {}
@@ -120,11 +123,6 @@ class LexTokens:
     t_NUMBER = r"\d+(_\d+)* (\.\d+(_\d+)*)? ([eE][+-]? \d+(_\d+)* (\.\d+(_\d+)*)?)?"
     # String literal
     t_STRING = r"\"([^\\\n]|(\\.))*?\""
-
-    def t_NEWLINE(self, t):
-        r"\n+"
-        t.lexer.lineno += t.value.count("\n")
-        return t
 
     def t_comment(self, t):
         r"(\#\[ (.|\n)* \]\#) | (\#.*)"
@@ -158,12 +156,12 @@ def lex(source: str, module: ModuleMeta, debug=False) -> list[Token]:
         if not tok:
             break
 
-        if tok.type == "NEWLINE":
+        if tok.value.count("\n"):
             last_newline_pos.append(tok.lexpos + len(tok.value))
             last_newline_pos.pop(0)
 
         token = Token(
-            type=tok.type if tok.type != "NEWLINE" else "WHITESPACE",
+            type=tok.type,
             value=tok.value,
             loc=Location(
                 line=tok.lineno,

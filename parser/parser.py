@@ -118,7 +118,14 @@ class Parser(ParserTemplate):
         elif self._peek().type == "RETURN":
             """Return statement"""
             ret = self._consume("RETURN")
-            return Return(value=self.expression(), loc=ret.loc)
+            value = (
+                self.expression()
+                if not any(
+                    x in self._peek(ignore_whitespace=False).value for x in ["\n", ";"]
+                )
+                else None
+            )
+            return Return(value=value, loc=ret.loc)
 
         return self.expression()
 
