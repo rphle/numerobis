@@ -1,4 +1,4 @@
-import lex as plylex
+import lexer.plylex as plylex
 from astnodes import Location, Token
 from classes import ModuleMeta
 from exceptions import Exceptions
