@@ -101,7 +101,7 @@ class uTypeError(uException):
     pass
 
 
-class Dimension_Mismatch(uException):
+class ConversionError(uException):
     pass
 
 
@@ -158,7 +158,7 @@ class Exceptions:
             for side in (left, right)
         ]
 
-        Dimension_Mismatch(
+        ConversionError(
             f"incompatible dimensions in {operation}: [[bold]{left}[/bold]] vs [[bold]{right}[/bold]]",
             module=self.module,
             loc=node.loc,

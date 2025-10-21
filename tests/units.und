@@ -1,3 +1,5 @@
+from si import *
+
 # Units
 8(5*m / s^2)
 4kg*m/s^2
@@ -15,10 +17,11 @@
 5°C
 3Ω
 100 kΩ
-5α
+
+#[ 5α
 1.23e4m
 4.5E-3kg
-5°
+5° #]
 
 my_var = 10;
 my_var -> kg
@@ -27,18 +30,23 @@ my_var -> kg
 34e-3(m/s^2)^2
 5_308_12
 
-unit m = base
-unit s = base
-unit N = kg*m/s^2
-unit x = m
-
-speed (-> km/h)
 
 speed = 5m/s -> km/h
-echo(speed (-> km/h))
-echo(@((m*kg)/(s^2)))
+speed (-> km/s)
+echo(speed (-> m/h))
+# echo(@((m*kg)/(s^2)))
 
 5 (kg * m)
 
-unit dollar[year=2025] = base_dollar * inflation[year=@year]
-unit length[m, factor=1] = base_length * @m * @factor
+dimension Drops
+unit drops = 1
+
+dimension DripRate = Drops / Time
+
+saline_volume = 1200 mL
+drop_factor = 15 drops/mL
+total_time = 6 hour
+
+iv_drip_rate = saline_volume * drop_factor / total_time
+
+iv_drip_rate -> drops / min

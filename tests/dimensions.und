@@ -1,0 +1,29 @@
+from si import @lumen
+import math
+
+dimension Length
+dimension Area = Length^2
+
+dimension Time
+dimension Frequency = 1 / Time
+dimension Velocity = Length / Time
+dimension Acceleration = Length / (Time^2 * 1)
+
+dimension Mass
+dimension Force = Mass * Acceleration
+dimension Pressure = Force / Area
+dimension Energy = Force * Length
+dimension Power = Energy / Time
+
+unit metre: Length
+unit second: Time
+unit kilogram: Mass
+
+unit hertz: Frequency = 1 / second
+unit test: Frequency = 1 / 5 / second
+unit newton: Force = kilogram * metre / second^2
+unit pascal: Pressure = newton / metre^2
+unit joule: Energy = newton * metre
+unit watt: Power = joule / second
+
+2 newton - 1 watt/(metre/second)

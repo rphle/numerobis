@@ -1,0 +1,388 @@
+
+# SI (International System of Units) Standard Library
+# Base dimensions
+
+dimension Length
+dimension Mass
+dimension Time
+dimension ElectricCurrent
+dimension ThermodynamicTemperature
+dimension AmountOfSubstance
+dimension LuminousIntensity
+
+# Derived dimensions
+dimension Area = Length^2
+dimension Volume = Length^3
+dimension Velocity = Length / Time
+dimension Acceleration = Length / Time^2
+dimension Force = Mass * Acceleration
+dimension Pressure = Force / Area
+dimension Energy = Force * Length
+dimension Power = Energy / Time
+dimension ElectricCharge = ElectricCurrent * Time
+dimension ElectricPotential = Power / ElectricCurrent
+dimension ElectricResistance = ElectricPotential / ElectricCurrent
+dimension ElectricConductance = 1 / ElectricResistance
+dimension ElectricCapacitance = ElectricCharge / ElectricPotential
+dimension MagneticFlux = ElectricPotential * Time
+dimension MagneticFluxDensity = MagneticFlux / Area
+dimension Inductance = MagneticFlux / ElectricCurrent
+dimension Frequency = 1 / Time
+dimension Angle = 1  # dimensionless
+dimension SolidAngle = 1  # dimensionless
+dimension LuminousFlux = LuminousIntensity * SolidAngle
+dimension Illuminance = LuminousFlux / Area
+dimension Density = Mass / Volume
+dimension Momentum = Mass * Velocity
+dimension AngularVelocity = Angle / Time
+dimension AngularAcceleration = AngularVelocity / Time
+dimension Torque = Force * Length
+dimension Entropy = Energy / ThermodynamicTemperature
+dimension SpecificHeatCapacity = Energy / (Mass * ThermodynamicTemperature)
+dimension ThermalConductivity = Power / (Length * ThermodynamicTemperature)
+dimension ElectricFieldStrength = Force / ElectricCharge
+dimension MagneticFieldStrength = ElectricCurrent / Length
+
+# SI Base Units
+unit metre: Length
+unit meter: Length = metre  # American spelling
+unit m: Length = metre
+
+unit kilogram: Mass
+unit kg: Mass = kilogram
+
+unit second: Time
+unit s: Time = second
+
+unit ampere: ElectricCurrent
+unit amp: ElectricCurrent = ampere
+unit A: ElectricCurrent = ampere
+
+unit kelvin: ThermodynamicTemperature
+unit K: ThermodynamicTemperature = kelvin
+
+unit mole: AmountOfSubstance
+unit mol: AmountOfSubstance = mole
+
+unit candela: LuminousIntensity
+unit cd: LuminousIntensity = candela
+
+# SI Derived Units with Special Names
+unit hertz: Frequency = 1 / second
+unit Hz: Frequency = hertz
+
+unit radian: Angle = 1
+unit rad: Angle = radian
+
+unit steradian: SolidAngle = 1
+unit sr: SolidAngle = steradian
+
+unit newton: Force = kilogram * metre / second^2
+unit N: Force = newton
+
+unit pascal: Pressure = newton / metre^2
+unit Pa: Pressure = pascal
+
+unit joule: Energy = newton * metre
+unit J: Energy = joule
+
+unit watt: Power = joule / second
+unit W: Power = watt
+
+unit coulomb: ElectricCharge = ampere * second
+unit C: ElectricCharge = coulomb
+
+unit volt: ElectricPotential = watt / ampere
+unit V: ElectricPotential = volt
+
+unit farad: ElectricCapacitance = coulomb / volt
+unit F: ElectricCapacitance = farad
+
+unit ohm: ElectricResistance = volt / ampere
+unit Ω: ElectricResistance = ohm
+
+unit siemens: ElectricConductance = 1 / ohm
+unit S: ElectricConductance = siemens
+
+unit weber: MagneticFlux = volt * second
+unit Wb: MagneticFlux = weber
+
+unit tesla: MagneticFluxDensity = weber / metre^2
+unit T: MagneticFluxDensity = tesla
+
+unit henry: Inductance = weber / ampere
+unit H: Inductance = henry
+
+unit lumen: LuminousFlux = candela * steradian
+unit lm: LuminousFlux = lumen
+
+unit lux: Illuminance = lumen / metre^2
+unit lx: Illuminance = lux
+
+# Metric Prefixes (powers of 10)
+# Yotta (10^24)
+unit Ym = 1e24 * metre
+unit Ykg = 1e24 * kilogram
+unit Ys = 1e24 * second
+unit YA = 1e24 * ampere
+unit YK = 1e24 * kelvin
+unit Ymol = 1e24 * mole
+unit Ycd = 1e24 * candela
+
+# Zetta (10^21)
+unit Zm = 1e21 * metre
+unit Zkg = 1e21 * kilogram
+unit Zs = 1e21 * second
+unit ZA = 1e21 * ampere
+unit ZK = 1e21 * kelvin
+unit Zmol = 1e21 * mole
+unit Zcd = 1e21 * candela
+
+# Exa (10^18)
+unit Em: Length = 1e18 * metre
+unit Ekg: Mass = 1e18 * kilogram
+unit Es: Time = 1e18 * second
+unit EA: ElectricCurrent = 1e18 * ampere
+unit EK: ThermodynamicTemperature = 1e18 * kelvin
+unit Emol: AmountOfSubstance = 1e18 * mole
+unit Ecd: LuminousIntensity = 1e18 * candela
+
+# Peta (10^15)
+unit Pm: Length = 1e15 * metre
+unit Pkg: Mass = 1e15 * kilogram
+unit Ps: Time = 1e15 * second
+unit PA: ElectricCurrent = 1e15 * ampere
+unit PK: ThermodynamicTemperature = 1e15 * kelvin
+unit Pmol: AmountOfSubstance = 1e15 * mole
+unit Pcd: LuminousIntensity = 1e15 * candela
+
+# Tera (10^12)
+unit Tm: Length = 1e12 * metre
+unit Tkg: Mass = 1e12 * kilogram
+unit Ts: Time = 1e12 * second
+unit TA: ElectricCurrent = 1e12 * ampere
+unit TK: ThermodynamicTemperature = 1e12 * kelvin
+unit Tmol: AmountOfSubstance = 1e12 * mole
+unit Tcd: LuminousIntensity = 1e12 * candela
+
+# Giga (10^9)
+unit Gm: Length = 1e9 * metre
+unit Gkg: Mass = 1e9 * kilogram
+unit Gs: Time = 1e9 * second
+unit GA: ElectricCurrent = 1e9 * ampere
+unit GK: ThermodynamicTemperature = 1e9 * kelvin
+unit Gmol: AmountOfSubstance = 1e9 * mole
+unit Gcd: LuminousIntensity = 1e9 * candela
+
+# Mega (10^6)
+unit Mm: Length = 1e6 * metre
+unit Mkg: Mass = 1e6 * kilogram
+unit Ms: Time = 1e6 * second
+unit MA: ElectricCurrent = 1e6 * ampere
+unit MK: ThermodynamicTemperature = 1e6 * kelvin
+unit Mmol: AmountOfSubstance = 1e6 * mole
+unit Mcd: LuminousIntensity = 1e6 * candela
+
+# Kilo (10^3)
+unit km: Length = 1e3 * metre
+unit ks: Time = 1e3 * second
+unit kA: ElectricCurrent = 1e3 * ampere
+unit kK: ThermodynamicTemperature = 1e3 * kelvin
+unit kmol: AmountOfSubstance = 1e3 * mole
+unit kcd: LuminousIntensity = 1e3 * candela
+
+# Hecto (10^2)
+unit hm: Length = 1e2 * metre
+unit hkg: Mass = 1e2 * kilogram
+unit hs: Time = 1e2 * second
+unit hA: ElectricCurrent = 1e2 * ampere
+unit hK: ThermodynamicTemperature = 1e2 * kelvin
+unit hmol: AmountOfSubstance = 1e2 * mole
+unit hcd: LuminousIntensity = 1e2 * candela
+
+# Deka (10^1)
+unit dam: Length = 1e1 * metre
+unit dakg: Mass = 1e1 * kilogram
+unit das: Time = 1e1 * second
+unit daA: ElectricCurrent = 1e1 * ampere
+unit daK: ThermodynamicTemperature = 1e1 * kelvin
+unit damol: AmountOfSubstance = 1e1 * mole
+unit dacd: LuminousIntensity = 1e1 * candela
+
+# Deci (10^-1)
+unit dm: Length = 1e-1 * metre
+unit dkg: Mass = 1e-1 * kilogram
+unit ds: Time = 1e-1 * second
+unit dA: ElectricCurrent = 1e-1 * ampere
+unit dK: ThermodynamicTemperature = 1e-1 * kelvin
+unit dmol: AmountOfSubstance = 1e-1 * mole
+unit dcd: LuminousIntensity = 1e-1 * candela
+
+# Centi (10^-2)
+unit cm: Length = 1e-2 * metre
+unit ckg: Mass = 1e-2 * kilogram
+unit cs: Time = 1e-2 * second
+unit cA: ElectricCurrent = 1e-2 * ampere
+unit cK: ThermodynamicTemperature = 1e-2 * kelvin
+unit cmol: AmountOfSubstance = 1e-2 * mole
+unit ccd: LuminousIntensity = 1e-2 * candela
+
+# Milli (10^-3)
+unit mm: Length = 1e-3 * metre
+unit mg: Mass = 1e-3 * kilogram  # Note: gram, not millikilogram
+unit ms: Time = 1e-3 * second
+unit mA: ElectricCurrent = 1e-3 * ampere
+unit mK: ThermodynamicTemperature = 1e-3 * kelvin
+unit mmol: AmountOfSubstance = 1e-3 * mole
+unit mcd: LuminousIntensity = 1e-3 * candela
+
+# Micro (10^-6)
+unit µm: Length = 1e-6 * metre
+unit µkg: Mass = 1e-6 * kilogram
+unit µs: Time = 1e-6 * second
+unit µA: ElectricCurrent = 1e-6 * ampere
+unit µK: ThermodynamicTemperature = 1e-6 * kelvin
+unit µmol: AmountOfSubstance = 1e-6 * mole
+unit µcd: LuminousIntensity = 1e-6 * candela
+
+# Nano (10^-9)
+unit nm: Length = 1e-9 * metre
+unit nkg: Mass = 1e-9 * kilogram
+unit ns: Time = 1e-9 * second
+unit nA: ElectricCurrent = 1e-9 * ampere
+unit nK: ThermodynamicTemperature = 1e-9 * kelvin
+unit nmol: AmountOfSubstance = 1e-9 * mole
+unit ncd: LuminousIntensity = 1e-9 * candela
+
+# Pico (10^-12)
+unit pm: Length = 1e-12 * metre
+unit pkg: Mass = 1e-12 * kilogram
+unit ps: Time = 1e-12 * second
+unit pA: ElectricCurrent = 1e-12 * ampere
+unit pK: ThermodynamicTemperature = 1e-12 * kelvin
+unit pmol: AmountOfSubstance = 1e-12 * mole
+unit pcd: LuminousIntensity = 1e-12 * candela
+
+# Femto (10^-15)
+unit fm: Length = 1e-15 * metre
+unit fkg: Mass = 1e-15 * kilogram
+unit fs: Time = 1e-15 * second
+unit fA: ElectricCurrent = 1e-15 * ampere
+unit fK: ThermodynamicTemperature = 1e-15 * kelvin
+unit fmol: AmountOfSubstance = 1e-15 * mole
+unit fcd: LuminousIntensity = 1e-15 * candela
+
+# Atto (10^-18)
+unit am: Length = 1e-18 * metre
+unit akg: Mass = 1e-18 * kilogram
+unit as: Time = 1e-18 * second
+unit aA: ElectricCurrent = 1e-18 * ampere
+unit aK: ThermodynamicTemperature = 1e-18 * kelvin
+unit amol: AmountOfSubstance = 1e-18 * mole
+unit acd: LuminousIntensity = 1e-18 * candela
+
+# Zepto (10^-21)
+unit zm: Length = 1e-21 * metre
+unit zkg: Mass = 1e-21 * kilogram
+unit zs: Time = 1e-21 * second
+unit zA: ElectricCurrent = 1e-21 * ampere
+unit zK: ThermodynamicTemperature = 1e-21 * kelvin
+unit zmol: AmountOfSubstance = 1e-21 * mole
+unit zcd: LuminousIntensity = 1e-21 * candela
+
+# Yocto (10^-24)
+unit ym: Length = 1e-24 * metre
+unit ykg: Mass = 1e-24 * kilogram
+unit ys: Time = 1e-24 * second
+unit yA: ElectricCurrent = 1e-24 * ampere
+unit yK: ThermodynamicTemperature = 1e-24 * kelvin
+unit ymol: AmountOfSubstance = 1e-24 * mole
+unit ycd: LuminousIntensity = 1e-24 * candela
+
+# Common derived units with prefixes
+unit kN: Force = 1e3 * newton
+unit MN: Force = 1e6 * newton
+unit kPa: Pressure = 1e3 * pascal
+unit MPa: Pressure = 1e6 * pascal
+unit GPa: Pressure = 1e9 * pascal
+unit kJ: Energy = 1e3 * joule
+unit MJ: Energy = 1e6 * joule
+unit GJ: Energy = 1e9 * joule
+unit kW: Power = 1e3 * watt
+unit MW: Power = 1e6 * watt
+unit GW: Power = 1e9 * watt
+unit kV: ElectricPotential = 1e3 * volt
+unit MV: ElectricPotential = 1e6 * volt
+unit mV: ElectricPotential = 1e-3 * volt
+unit µV: ElectricPotential = 1e-6 * volt
+unit kΩ: ElectricResistance = 1e3 * ohm
+unit MΩ: ElectricResistance = 1e6 * ohm
+unit GΩ: ElectricResistance = 1e9 * ohm
+unit mΩ: ElectricResistance = 1e-3 * ohm
+unit µΩ: ElectricResistance = 1e-6 * ohm
+unit µF: ElectricCapacitance = 1e-6 * farad
+unit nF: ElectricCapacitance = 1e-9 * farad
+unit pF: ElectricCapacitance = 1e-12 * farad
+unit mH: Inductance = 1e-3 * henry
+unit µH: Inductance = 1e-6 * henry
+unit nH: Inductance = 1e-9 * henry
+
+# Mass units (gram and derivatives)
+unit gram: Mass = 1e-3 * kilogram
+unit g: Mass = gram
+unit µg: Mass = 1e-6 * gram
+unit ng: Mass = 1e-9 * gram
+unit pg: Mass = 1e-12 * gram
+unit tonne: Mass = 1e3 * kilogram
+unit t: Mass = tonne
+unit Mt: Mass = 1e6 * kilogram
+unit Gt: Mass = 1e9 * kilogram
+
+# Volume units
+unit litre: Volume = 1e-3 * metre^3
+unit liter = litre  # American spelling
+unit L: Volume = litre
+unit mL: Volume = 1e-3 * litre
+unit µL: Volume = 1e-6 * litre
+unit nL: Volume = 1e-9 * litre
+unit pL: Volume = 1e-12 * litre
+unit kL: Volume = 1e3 * litre
+unit ML: Volume = 1e6 * litre
+
+unit cubic_metre: Volume = metre^3
+
+# Time units
+unit minute: Time = 60 * second
+unit min: Time = minute
+unit hour: Time = 60 * minute
+unit h: Time = hour
+unit hr: Time = hour
+unit day: Time = 24 * hour
+unit d: Time = day
+unit week: Time = 7 * day
+unit wk: Time = week
+unit year: Time = 365.25 * day
+unit yr: Time = year
+unit century: Time = 100 * year
+unit millennium: Time = 1000 * year
+
+# Temperature units
+unit celsius: ThermodynamicTemperature = kelvin  # Note: offset not handled
+unit °C = celsius
+unit fahrenheit = kelvin  # Note: offset and scale not handled
+unit °F = fahrenheit
+
+# Angle units
+unit degree: Angle = 3.14159265359/180 * radian
+unit °: Angle = degree
+unit arcminute: Angle = degree/60
+unit arcsecond: Angle = arcminute/60
+unit gradian: Angle = 3.14159265359/200 * radian
+unit gon: Angle = gradian
+unit turn: Angle = 2 * 3.14159265359 * radian
+unit revolution: Angle = turn
+unit rev: Angle = revolution
+
+# Frequency units
+unit rpm: Frequency = 1/60 * hertz  # revolutions per minute
+unit rps: Frequency = hertz  # revolutions per second

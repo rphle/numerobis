@@ -1,0 +1,25 @@
+from si import @(Length, Mass, Time, Force, Energy, Power)
+from si import @(metre, kilogram, second, newton, joule, watt, hour)
+from imperial import @(foot, pound)
+
+
+# 5 kilogram / 1 hour -> 1000*watt
+
+# Structural engineering calculation
+beam_length = 10 metre
+load_per_meter = 1000 newton/metre
+total_load = load_per_meter * beam_length
+
+# Convert to imperial for US specifications
+beam_length_ft = beam_length -> foot
+load_per_ft = load_per_meter -> (newton / foot)
+
+
+# Power calculation
+energy_consumed = 5 kilogram * (10 metre / 1 hour)^2
+power_required = energy_consumed / 1 hour
+power_kW = 5 kilogram * (10 metre / 1 hour)^2 / 1 hour -> 1000*watt
+
+echo("Engineering calculation complete!")
+# echo("Beam length: " + (beam_length_ft -> Str) + " feet")
+echo("Power required: " + (power_kW -> Str) + " kW")

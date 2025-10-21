@@ -19,6 +19,11 @@ class Location:
     end_line: int = -1
     end_col: int = -1
 
+    def merge(self, other: "Location"):
+        self.end_line = other.end_line
+        self.end_col = other.end_col
+        return self
+
     def split(self) -> list["Location"]:
         """
         Split a multi-line position span into individual line positions.

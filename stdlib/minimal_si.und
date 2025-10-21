@@ -1,0 +1,26 @@
+
+# Minimal SI Units for Testing Import System
+# Just basic units to avoid dimension checking issues
+
+# Base dimensions
+dimension Length
+dimension Mass
+dimension Time
+
+# Base units - no derived units with explicit dimensions to avoid the bug
+unit metre: Length
+unit kilogram: Mass
+unit second: Time
+
+# Simple aliases without dimension annotations
+unit m = metre
+unit kg = kilogram
+unit s = second
+
+# One simple derived dimension and unit
+dimension Velocity = Length / Time
+
+# Simple derived unit without explicit dimension annotation
+unit metre_per_second = metre / second
+unit mps = metre_per_second
+

@@ -1,0 +1,60 @@
+
+# Custom Units Module for Testing
+from si import Length, Mass, Time, Force, Energy, Power
+from si import metre, kilogram, second, newton, joule, watt, hour, minute
+from imperial import foot
+
+# Define some custom dimensions for testing
+dimension Information
+dimension DataRate = Information / Time
+dimension StorageCapacity = Information
+
+# Define custom units
+unit bit: Information = 1
+unit byte: Information = 8 * bit
+unit kilobyte: Information = 1024 * byte
+unit KB: Information = kilobyte
+unit megabyte: Information = 1024 * kilobyte
+unit MB: Information = megabyte
+unit gigabyte: Information = 1024 * megabyte
+unit GB: Information = gigabyte
+unit terabyte: Information = 1024 * gigabyte
+unit TB: Information = terabyte
+
+unit bps: DataRate = bit / second
+unit kbps: DataRate = 1000 * bps
+unit Mbps: DataRate = 1000 * kbps
+unit Gbps: DataRate = 1000 * Mbps
+
+# Custom length units for testing
+unit furlong: Length = 660 * foot
+unit chain: Length = 66 * foot
+unit rod: Length = 16.5 * foot
+
+# Some fun custom units
+dimension Productivity = Information / Time
+dimension Caffeine = Mass
+
+unit coffee_cup: Caffeine = 95e-6 * kilogram  # 95mg caffeine
+unit espresso_shot: Caffeine = 64e-6 * kilogram  # 64mg caffeine
+
+unit lines_of_code: Information = 50 * byte  # rough estimate
+unit loc_per_hour: Productivity = lines_of_code / hour
+
+# Testing compound units
+unit programmer_fuel: Caffeine = 3 * coffee_cup
+unit debug_session: Energy = 2 * joule  # mental energy
+unit code_review: Power = debug_session / hour
+
+# Academic units
+dimension Knowledge
+dimension Learning = Knowledge / Time
+
+unit fact: Knowledge = 1
+unit concept: Knowledge = 10 * fact
+unit skill: Knowledge = 100 * concept
+unit expertise: Knowledge = 1000 * skill
+
+unit facts_per_minute: Learning = fact / minute
+unit concepts_per_hour: Learning = concept / hour
+

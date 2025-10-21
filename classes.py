@@ -44,6 +44,7 @@ class Env:
         names: dict = {},
         dimensions: dict = {},
         units: dict = {},
+        meta: dict = {},
         level: int = -1,
     ):
         self.glob: Namespaces = glob
@@ -51,12 +52,18 @@ class Env:
         self.names: dict[str, str] = names
         self.dimensions: dict[str, str] = dimensions
         self.units: dict[str, str] = units
+        self.meta: dict[str, Any] = meta
 
         self.level = level
 
     def _(self):
         return Env(
-            self.glob, self.names, self.dimensions, self.units, level=self.level + 1
+            self.glob,
+            self.names,
+            self.dimensions,
+            self.units,
+            self.meta,
+            level=self.level + 1,
         )
 
     def suggest(self, namespace: Literal["names", "dimensions", "units"]):

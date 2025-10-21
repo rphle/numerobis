@@ -1,21 +1,22 @@
-f()()
+from si import @(Length, Time, kilogram, second, meter)
 
-fn fun(x: haha, y: beep, z, d=123+0): boop = {
-    1+1
-}
+test = "hello"
 
-f(a: number, b: number): number = a + b * 2
-g(a: number, b: number, c: number = 0): number = a + b + c
+f(a: Int, b: Int): Int = a + b * 2
+h(x=0) = x
+g(a: Int, b: Int, c: Float = 0.0): Int = a + b + c
 
-hello(name: string): string = { output = "Hello, " + name + "!"; echo(output) }
+hello(name: Str): Str = { output = "Hello, " + name + "!"; output; }
+echo(hello("John"))
 
-# Functions return the last expression by default; explicit return can override
-fibonacci(n: number): number = {
+fibonacci(n: Int): Int = {
     if n <= 1 then
-        return n
+        return 5
     fibonacci(n - 1) + fibonacci(n - 2)
 }
-distance(speed: velocity, time: time): distance = speed * time
+
+distance(speed: Length/Time, time: Time): Length = speed * time
+distance(1.0 meter/second)
 
 f(x) = 1;
-fun(a=(if true then 1 else 2))();
+fibonacci(n=(if true then 1 else 2));

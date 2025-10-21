@@ -1,6 +1,7 @@
 from parser.parser import Parser
 from pathlib import Path
 
+import declare
 from astnodes import FromImport, Import
 from classes import ModuleMeta
 from exceptions import Exceptions, uImportError, uModuleNotFound, uSyntaxError
@@ -14,7 +15,7 @@ class Module:
         self.meta = ModuleMeta(Path(path), open(path, "r", encoding="utf-8").read())
         self.errors = Exceptions(module=self.meta)
 
-        self.namespaces = Namespaces()
+        self.namespaces = Namespaces(names=declare.names)
 
     def process(self):
         self.parse()

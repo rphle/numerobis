@@ -125,7 +125,8 @@ class Parser(ParserTemplate):
                 )
                 else None
             )
-            return Return(value=value, loc=ret.loc)
+            loc = ret.loc.merge(value.loc) if value else ret.loc
+            return Return(value=value, loc=loc)
 
         return self.expression()
 

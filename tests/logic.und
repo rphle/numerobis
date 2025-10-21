@@ -1,11 +1,17 @@
-if true then beep else boop
+from si import @(kilogram, second)
+
+if true then 2kilogram else 3 kilogram
 
 if true xor false then {
-    beep
-    echo(1,a=2)
+    "beep"
 } else {
-    boop
+    "boop"
 }
+if 10 >= 10 > 5 and 3 < 4 then 1 else 0;
+
+var1 = 10
+var2 = 5
+
 
 if var1 > var2 then echo("var1 is greater than var2") else echo("var2 is greater than var1")
 
@@ -16,6 +22,7 @@ else if var1 == var2 then  # 'else if' is naturally supported by syntax
 else
   echo("var2 is greater than var1")
 
+user_input = 42
 if user_input == 42 then
   {
     win = (if user_input == 42 then true else false)
@@ -25,7 +32,6 @@ else
   echo("you lose!")
 
 if 5 > 3 then 1 else 0;
-if 10 >= 10 then 1 else 0;
 if true and false then 1 else 0;
 if true or false then 1 else 0;
 if false and (1/0) then 1 else 0;

@@ -13,7 +13,8 @@ from astnodes import (
     Unit,
 )
 from classes import E, Env, ModuleMeta
-from exceptions import Exceptions, uNameError
+from exceptions import Exceptions, uNameError, uTypeError
+from typechecker.types import types
 
 
 def analyze(module: ModuleMeta):
@@ -94,6 +95,13 @@ def analyze(module: ModuleMeta):
                 for node in nodes:
                     match node:
                         case Identifier():
+                            if node.name in types.keys():
+                                self.errors.throw(
+                                    uTypeError,
+                                    f"'{node.name}' is a type, not a {self.typ}",
+                                    loc=node.loc,
+                                )
+
                             if node.name not in self.env(self.typs):
                                 suggestion = self.env.suggest(self.typs)(node.name)
 
