@@ -18,10 +18,8 @@ from si import *
 3Ω
 100 kΩ
 
-#[ 5α
 1.23e4m
 4.5E-3kg
-5° #]
 
 my_var = 10;
 my_var -> kg

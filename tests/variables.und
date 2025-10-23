@@ -1,14 +1,14 @@
-from si import @(kg, lumen)
+from si import @(kg, LuminousIntensity, candela)
 
 var1 = 10
 var2 = 203.5kg
 lol = "hahaha"
 
-x: lumen = 1 lumen
-#[ x: none = {
+x: LuminousIntensity = 1 candela
+x: Int = {
     1 + 2
     3-4
-} ]#
+}
 
 
 α = 9.81

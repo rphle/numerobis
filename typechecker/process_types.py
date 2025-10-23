@@ -1,5 +1,5 @@
-from astnodes import Identifier
-from classes import E, Env, ModuleMeta
+from astnodes import AstNode, Identifier, Unit
+from classes import Env, ModuleMeta
 from exceptions import Exceptions
 from typechecker.analysis import analyze
 from typechecker.types import NodeType, types
@@ -21,7 +21,7 @@ class Processor:
     def dimension(self, node, env: Env):
         return self.analyze("dimension")(node, env)
 
-    def type(self, node: list[Identifier | E], env: Env) -> NodeType:
+    def type(self, node: list[AstNode | Unit], env: Env) -> NodeType:
         if (
             len(node) == 1
             and isinstance(node[0], Identifier)

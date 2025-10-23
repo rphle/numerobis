@@ -567,16 +567,23 @@ class Typechecker:
         value = self.check(node.value, env=env._())
 
         if node.type:
-            annotation = self.processor.unit(node.type, env=env)
+            annotation = self.processor.type(node.type.unit, env=env)
 
-            if value.dimension != annotation:
-                expected_str = format_dimension(annotation)
-                actual_str = format_dimension(value.dimension)
-                self.errors.throw(
-                    ConversionError,
-                    f"'{node.name.name}' declared as '{format_dimension(node.type.unit)}' [{expected_str}] but has dimension [{actual_str}]",
-                    loc=node.loc,
-                )
+            if mismatch := _mismatch(annotation, value):
+                if len(annotation.dimension) > 0 and mismatch[1:] == (
+                    "'Float'",
+                    "'Int'",
+                ):
+                    # fix automatically assigned Float type for dimension annotations
+                    annotation = dataclasses.replace(annotation, typ="Int")
+                    mismatch = _mismatch(annotation, value)
+
+                if mismatch:
+                    self.errors.throw(
+                        uTypeError,
+                        f"'{node.name.name}' declared as {mismatch[1]} but has {mismatch[0]} {mismatch[2]}",
+                        loc=node.loc,
+                    )
 
         env.set("names")(
             name=node.name.name,
