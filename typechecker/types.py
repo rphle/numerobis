@@ -3,8 +3,11 @@ from typing import Any, Literal, Optional, Union
 
 from typing_extensions import overload
 
+env = {}
+
 T = Union[
     "NoneType",
+    "VarType",
     "AnyType",
     "NumberType",
     "BoolType",
@@ -32,13 +35,17 @@ class UType:
         return self.name()
 
     def dim(self) -> list:
-        return [1]
+        return []
 
     def dimless(self) -> bool:
         return True
 
     def edit(self, **kwargs):
         return replace(self, **kwargs)
+
+    def complete(self, value: Optional[T] = None):
+        """Complete anonymous types ?T"""
+        return self
 
 
 class NoneType(UType):
@@ -82,6 +89,28 @@ class StrType(UType):
     pass
 
 
+@dataclass(frozen=True)
+class VarType(UType):
+    _name: str
+
+    def type(self) -> str:
+        if self._name not in env:
+            return "?" + self._name
+        return env[self._name].type()
+
+    def complete(self, value: Optional[T] = None):
+        global env
+        if value is None:
+            return env.get(self._name, self)
+        if self._name not in env:
+            env[self._name] = value
+        elif (
+            not compare(value, env[self._name]) or value.dim() != env[self._name].dim()
+        ):
+            return self
+        return value
+
+
 @dataclass(kw_only=True, frozen=True)
 class ListType(UType):
     content: T = field(default=None)  # type: ignore
@@ -100,6 +129,9 @@ class ListType(UType):
     def dimless(self) -> bool:
         return self.content.dimless()
 
+    def complete(self, value: Optional[T] = None):
+        return self.content.complete(value)
+
 
 @dataclass(kw_only=True, frozen=True)
 class FunctionType(UType):
@@ -110,10 +142,14 @@ class FunctionType(UType):
     _name: str = field(default="", compare=False)
     _loc: Any = field(default=None)
 
-    def check_args(self, *args: T) -> bool:
-        params = {param.type() for param in self.params}
-        args_ = {arg.type() for arg in args}
-        return len(args) == len(self.params) and params == args_
+    def check_args(self, *args: T) -> Optional["FunctionType"]:
+        global env
+        env = {}
+        params = [param.complete(arg) for param, arg in zip(self.params, args)]
+        if len(args) == len(self.params) and all(
+            compare(p, a) for p, a in zip(params, args)
+        ):
+            return self.edit(return_type=self.return_type.complete())
 
 
 class AnyType(UType):
@@ -140,6 +176,24 @@ class AnyType(UType):
             raise ValueError(f"Unknown type name: {name!r}")
 
         return t
+
+
+def compare(a: T, b: T) -> bool:
+    match a, b:
+        case NumberType(), NumberType():
+            return a.typ == b.typ
+        case ListType(), ListType():
+            return compare(a.content, b.content)
+        case FunctionType(), FunctionType():
+            return compare(a.return_type, b.return_type)
+        case AnyType(), AnyType():
+            return False
+        case AnyType(), _:
+            return True
+        case _, AnyType():
+            return True
+        case _, _:
+            return a.type() == b.type()
 
 
 @dataclass(frozen=True)
@@ -221,7 +275,8 @@ types: dict[str, Struct] = {
         {
             **_conv("Bool", "Str"),
             "__add__": FunctionType(
-                params=[ListType(), ListType()], return_type=ListType()
+                params=[ListType(content=VarType("T")), ListType(content=VarType("T"))],
+                return_type=ListType(content=VarType("T")),
             ),
             "__mul__": FunctionType(
                 params=[ListType(), IntType()], return_type=ListType()

@@ -48,6 +48,7 @@ from typechecker.types import (
     NumberType,
     Overload,
     T,
+    compare,
     types,
 )
 from typechecker.utils import format_dimension
@@ -74,25 +75,30 @@ class Typechecker:
             self.check(side, env=env._()) for side in (node.left, node.right)
         ]
 
-        def _check_field(field):
+        def _check_field(field, reverse=False) -> FunctionType | None:
+            args = [right, left] if reverse else [left, right]
             if isinstance(field, FunctionType):
-                if field.check_args(left, right):
-                    return field
-                return False
+                return field.check_args(*args)
             elif isinstance(field, Overload):
                 return next(
-                    (func for func in field.functions if func.check_args(left, right)),
-                    False,
+                    (
+                        checked
+                        for func in field.functions
+                        if (checked := func.check_args(*args))
+                    ),
+                    None,
                 )
 
         definition = None
-        for field in (
-            types[left.name()][f"__{node.op.name}__"],
-            types[right.name()][f"__r{node.op.name}__"],
-            types[right.name()][f"__{node.op.name}__"],
+        for i, field in enumerate(
+            [
+                types[left.name()][f"__{node.op.name}__"],
+                types[right.name()][f"__r{node.op.name}__"],
+                types[right.name()][f"__{node.op.name}__"],
+            ]
         ):
-            if checked_field := _check_field(field):
-                definition = checked_field
+            if checked := _check_field(field, reverse=i == 2):
+                definition = checked
                 break
         else:
             self.errors.binOpTypeMismatch(node, left, right)
@@ -469,6 +475,26 @@ class Typechecker:
 
         return branches[0]
 
+    def list_(self, node: List, env: Env) -> ListType:
+        content = AnyType()
+        for element in node.items:
+            element_type = self.check(element, env=env._())
+            if element_type.name("Any"):
+                self.errors.throw(
+                    uTypeError,
+                    "list elements may not be type 'Any'",
+                    loc=element.loc,
+                )
+            if isinstance(content, AnyType):
+                content = element_type
+            elif content.type() != element_type.type():
+                self.errors.throw(
+                    uTypeError,
+                    "list elements must be of the same type",
+                    loc=element.loc,
+                )
+        return ListType(content=content)
+
     def number_(self, node: Integer | Float, env: Env) -> NumberType:
         dimension = self.processor.unit(node.unit, env=env)
         return NumberType(
@@ -571,6 +597,22 @@ class Typechecker:
         if node.type:
             annotation = self.processor.type(node.type.unit, env=env)
 
+            # Infer partially specified types such as List[Any] and Int
+            if (
+                isinstance(annotation, ListType)
+                and isinstance(value, ListType)
+                and annotation.content.name("Any")
+            ):
+                annotation = annotation.edit(content=value.content)
+            elif (
+                isinstance(annotation, NumberType)
+                and isinstance(value, NumberType)
+                and not isinstance(node.type.unit, Call)
+            ):
+                annotation = annotation.edit(
+                    dimension=value.dimension, dimensionless=value.dimensionless
+                )
+
             if mismatch := _mismatch(annotation, value):
                 if len(annotation.dim()) > 0 and mismatch[1:] == (
                     "'Float'",
@@ -579,16 +621,6 @@ class Typechecker:
                     # fix automatically assigned Float type for dimension annotations
                     annotation = dataclasses.replace(annotation, typ="Int")
                     mismatch = _mismatch(annotation, value)
-                elif (
-                    len(node.type.unit) == 1
-                    and isinstance(node.type.unit[0], Identifier)
-                    and node.type.unit[0].name in ["Float", "Int"]
-                    and mismatch[0] == "dimension"
-                    and mismatch[1] == "[[bold]1[/bold]]"
-                ):
-                    # ignore dimension error if not explicitly specified:
-                    # weight: Int = 5kg
-                    mismatch = None
 
                 if mismatch:
                     self.errors.throw(
@@ -598,7 +630,7 @@ class Typechecker:
                     )
 
         env.set("names")(name=node.name.name, value=value)
-        return NoneType
+        return NoneType()
 
     def while_loop_(self, node: WhileLoop, env: Env):
         pass
@@ -607,7 +639,7 @@ class Typechecker:
         match node:
             case Integer() | Float():
                 return self.number_(node, env=env._())
-            case String() | List() | Boolean():
+            case String() | Boolean():
                 name = type(node).__name__.removesuffix("ing").removesuffix("ean")
 
                 return AnyType(name)
@@ -633,11 +665,9 @@ class Typechecker:
 
 
 def _mismatch(a: T, b: T) -> tuple[str, str, str] | None:
-    if a.name("Any") or b.name("Any"):
-        return
-    if a.type() != b.type():
+    if not compare(a, b):
         return ("type", f"'{a.type()}'", f"'{b.type()}'")
-    elif a.dim() != b.dim():
+    elif a.dim() != b.dim() and not (a.name("Any") or b.name("Any")):
         value = (
             "dimension",
             *(f"[[bold]{format_dimension(x.dim())}[/bold]]" for x in [a, b]),

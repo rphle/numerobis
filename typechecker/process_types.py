@@ -2,7 +2,7 @@ from astnodes import AstNode, Call, Identifier, Unit
 from classes import Env, ModuleMeta
 from exceptions import Exceptions, uTypeError
 from typechecker.analysis import analyze
-from typechecker.types import AnyType, NumberType, T, types
+from typechecker.types import AnyType, ListType, NumberType, T, types
 
 
 class Processor:
@@ -37,14 +37,17 @@ class Processor:
             match node[0].callee.name:
                 case "Float" | "Int":
                     if len(node[0].args) != 1:
-                        self.errors.throw(
-                            uTypeError,
-                            f"Invalid number of parameters for '{node[0].callee.name}'",
-                            loc=node[0].loc,
-                        )
+                        self.errors.invalidParameterNumber(node[0])
                     return NumberType(
                         typ=node[0].callee.name,
                         dimension=self.dimension(node[0].args[0].value, env=env),
+                    )
+                case "List":
+                    if len(node[0].args) != 1:
+                        self.errors.invalidParameterNumber(node[0])
+                    assert isinstance(node[0].args[0].value, Unit)
+                    return ListType(
+                        content=self.type(node[0].args[0].value.unit, env=env)
                     )
                 case _:
                     self.errors.throw(

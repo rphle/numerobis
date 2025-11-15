@@ -176,7 +176,7 @@ class Exceptions:
         }.get(node.op.name, node.op.name)
 
         uTypeError(
-            f"unsupported operand type(s) for '{operation}': '{left.typ}' and '{right.typ}'",
+            f"unsupported operand type(s) for '{operation}': '{left.type()}' and '{right.type()}'",
             module=self.module,
             loc=node.loc,
         )
@@ -186,6 +186,13 @@ class Exceptions:
             f"name '{name.name}' is not defined",
             module=self.module,
             loc=name.loc,
+        )
+
+    def invalidParameterNumber(self, node):
+        uTypeError(
+            f"Invalid number of parameters for '{node.callee.name}'",
+            loc=node.loc,
+            module=self.module,
         )
 
     def throw(

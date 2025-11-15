@@ -1,6 +1,9 @@
 from si import @(Mass, kg)
+5 * [1,2,3]
+mylist: List = [1, 2, 3] + [1,2]
 
-mylist: List[int] = [1, 2, 3] + ["a", "b", "c"]
+add(n: Int, l: List) = n*l
+add(4, [4,5,6])
 
 #[
 [1, 2, 3][0]
