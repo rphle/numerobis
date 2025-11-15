@@ -1,8 +1,9 @@
-from si import @(kg, LuminousIntensity, candela)
+from si import @(Mass, kg, LuminousIntensity, candela)
 
 var1 = 10
 var2 = 203.5kg
 lol = "hahaha"
+num: Int = 5kg
 
 x: LuminousIntensity = 1 candela
 x: Int = {

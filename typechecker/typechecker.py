@@ -579,6 +579,16 @@ class Typechecker:
                     # fix automatically assigned Float type for dimension annotations
                     annotation = dataclasses.replace(annotation, typ="Int")
                     mismatch = _mismatch(annotation, value)
+                elif (
+                    len(node.type.unit) == 1
+                    and isinstance(node.type.unit[0], Identifier)
+                    and node.type.unit[0].name in ["Float", "Int"]
+                    and mismatch[0] == "dimension"
+                    and mismatch[1] == "[[bold]1[/bold]]"
+                ):
+                    # ignore dimension error if not explicitly specified:
+                    # weight: Int = 5kg
+                    mismatch = None
 
                 if mismatch:
                     self.errors.throw(

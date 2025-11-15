@@ -1,4 +1,6 @@
-mylist = [1, 2, 3] + ["a", "b", "c"]
+from si import @(Mass, kg)
+
+mylist: List[int] = [1, 2, 3] + ["a", "b", "c"]
 
 #[
 [1, 2, 3][0]
