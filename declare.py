@@ -1,13 +1,10 @@
-from typechecker.types import FunctionSignature, NodeType, NoneT
+from typechecker.types import AnyType, FunctionType, NoneType, T
 
-names = {
-    "echo": NodeType(
-        typ="Function",
-        meta=FunctionSignature(
-            params=[NodeType(typ="Any")],
-            return_type=NoneT,
-            name="echo",
-            param_names=["value"],
-        ),
+names: dict[str, T] = {
+    "echo": FunctionType(
+        params=[AnyType()],
+        return_type=NoneType(),
+        param_names=["value"],
+        _name="echo",
     )
 }

@@ -2,7 +2,7 @@ from astnodes import AstNode, Identifier, Unit
 from classes import Env, ModuleMeta
 from exceptions import Exceptions
 from typechecker.analysis import analyze
-from typechecker.types import NodeType, types
+from typechecker.types import AnyType, NumberType, T, types
 
 
 class Processor:
@@ -21,12 +21,12 @@ class Processor:
     def dimension(self, node, env: Env):
         return self.analyze("dimension")(node, env)
 
-    def type(self, node: list[AstNode | Unit], env: Env) -> NodeType:
+    def type(self, node: list[AstNode | Unit], env: Env) -> T:
         if (
             len(node) == 1
             and isinstance(node[0], Identifier)
             and node[0].name in types.keys()
         ):
-            return NodeType(typ=node[0].name)
+            return AnyType(node[0].name)
 
-        return NodeType(typ="Float", dimension=self.dimension(node, env=env))
+        return NumberType(typ="Float", dimension=self.dimension(node, env=env))

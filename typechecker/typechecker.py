@@ -1,4 +1,5 @@
 import dataclasses
+from typing import Optional
 
 from astnodes import (
     AstNode,
@@ -37,7 +38,18 @@ from exceptions import (
 )
 from typechecker.analysis import simplify
 from typechecker.process_types import Processor
-from typechecker.types import FunctionSignature, NodeType, NoneT, Overload, types
+from typechecker.types import (
+    AnyType,
+    BoolType,
+    Dimension,
+    FunctionType,
+    ListType,
+    NoneType,
+    NumberType,
+    Overload,
+    T,
+    types,
+)
 from typechecker.utils import format_dimension
 from utils import camel2snake_pattern
 
@@ -56,40 +68,52 @@ class Typechecker:
 
         self.processor = Processor(module)
 
-    def bin_op_(self, node: BinOp, env: Env) -> NodeType:
-        """Check dimensional consistency in addition and subtraction operations"""
+    def bin_op_(self, node: BinOp, env: Env) -> T:
+        """Check dimensional consistency in mathematical operations"""
         left, right = [
             self.check(side, env=env._()) for side in (node.left, node.right)
         ]
 
         def _check_field(field):
-            if isinstance(field, FunctionSignature):
+            if isinstance(field, FunctionType):
                 if field.check_args(left, right):
-                    return True
+                    return field
+                return False
             elif isinstance(field, Overload):
-                return any(func.check_args(left, right) for func in field.functions)
+                return next(
+                    (func for func in field.functions if func.check_args(left, right)),
+                    False,
+                )
 
+        definition = None
         for field in (
-            types[left.typ][f"__{node.op.name}__"],
-            types[right.typ][f"__r{node.op.name}__"],
-            types[right.typ][f"__{node.op.name}__"],
+            types[left.name()][f"__{node.op.name}__"],
+            types[right.name()][f"__r{node.op.name}__"],
+            types[right.name()][f"__{node.op.name}__"],
         ):
-            if _check_field(field):
+            if checked_field := _check_field(field):
+                definition = checked_field
                 break
         else:
             self.errors.binOpTypeMismatch(node, left, right)
 
+        assert isinstance(definition, FunctionType)
+        if not isinstance(left, NumberType) or not isinstance(right, NumberType):
+            return definition.return_type
+
+        assert isinstance(left, NumberType)
+        assert isinstance(right, NumberType)
         match node.op.name:
             case "add" | "sub":
-                if left.dimension != right.dimension:
+                if left.dim() != right.dim():
                     self.errors.binOpMismatch(
                         node, left, right, env=env.export("dimensions")
                     )
 
-                return NodeType(typ=left.typ, dimension=left.dimension)
+                return left.edit(dimension=left.dimension)
             case "mul" | "div":
                 if right.dimensionless and left.dimensionless:
-                    return NodeType(typ=left.typ, dimension=[], dimensionless=True)
+                    return left
 
                 if node.op.name == "mul":
                     r = right.dimension
@@ -103,7 +127,7 @@ class Typechecker:
 
                 dimension = simplify(left.dimension + r)
 
-                return NodeType(typ=left.typ, dimension=dimension)
+                return left.edit(dimension=dimension)
             case "pow":
                 assert right.typ in {"Float", "Int"}
                 if not right.dimensionless:
@@ -116,26 +140,23 @@ class Typechecker:
                 for item in left.dimension:
                     if isinstance(item, E):
                         dimension.append(
-                            E(base=item.base, exponent=item.exponent * right.meta)
+                            E(base=item.base, exponent=item.exponent * right.value)
                         )
                     else:
-                        dimension.append(E(base=item, exponent=right.meta))
+                        dimension.append(E(base=item, exponent=right.value))
 
-                return NodeType(
-                    typ=left.typ,
-                    dimension=simplify(dimension),
-                )
+                return left.edit(dimension=simplify(dimension))
             case "mod":
                 if left.dimension != right.dimension:
                     self.errors.binOpMismatch(
                         node, left, right, env=env.export("dimensions")
                     )
 
-                return NodeType(typ=left.typ, dimension=left.dimension)
+                return left
             case _:
                 raise NotImplementedError(f"BinOp {node.op.name} not implemented!")
 
-    def block_(self, node: Block, env: Env, function: None | NodeType = None):
+    def block_(self, node: Block, env: Env, function: Optional[FunctionType] = None):
         if function:
             env.meta["#function"] = function  # type: ignore
         else:
@@ -143,9 +164,9 @@ class Typechecker:
 
         returns = None
 
-        def check_return(returns: NodeType | None, checked: NodeType):
+        def check_return(returns: T | None, checked: T):
             if returns is not None and (
-                returns.typ != checked.typ or returns.dimension != checked.dimension
+                returns.type() != checked.type() or returns.dim() != checked.dim()
             ):
                 self.errors.throw(
                     uTypeError,
@@ -154,7 +175,7 @@ class Typechecker:
                 )
             return checked
 
-        checked = NoneT
+        checked = NoneType()
         for statement in node.body:
             checked = self.check(statement, env=env._())
 
@@ -171,24 +192,27 @@ class Typechecker:
         ]
 
         if (
-            "__bool__" not in types[left.typ].fields
-            or "__bool__" not in types[right.typ].fields
+            "__bool__" not in types[left.name()].fields
+            or "__bool__" not in types[right.name()].fields
         ):
             self.errors.binOpTypeMismatch(node, left, right)
 
-        return NodeType(typ="Bool")
+        return BoolType()
 
     def call_(self, node: Call, env: Env):
         callee = self.check(node.callee, env=env._())
-        if callee.typ != "Function":
-            if callee.typ == "#unresolved":
-                self.errors.throw(
-                    uTypeError,
-                    f"recursive function {callee.meta[0]}() requires an explicit return type",
-                    loc=callee.meta[1],
-                )
+        if not callee.name("Function"):
             self.errors.throw(
-                uTypeError, f"'{callee.typ}' is not callable", loc=node.loc
+                uTypeError, f"'{callee.type()}' is not callable", loc=node.loc
+            )
+
+        assert isinstance(callee, FunctionType)
+
+        if callee.unresolved == "#unresolved":
+            self.errors.throw(
+                uTypeError,
+                f"recursive function {callee._name}() requires an explicit return type",
+                loc=callee._loc,
             )
 
         args = {}
@@ -198,13 +222,13 @@ class Typechecker:
                 if arg.name.name in args:
                     self.errors.throw(
                         uTypeError,
-                        f"{callee.meta.name}() got multiple values for argument '{arg.name.name}'",
+                        f"{callee._name}() got multiple values for argument '{arg.name.name}'",
                         loc=arg.loc,
                     )
-                if arg.name.name not in callee.meta.param_names:
+                if arg.name.name not in callee.param_names:
                     self.errors.throw(
                         uTypeError,
-                        f"{callee.meta.name}() got an unexpected keyword argument '{arg.name.name}'",
+                        f"{callee._name}() got an unexpected keyword argument '{arg.name.name}'",
                         loc=arg.loc,
                     )
 
@@ -217,18 +241,18 @@ class Typechecker:
                         "positional argument follows keyword argument",
                         loc=arg.loc,
                     )
-                if i >= len(callee.meta.param_names):
+                if i >= len(callee.param_names):
                     self.errors.throw(
                         uTypeError,
-                        f"{callee.meta.name}() takes {len(callee.meta.param_names)} argument{'s' if len(callee.meta.param_names) != 1 else ''} "
+                        f"{callee._name}() takes {len(callee.param_names)} argument{'s' if len(callee.param_names) != 1 else ''} "
                         f"but {len(node.args)} were given",
                         loc=node.loc,
                     )
-                name = callee.meta.param_names[i]
+                name = callee.param_names[i]
                 i += 1
 
             typ = self.check(arg.value, env=env._())
-            param = callee.meta.params[callee.meta.param_names.index(name)]
+            param = callee.params[callee.param_names.index(name)]
 
             if mismatch := _mismatch(typ, param):
                 self.errors.throw(
@@ -239,7 +263,7 @@ class Typechecker:
 
             args[name] = typ
 
-        return callee.meta.return_type
+        return callee.return_type
 
     def compare_(self, node: Compare, env: Env):
         comparators = [node.left] + node.comparators
@@ -249,16 +273,16 @@ class Typechecker:
             left, right = [self.check(side, env=env._()) for side in sides]
 
             def _check_field(field):
-                if isinstance(field, FunctionSignature):
+                if isinstance(field, FunctionType):
                     if field.check_args(left, right):
                         return True
                 elif isinstance(field, Overload):
                     return any(func.check_args(left, right) for func in field.functions)
 
             for field in (
-                types[left.typ][f"__{op.name}__"],
-                types[right.typ][f"__r{op.name}__"],
-                types[right.typ][f"__{op.name}__"],
+                types[left.name()][f"__{op.name}__"],
+                types[right.name()][f"__r{op.name}__"],
+                types[right.name()][f"__{op.name}__"],
             ):
                 if _check_field(field):
                     break
@@ -273,11 +297,11 @@ class Typechecker:
                 }
                 self.errors.throw(
                     uTypeError,
-                    f"'{ops[op.name]}' not supported between '{left.typ}' and '{right.typ}'",
+                    f"'{ops[op.name]}' not supported between '{left.type()}' and '{right.type()}'",
                     loc=sides[0].loc.merge(sides[1].loc),
                 )
 
-        return NodeType(typ="Bool")
+        return BoolType()
 
     def conversion_(self, node: Conversion, env: Env):
         value = self.check(node.value, env=env._())
@@ -289,26 +313,33 @@ class Typechecker:
         ):
             # type conversion
             typ = node.unit.unit[0].name
-            if f"__{typ.lower()}__" not in types[value.typ].fields and typ != value.typ:
+            if (
+                f"__{typ.lower()}__" not in types[value.name()].fields
+                and typ != value.type()
+            ):
                 self.errors.throw(
                     ConversionError,
-                    f"Cannot convert '{value.typ}' to '{typ}'",
+                    f"Cannot convert '{value.type()}' to '{typ}'",
                     loc=node.loc,
                 )
             if typ in {"Int", "Float"}:  # don't erase dimension
-                return dataclasses.replace(value, typ=typ)
-            return NodeType(typ=typ)
+                return value.edit(typ=typ)
+            return AnyType(typ)
 
+        # unit conversion
         target = self.processor.unit(node.unit, env=env._())
 
-        if value.dimension != target and not value.dimensionless:
-            self.errors.throw(
-                ConversionError,
-                f"Cannot convert [[bold]{format_dimension(value.dimension)}[/bold]] to [[bold]{format_dimension(target)}[/bold]]",
-                loc=node.loc,
-            )
+        if isinstance(value, NumberType) and (value.dim() == target or value.dimless()):
+            return value.edit(dimension=target)
+        elif value.name("List") and (value.dim() == target or value.dimless()):
+            assert isinstance(value, ListType)
+            return value.edit(content=value.content.edit(dimension=target))
 
-        return NodeType(typ=value.typ, dimension=target)
+        self.errors.throw(
+            ConversionError,
+            f"Cannot convert [[bold]{format_dimension(value.dim())}[/bold]] to [[bold]{format_dimension(target)}[/bold]]",
+            loc=node.loc,
+        )
 
     def dimension_definition_(self, node: DimensionDefinition, env: Env):
         """Process dimension definitions"""
@@ -326,8 +357,7 @@ class Typechecker:
 
         env.set("dimensions")(
             name=node.name.name,
-            value=NodeType(
-                typ="dimension",
+            value=Dimension(
                 dimension=dimension or [node.name],
                 dimensionless=dimension == [],
             ),
@@ -341,26 +371,26 @@ class Typechecker:
         params = [
             self.processor.type(p.type.unit, env=env)  # type: ignore
             if p.type is not None
-            else NodeType(typ="Any")
+            else AnyType()
             for p in node.params
         ]
         for i, param in enumerate(node.params):
             if param.default is not None:
                 default = self.check(param.default, env=env._())
 
-                if params[i].typ == "Any":
+                if params[i].type() == "Any":
                     params[i] = default
                     continue
-                if default.typ != params[i].typ:
+                if default.type() != params[i].type():
                     self.errors.throw(
                         uTypeError,
-                        f"parameter '{param.name.name}' declared as type '{params[i].typ}' but defaults to '{default.typ}'",
+                        f"parameter '{param.name.name}' declared as type '{params[i].type()}' but defaults to '{default.type()}'",
                         loc=param.loc,
                     )
-                elif default.dimension != params[i].dimension:
+                elif default.dim() != params[i].dim():
                     self.errors.throw(
                         uTypeError,
-                        f"parameter '{param.name.name}' declared as dimension [[bold]{format_dimension(params[i].dimension)}[/bold]] but defaults to [[bold]{format_dimension(default.dimension)}[/bold]]",
+                        f"parameter '{param.name.name}' declared as dimension [[bold]{format_dimension(params[i].dim())}[/bold]] but defaults to [[bold]{format_dimension(default.dim())}[/bold]]",
                         loc=param.loc,
                     )
 
@@ -370,33 +400,25 @@ class Typechecker:
             else None
         )
 
-        signature = None
+        signature = FunctionType(
+            _name=node.name.name, _loc=node.name.loc, unresolved=True
+        )
         if return_type:
-            signature = NodeType(
-                typ="Function",
-                meta=FunctionSignature(
-                    params=params,
-                    return_type=return_type,
-                    name=node.name.name,
-                    param_names=[param.name.name for param in node.params],
-                ),
+            signature = signature.edit(
+                params=params,
+                return_type=return_type,
+                param_names=[param.name.name for param in node.params],
+                unresolved=False,
             )
 
-        env.set("names")(
-            node.name.name,
-            signature
-            if signature
-            else NodeType(typ="#unresolved", meta=(node.name.name, node.name.loc)),
-        )
+        env.set("names")(node.name.name, signature)
 
         new_env = env._()
         for i, param in enumerate(params):
             new_env.set("names")(node.params[i].name.name, param)
 
         if isinstance(node.body, Block):
-            body = self.block_(
-                node.body, env=new_env, function=env.get("names")(node.name.name)
-            )
+            body = self.block_(node.body, env=new_env, function=signature)
         else:
             body = self.check(node.body, env=new_env)
 
@@ -407,15 +429,12 @@ class Typechecker:
                 loc=node.body.loc,
             )
 
-        if not signature:
-            signature = NodeType(
-                typ="Function",
-                meta=FunctionSignature(
-                    params=params,
-                    return_type=body,
-                    name=node.name.name,
-                    param_names=[param.name.name for param in node.params],
-                ),
+        if signature.unresolved:
+            signature = signature.edit(
+                params=params,
+                return_type=body,
+                param_names=[param.name.name for param in node.params],
+                unresolved=False,
             )
         env.set("names")(node.name.name, signature)
 
@@ -426,7 +445,7 @@ class Typechecker:
             self.errors.nameError(node)
 
     def if_(self, node: If, env: Env):
-        if (typ := self.check(node.condition, env=env._()).typ) != "Bool":
+        if (typ := self.check(node.condition, env=env._()).type()) != "Bool":
             self.errors.throw(
                 uTypeError,
                 f"condition must be a Boolean, got '{typ}'",
@@ -441,16 +460,7 @@ class Typechecker:
         if len(branches) == 1:
             return branches[0]
 
-        mismatch = ()
-        if branches[0].typ != branches[1].typ:
-            mismatch = ("type", *(f"'{b.typ}'" for b in branches))
-        elif branches[0].dimension != branches[1].dimension:
-            mismatch = (
-                "dimension",
-                *(f"[[bold]{format_dimension(b.dimension)}[/bold]]" for b in branches),
-            )
-
-        if mismatch:
+        if mismatch := _mismatch(*branches):
             self.errors.throw(
                 uTypeError,
                 f"both branches must return the same {mismatch[0]}: {mismatch[1]} vs {mismatch[2]}",
@@ -459,13 +469,13 @@ class Typechecker:
 
         return branches[0]
 
-    def number_(self, node: Integer | Float, env: Env):
+    def number_(self, node: Integer | Float, env: Env) -> NumberType:
         dimension = self.processor.unit(node.unit, env=env)
-        return NodeType(
-            typ=type(node).__name__.removesuffix("eger"),  # 'Integer' to 'Int'
+        return NumberType(
+            typ=type(node).__name__.removesuffix("eger"),  # type: ignore ; 'Integer' to 'Int'
             dimension=dimension,
             dimensionless=dimension == [],
-            meta=float(node.value) ** float(node.exponent if node.exponent else 1),
+            value=float(node.value) ** float(node.exponent if node.exponent else 1),
         )
 
     def return_(self, node: Return, env: Env):
@@ -477,9 +487,9 @@ class Typechecker:
                 loc=node.loc,
             )
         else:
-            return_type = getattr(env.meta["#function"].meta, "return_type", None)
+            return_type = env.meta["#function"].return_type
 
-        value = self.check(node.value, env=env._()) if node.value else NoneT
+        value = self.check(node.value, env=env._()) if node.value else NoneType()
 
         if return_type and (mismatch := _mismatch(value, return_type)):
             self.errors.throw(
@@ -489,22 +499,15 @@ class Typechecker:
             )
             pass
 
-        return dataclasses.replace(value, meta="#return")
-
-    def string_(self, node: String, env: Env):
-        return NodeType(
-            typ="Str",
-            dimension=[],
-            meta=node.value,
-        )
+        return value.edit(meta="#return")
 
     def unary_op_(self, node: UnaryOp, env: Env):
         if node.op.name == "sub":
             operand = self.check(node.operand, env=env._())
-            if operand.typ not in ("Int", "Float"):
+            if not isinstance(operand, NumberType):
                 self.errors.throw(
                     uTypeError,
-                    f"bad operand type for unary -: '{operand.typ}'",
+                    f"bad operand type for unary -: '{operand.type()}'",
                     loc=node.loc,
                 )
 
@@ -559,8 +562,7 @@ class Typechecker:
                     )
 
         env.set("units")(
-            name=node.name.name,
-            value=NodeType(typ="unit", dimension=dimension or [node.dimension]),
+            name=node.name.name, value=Dimension(dimension or [node.dimension])
         )
 
     def variable_(self, node: Variable, env: Env):
@@ -570,7 +572,7 @@ class Typechecker:
             annotation = self.processor.type(node.type.unit, env=env)
 
             if mismatch := _mismatch(annotation, value):
-                if len(annotation.dimension) > 0 and mismatch[1:] == (
+                if len(annotation.dim()) > 0 and mismatch[1:] == (
                     "'Float'",
                     "'Int'",
                 ):
@@ -585,31 +587,20 @@ class Typechecker:
                         loc=node.loc,
                     )
 
-        env.set("names")(
-            name=node.name.name,
-            value=NodeType(
-                typ=value.typ,
-                dimension=value.dimension,
-                dimensionless=value.dimension == [],
-            ),
-        )
-        return NoneT
+        env.set("names")(name=node.name.name, value=value)
+        return NoneType
 
     def while_loop_(self, node: WhileLoop, env: Env):
         pass
 
-    def check(self, node, env: Env) -> NodeType:
+    def check(self, node, env: Env) -> T:
         match node:
             case Integer() | Float():
                 return self.number_(node, env=env._())
             case String() | List() | Boolean():
-                return NodeType(
-                    typ=type(node)
-                    .__name__.removesuffix("ing")
-                    .removesuffix("ean"),  # 'String' to 'Str'; 'Boolean' to 'Bool'
-                    dimension=[],
-                    dimensionless=True,
-                )
+                name = type(node).__name__.removesuffix("ing").removesuffix("ean")
+
+                return AnyType(name)
             case _:
                 name = camel2snake_pattern.sub("_", type(node).__name__).lower() + "_"
                 if hasattr(self, name):
@@ -631,14 +622,14 @@ class Typechecker:
             self.check(node, env=env)
 
 
-def _mismatch(a: NodeType, b: NodeType) -> tuple[str, str, str] | None:
-    if a.typ == "Any" or b.typ == "Any":
+def _mismatch(a: T, b: T) -> tuple[str, str, str] | None:
+    if a.name("Any") or b.name("Any"):
         return
-    if a.typ != b.typ:
-        return ("type", f"'{a.typ}'", f"'{b.typ}'")
-    elif a.dimension != b.dimension:
+    if a.type() != b.type():
+        return ("type", f"'{a.type()}'", f"'{b.type()}'")
+    elif a.dim() != b.dim():
         value = (
             "dimension",
-            *(f"[[bold]{format_dimension(x.dimension)}[/bold]]" for x in [a, b]),
+            *(f"[[bold]{format_dimension(x.dim())}[/bold]]" for x in [a, b]),
         )
         return value  # type: ignore

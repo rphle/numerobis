@@ -3,10 +3,10 @@ import uuid
 from dataclasses import dataclass
 from difflib import get_close_matches
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any, Callable, Literal, overload
 
 from astnodes import AstNode
-from typechecker.types import NodeType
+from typechecker.types import Dimension, T
 
 
 @dataclass
@@ -23,9 +23,9 @@ class E:
 
 @dataclasses.dataclass(kw_only=True, frozen=True)
 class Namespaces:
-    names: dict[str, NodeType] = dataclasses.field(default_factory=dict)
-    dimensions: dict[str, NodeType] = dataclasses.field(default_factory=dict)
-    units: dict[str, NodeType] = dataclasses.field(default_factory=dict)
+    names: dict[str, T] = dataclasses.field(default_factory=dict)
+    dimensions: dict[str, Dimension] = dataclasses.field(default_factory=dict)
+    units: dict[str, Dimension] = dataclasses.field(default_factory=dict)
     imports: dict[str, "Namespaces"] = dataclasses.field(default_factory=dict)
 
     def update(self, other: "Namespaces"):
@@ -33,7 +33,7 @@ class Namespaces:
         self.dimensions.update(other.dimensions)
         self.units.update(other.units)
 
-    def __call__(self, name: str) -> dict[str, NodeType]:
+    def __call__(self, name: str) -> dict[str, Any]:
         return getattr(self, name)
 
 
@@ -77,8 +77,16 @@ class Env:
 
         return _suggest
 
-    def get(self, namespace: Literal["names", "dimensions", "units"]):
-        def _get(name: str) -> NodeType:
+    @overload
+    def get(self, namespace: Literal["names"]) -> Callable[[str], T]: ...
+    @overload
+    def get(
+        self, namespace: Literal["dimensions", "units"]
+    ) -> Callable[[str], Dimension]: ...
+    def get(
+        self, namespace: Literal["names", "dimensions", "units"]
+    ) -> Callable[[str], T | Dimension]:
+        def _get(name: str) -> T | Dimension:
             return self.glob(namespace)[self(namespace)[name]]
 
         return _get
@@ -94,7 +102,7 @@ class Env:
 
         return _set
 
-    def export(self, namespace: str) -> dict[str, NodeType]:
+    def export(self, namespace: str) -> dict[str, Any]:
         return {name: self.glob(namespace)[name] for name in self(namespace)}
 
     def __call__(self, namespace: str) -> dict[str, str]:
