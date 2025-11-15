@@ -15,9 +15,12 @@ snapshots = {}
 tests_dir = Path("tests")
 tests = sorted(os.listdir(tests_dir))
 
-
-if len(sys.argv) > 1:
-    tests = [test for test in tests if test.startswith(sys.argv[1])]
+update, args = (
+    next((True for a in sys.argv[1:] if a == "--update"), False),
+    [a for a in sys.argv[1:] if a != "--update"],
+)
+if args:
+    tests = [test for test in tests if test.removesuffix(".und") in args]
 
 for test in tests:
     print()
@@ -34,7 +37,8 @@ if os.path.isfile("snapshots.json"):
     with open("snapshots.json", "r") as saved:
         for name, snapshot in json.load(saved).items():
             if snapshots.get(name) != snapshot:
-                console.print(f"Snapshot for {name} has changed", style="bold red")
+                console.print(f"{name} has changed", style="bold red")
 
-with open("snapshots.json", "w") as saved:
-    json.dump(snapshots, saved)
+if update:
+    with open("snapshots.json", "w") as saved:
+        json.dump(snapshots, saved)
