@@ -6,7 +6,7 @@ lol = "hahaha"
 num: Int = 5kg
 
 x: LuminousIntensity = 1 candela
-x: Int = {
+y: Int = {
     1 + 2
     3-4
 }

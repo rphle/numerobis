@@ -16,7 +16,7 @@ class Module:
         self.meta = ModuleMeta(Path(path), open(path, "r", encoding="utf-8").read())
         self.errors = Exceptions(module=self.meta)
 
-        self.namespaces = Namespaces(names=declare.names)
+        self.namespaces = Namespaces(names=declare.names.copy())
 
     def process(self):
         self.parse()
@@ -62,7 +62,7 @@ class Module:
         for module, node in zip(modules, nodes):
             module.process()
             if isinstance(node, Import):
-                self.namespaces.imports[node.module.name] = module.namespaces
+                self.namespaces.write("imports", node.module.name, module.namespaces)
             else:
                 if node.names is None:
                     # import *
@@ -74,13 +74,11 @@ class Module:
                             n = name.name.removeprefix("@")
                             typ = (
                                 "dimensions"
-                                if n in module.namespaces.dimensions
+                                if n in module.namespaces("dimensions")
                                 else "units"
                             )
                             try:
-                                getattr(self.namespaces, typ)[n] = getattr(
-                                    module.namespaces, typ
-                                )[n]
+                                self.namespaces.write(typ, n, module.namespaces(typ)[n])
                             except KeyError:
                                 self.errors.throw(
                                     exception=uImportError,
@@ -90,8 +88,10 @@ class Module:
                         else:
                             # import name
                             try:
-                                self.namespaces.names[name.name] = (
-                                    module.namespaces.names[name.name]
+                                self.namespaces.write(
+                                    "names",
+                                    name.name,
+                                    module.namespaces("names")[name.name],
                                 )
                             except KeyError:
                                 help = [
@@ -107,7 +107,9 @@ class Module:
                                     message=f"failed to resolve import: name '{name.name}' does not exist",
                                     loc=name.loc,
                                 )
-                    self.namespaces.imports[node.module.name] = module.namespaces
+                    self.namespaces.write(
+                        "imports", node.module.name, module.namespaces
+                    )
 
     def typecheck(self):
         ts = Typechecker(self.ast, module=self.meta, namespaces=self.namespaces)

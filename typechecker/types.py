@@ -8,6 +8,7 @@ env = {}
 T = Union[
     "NoneType",
     "VarType",
+    "NeverType",
     "AnyType",
     "NumberType",
     "BoolType",
@@ -24,11 +25,11 @@ class UType:
     @overload
     def name(self) -> str: ...
     @overload
-    def name(self, name: str) -> str: ...
-    def name(self, name: Optional[str] = None) -> str | bool:
+    def name(self, *names: str) -> str: ...
+    def name(self, *names: Optional[str]) -> str | bool:
         n = self.__class__.__name__.removesuffix("Type")
-        if name is not None:
-            return n == name
+        if names:
+            return n in names
         return n
 
     def type(self) -> str:
@@ -68,11 +69,11 @@ class NumberType(UType):
     @overload
     def name(self) -> str: ...
     @overload
-    def name(self, name: str) -> str: ...
-    def name(self, name: Optional[str] = None) -> str | bool:
+    def name(self, *names: str) -> str: ...
+    def name(self, *names: Optional[str]) -> str | bool:
         n = self.typ
-        if name is not None:
-            return n == name
+        if names:
+            return n in names
         return n
 
     def dimless(self) -> bool:
@@ -104,21 +105,19 @@ class VarType(UType):
             return env.get(self._name, self)
         if self._name not in env:
             env[self._name] = value
-        elif (
-            not compare(value, env[self._name]) or value.dim() != env[self._name].dim()
-        ):
+        elif not unify(value, env[self._name]) or value.dim() != env[self._name].dim():
             return self
         return value
 
 
 @dataclass(kw_only=True, frozen=True)
-class ListType(UType):
-    content: T = field(default=None)  # type: ignore
+class NeverType(UType):
+    pass
 
-    def __post_init__(self):
-        # break circular dependency
-        if self.content is None:
-            object.__setattr__(self, "content", AnyType())
+
+@dataclass(kw_only=True, frozen=True)
+class ListType(UType):
+    content: T = NeverType()
 
     def type(self) -> str:
         return f"List[{self.content.type()}]"
@@ -130,7 +129,7 @@ class ListType(UType):
         return self.content.dimless()
 
     def complete(self, value: Optional[T] = None):
-        return self.content.complete(value)
+        return self.edit(content=self.content.complete(getattr(value, "content", None)))
 
 
 @dataclass(kw_only=True, frozen=True)
@@ -147,7 +146,7 @@ class FunctionType(UType):
         env = {}
         params = [param.complete(arg) for param, arg in zip(self.params, args)]
         if len(args) == len(self.params) and all(
-            compare(p, a) for p, a in zip(params, args)
+            unify(p, a) for p, a in zip(params, args)
         ):
             return self.edit(return_type=self.return_type.complete())
 
@@ -178,22 +177,25 @@ class AnyType(UType):
         return t
 
 
-def compare(a: T, b: T) -> bool:
+def unify(a: T, b: T) -> Optional[T]:
     match a, b:
-        case NumberType(), NumberType():
-            return a.typ == b.typ
-        case ListType(), ListType():
-            return compare(a.content, b.content)
-        case FunctionType(), FunctionType():
-            return compare(a.return_type, b.return_type)
-        case AnyType(), AnyType():
-            return False
+        case NeverType(), _:
+            return b
+        case _, NeverType():
+            return a
         case AnyType(), _:
-            return True
+            return a
         case _, AnyType():
-            return True
+            return b
+        case NumberType(), NumberType():
+            return a if a.typ == b.typ else None
+        case ListType(), ListType():
+            content = unify(a.content, b.content)
+            return ListType(content=content) if content else None
+        case FunctionType(), FunctionType():
+            return unify(a.return_type, b.return_type)
         case _, _:
-            return a.type() == b.type()
+            return a if a.type() == b.type() else None
 
 
 @dataclass(frozen=True)

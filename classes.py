@@ -3,7 +3,7 @@ import uuid
 from dataclasses import dataclass
 from difflib import get_close_matches
 from pathlib import Path
-from typing import Any, Callable, Literal, overload
+from typing import Any, Callable, Literal, Optional, overload
 
 from astnodes import AstNode
 from typechecker.types import Dimension, T
@@ -21,20 +21,40 @@ class E:
     exponent: float
 
 
-@dataclasses.dataclass(kw_only=True, frozen=True)
+namespace_names = Literal["names", "dimensions", "units", "imports"]
+
+
 class Namespaces:
-    names: dict[str, T] = dataclasses.field(default_factory=dict)
-    dimensions: dict[str, Dimension] = dataclasses.field(default_factory=dict)
-    units: dict[str, Dimension] = dataclasses.field(default_factory=dict)
-    imports: dict[str, "Namespaces"] = dataclasses.field(default_factory=dict)
+    def __init__(
+        self,
+        names: dict[str, T] | None = None,
+        dimensions: dict[str, "Dimension"] | None = None,
+        units: dict[str, "Dimension"] | None = None,
+        imports: dict[str, "Namespaces"] | None = None,
+    ):
+        self.names = names or {}
+        self.dimensions = dimensions or {}
+        self.units = units or {}
+        self.imports = imports or {}
+
+    def copy(self):
+        return Namespaces(
+            self.names.copy(),
+            self.dimensions.copy(),
+            self.units.copy(),
+            self.imports.copy(),
+        )
 
     def update(self, other: "Namespaces"):
         self.names.update(other.names)
         self.dimensions.update(other.dimensions)
         self.units.update(other.units)
 
-    def __call__(self, name: str) -> dict[str, Any]:
+    def __call__(self, name: namespace_names) -> dict[str, Any]:
         return getattr(self, name)
+
+    def write(self, name: namespace_names, key: str, value: Any):
+        getattr(self, name)[key] = value
 
 
 class Env:
@@ -56,17 +76,17 @@ class Env:
 
         self.level = level
 
-    def _(self):
+    def copy(self):
         return Env(
             self.glob,
-            self.names,
-            self.dimensions,
-            self.units,
-            self.meta,
+            self.names.copy(),
+            self.dimensions.copy(),
+            self.units.copy(),
+            self.meta.copy(),
             level=self.level + 1,
         )
 
-    def suggest(self, namespace: Literal["names", "dimensions", "units"]):
+    def suggest(self, namespace: namespace_names):
         """Get suggestion for misspelled name"""
 
         available_keys = getattr(self, namespace).keys()
@@ -83,32 +103,32 @@ class Env:
     def get(
         self, namespace: Literal["dimensions", "units"]
     ) -> Callable[[str], Dimension]: ...
-    def get(
-        self, namespace: Literal["names", "dimensions", "units"]
-    ) -> Callable[[str], T | Dimension]:
+    def get(self, namespace: namespace_names) -> Callable[[str], T | Dimension]:
         def _get(name: str) -> T | Dimension:
             return self.glob(namespace)[self(namespace)[name]]
 
         return _get
 
-    def set(self, namespace: Literal["names", "dimensions", "units"]):
-        def _set(name: str, value: Any):
-            if self.level > 0:
-                _hash = f"{name}-{uuid.uuid1()}"
-            else:
-                _hash = name
-            self.glob(namespace)[_hash] = value
+    def set(self, namespace: namespace_names):
+        def _set(name: str, value: Any, _hash: Optional[str] = None):
+            if _hash is None:
+                if self.level > 0:
+                    _hash = f"{name}-{uuid.uuid4()}"
+                else:
+                    _hash = name
+            self.glob.write(namespace, _hash, value)
             self(namespace)[name] = _hash
 
         return _set
 
-    def export(self, namespace: str) -> dict[str, Any]:
+    def export(self, namespace: namespace_names) -> dict[str, Any]:
         return {name: self.glob(namespace)[name] for name in self(namespace)}
 
-    def __call__(self, namespace: str) -> dict[str, str]:
+    def __call__(self, namespace: namespace_names) -> dict[str, str]:
         return getattr(self, namespace)
 
     def __repr__(self):
         return "\n".join(
-            f"{name} = {self(name)}" for name in {"names", "dimensions", "units"}
+            f"{name} = {self(name)}"  # type: ignore
+            for name in {"names", "dimensions", "units"}
         )

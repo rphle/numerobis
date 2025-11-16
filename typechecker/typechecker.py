@@ -44,12 +44,13 @@ from typechecker.types import (
     Dimension,
     FunctionType,
     ListType,
+    NeverType,
     NoneType,
     NumberType,
     Overload,
     T,
-    compare,
     types,
+    unify,
 )
 from typechecker.utils import format_dimension
 from utils import camel2snake_pattern
@@ -71,9 +72,7 @@ class Typechecker:
 
     def bin_op_(self, node: BinOp, env: Env) -> T:
         """Check dimensional consistency in mathematical operations"""
-        left, right = [
-            self.check(side, env=env._()) for side in (node.left, node.right)
-        ]
+        left, right = [self.check(side, env=env) for side in (node.left, node.right)]
 
         def _check_field(field, reverse=False) -> FunctionType | None:
             args = [right, left] if reverse else [left, right]
@@ -183,7 +182,7 @@ class Typechecker:
 
         checked = NoneType()
         for statement in node.body:
-            checked = self.check(statement, env=env._())
+            checked = self.check(statement, env=env)
 
             if checked.meta == "#return":
                 returns = check_return(returns, checked)
@@ -193,9 +192,7 @@ class Typechecker:
         return returns
 
     def bool_op_(self, node: BoolOp, env: Env):
-        left, right = [
-            self.check(side, env=env._()) for side in (node.left, node.right)
-        ]
+        left, right = [self.check(side, env=env) for side in (node.left, node.right)]
 
         if (
             "__bool__" not in types[left.name()].fields
@@ -206,7 +203,7 @@ class Typechecker:
         return BoolType()
 
     def call_(self, node: Call, env: Env):
-        callee = self.check(node.callee, env=env._())
+        callee = self.check(node.callee, env=env)
         if not callee.name("Function"):
             self.errors.throw(
                 uTypeError, f"'{callee.type()}' is not callable", loc=node.loc
@@ -257,7 +254,7 @@ class Typechecker:
                 name = callee.param_names[i]
                 i += 1
 
-            typ = self.check(arg.value, env=env._())
+            typ = self.check(arg.value, env=env)
             param = callee.params[callee.param_names.index(name)]
 
             if mismatch := _mismatch(typ, param):
@@ -276,7 +273,7 @@ class Typechecker:
         for i in range(len(comparators) - 1):
             op, sides = node.ops[i], (comparators[i], comparators[i + 1])
 
-            left, right = [self.check(side, env=env._()) for side in sides]
+            left, right = [self.check(side, env=env) for side in sides]
 
             def _check_field(field):
                 if isinstance(field, FunctionType):
@@ -310,7 +307,7 @@ class Typechecker:
         return BoolType()
 
     def conversion_(self, node: Conversion, env: Env):
-        value = self.check(node.value, env=env._())
+        value = self.check(node.value, env=env)
 
         if (
             len(node.unit.unit) == 1
@@ -333,7 +330,7 @@ class Typechecker:
             return AnyType(typ)
 
         # unit conversion
-        target = self.processor.unit(node.unit, env=env._())
+        target = self.processor.unit(node.unit, env=env.copy())
 
         if isinstance(value, NumberType) and (value.dim() == target or value.dimless()):
             return value.edit(dimension=target)
@@ -382,7 +379,7 @@ class Typechecker:
         ]
         for i, param in enumerate(node.params):
             if param.default is not None:
-                default = self.check(param.default, env=env._())
+                default = self.check(param.default, env=env)
 
                 if params[i].type() == "Any":
                     params[i] = default
@@ -419,7 +416,7 @@ class Typechecker:
 
         env.set("names")(node.name.name, signature)
 
-        new_env = env._()
+        new_env = env.copy()
         for i, param in enumerate(params):
             new_env.set("names")(node.params[i].name.name, param)
 
@@ -451,7 +448,7 @@ class Typechecker:
             self.errors.nameError(node)
 
     def if_(self, node: If, env: Env):
-        if (typ := self.check(node.condition, env=env._()).type()) != "Bool":
+        if (typ := self.check(node.condition, env=env).type()) != "Bool":
             self.errors.throw(
                 uTypeError,
                 f"condition must be a Boolean, got '{typ}'",
@@ -459,7 +456,7 @@ class Typechecker:
             )
 
         branches = [
-            self.check(branch, env=env._())
+            self.check(branch, env=env)
             for i, branch in enumerate((node.then_branch, node.else_branch))
             if branch is not None or i == 0  # skip if else branch is None
         ]
@@ -475,24 +472,23 @@ class Typechecker:
 
         return branches[0]
 
-    def list_(self, node: List, env: Env) -> ListType:
-        content = AnyType()
+    def list_(self, node: List, env: Env, content: T = NeverType()) -> ListType:
         for element in node.items:
-            element_type = self.check(element, env=env._())
+            element_type = self.check(element, env=env)
             if element_type.name("Any"):
                 self.errors.throw(
                     uTypeError,
                     "list elements may not be type 'Any'",
                     loc=element.loc,
                 )
-            if isinstance(content, AnyType):
-                content = element_type
-            elif content.type() != element_type.type():
+            if not (unified := unify(content, element_type)):
                 self.errors.throw(
                     uTypeError,
                     "list elements must be of the same type",
                     loc=element.loc,
                 )
+            else:
+                content = unified
         return ListType(content=content)
 
     def number_(self, node: Integer | Float, env: Env) -> NumberType:
@@ -515,7 +511,7 @@ class Typechecker:
         else:
             return_type = env.meta["#function"].return_type
 
-        value = self.check(node.value, env=env._()) if node.value else NoneType()
+        value = self.check(node.value, env=env) if node.value else NoneType()
 
         if return_type and (mismatch := _mismatch(value, return_type)):
             self.errors.throw(
@@ -529,7 +525,7 @@ class Typechecker:
 
     def unary_op_(self, node: UnaryOp, env: Env):
         if node.op.name == "sub":
-            operand = self.check(node.operand, env=env._())
+            operand = self.check(node.operand, env=env)
             if not isinstance(operand, NumberType):
                 self.errors.throw(
                     uTypeError,
@@ -592,7 +588,7 @@ class Typechecker:
         )
 
     def variable_(self, node: Variable, env: Env):
-        value = self.check(node.value, env=env._())
+        value = self.check(node.value, env=env)
 
         if node.type:
             annotation = self.processor.type(node.type.unit, env=env)
@@ -629,7 +625,16 @@ class Typechecker:
                         loc=node.loc,
                     )
 
-        env.set("names")(name=node.name.name, value=value)
+        _hash = None
+        if node.name.name in env.names:
+            if mismatch := _mismatch(env.get("names")(node.name.name), value):
+                self.errors.throw(
+                    uNameError,
+                    f"'{node.name.name}' is overwritten in an incompatible manner: {mismatch[0]} {mismatch[2]} cannot be assigned to {mismatch[1]}",
+                    loc=node.loc,
+                )
+            _hash = env.names[node.name.name]
+        env.set("names")(name=node.name.name, value=value, _hash=_hash)
         return NoneType()
 
     def while_loop_(self, node: WhileLoop, env: Env):
@@ -638,23 +643,26 @@ class Typechecker:
     def check(self, node, env: Env) -> T:
         match node:
             case Integer() | Float():
-                return self.number_(node, env=env._())
+                return self.number_(node, env=env.copy())
             case String() | Boolean():
                 name = type(node).__name__.removesuffix("ing").removesuffix("ean")
 
                 return AnyType(name)
+            case Variable() | UnitDefinition() | DimensionDefinition() | Function():
+                name = camel2snake_pattern.sub("_", type(node).__name__).lower() + "_"
+                return getattr(self, name)(node, env=env)
             case _:
                 name = camel2snake_pattern.sub("_", type(node).__name__).lower() + "_"
                 if hasattr(self, name):
-                    return getattr(self, name)(node, env=env._())
+                    return getattr(self, name)(node, env=env.copy())
                 raise NotImplementedError(f"Type {type(node).__name__} not implemented")
 
     def start(self):
         env = Env(
             glob=self.namespaces,
-            level=-1,
+            level=0,
             **{
-                n: {k: k for k in list(getattr(self.namespaces, n).keys())}
+                n: {k: k for k in list(self.namespaces(n).keys())}
                 for n in ("names", "units", "dimensions")
             },
         )
@@ -665,9 +673,9 @@ class Typechecker:
 
 
 def _mismatch(a: T, b: T) -> tuple[str, str, str] | None:
-    if not compare(a, b):
+    if not unify(a, b):
         return ("type", f"'{a.type()}'", f"'{b.type()}'")
-    elif a.dim() != b.dim() and not (a.name("Any") or b.name("Any")):
+    elif a.dim() != b.dim() and not (a.name("Never", "Any") or b.name("Never", "Any")):
         value = (
             "dimension",
             *(f"[[bold]{format_dimension(x.dim())}[/bold]]" for x in [a, b]),
