@@ -26,6 +26,7 @@ from astnodes import (
     List,
     Location,
     Param,
+    Range,
     Return,
     Slice,
     String,
@@ -481,7 +482,7 @@ class Parser(ParserTemplate):
         return node
 
     def call(self) -> AstNode:
-        node = self.atom()
+        node = self.range_()
         while self._peek(ignore_whitespace=False).type == "LPAREN":
             self._consume("LPAREN")
             args = []
@@ -505,6 +506,24 @@ class Parser(ParserTemplate):
             end = self._consume("RPAREN")
             node = Call(callee=node, args=args, loc=nodeloc(node, end))
         return node
+
+    def range_(self) -> AstNode:
+        parts = [self.atom(), None, None]
+
+        i = 1
+        while self._peek(ignore_whitespace=False).type == "RANGE" and i < 3:
+            self._consume("RANGE")
+            parts[i] = self.atom()
+            i += 1
+
+        if i == 1:
+            return parts[0]
+        return Range(
+            start=parts[0],
+            end=parts[1],
+            step=parts[2],
+            loc=parts[0].loc.merge(getattr(parts[2], "loc", parts[1].loc)),
+        )
 
     def list(self) -> AstNode:
         start = self.tok

@@ -10,6 +10,7 @@ T = Union[
     "VarType",
     "NeverType",
     "AnyType",
+    "RangeType",
     "NumberType",
     "BoolType",
     "StrType",
@@ -139,6 +140,11 @@ class SliceType(UType):
 
 
 @dataclass(kw_only=True, frozen=True)
+class RangeType(UType):
+    pass
+
+
+@dataclass(kw_only=True, frozen=True)
 class FunctionType(UType):
     params: list[T] = field(default_factory=list)
     return_type: T = NoneType()
@@ -175,6 +181,7 @@ class AnyType(UType):
             "str": StrType(),
             "list": ListType(),
             "slice": SliceType(),
+            "range": RangeType(),
             "function": FunctionType(),
         }.get(name.strip().lower())
 
@@ -318,4 +325,5 @@ types: dict[str, Struct] = {
             ),
         },
     ),
+    "Range": Struct({}),
 }

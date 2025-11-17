@@ -201,6 +201,13 @@ class WhileLoop(AstNode):
 
 
 @dataclass(kw_only=True, frozen=True)
+class Range(AstNode):
+    start: AstNode
+    end: AstNode
+    step: AstNode | None
+
+
+@dataclass(kw_only=True, frozen=True)
 class UnitDefinition(AstNode):
     name: Identifier
     dimension: Identifier | None

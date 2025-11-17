@@ -1,3 +1,5 @@
+a: Range = 0..10..2
+
 for i in interval(0, 10) do echo(i)
 
 i = 0

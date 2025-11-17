@@ -21,6 +21,7 @@ from astnodes import (
     Index,
     Integer,
     List,
+    Range,
     Return,
     Slice,
     String,
@@ -45,6 +46,7 @@ from typechecker.types import (
     NoneType,
     NumberType,
     Overload,
+    RangeType,
     SliceType,
     T,
     types,
@@ -518,6 +520,39 @@ class Typechecker:
             dimensionless=dimension == [],
             value=float(node.value) ** float(node.exponent if node.exponent else 1),
         )
+
+    def range_(self, node: Range, env: Env):
+        for part in [node.start, node.end]:
+            checked = self.check(part, env=env)
+            if not checked.name("Int"):
+                self.errors.throw(
+                    uTypeError,
+                    f"range boundary must be an integer, got '{checked.type()}'",
+                    loc=part.loc,
+                )
+            elif not checked.dimless():
+                self.errors.throw(
+                    uTypeError,
+                    "range boundary must be dimensionless",
+                    loc=part.loc,
+                )
+
+        if node.step is not None:
+            checked = self.check(node.step, env=env)
+            if not checked.name("Int", "Float"):
+                self.errors.throw(
+                    uTypeError,
+                    f"range step must be a number, got '{checked.type()}'",
+                    loc=node.step.loc,
+                )
+            elif not checked.dimless():
+                self.errors.throw(
+                    uTypeError,
+                    "range step must be dimensionless",
+                    loc=node.step.loc,
+                )
+
+        return RangeType()
 
     def return_(self, node: Return, env: Env):
         return_type = None  # it will always be defined, this is just to satisfy pyright

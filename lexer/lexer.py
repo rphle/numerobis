@@ -48,6 +48,7 @@ class LexTokens:
         "EQ",
         "NE",
         "CONVERSION",
+        "RANGE",
         # Assignment (=)
         "ASSIGN",
         # Delimiters ( ) [ ] { } , . ; :
@@ -76,6 +77,7 @@ class LexTokens:
     t_MOD = r"%"
     t_POWER = r"\^"
     t_CONVERSION = r"\(?->"
+    t_RANGE = r"\.\."
 
     # Comparison operators
     t_EQ = r"=="
