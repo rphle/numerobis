@@ -682,6 +682,23 @@ class Typechecker:
     def variable_(self, node: Variable, env: Env):
         value = self.check(node.value, env=env)
 
+        _hash = None
+        if node.name.name in env.names:
+            if mismatch := _mismatch(env.get("names")(node.name.name), value):
+                self.errors.throw(
+                    uTypeError,
+                    f"'{node.name.name}' is overwritten in an incompatible manner: {mismatch[0]} {mismatch[2]} cannot be assigned to {mismatch[1]}",
+                    loc=node.loc,
+                )
+            _hash = env.names[node.name.name]
+
+        if _hash is not None and node.type:
+            self.errors.throw(
+                uNameError,
+                f"'{node.name.name}' cannot be redeclared",
+                loc=node.loc,
+            )
+
         if node.type:
             annotation = self.processor.type(node.type.unit, env=env)
 
@@ -717,15 +734,6 @@ class Typechecker:
                         loc=node.loc,
                     )
 
-        _hash = None
-        if node.name.name in env.names:
-            if mismatch := _mismatch(env.get("names")(node.name.name), value):
-                self.errors.throw(
-                    uNameError,
-                    f"'{node.name.name}' is overwritten in an incompatible manner: {mismatch[0]} {mismatch[2]} cannot be assigned to {mismatch[1]}",
-                    loc=node.loc,
-                )
-            _hash = env.names[node.name.name]
         env.set("names")(name=node.name.name, value=value, _hash=_hash)
         return NoneType()
 
