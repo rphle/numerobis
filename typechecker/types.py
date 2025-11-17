@@ -141,7 +141,7 @@ class SliceType(UType):
 
 @dataclass(kw_only=True, frozen=True)
 class RangeType(UType):
-    pass
+    value: NumberType = NumberType(typ="Int")
 
 
 @dataclass(kw_only=True, frozen=True)

@@ -189,7 +189,7 @@ class Variable(AstNode):
 
 @dataclass(kw_only=True, frozen=True)
 class ForLoop(AstNode):
-    var: Identifier
+    iterators: list[Identifier]
     iterable: AstNode
     body: AstNode
 

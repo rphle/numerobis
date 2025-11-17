@@ -322,13 +322,18 @@ class Parser(ParserTemplate):
 
     def forloop(self) -> AstNode:
         _for = self._consume("FOR")
-        var = self._make_id(self._consume("ID"))
+        iterators = [self._make_id(self._consume("ID"))]
+        while self._peek().type == "COMMA":
+            self._consume("COMMA")
+            iterators.append(self._make_id(self._consume("ID")))
+
         self._consume("IN")
         iterable = self.expression()
         self._consume("DO")
         body = self.block()
+
         return ForLoop(
-            var=var,
+            iterators=iterators,
             iterable=iterable,
             body=body,
             loc=nodeloc(_for, body),
@@ -339,6 +344,7 @@ class Parser(ParserTemplate):
         condition = self.expression()
         self._consume("DO")
         body = self.block()
+
         return WhileLoop(
             condition=condition,
             body=body,

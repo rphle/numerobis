@@ -1,11 +1,15 @@
 a: Range = 0..10..2
 
-for i in interval(0, 10) do echo(i)
+for i in 0..10 do echo(i)
 
 i = 0
-for x in my_list do {
+for x in [1,2,3,4] do {
   echo(x)
   i = i + x
+}
+
+for a,b in [[1,2],[3,4]] do {
+  echo(a+b)
 }
 
 while true do

@@ -358,7 +358,31 @@ class Typechecker:
         )
 
     def for_loop_(self, node: ForLoop, env: Env):
-        pass
+        iterable = self.check(node.iterable, env=env)
+        if not iterable.name("List", "Range"):
+            self.errors.throw(
+                uTypeError,
+                f"'{iterable.type()}' is not iterable",
+                loc=node.iterable.loc,
+            )
+
+        assert isinstance(iterable, (RangeType, ListType))
+        value = iterable.value if isinstance(iterable, RangeType) else iterable.content
+
+        if len(node.iterators) > 1:
+            if not isinstance(value, ListType):
+                self.errors.throw(
+                    uTypeError,
+                    f"cannot unpack non-iterable '{value.type()}' object",
+                    loc=node.iterators[0].loc.merge(node.iterators[-1].loc),
+                )
+            else:
+                value = value.content
+
+        new_env = env.copy()
+        for iterator in node.iterators:
+            new_env.set("names")(iterator.name, value)
+        self.check(node.body, env=new_env)
 
     def function_(self, node: Function, env: Env):
         name = getattr(node.name, "name", None)
@@ -522,6 +546,7 @@ class Typechecker:
         )
 
     def range_(self, node: Range, env: Env):
+        value = NumberType(typ="Int")
         for part in [node.start, node.end]:
             checked = self.check(part, env=env)
             if not checked.name("Int"):
@@ -538,21 +563,22 @@ class Typechecker:
                 )
 
         if node.step is not None:
-            checked = self.check(node.step, env=env)
-            if not checked.name("Int", "Float"):
+            value = self.check(node.step, env=env)
+            if not value.name("Int", "Float"):
                 self.errors.throw(
                     uTypeError,
-                    f"range step must be a number, got '{checked.type()}'",
+                    f"range step must be a number, got '{value.type()}'",
                     loc=node.step.loc,
                 )
-            elif not checked.dimless():
+            elif not value.dimless():
                 self.errors.throw(
                     uTypeError,
                     "range step must be dimensionless",
                     loc=node.step.loc,
                 )
 
-        return RangeType()
+        assert isinstance(value, NumberType)
+        return RangeType(value=NumberType(typ=value.typ))
 
     def return_(self, node: Return, env: Env):
         return_type = None  # it will always be defined, this is just to satisfy pyright
