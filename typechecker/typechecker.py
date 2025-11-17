@@ -162,7 +162,7 @@ class Typechecker:
 
         def check_return(returns: T | None, checked: T):
             if returns is not None and (
-                returns.type() != checked.type() or returns.dim() != checked.dim()
+                not unify(returns, checked) or returns.dim() != checked.dim()
             ):
                 self.errors.throw(
                     uTypeError,
@@ -171,14 +171,14 @@ class Typechecker:
                 )
             return checked
 
-        checked = NoneType()
         for statement in node.body:
             checked = self.check(statement, env=env)
 
             if checked.meta == "#return":
                 returns = check_return(returns, checked)
 
-        returns = check_return(returns, checked)
+        if returns is None:
+            returns = NoneType()
 
         return returns
 

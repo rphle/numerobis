@@ -155,7 +155,7 @@ class Parser(ParserTemplate):
             type_token = self.unit(standalone=True)
 
         self._consume("ASSIGN")
-        expr = self.block()
+        expr = self.expression()
 
         return Variable(
             name=Identifier(name=name.value, loc=name.loc),

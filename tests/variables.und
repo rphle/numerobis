@@ -6,10 +6,6 @@ lol = "hahaha"
 num: Int = 5kg
 
 x: LuminousIntensity = 1 candela
-y: Int = {
-    1 + 2
-    3-4
-}
-
+y: Int = if true and false then 1 else 0;
 
 α = 9.81

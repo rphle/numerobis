@@ -6,7 +6,7 @@ f!(a: Int, b: Int): Int = a + b * 2
 h!(x=0) = x
 g!(a: Int, b: Int, c: Float = 0.0): Int = a + b + c
 
-hello!(name: Str): Str = { output = "Hello, " + name + "!"; output; }
+hello!(name: Str): Str = { output = "Hello, " + name + "!"; return output; }
 echo(hello("John"))
 
 fibonacci!(n: Int): Int = {
