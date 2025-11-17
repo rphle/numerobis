@@ -1,5 +1,6 @@
 from astnodes import AstNode, Call, Identifier, Unit
-from classes import Env, ModuleMeta
+from classes import ModuleMeta
+from environment import Env
 from exceptions import Exceptions, uTypeError
 from typechecker.analysis import analyze
 from typechecker.types import AnyType, ListType, NumberType, T, types

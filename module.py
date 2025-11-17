@@ -1,14 +1,15 @@
 from functools import lru_cache
-from parser.parser import Parser
 from pathlib import Path
 from typing import Optional
 
 import declare
 from astnodes import FromImport, Import
 from classes import ModuleMeta
+from environment import Namespaces
 from exceptions import Exceptions, uImportError, uModuleNotFound, uSyntaxError
 from lexer.lexer import lex
-from typechecker.typechecker import Namespaces, Typechecker
+from parser.parser import Parser
+from typechecker.typechecker import Typechecker
 
 
 class Module:

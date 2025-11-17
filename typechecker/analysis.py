@@ -12,7 +12,8 @@ from astnodes import (
     Scalar,
     Unit,
 )
-from classes import E, Env, ModuleMeta
+from classes import E, ModuleMeta
+from environment import Env
 from exceptions import Exceptions, uNameError, uTypeError
 from typechecker.types import types
 

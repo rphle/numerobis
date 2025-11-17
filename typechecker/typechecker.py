@@ -30,14 +30,9 @@ from astnodes import (
     Variable,
     WhileLoop,
 )
-from classes import E, Env, ModuleMeta, Namespaces
-from exceptions import (
-    ConversionError,
-    Exceptions,
-    uNameError,
-    uSyntaxError,
-    uTypeError,
-)
+from classes import E, ModuleMeta
+from environment import Env, Namespaces
+from exceptions import ConversionError, Exceptions, uNameError, uSyntaxError, uTypeError
 from typechecker.analysis import simplify
 from typechecker.process_types import Processor
 from typechecker.types import (
@@ -55,7 +50,7 @@ from typechecker.types import (
     types,
     unify,
 )
-from typechecker.utils import format_dimension
+from typechecker.utils import _check_method, _mismatch, format_dimension
 from utils import camel2snake_pattern
 
 
@@ -701,29 +696,3 @@ class Typechecker:
             if isinstance(node, (Import, FromImport)):
                 continue
             self.check(node, env=env)
-
-
-def _check_method(method, *args) -> FunctionType | None:
-    if isinstance(method, FunctionType):
-        return method.check_args(*args)
-    elif isinstance(method, Overload):
-        return next(
-            (
-                checked
-                for func in method.functions
-                if (checked := func.check_args(*args))
-            ),
-            None,
-        )
-    raise ValueError()
-
-
-def _mismatch(a: T, b: T) -> tuple[str, str, str] | None:
-    if not unify(a, b):
-        return ("type", f"'{a.type()}'", f"'{b.type()}'")
-    elif a.dim() != b.dim() and not (a.name("Never", "Any") or b.name("Never", "Any")):
-        value = (
-            "dimension",
-            *(f"[[bold]{format_dimension(x.dim())}[/bold]]" for x in [a, b]),
-        )
-        return value  # type: ignore

@@ -1,5 +1,6 @@
 from astnodes import AstNode, Identifier
 from classes import E
+from typechecker.types import FunctionType, Overload, T, unify
 
 
 def format_dimension(dims) -> str:
@@ -46,3 +47,29 @@ def repr_dimension(
                 reprs[-1] += 1
 
     return tuple(reprs) or (dimension,)
+
+
+def _check_method(method, *args) -> FunctionType | None:
+    if isinstance(method, FunctionType):
+        return method.check_args(*args)
+    elif isinstance(method, Overload):
+        return next(
+            (
+                checked
+                for func in method.functions
+                if (checked := func.check_args(*args))
+            ),
+            None,
+        )
+    raise ValueError()
+
+
+def _mismatch(a: T, b: T) -> tuple[str, str, str] | None:
+    if not unify(a, b):
+        return ("type", f"'{a.type()}'", f"'{b.type()}'")
+    elif a.dim() != b.dim() and not (a.name("Never", "Any") or b.name("Never", "Any")):
+        value = (
+            "dimension",
+            *(f"[[bold]{format_dimension(x.dim())}[/bold]]" for x in [a, b]),
+        )
+        return value  # type: ignore
