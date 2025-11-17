@@ -2,21 +2,21 @@ from si import @(Length, Time, kilogram, second, meter)
 
 test = "hello"
 
-f(a: Int, b: Int): Int = a + b * 2
-h(x=0) = x
-g(a: Int, b: Int, c: Float = 0.0): Int = a + b + c
+f!(a: Int, b: Int): Int = a + b * 2
+h!(x=0) = x
+g!(a: Int, b: Int, c: Float = 0.0): Int = a + b + c
 
-hello(name: Str): Str = { output = "Hello, " + name + "!"; output; }
+hello!(name: Str): Str = { output = "Hello, " + name + "!"; output; }
 echo(hello("John"))
 
-fibonacci(n: Int): Int = {
+fibonacci!(n: Int): Int = {
     if n <= 1 then
         return 5
     fibonacci(n - 1) + fibonacci(n - 2)
 }
 
-distance(speed: Length/Time, time: Time): Length = speed * time
+distance!(speed: Length/Time, time: Time): Length = speed * time
 distance(1.0 meter/second)
 
-f(x) = 1;
+f!(x) = 1;
 fibonacci(n=(if true then 1 else 2));

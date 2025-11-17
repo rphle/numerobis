@@ -258,13 +258,13 @@ _ops = ["add", "sub", "mul", "div", "mod", "pow", "eq", "lt", "gt", "le", "ge", 
 types: dict[str, Struct] = {
     "Int": Struct(
         {
-            **_conv("Bool", "Str"),
+            **_conv("Bool", "Str", "Float"),
             **{f"__{op}__": _numberoverload for op in _ops},
         }
     ),
     "Float": Struct(
         {
-            **_conv("Bool", "Str"),
+            **_conv("Bool", "Str", "Int"),
             **{f"__{op}__": _numberoverload for op in _ops},
         }
     ),

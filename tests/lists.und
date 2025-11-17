@@ -3,14 +3,14 @@ from si import @(Mass, kg)
 5 * [1,2,3]
 mylist: List = [1, 2, 3] + [1,2]
 
-add(n: Int, l: List) = n*l
+add!(n: Int, l: List) = n*l
 add(4, [])
 
 x: List = [[]]
 y: List = [[], []]
 x + y
 
-f(x: Int): Int = x+1
+f!(x: Int): Int = x+1
 
 [ f ] + [] # works
 
@@ -44,6 +44,8 @@ u + v
 [1,2,3][:2]
 [1,2,3][::]
 [1,2,3][::-1]
+
+# [f(x: Int): Int = x+1, g(x: Float): Float = x+2]
 
 #[
 ([])[:2]

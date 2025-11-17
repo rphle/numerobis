@@ -48,7 +48,6 @@ class LexTokens:
         "EQ",
         "NE",
         "CONVERSION",
-        "NOTBANG",
         # Assignment (=)
         "ASSIGN",
         # Delimiters ( ) [ ] { } , . ; :
@@ -63,6 +62,7 @@ class LexTokens:
         "SEMICOLON",
         "COLON",
         "AT",
+        "BANG",
         # Hacks
         "WHITESPACE",
     )
@@ -85,9 +85,6 @@ class LexTokens:
     t_LT = r"<"
     t_GT = r">"
 
-    # Logical operators
-    t_NOTBANG = r"!"  # separate token for !
-
     # Assignment operators
     t_ASSIGN = r"="
 
@@ -103,6 +100,7 @@ class LexTokens:
     t_SEMICOLON = r";"
     t_COLON = r":"
     t_AT = r"@"
+    t_BANG = r"!"
 
     def t_WHITESPACE(self, t):
         r"[\n\s]+"

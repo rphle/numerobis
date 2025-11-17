@@ -1,7 +1,5 @@
 import dataclasses
 import math
-from parser.template import ParserTemplate
-from parser.unitparser import UnitParser
 
 from astnodes import (
     AstNode,
@@ -40,6 +38,8 @@ from astnodes import (
 )
 from classes import ModuleMeta
 from exceptions import uSyntaxError
+from parser.template import ParserTemplate
+from parser.unitparser import UnitParser
 
 
 class Parser(ParserTemplate):
@@ -92,11 +92,7 @@ class Parser(ParserTemplate):
         elif first.type == "FROM":
             """From import statement"""
             return self.from_import_stmt()
-        elif (
-            first.type == "ID"
-            and self._peek(2).type == "LPAREN"
-            and self._check_function(start=3)
-        ):
+        elif first.type == "ID" and self._peek(2).type == "BANG":
             """Function declaration"""
             return self.function()
         return self.block()
@@ -248,6 +244,7 @@ class Parser(ParserTemplate):
         name = self._make_id(self._consume("ID"))
         return_type = None
 
+        self._consume("BANG")
         self._consume("LPAREN")
 
         params = []
@@ -376,8 +373,8 @@ class Parser(ParserTemplate):
         return self._logic_chain(self.logic_not, "AND")
 
     def logic_not(self) -> AstNode:
-        if self._peek().type in {"NOT", "NOTBANG"}:
-            self._consume("NOT", "NOTBANG")
+        if self._peek().type == "NOT":
+            self._consume("NOT")
             self.tok.value = "not"
             op = self._make_op(self.tok)
             operand = self.logic_not()
@@ -579,20 +576,6 @@ class Parser(ParserTemplate):
                     return self.tuple()
             case _:
                 raise SyntaxError(f"Unexpected token {tok}")
-
-    def _check_function(self, start: int = 3):
-        i = start
-        balance = 1
-
-        while True:
-            tok = self._peek(i).type
-            if balance == 0:
-                return tok in {"COLON", "ASSIGN"}
-            elif tok in ["LPAREN", "RPAREN"]:
-                balance += 1 if tok == "LPAREN" else -1
-            elif tok == "EOF":
-                self.errors.unexpectedEOF()
-            i += 1
 
     def import_stmt(self) -> Import:
         start = self._consume("IMPORT")
