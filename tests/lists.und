@@ -45,7 +45,7 @@ u + v
 [1,2,3][::]
 [1,2,3][::-1]
 
-# [f(x: Int): Int = x+1, g(x: Float): Float = x+2]
+[!(x: Int): Int = x+1, !(x: Int): Int = 2]
 
 #[
 ([])[:2]

@@ -1,5 +1,7 @@
 import dataclasses
 import math
+from parser.template import ParserTemplate
+from parser.unitparser import UnitParser
 
 from astnodes import (
     AstNode,
@@ -38,8 +40,6 @@ from astnodes import (
 )
 from classes import ModuleMeta
 from exceptions import uSyntaxError
-from parser.template import ParserTemplate
-from parser.unitparser import UnitParser
 
 
 class Parser(ParserTemplate):
@@ -141,6 +141,8 @@ class Parser(ParserTemplate):
                 )
             self._consume("AT")
             return self.unit()
+        elif self._peek().type == "BANG":
+            return self.function(anonymous=True)
 
         return self.conversion()
 
@@ -240,11 +242,11 @@ class Parser(ParserTemplate):
             loc=nodeloc(start, unit or name),
         )
 
-    def function(self) -> AstNode:
-        name = self._make_id(self._consume("ID"))
+    def function(self, anonymous=False) -> AstNode:
+        name = self._make_id(self._consume("ID")) if not anonymous else None
         return_type = None
 
-        self._consume("BANG")
+        _bang = self._consume("BANG")
         self._consume("LPAREN")
 
         params = []
@@ -274,19 +276,23 @@ class Parser(ParserTemplate):
             self._consume("COMMA")
 
         self._consume("RPAREN")
-        self._consume("COLON", "ASSIGN")
+        _assign = self._consume("COLON", "ASSIGN")
         if self.tok.type == "COLON":
             return_type = self.unit(standalone=True)
-            self._consume("ASSIGN")
+            _assign = self._consume("ASSIGN")
 
         body = self.block()
 
+        loc = dataclasses.replace(
+            nodeloc(name if name is not None else _bang, body),
+            checkpoints={"assign": _assign.loc},
+        )
         node = Function(
             name=name,
             params=params,
             return_type=return_type,
             body=body,
-            loc=nodeloc(name, body),
+            loc=loc,
         )
         return node
 

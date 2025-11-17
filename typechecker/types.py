@@ -144,7 +144,7 @@ class FunctionType(UType):
     return_type: T = NoneType()
     param_names: list[str] = field(default_factory=list)
     unresolved: bool = field(default=False)
-    _name: str = field(default="", compare=False)
+    _name: Optional[str] = field(default=None, compare=False)
     _loc: Any = field(default=None)
 
     def check_args(self, *args: T) -> Optional["FunctionType"]:
@@ -200,7 +200,13 @@ def unify(a: T, b: T) -> Optional[T]:
             content = unify(a.content, b.content)
             return ListType(content=content) if content else None
         case FunctionType(), FunctionType():
-            return unify(a.return_type, b.return_type)
+            if len(a.params) != len(b.params):
+                return
+            parts = [
+                unify(x, y)
+                for x, y in zip(a.params + [a.return_type], b.params + [b.return_type])
+            ]
+            return None if any(p is None for p in parts) else a
         case _, _:
             return a if a.type() == b.type() else None
 

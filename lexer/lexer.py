@@ -165,7 +165,6 @@ def lex(source: str, module: ModuleMeta, debug=False) -> list[Token]:
             loc=Location(
                 line=tok.lineno,
                 col=tok.lexpos - last_newline_pos[-1] + 1,
-                start=tok.lexpos,
                 end_line=tok.lineno,
                 end_col=tok.lexpos - last_newline_pos[-1] + len(tok.value),
             ),

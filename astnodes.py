@@ -5,7 +5,6 @@ def nodeloc(*nodes: "Token | AstNode"):
     return Location(
         line=nodes[0].loc.line,
         col=nodes[0].loc.col,
-        start=nodes[0].loc.start,
         end_line=nodes[-1].loc.end_line,
         end_col=nodes[-1].loc.end_col,
     )
@@ -15,9 +14,10 @@ def nodeloc(*nodes: "Token | AstNode"):
 class Location:
     line: int = -1
     col: int = -1
-    start: int = -1
     end_line: int = -1
     end_col: int = -1
+
+    checkpoints: dict[str, "Location"] = field(default_factory=dict)
 
     def merge(self, other: "Location"):
         self.end_line = other.end_line
@@ -37,6 +37,27 @@ class Location:
             )
             for line in range(self.line, self.end_line + 1)
         ]
+
+    def _point(self, name: str) -> "Location":
+        if name == "start":
+            return Location(self.line, self.col, self.line, self.col)
+
+        if name == "end":
+            el = self.end_line if self.end_line != -1 else self.line
+            ec = self.end_col if self.end_col != -1 else self.col
+            return Location(el, ec, el, ec)
+
+        return self.checkpoints[name]
+
+    def span(self, start: str, end: str) -> "Location":
+        s = self._point(start)
+        e = self._point(end)
+        return Location(
+            line=s.line,
+            col=s.col,
+            end_line=e.end_line,
+            end_col=e.end_col,
+        )
 
 
 @dataclass
@@ -202,7 +223,7 @@ class Param(AstNode):
 
 @dataclass(kw_only=True, frozen=True)
 class Function(AstNode):
-    name: Identifier
+    name: Identifier | None
     params: list[Param]
     return_type: Unit | None
     body: AstNode

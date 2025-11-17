@@ -359,6 +359,7 @@ class Typechecker:
         pass
 
     def function_(self, node: Function, env: Env):
+        name = getattr(node.name, "name", None)
         # verify parameter and default types
         params = [
             self.processor.type(p.type.unit, env=env)  # type: ignore
@@ -393,7 +394,7 @@ class Typechecker:
         )
 
         signature = FunctionType(
-            _name=node.name.name, _loc=node.name.loc, unresolved=True
+            _name=name, _loc=node.loc.span("start", "assign"), unresolved=True
         )
         if return_type:
             signature = signature.edit(
@@ -403,7 +404,8 @@ class Typechecker:
                 unresolved=False,
             )
 
-        env.set("names")(node.name.name, signature)
+        if name is not None:
+            env.set("names")(name, signature)
 
         new_env = env.copy()
         for i, param in enumerate(params):
@@ -428,7 +430,10 @@ class Typechecker:
                 param_names=[param.name.name for param in node.params],
                 unresolved=False,
             )
-        env.set("names")(node.name.name, signature)
+        if name is not None:
+            env.set("names")(name, signature)
+
+        return signature
 
     def identifier_(self, node: Identifier, env: Env):
         try:
