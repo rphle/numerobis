@@ -203,10 +203,10 @@ def unify(a: T, b: T) -> Optional[T]:
             if len(a.params) != len(b.params):
                 return
             parts = [
-                unify(x, y)
+                unify(x, y) and x.dim() == y.dim()
                 for x, y in zip(a.params + [a.return_type], b.params + [b.return_type])
             ]
-            return None if any(p is None for p in parts) else a
+            return a if all(parts) else None
         case _, _:
             return a if a.type() == b.type() else None
 
