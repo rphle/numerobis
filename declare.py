@@ -1,4 +1,4 @@
-from typechecker.types import AnyType, FunctionType, NoneType, T
+from typechecker.types import AnyType, FunctionType, NoneType, StrType, T
 
 names: dict[str, T] = {
     "echo": FunctionType(
@@ -6,5 +6,11 @@ names: dict[str, T] = {
         return_type=NoneType(),
         param_names=["value"],
         _name="echo",
-    )
+    ),
+    "input": FunctionType(
+        params=[StrType()],
+        return_type=StrType(),
+        param_names=["prompt"],
+        _name="input",
+    ),
 }

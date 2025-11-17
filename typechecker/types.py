@@ -259,9 +259,11 @@ _numberoverload = Overload(
 )
 
 
-def _conv(*types):
+def _conv(this, *types):
     return {
-        f"__{typ.lower()}__": FunctionType(params=[], return_type=AnyType(typ))
+        f"__{typ.lower()}__": FunctionType(
+            params=[AnyType(this)], return_type=AnyType(typ)
+        )
         for typ in types
     }
 
@@ -271,20 +273,20 @@ _ops = ["add", "sub", "mul", "div", "mod", "pow", "eq", "lt", "gt", "le", "ge", 
 types: dict[str, Struct] = {
     "Int": Struct(
         {
-            **_conv("Bool", "Str", "Float"),
+            **_conv("Int", "Bool", "Str", "Float"),
             **{f"__{op}__": _numberoverload for op in _ops},
         }
     ),
     "Float": Struct(
         {
-            **_conv("Bool", "Str", "Int"),
+            **_conv("Float", "Bool", "Str", "Int"),
             **{f"__{op}__": _numberoverload for op in _ops},
         }
     ),
-    "Bool": Struct({**_conv("Bool"), **_conv("Str")}),
+    "Bool": Struct({**_conv("Bool", "Bool", "Str")}),
     "Str": Struct(
         {
-            **_conv("Bool"),
+            **_conv("Str", "Bool"),
             "__add__": FunctionType(
                 params=[StrType(), StrType()], return_type=StrType()
             ),
@@ -305,7 +307,7 @@ types: dict[str, Struct] = {
     ),
     "List": Struct(
         {
-            **_conv("Bool", "Str"),
+            **_conv("List", "Bool", "Str"),
             "__add__": FunctionType(
                 params=[ListType(content=VarType("T")), ListType(content=VarType("T"))],
                 return_type=ListType(content=VarType("T")),

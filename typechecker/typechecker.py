@@ -730,7 +730,16 @@ class Typechecker:
         return NoneType()
 
     def while_loop_(self, node: WhileLoop, env: Env):
-        pass
+        cond = self.check(node.condition, env=env.copy())
+
+        if "__bool__" not in types[cond.name()].fields:
+            self.errors.throw(
+                uTypeError,
+                f"condition must be a type implementing '__bool__', got '{cond.name()}'",
+                loc=node.loc,
+            )
+
+        self.check(node.body, env=env)
 
     def check(self, node, env: Env) -> T:
         match node:
