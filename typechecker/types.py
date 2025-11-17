@@ -13,6 +13,7 @@ T = Union[
     "NumberType",
     "BoolType",
     "StrType",
+    "SliceType",
     "ListType",
     "FunctionType",
 ]
@@ -133,6 +134,11 @@ class ListType(UType):
 
 
 @dataclass(kw_only=True, frozen=True)
+class SliceType(UType):
+    pass
+
+
+@dataclass(kw_only=True, frozen=True)
 class FunctionType(UType):
     params: list[T] = field(default_factory=list)
     return_type: T = NoneType()
@@ -168,6 +174,7 @@ class AnyType(UType):
             "bool": BoolType(),
             "str": StrType(),
             "list": ListType(),
+            "slice": SliceType(),
             "function": FunctionType(),
         }.get(name.strip().lower())
 
@@ -271,6 +278,16 @@ types: dict[str, Struct] = {
             "__mul__": FunctionType(
                 params=[StrType(), IntType()], return_type=StrType()
             ),
+            "__getitem__": Overload(
+                FunctionType(
+                    params=[StrType(), IntType()],
+                    return_type=StrType(),
+                ),
+                FunctionType(
+                    params=[StrType(), SliceType()],
+                    return_type=StrType(),
+                ),
+            ),
         },
     ),
     "List": Struct(
@@ -282,6 +299,16 @@ types: dict[str, Struct] = {
             ),
             "__mul__": FunctionType(
                 params=[ListType(), IntType()], return_type=ListType()
+            ),
+            "__getitem__": Overload(
+                FunctionType(
+                    params=[ListType(content=VarType("T")), IntType()],
+                    return_type=VarType("T"),
+                ),
+                FunctionType(
+                    params=[ListType(content=VarType("T")), SliceType()],
+                    return_type=ListType(content=VarType("T")),
+                ),
             ),
         },
     ),

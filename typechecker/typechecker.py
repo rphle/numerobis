@@ -18,9 +18,11 @@ from astnodes import (
     Identifier,
     If,
     Import,
+    Index,
     Integer,
     List,
     Return,
+    Slice,
     String,
     UnaryOp,
     Unit,
@@ -48,6 +50,7 @@ from typechecker.types import (
     NoneType,
     NumberType,
     Overload,
+    SliceType,
     T,
     types,
     unify,
@@ -74,20 +77,6 @@ class Typechecker:
         """Check dimensional consistency in mathematical operations"""
         left, right = [self.check(side, env=env) for side in (node.left, node.right)]
 
-        def _check_field(field, reverse=False) -> FunctionType | None:
-            args = [right, left] if reverse else [left, right]
-            if isinstance(field, FunctionType):
-                return field.check_args(*args)
-            elif isinstance(field, Overload):
-                return next(
-                    (
-                        checked
-                        for func in field.functions
-                        if (checked := func.check_args(*args))
-                    ),
-                    None,
-                )
-
         definition = None
         for i, field in enumerate(
             [
@@ -96,9 +85,14 @@ class Typechecker:
                 types[right.name()][f"__{node.op.name}__"],
             ]
         ):
-            if checked := _check_field(field, reverse=i == 2):
-                definition = checked
-                break
+            try:
+                if checked := _check_method(
+                    field, *([left, right] if i < 2 else [right, left])
+                ):
+                    definition = checked
+                    break
+            except ValueError:
+                pass
         else:
             self.errors.binOpTypeMismatch(node, left, right)
 
@@ -472,6 +466,31 @@ class Typechecker:
 
         return branches[0]
 
+    def index_(self, node: Index, env: Env):
+        value = self.check(node.iterable, env=env)
+        index = self.check(node.index, env=env)
+        method = types[value.name()]["__getitem__"]
+        try:
+            if method is None:
+                raise ValueError()
+            checked = _check_method(method, value, index)
+        except ValueError:
+            self.errors.throw(
+                uTypeError,
+                f"'{value.type()}' is not subscriptable",
+                loc=node.loc,
+            )
+            return
+
+        if checked is None:
+            self.errors.throw(
+                uTypeError,
+                f"Invalid index type '{index.type()}' for '{value.type()}'",
+                loc=node.loc,
+            )
+        else:
+            return checked.return_type
+
     def list_(self, node: List, env: Env, content: T = NeverType()) -> ListType:
         for element in node.items:
             element_type = self.check(element, env=env)
@@ -522,6 +541,18 @@ class Typechecker:
             pass
 
         return value.edit(meta="#return")
+
+    def slice_(self, node: Slice, env: Env):
+        for part in (node.start, node.stop, node.step):
+            if part is not None and not (checked := self.check(part, env=env)).name(
+                "Int"
+            ):
+                self.errors.throw(
+                    uTypeError,
+                    f"slice indices must be 'Int' or None, not '{checked.type()}'",
+                    loc=part.loc,
+                )
+        return SliceType()
 
     def unary_op_(self, node: UnaryOp, env: Env):
         if node.op.name == "sub":
@@ -670,6 +701,21 @@ class Typechecker:
             if isinstance(node, (Import, FromImport)):
                 continue
             self.check(node, env=env)
+
+
+def _check_method(method, *args) -> FunctionType | None:
+    if isinstance(method, FunctionType):
+        return method.check_args(*args)
+    elif isinstance(method, Overload):
+        return next(
+            (
+                checked
+                for func in method.functions
+                if (checked := func.check_args(*args))
+            ),
+            None,
+        )
+    raise ValueError()
 
 
 def _mismatch(a: T, b: T) -> tuple[str, str, str] | None:
