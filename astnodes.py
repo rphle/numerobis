@@ -1,4 +1,6 @@
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, fields
+
+import mmh3
 
 
 def nodeloc(*nodes: "Token | AstNode"):
@@ -73,6 +75,26 @@ class Token:
 @dataclass(kw_only=True, frozen=True)
 class AstNode:
     loc: Location = field(default_factory=lambda: Location(), repr=False, compare=False)
+
+    def hash(self) -> int:
+        struct = self._struct()
+        return mmh3.hash(str(struct))
+
+    def _struct(self):
+        return (
+            self.__class__.__name__,
+            tuple((f.name, self._conv(getattr(self, f.name))) for f in fields(self)),
+        )
+
+    @classmethod
+    def _conv(cls, v):
+        if isinstance(v, AstNode):
+            return v._struct()
+        if isinstance(v, list):
+            return tuple(cls._conv(x) for x in v)
+        if isinstance(v, dict):
+            return tuple((k, cls._conv(v[k])) for k in sorted(v))
+        return v
 
     def __bool__(self):
         return True

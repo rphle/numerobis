@@ -2,9 +2,10 @@ import uuid
 from difflib import get_close_matches
 from typing import Any, Callable, Literal, Optional, overload
 
+from astnodes import AstNode
 from typechecker.types import Dimension, T
 
-namespace_names = Literal["names", "dimensions", "units", "imports"]
+namespace_names = Literal["names", "dimensions", "units", "imports", "nodes"]
 
 
 class Namespaces:
@@ -14,11 +15,13 @@ class Namespaces:
         dimensions: dict[str, "Dimension"] | None = None,
         units: dict[str, "Dimension"] | None = None,
         imports: dict[str, "Namespaces"] | None = None,
+        nodes: dict[int, AstNode] | None = None,
     ):
         self.names = names or {}
         self.dimensions = dimensions or {}
         self.units = units or {}
         self.imports = imports or {}
+        self.nodes = nodes or {}
 
     def copy(self):
         return Namespaces(
@@ -26,12 +29,14 @@ class Namespaces:
             self.dimensions.copy(),
             self.units.copy(),
             self.imports.copy(),
+            self.nodes.copy(),
         )
 
     def update(self, other: "Namespaces"):
         self.names.update(other.names)
         self.dimensions.update(other.dimensions)
         self.units.update(other.units)
+        self.nodes.update(other.nodes)
 
     def __call__(self, name: namespace_names) -> dict[str, Any]:
         return getattr(self, name)

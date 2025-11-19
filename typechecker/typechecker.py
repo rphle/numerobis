@@ -1,6 +1,7 @@
 import dataclasses
 from typing import Optional
 
+import typechecker.linking as linking
 from astnodes import (
     AstNode,
     BinOp,
@@ -13,11 +14,9 @@ from astnodes import (
     DimensionDefinition,
     Float,
     ForLoop,
-    FromImport,
     Function,
     Identifier,
     If,
-    Import,
     Index,
     Integer,
     List,
@@ -199,7 +198,7 @@ class Typechecker:
             self.errors.throw(
                 uTypeError, f"'{callee.type()}' is not callable", loc=node.loc
             )
-
+        # assert isinstance(node.callee, Function)
         assert isinstance(callee, FunctionType)
 
         if callee.unresolved == "#unresolved":
@@ -209,7 +208,8 @@ class Typechecker:
                 loc=callee._loc,
             )
 
-        args = {}
+        node = self.unlink(node, attrs=["args"])
+        args: dict[str, tuple[T, T]] = {}
         i = 0
         for arg in node.args:
             if arg.name:
@@ -260,6 +260,7 @@ class Typechecker:
         return callee.return_type
 
     def compare_(self, node: Compare, env: Env):
+        node = self.unlink(node, attrs=["comparators", "ops"])
         comparators = [node.left] + node.comparators
         for i in range(len(comparators) - 1):
             op, sides = node.ops[i], (comparators[i], comparators[i + 1])
@@ -381,18 +382,19 @@ class Typechecker:
 
         new_env = env.copy()
         for iterator in node.iterators:
-            new_env.set("names")(iterator.name, value)
+            new_env.set("names")(self.unlink(iterator, attrs=["name"]).name, value)
         self.check(node.body, env=new_env)
 
     def function_(self, node: Function, env: Env):
         name = getattr(node.name, "name", None)
         # verify parameter and default types
         params = [
-            self.processor.type(p.type.unit, env=env)  # type: ignore
-            if p.type is not None
+            self.processor.type(_p.type.unit, env=env)  # type: ignore
+            if (_p := self.unlink(p)).type is not None  # type: ignore
             else AnyType()
             for p in node.params
         ]
+        node = self.unlink(node, attrs=["params"])
         for i, param in enumerate(node.params):
             if param.default is not None:
                 default = self.check(param.default, env=env)
@@ -437,8 +439,8 @@ class Typechecker:
         for i, param in enumerate(params):
             new_env.set("names")(node.params[i].name.name, param)
 
-        if isinstance(node.body, Block):
-            body = self.block_(node.body, env=new_env, function=signature)
+        if isinstance(unlinked := self.unlink(node.body), Block):
+            body = self.block_(unlinked, env=new_env, function=signature)
         else:
             body = self.check(node.body, env=new_env)
 
@@ -524,13 +526,13 @@ class Typechecker:
                 self.errors.throw(
                     uTypeError,
                     "list elements may not be type 'Any'",
-                    loc=element.loc,
+                    loc=self.unlink(element, ["loc"]).loc,
                 )
             if not (unified := unify(content, element_type)):
                 self.errors.throw(
                     uTypeError,
                     "list elements must be of the same type",
-                    loc=element.loc,
+                    loc=self.unlink(element, ["loc"]).loc,
                 )
             else:
                 content = unified
@@ -553,13 +555,13 @@ class Typechecker:
                 self.errors.throw(
                     uTypeError,
                     f"range boundary must be an integer, got '{checked.type()}'",
-                    loc=part.loc,
+                    loc=self.unlink(part, ["loc"]).loc,
                 )
             elif not checked.dimless():
                 self.errors.throw(
                     uTypeError,
                     "range boundary must be dimensionless",
-                    loc=part.loc,
+                    loc=self.unlink(part, ["loc"]).loc,
                 )
 
         if node.step is not None:
@@ -712,7 +714,7 @@ class Typechecker:
             elif (
                 isinstance(annotation, NumberType)
                 and isinstance(value, NumberType)
-                and not isinstance(node.type.unit, Call)
+                and not isinstance(self.unlink(node.type.unit), Call)
             ):
                 annotation = annotation.edit(
                     dimension=value.dimension, dimensionless=value.dimensionless
@@ -749,7 +751,11 @@ class Typechecker:
 
         self.check(node.body, env=env)
 
-    def check(self, node, env: Env) -> T:
+    def check(self, link, env: Env) -> T:
+        if isinstance(link, linking.Link):
+            node = self.namespaces.nodes[link.target]
+        else:
+            node = link
         match node:
             case Integer() | Float():
                 return self.number_(node, env=env.copy())
@@ -767,6 +773,7 @@ class Typechecker:
                 raise NotImplementedError(f"Type {type(node).__name__} not implemented")
 
     def start(self):
+        self.program, self.namespaces.nodes = linking.link(self.ast)
         env = Env(
             glob=self.namespaces,
             level=0,
@@ -775,7 +782,8 @@ class Typechecker:
                 for n in ("names", "units", "dimensions")
             },
         )
-        for node in self.ast:
-            if isinstance(node, (Import, FromImport)):
-                continue
-            self.check(node, env=env)
+        for link in self.program:
+            self.check(link, env=env)
+
+    def unlink(self, node, attrs=None):
+        return linking.unlink(self.namespaces.nodes, node, attrs)
