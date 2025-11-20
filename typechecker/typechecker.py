@@ -173,7 +173,7 @@ class Typechecker:
         for statement in node.body:
             checked = self.check(statement, env=env)
 
-            if checked.meta == "#return":
+            if checked.meta("#return"):
                 returns = check_return(returns, checked)
 
         if returns is None:
@@ -255,9 +255,29 @@ class Typechecker:
                     loc=arg.loc,
                 )
 
-            args[name] = typ
+            args[name] = (param, unify(param, typ))  # type: ignore
 
-        return callee.return_type
+        assert callee.node is not None
+
+        # Check if constraints can be updated and the function body re-checked for better inference
+        recheck = any(a.type() != b.type() for a, b in list(args.values()))
+        if recheck:
+            new_env = env.copy()
+            for name, arg in args.items():
+                new_env.set("names")(name, arg[1])
+
+            callee_node = self.unlink(self.namespaces.nodes[callee.node])
+            assert isinstance(callee_node, Function)
+            if isinstance(callee_node.body, Block):
+                return_type = self.block_(
+                    callee_node.body, env=new_env, function=callee
+                )
+            else:
+                return_type = self.check(callee_node.body, env=new_env)
+        else:
+            return_type = callee.return_type
+
+        return return_type
 
     def compare_(self, node: Compare, env: Env):
         node = self.unlink(node, attrs=["comparators", "ops"])
@@ -385,7 +405,7 @@ class Typechecker:
             new_env.set("names")(self.unlink(iterator, attrs=["name"]).name, value)
         self.check(node.body, env=new_env)
 
-    def function_(self, node: Function, env: Env):
+    def function_(self, node: Function, env: Env, link: int):
         name = getattr(node.name, "name", None)
         # verify parameter and default types
         params = [
@@ -422,7 +442,10 @@ class Typechecker:
         )
 
         signature = FunctionType(
-            _name=name, _loc=node.loc.span("start", "assign"), unresolved=True
+            _name=name,
+            _loc=node.loc.span("start", "assign"),
+            unresolved=True,
+            node=link,
         )
         if return_type:
             signature = signature.edit(
@@ -603,7 +626,8 @@ class Typechecker:
             )
             pass
 
-        return value.edit(meta="#return")
+        value.meta("#return", True)
+        return value
 
     def slice_(self, node: Slice, env: Env):
         for part in (node.start, node.stop, node.step):
@@ -691,7 +715,7 @@ class Typechecker:
             name=node.name.name, value=Dimension(dimension or [node.dimension])
         )
 
-    def variable_(self, node: Variable, env: Env):
+    def variable_(self, node: Variable, env: Env, link: int):
         value = self.check(node.value, env=env)
 
         _hash = None
@@ -746,6 +770,7 @@ class Typechecker:
                         loc=node.loc,
                     )
 
+        value = value.edit(node=link)
         env.set("names")(name=node.name.name, value=value, _hash=_hash)
         return NoneType()
 
@@ -766,21 +791,37 @@ class Typechecker:
             node = self.namespaces.nodes[link.target]
         else:
             node = link
+
         match node:
             case Integer() | Float():
-                return self.number_(node, env=env.copy())
+                ret = self.number_(node, env=env.copy())
             case String() | Boolean():
                 name = type(node).__name__.removesuffix("ing").removesuffix("ean")
 
-                return AnyType(name)
+                ret = AnyType(name)
             case Variable() | UnitDefinition() | DimensionDefinition() | Function():
                 name = camel2snake_pattern.sub("_", type(node).__name__).lower() + "_"
-                return getattr(self, name)(node, env=env)
+                ret = getattr(self, name)(
+                    node,
+                    env=env,
+                    **(
+                        {"link": link.target}
+                        if name in ["variable_", "function_"]
+                        else {}
+                    ),
+                )
             case _:
                 name = camel2snake_pattern.sub("_", type(node).__name__).lower() + "_"
                 if hasattr(self, name):
-                    return getattr(self, name)(node, env=env.copy())
-                raise NotImplementedError(f"Type {type(node).__name__} not implemented")
+                    ret = getattr(self, name)(node, env=env.copy())
+                else:
+                    raise NotImplementedError(
+                        f"Type {type(node).__name__} not implemented"
+                    )
+
+        if ret and isinstance(link, linking.Link) and ret.node is None:
+            ret = ret.edit(node=link.target)
+        return ret
 
     def start(self):
         self.program, self.namespaces.nodes = linking.link(self.ast)

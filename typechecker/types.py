@@ -1,7 +1,5 @@
 from dataclasses import dataclass, field, replace
-from typing import Any, Literal, Optional, Union
-
-from typing_extensions import overload
+from typing import Any, Literal, Optional, Union, overload
 
 env = {}
 
@@ -22,7 +20,8 @@ T = Union[
 
 @dataclass(kw_only=True, frozen=True)
 class UType:
-    meta: Any = None
+    _meta: dict = field(default_factory=dict)
+    node: Optional[int] = None
 
     @overload
     def name(self) -> str: ...
@@ -49,6 +48,11 @@ class UType:
     def complete(self, value: Optional[T] = None):
         """Complete anonymous types ?T"""
         return self
+
+    def meta(self, key, value=None):
+        if value is not None:
+            self._meta[key] = value
+        return self._meta.get(key)
 
 
 class NoneType(UType):
@@ -166,7 +170,12 @@ class FunctionType(UType):
 class AnyType(UType):
     _instance = None
 
-    def __new__(cls, name: str = "any") -> "T":
+    def __new__(
+        cls,
+        name: str = "any",
+        _meta: dict = {},
+        node: Optional[int] = None,
+    ) -> "T":
         if name == "any":
             if cls._instance is None:
                 cls._instance = super().__new__(cls)
@@ -188,6 +197,7 @@ class AnyType(UType):
         if t is None:
             raise ValueError(f"Unknown type name: {name!r}")
 
+        t = t.edit(_meta=_meta, node=node)
         return t
 
 
@@ -198,9 +208,9 @@ def unify(a: T, b: T) -> Optional[T]:
         case _, NeverType():
             return a
         case AnyType(), _:
-            return a
-        case _, AnyType():
             return b
+        case _, AnyType():
+            return a
         case NumberType(), NumberType():
             return a if a.typ == b.typ else None
         case ListType(), ListType():
