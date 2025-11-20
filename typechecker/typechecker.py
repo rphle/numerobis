@@ -628,7 +628,17 @@ class Typechecker:
                 )
 
             return operand
-        return node
+        elif node.op.name == "not":
+            operand = self.check(node.operand, env=env)
+            method = types[operand.name()]["__bool__"]
+            if method is None:
+                self.errors.throw(
+                    uTypeError,
+                    f"unsupported operand type for 'not': '{operand.type()}'",
+                )
+            return operand
+
+        raise NotImplementedError(f"UnaryOp not implemented: {node.op.name}")
 
     def unit_(self, node: Unit, env: Env):
         pass

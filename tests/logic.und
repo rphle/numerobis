@@ -38,5 +38,5 @@ if false and (1/0) then 1 else 0;
 
 
 # Logical NOT
-not x      # # a# complicated # comm\ent
-not not x;
+not false      # # a# complicated # comm\ent
+not not false;
