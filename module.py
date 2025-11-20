@@ -35,7 +35,9 @@ class Module:
 
         # Find and verifiy import nodes first
         nodes: list[Import | FromImport] = []
-        while isinstance((node := self.ast[0]), (Import, FromImport)):
+        while len(self.ast) > 0 and isinstance(
+            (node := self.ast[0]), (Import, FromImport)
+        ):
             nodes.append(self.ast.pop(0))  # type: ignore
 
         if node := next(
