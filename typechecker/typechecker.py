@@ -748,7 +748,9 @@ class Typechecker:
             elif (
                 isinstance(annotation, NumberType)
                 and isinstance(value, NumberType)
-                and not isinstance(self.unlink(node.type.unit), Call)
+                and isinstance(node.type, Unit)
+                and node.type.unit
+                in [[Identifier(name="Int")], [Identifier(name="Float")]]
             ):
                 annotation = annotation.edit(
                     dimension=value.dimension, dimensionless=value.dimensionless
