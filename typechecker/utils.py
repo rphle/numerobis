@@ -1,6 +1,8 @@
+import rich.markup
+
 from astnodes import AstNode, Identifier
 from classes import E
-from typechecker.types import FunctionType, Overload, T, unify
+from typechecker.types import FunctionType, NeverType, Overload, T, dimcheck, unify
 
 
 def format_dimension(dims) -> str:
@@ -16,6 +18,8 @@ def format_dimension(dims) -> str:
                 name = f"({name})" if len(d.base) > 1 else name
             exp = d.exponent
             d = d.base
+        elif isinstance(d, NeverType):
+            continue
 
         name = getattr(d, "name", getattr(d, "value", str(d))) if name is None else name
 
@@ -66,8 +70,12 @@ def _check_method(method, *args) -> FunctionType | None:
 
 def _mismatch(a: T, b: T) -> tuple[str, str, str] | None:
     if not unify(a, b):
-        return ("type", f"'{a.type()}'", f"'{b.type()}'")
-    elif a.dim() != b.dim() and not (a.name("Never", "Any") or b.name("Never", "Any")):
+        return (
+            "type",
+            f"'{rich.markup.escape(a.type())}'",
+            f"'{rich.markup.escape(b.type())}'",
+        )
+    elif not dimcheck(a, b):
         value = (
             "dimension",
             *(f"[[bold]{format_dimension(x.dim())}[/bold]]" for x in [a, b]),

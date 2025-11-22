@@ -205,7 +205,7 @@ class Conversion(AstNode):
 @dataclass(kw_only=True, frozen=True)
 class Variable(AstNode):
     name: Identifier
-    type: Unit | None
+    type: "Unit | FunctionAnnotation| None"
     value: AstNode
 
 
@@ -246,7 +246,7 @@ class DimensionDefinition(AstNode):
 @dataclass(kw_only=True, frozen=True)
 class Param(AstNode):
     name: Identifier
-    type: Unit | None
+    type: "Unit | FunctionAnnotation| None"
     default: AstNode | None
 
 
@@ -254,7 +254,7 @@ class Param(AstNode):
 class Function(AstNode):
     name: Identifier | None
     params: list[Param]
-    return_type: Unit | None
+    return_type: "Unit | FunctionAnnotation| None"
     body: AstNode
 
 
@@ -309,3 +309,11 @@ class FromImport(AstNode):
     module: Identifier
     names: list[Identifier] | None = None  # None means import *
     aliases: list[Identifier | None] | None = None
+
+
+@dataclass(kw_only=True, frozen=True)
+class FunctionAnnotation(AstNode):
+    params: list[Unit]
+    param_names: list[Identifier]
+    return_type: Unit | None
+    arity: tuple[int, int]

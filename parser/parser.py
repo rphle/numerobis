@@ -19,6 +19,7 @@ from astnodes import (
     ForLoop,
     FromImport,
     Function,
+    FunctionAnnotation,
     Identifier,
     If,
     Import,
@@ -257,7 +258,10 @@ class Parser(ParserTemplate):
 
             if self._peek().type == "COLON":
                 self._consume("COLON")
-                p["type"] = self.unit(standalone=True)
+                if self._peek().type == "BANG":
+                    p["type"] = self.function_annotation()
+                else:
+                    p["type"] = self.unit(standalone=True)
 
             if self._peek().type == "ASSIGN":
                 self._consume("ASSIGN")
@@ -689,4 +693,43 @@ class Parser(ParserTemplate):
         end = aliases[-1] if aliases[-1] else names[-1]
         return FromImport(
             module=module, names=names, aliases=aliases, loc=nodeloc(start, end)
+        )
+
+    def function_annotation(self):
+        _bang = self._consume("BANG")
+        self._consume("LBRACKET")
+        self._consume("LBRACKET")
+
+        params = []
+        param_names = []
+        arity = [0]
+        while self._peek().type != "RBRACKET":
+            if self._peek().type == "DIVIDE" and len(arity) == 1:
+                # start optional args section
+                self._consume("DIVIDE")
+                arity.append(arity[0])
+            else:
+                param_names.append(self._make_id(self._consume("ID")))
+                self._consume("COLON")
+                params.append(self.unit(standalone=True))
+                arity[-1] += 1
+
+            if self._peek().type != "RBRACKET":
+                self._consume("COMMA")
+
+        self._consume("RBRACKET")
+        self._consume("COMMA")
+
+        return_type = self.unit(standalone=True)
+        _end = self._consume("RBRACKET")
+
+        if len(arity) == 1:
+            arity.append(arity[0])
+
+        return FunctionAnnotation(
+            params=params,
+            param_names=param_names,
+            return_type=return_type,
+            arity=tuple(arity),  # type: ignore
+            loc=_bang.loc.merge(_end.loc),
         )

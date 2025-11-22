@@ -1,7 +1,7 @@
 import dataclasses
 from typing import Optional, TypeVar
 
-from astnodes import AstNode, CallArg, Identifier, Operator, Unit
+from astnodes import AstNode, CallArg, FunctionAnnotation, Identifier, Operator, Unit
 
 T = TypeVar("T", bound=AstNode)
 
@@ -18,7 +18,7 @@ def _link(node: AstNode) -> tuple[Link, dict[int, AstNode]]:
     for field in dataclasses.fields(node):
         value = getattr(node, field.name)
         if isinstance(value, AstNode) and not isinstance(
-            value, (Unit, Identifier, Operator, CallArg)
+            value, (Unit, Identifier, Operator, CallArg, FunctionAnnotation)
         ):
             this, linked = _link(value)
             table.update(linked)

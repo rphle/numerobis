@@ -1,8 +1,8 @@
-from typechecker.types import AnyType, FunctionType, NoneType, StrType, T
+from typechecker.types import FunctionType, NeverType, NoneType, StrType, T
 
 names: dict[str, T] = {
     "echo": FunctionType(
-        params=[AnyType()],
+        params=[NeverType()],
         return_type=NoneType(),
         param_names=["value"],
         _name="echo",

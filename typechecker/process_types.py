@@ -3,7 +3,7 @@ from classes import ModuleMeta
 from environment import Env
 from exceptions import Exceptions, uTypeError
 from typechecker.analysis import analyze
-from typechecker.types import AnyType, ListType, NumberType, T, types
+from typechecker.types import AnyType, ListType, NeverType, NumberType, T, types
 
 
 class Processor:
@@ -28,7 +28,14 @@ class Processor:
             and isinstance(node[0], Identifier)
             and node[0].name in types.keys()
         ):
+            if node[0].name in ["Int", "Float"]:
+                return NumberType(
+                    typ=node[0].name,  # type: ignore
+                    dimensionless=True,
+                    dimension=[NeverType()],
+                )
             return AnyType(node[0].name)
+
         elif (
             len(node) == 1
             and isinstance(node[0], Call)
@@ -57,4 +64,8 @@ class Processor:
                         loc=node[0].loc,
                     )
 
-        return NumberType(typ="Float", dimension=self.dimension(node, env=env))
+        return NumberType(
+            typ="Float",
+            dimension=self.dimension(node, env=env),
+            _meta={"#dimension-only": True},
+        )

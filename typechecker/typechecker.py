@@ -1,4 +1,3 @@
-import dataclasses
 from typing import Optional
 
 import typechecker.linking as linking
@@ -15,6 +14,7 @@ from astnodes import (
     Float,
     ForLoop,
     Function,
+    FunctionAnnotation,
     Identifier,
     If,
     Index,
@@ -48,6 +48,7 @@ from typechecker.types import (
     RangeType,
     SliceType,
     T,
+    dimcheck,
     types,
     unify,
 )
@@ -100,7 +101,7 @@ class Typechecker:
         assert isinstance(right, NumberType)
         match node.op.name:
             case "add" | "sub":
-                if left.dim() != right.dim():
+                if not dimcheck(left, right):
                     self.errors.binOpMismatch(
                         node, left, right, env=env.export("dimensions")
                     )
@@ -160,9 +161,7 @@ class Typechecker:
         returns = None
 
         def check_return(returns: T | None, checked: T):
-            if returns is not None and (
-                not unify(returns, checked) or returns.dim() != checked.dim()
-            ):
+            if returns is not None and _mismatch(returns, checked):
                 self.errors.throw(
                     uTypeError,
                     "Function must return the same type and dimension on all paths",
@@ -198,7 +197,7 @@ class Typechecker:
             self.errors.throw(
                 uTypeError, f"'{callee.type()}' is not callable", loc=node.loc
             )
-        # assert isinstance(node.callee, Function)
+
         assert isinstance(callee, FunctionType)
 
         if callee.unresolved == "#unresolved":
@@ -257,7 +256,8 @@ class Typechecker:
 
             args[name] = (param, unify(param, typ))  # type: ignore
 
-        assert callee.node is not None
+        if callee.node is None:
+            return callee.return_type
 
         # Check if constraints can be updated and the function body re-checked for better inference
         recheck = any(a.type() != b.type() for a, b in list(args.values()))
@@ -409,8 +409,8 @@ class Typechecker:
         name = getattr(node.name, "name", None)
         # verify parameter and default types
         params = [
-            self.processor.type(_p.type.unit, env=env)  # type: ignore
-            if (_p := self.unlink(p)).type is not None  # type: ignore
+            self.type_(_p.type, env=env)
+            if (_p := self.unlink(p)).type is not None
             else AnyType()
             for p in node.params
         ]
@@ -422,30 +422,25 @@ class Typechecker:
                 if params[i].type() == "Any":
                     params[i] = default
                     continue
-                if default.type() != params[i].type():
+
+                if mismatch := _mismatch(params[i], default):
                     self.errors.throw(
                         uTypeError,
-                        f"parameter '{param.name.name}' declared as type '{params[i].type()}' but defaults to '{default.type()}'",
-                        loc=param.loc,
-                    )
-                elif default.dim() != params[i].dim():
-                    self.errors.throw(
-                        uTypeError,
-                        f"parameter '{param.name.name}' declared as dimension [[bold]{format_dimension(params[i].dim())}[/bold]] but defaults to [[bold]{format_dimension(default.dim())}[/bold]]",
+                        f"parameter '{param.name.name}' declared as {mismatch[0]} {mismatch[1]} but defaults to {mismatch[2]}",
                         loc=param.loc,
                     )
 
         return_type = (
-            self.processor.type(node.return_type.unit, env=env)  # type: ignore
-            if node.return_type
-            else None
+            self.type_(node.return_type, env=env) if node.return_type else None
         )
+        arity = (sum(1 for p in node.params if p.default is None), len(params))
 
         signature = FunctionType(
             _name=name,
             _loc=node.loc.span("start", "assign"),
             unresolved=True,
             node=link,
+            arity=arity,
         )
         if return_type:
             signature = signature.edit(
@@ -470,8 +465,8 @@ class Typechecker:
         if return_type and (mismatch := _mismatch(body, return_type)):
             self.errors.throw(
                 uTypeError,
-                f"function body returns {mismatch[1]}, which is different from the declared return {mismatch[0]} {mismatch[2]}",
-                loc=node.body.loc,
+                f"{mismatch[1]} is different from the declared return {mismatch[0]} {mismatch[2]}",
+                loc=self.unlink(node.body).loc,
             )
 
         if signature.unresolved:
@@ -641,6 +636,18 @@ class Typechecker:
                 )
         return SliceType()
 
+    def type_(self, node: Unit | FunctionAnnotation, env: Env):
+        if isinstance(node, FunctionAnnotation):
+            return FunctionType(
+                params=[self.type_(param, env=env) for param in node.params],
+                param_names=[param.name for param in node.param_names],
+                return_type=self.type_(node.return_type, env=env)
+                if node.return_type
+                else NoneType(),
+                arity=node.arity,
+            )
+        return self.processor.type(node.unit, env=env)
+
     def unary_op_(self, node: UnaryOp, env: Env):
         if node.op.name == "sub":
             operand = self.check(node.operand, env=env)
@@ -736,35 +743,17 @@ class Typechecker:
             )
 
         if node.type:
-            annotation = self.processor.type(node.type.unit, env=env)
+            annotation = self.type_(node.type, env=env)
 
-            # Infer partially specified types such as List[Any] and Int
+            # Infer partially specified List[Any]
             if (
                 isinstance(annotation, ListType)
                 and isinstance(value, ListType)
                 and annotation.content.name("Any")
             ):
                 annotation = annotation.edit(content=value.content)
-            elif (
-                isinstance(annotation, NumberType)
-                and isinstance(value, NumberType)
-                and isinstance(node.type, Unit)
-                and node.type.unit
-                in [[Identifier(name="Int")], [Identifier(name="Float")]]
-            ):
-                annotation = annotation.edit(
-                    dimension=value.dimension, dimensionless=value.dimensionless
-                )
 
             if mismatch := _mismatch(annotation, value):
-                if len(annotation.dim()) > 0 and mismatch[1:] == (
-                    "'Float'",
-                    "'Int'",
-                ):
-                    # fix automatically assigned Float type for dimension annotations
-                    annotation = dataclasses.replace(annotation, typ="Int")
-                    mismatch = _mismatch(annotation, value)
-
                 if mismatch:
                     self.errors.throw(
                         uTypeError,

@@ -111,14 +111,15 @@ class VarType(UType):
             return env.get(self._name, self)
         if self._name not in env:
             env[self._name] = value
-        elif not unify(value, env[self._name]) or value.dim() != env[self._name].dim():
+        elif not unify(value, env[self._name]) or not dimcheck(value, env[self._name]):
             return self
         return value
 
 
 @dataclass(kw_only=True, frozen=True)
 class NeverType(UType):
-    pass
+    def __eq__(self, other) -> bool:
+        return True
 
 
 @dataclass(kw_only=True, frozen=True)
@@ -153,9 +154,19 @@ class FunctionType(UType):
     params: list[T] = field(default_factory=list)
     return_type: T = NoneType()
     param_names: list[str] = field(default_factory=list)
+    arity: tuple[int, int] = (0, 0)
     unresolved: bool = field(default=False)
     _name: Optional[str] = field(default=None, compare=False)
     _loc: Any = field(default=None)
+
+    def type(self):
+        args = [
+            f"{name}: {param.type()}"
+            for name, param in zip(self.param_names, self.params)
+        ]
+        if self.arity[0] != self.arity[1]:
+            args.insert(self.arity[0], "/")
+        return f"![[{', '.join(args)}], {self.return_type.type()}]"
 
     def check_args(self, *args: T) -> Optional["FunctionType"]:
         global env
@@ -208,24 +219,41 @@ def unify(a: T, b: T) -> Optional[T]:
         case _, NeverType():
             return a
         case AnyType(), _:
-            return b
+            return None
         case _, AnyType():
-            return a
+            return None
         case NumberType(), NumberType():
-            return a if a.typ == b.typ else None
+            return (
+                a
+                if a.typ == b.typ
+                or a.meta("#dimension-only")
+                or b.meta("#dimension-only")
+                else None
+            )
         case ListType(), ListType():
             content = unify(a.content, b.content)
             return ListType(content=content) if content else None
         case FunctionType(), FunctionType():
-            if len(a.params) != len(b.params):
+            if a.arity != b.arity:
                 return
             parts = [
-                unify(x, y) and x.dim() == y.dim()
+                unify(x, y) and dimcheck(x, y)
                 for x, y in zip(a.params + [a.return_type], b.params + [b.return_type])
             ]
             return a if all(parts) else None
         case _, _:
             return a if a.type() == b.type() else None
+
+
+def dimcheck(a: T, b: T) -> bool:
+    if a.name("Never", "Any") or b.name("Never", "Any"):
+        return True
+
+    dims = [a.dim(), b.dim()]
+    if [NeverType()] in dims:
+        return True
+
+    return dims[0] == dims[1]
 
 
 @dataclass(frozen=True)
@@ -281,6 +309,7 @@ def _conv(this, *types):
 _ops = ["add", "sub", "mul", "div", "mod", "pow", "eq", "lt", "gt", "le", "ge", "ne"]
 
 types: dict[str, Struct] = {
+    "Any": Struct({}),
     "Int": Struct(
         {
             **_conv("Int", "Bool", "Str", "Float"),
