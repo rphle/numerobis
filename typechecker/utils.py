@@ -5,6 +5,10 @@ from classes import E
 from typechecker.types import FunctionType, NeverType, Overload, T, dimcheck, unify
 
 
+class UnresolvedAnyParam(Exception):
+    pass
+
+
 def format_dimension(dims) -> str:
     """Format dimension for error messages"""
     num, denom = [], []

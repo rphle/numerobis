@@ -155,7 +155,7 @@ class FunctionType(UType):
     return_type: T = NoneType()
     param_names: list[str] = field(default_factory=list)
     arity: tuple[int, int] = (0, 0)
-    unresolved: bool = field(default=False)
+    unresolved: Optional[str] = None
     _name: Optional[str] = field(default=None, compare=False)
     _loc: Any = field(default=None)
 
@@ -250,8 +250,9 @@ def dimcheck(a: T, b: T) -> bool:
         return True
 
     dims = [a.dim(), b.dim()]
-    if [NeverType()] in dims:
-        return True
+    for dim in dims:
+        if any(isinstance(item, NeverType) for item in dim):
+            return True
 
     return dims[0] == dims[1]
 

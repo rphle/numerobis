@@ -1,5 +1,3 @@
-from typing import Optional
-
 import typechecker.linking as linking
 from astnodes import (
     AstNode,
@@ -52,7 +50,12 @@ from typechecker.types import (
     types,
     unify,
 )
-from typechecker.utils import _check_method, _mismatch, format_dimension
+from typechecker.utils import (
+    UnresolvedAnyParam,
+    _check_method,
+    _mismatch,
+    format_dimension,
+)
 from utils import camel2snake_pattern
 
 
@@ -152,12 +155,7 @@ class Typechecker:
             case _:
                 raise NotImplementedError(f"BinOp {node.op.name} not implemented!")
 
-    def block_(self, node: Block, env: Env, function: Optional[FunctionType] = None):
-        if function:
-            env.meta["#function"] = function  # type: ignore
-        else:
-            env.meta.pop("#function", None)
-
+    def block_(self, node: Block, env: Env):
         returns = None
 
         def check_return(returns: T | None, checked: T):
@@ -169,11 +167,13 @@ class Typechecker:
                 )
             return checked
 
-        for statement in node.body:
+        for i, statement in enumerate(node.body):
             checked = self.check(statement, env=env)
 
             if checked.meta("#return"):
                 returns = check_return(returns, checked)
+            elif i == len(node.body) - 1:
+                returns = check_return(returns, NoneType())
 
         if returns is None:
             returns = NoneType()
@@ -200,7 +200,7 @@ class Typechecker:
 
         assert isinstance(callee, FunctionType)
 
-        if callee.unresolved == "#unresolved":
+        if callee.unresolved == "recursive":
             self.errors.throw(
                 uTypeError,
                 f"recursive function {callee._name}() requires an explicit return type",
@@ -246,6 +246,8 @@ class Typechecker:
 
             typ = self.check(arg.value, env=env)
             param = callee.params[callee.param_names.index(name)]
+            if param.name("Any"):
+                param = typ
 
             if mismatch := _mismatch(typ, param):
                 self.errors.throw(
@@ -260,20 +262,18 @@ class Typechecker:
             return callee.return_type
 
         # Check if constraints can be updated and the function body re-checked for better inference
-        recheck = any(a.type() != b.type() for a, b in list(args.values()))
+        recheck = callee.unresolved == "parameters" or any(
+            a.type() != b.type() for a, b in list(args.values())
+        )
         if recheck:
             new_env = env.copy()
             for name, arg in args.items():
                 new_env.set("names")(name, arg[1])
+            new_env.meta["#function"] = callee
 
             callee_node = self.unlink(self.namespaces.nodes[callee.node])
             assert isinstance(callee_node, Function)
-            if isinstance(callee_node.body, Block):
-                return_type = self.block_(
-                    callee_node.body, env=new_env, function=callee
-                )
-            else:
-                return_type = self.check(callee_node.body, env=new_env)
+            return_type = self.check(callee_node.body, env=new_env)
         else:
             return_type = callee.return_type
 
@@ -438,16 +438,16 @@ class Typechecker:
         signature = FunctionType(
             _name=name,
             _loc=node.loc.span("start", "assign"),
-            unresolved=True,
+            params=params,
+            param_names=[param.name.name for param in node.params],
+            unresolved="recursive",
             node=link,
             arity=arity,
         )
         if return_type:
             signature = signature.edit(
-                params=params,
                 return_type=return_type,
-                param_names=[param.name.name for param in node.params],
-                unresolved=False,
+                unresolved=None,
             )
 
         if name is not None:
@@ -456,11 +456,15 @@ class Typechecker:
         new_env = env.copy()
         for i, param in enumerate(params):
             new_env.set("names")(node.params[i].name.name, param)
+        new_env.meta["#function"] = signature
 
-        if isinstance(unlinked := self.unlink(node.body), Block):
-            body = self.block_(unlinked, env=new_env, function=signature)
-        else:
+        try:
             body = self.check(node.body, env=new_env)
+        except UnresolvedAnyParam:
+            signature = signature.edit(unresolved="parameters")
+            if name is not None:
+                env.set("names")(name, signature)
+            return signature
 
         if return_type and (mismatch := _mismatch(body, return_type)):
             self.errors.throw(
@@ -471,10 +475,8 @@ class Typechecker:
 
         if signature.unresolved:
             signature = signature.edit(
-                params=params,
                 return_type=body,
-                param_names=[param.name.name for param in node.params],
-                unresolved=False,
+                unresolved=None,
             )
         if name is not None:
             env.set("names")(name, signature)
@@ -483,9 +485,15 @@ class Typechecker:
 
     def identifier_(self, node: Identifier, env: Env):
         try:
-            return env.get("names")(node.name)
+            item = env.get("names")(node.name)
         except KeyError:
             self.errors.nameError(node)
+            return
+
+        if "#function" in env.meta:
+            if isinstance(item, AnyType):
+                raise UnresolvedAnyParam()
+        return item
 
     def if_(self, node: If, env: Env):
         if (typ := self.check(node.condition, env=env).type()) != "Bool":
@@ -546,14 +554,14 @@ class Typechecker:
                     "list elements may not be type 'Any'",
                     loc=self.unlink(element, ["loc"]).loc,
                 )
-            if not (unified := unify(content, element_type)):
+            if mismatch := _mismatch(content, element_type):
                 self.errors.throw(
                     uTypeError,
-                    "list elements must be of the same type",
+                    f"list elements must be of the same {mismatch[0]}",
                     loc=self.unlink(element, ["loc"]).loc,
                 )
-            else:
-                content = unified
+
+            content = unify(content, element_type)  # type: ignore
         return ListType(content=content)
 
     def number_(self, node: Integer | Float, env: Env) -> NumberType:

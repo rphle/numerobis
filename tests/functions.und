@@ -12,7 +12,7 @@ echo(hello("John"))
 fibonacci!(n: Int): Int = {
     if n <= 1 then
         return 5
-    fibonacci(n - 1) + fibonacci(n - 2)
+    return fibonacci(n - 1) + fibonacci(n - 2)
 }
 
 distance!(speed: Length/Time, time: Time): Length = speed * time

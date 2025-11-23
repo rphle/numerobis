@@ -83,10 +83,7 @@ def unlink(
 
     unlinked = dataclasses.replace(
         node,
-        **{
-            field: Link(target) if not isinstance(target, list) else target
-            for field, target in fields.items()
-        },
+        **{field: target for field, target in fields.items()},
     )
 
     return unlinked

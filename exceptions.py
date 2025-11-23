@@ -29,6 +29,7 @@ class uException:
         console.print(
             f"[bold red]{error_type}[/bold red] [dim]at {location}[/dim]",
             highlight=False,
+            emoji=False,
         )
         console.print(f"  {message}", highlight=False)
 
