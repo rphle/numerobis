@@ -162,5 +162,5 @@ def simplify(nodes: list):
     return [
         E(base=g["base"], exponent=g["exponent"]) if g["exponent"] != 1 else g["base"]
         for g in groups.values()
-        if g["exponent"] != 0
+        if g["exponent"] != 0 and g["base"] != []
     ]

@@ -118,6 +118,9 @@ class VarType(UType):
 
 @dataclass(kw_only=True, frozen=True)
 class NeverType(UType):
+    def dim(self) -> list:
+        return [NeverType()]
+
     def __eq__(self, other) -> bool:
         return True
 
