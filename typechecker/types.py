@@ -163,7 +163,7 @@ class FunctionType(UType):
     return_type: T = NoneType()
     param_names: list[str] = field(default_factory=list)
     arity: tuple[int, int] = (0, 0)
-    unresolved: Optional[str] = None
+    unresolved: Optional[Literal["recursive", "parameters"]] = None
     _name: Optional[str] = field(default=None, compare=False)
     _loc: Any = field(default=None)
 

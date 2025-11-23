@@ -208,10 +208,16 @@ class Typechecker:
 
         assert isinstance(callee, FunctionType)
 
-        if callee.unresolved == "recursive":
+        if callee.unresolved:
+            _name = f"{callee._name}() " if callee._name else ""
+            _missing = (
+                "an explicit return type"
+                if callee.unresolved == "recursive"
+                else "explicit parameter types"
+            )
             self.errors.throw(
                 uTypeError,
-                f"recursive function {callee._name}() requires an explicit return type",
+                f"recursive function {_name}requires {_missing}",
                 loc=callee._loc,
             )
 
@@ -278,10 +284,11 @@ class Typechecker:
             for name, arg in args.items():
                 new_env.set("names")(name, arg[1])
             new_env.meta["#function"] = callee
-            self.errors.stack.append(node.loc)
 
             callee_node = self.unlink(self.namespaces.nodes[callee.node])
             assert isinstance(callee_node, Function)
+
+            self.errors.stack.append(node.loc)
             return_type = self.check(callee_node.body, env=new_env)
             self.errors.stack.pop()
         else:
@@ -556,6 +563,8 @@ class Typechecker:
                 f"Invalid index type '{index.type()}' for '{value.type()}'",
                 loc=node.loc,
             )
+        elif isinstance(value, ListType) and value.content.name("Never"):
+            return AnyType()
         else:
             return checked.return_type
 
@@ -623,15 +632,13 @@ class Typechecker:
         return RangeType(value=NumberType(typ=value.typ))
 
     def return_(self, node: Return, env: Env):
-        return_type = None  # it will always be defined, this is just to satisfy pyright
         if "#function" not in env.meta:
             self.errors.throw(
                 uSyntaxError,
                 "return statement outside function",
                 loc=node.loc,
             )
-        else:
-            return_type = env.meta["#function"].return_type
+        return_type = env.meta["#function"].return_type
 
         value = self.check(node.value, env=env) if node.value else NoneType()
 
@@ -783,7 +790,8 @@ class Typechecker:
                         loc=node.loc,
                     )
 
-        value = value.edit(node=link)
+        if not isinstance(value, FunctionType):
+            value = value.edit(node=link)
         env.set("names")(name=node.name.name, value=value, _hash=_hash)
         return NoneType()
 
