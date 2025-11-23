@@ -154,7 +154,7 @@ class Parser(ParserTemplate):
         type_token = None
         if self._peek().type == "COLON":
             self._consume("COLON")
-            type_token = self.unit(standalone=True)
+            type_token = self.type()
 
         if self._peek().type != "ASSIGN" and type_token is not None:
             return VariableDeclaration(
@@ -266,10 +266,7 @@ class Parser(ParserTemplate):
 
             if self._peek().type == "COLON":
                 self._consume("COLON")
-                if self._peek().type == "BANG":
-                    p["type"] = self.function_annotation()
-                else:
-                    p["type"] = self.unit(standalone=True)
+                p["type"] = self.type()
 
             if self._peek().type == "ASSIGN":
                 self._consume("ASSIGN")
@@ -291,7 +288,7 @@ class Parser(ParserTemplate):
         self._consume("RPAREN")
         _assign = self._consume("COLON", "ASSIGN")
         if self.tok.type == "COLON":
-            return_type = self.unit(standalone=True)
+            return_type = self.type()
             _assign = self._consume("ASSIGN")
 
         body = self.block()
@@ -703,6 +700,12 @@ class Parser(ParserTemplate):
             module=module, names=names, aliases=aliases, loc=nodeloc(start, end)
         )
 
+    def type(self):
+        if self._peek().type == "BANG":
+            return self.function_annotation()
+        else:
+            return self.unit(standalone=True)
+
     def function_annotation(self):
         _bang = self._consume("BANG")
         self._consume("LBRACKET")
@@ -719,7 +722,7 @@ class Parser(ParserTemplate):
             else:
                 param_names.append(self._make_id(self._consume("ID")))
                 self._consume("COLON")
-                params.append(self.unit(standalone=True))
+                params.append(self.type())
                 arity[-1] += 1
 
             if self._peek().type != "RBRACKET":
@@ -728,7 +731,7 @@ class Parser(ParserTemplate):
         self._consume("RBRACKET")
         self._consume("COMMA")
 
-        return_type = self.unit(standalone=True)
+        return_type = self.type()
         _end = self._consume("RBRACKET")
 
         if len(arity) == 1:

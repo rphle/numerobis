@@ -396,6 +396,8 @@ class Typechecker:
                 f"'{iterable.type()}' is not iterable",
                 loc=node.iterable.loc,
             )
+        if isinstance(iterable, ListType) and iterable.content.name("Never"):
+            return NoneType()
 
         assert isinstance(iterable, (RangeType, ListType))
         value = iterable.value if isinstance(iterable, RangeType) else iterable.content

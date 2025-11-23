@@ -321,5 +321,5 @@ class FromImport(AstNode):
 class FunctionAnnotation(AstNode):
     params: list[Unit]
     param_names: list[Identifier]
-    return_type: Unit | None
+    return_type: "Unit | FunctionAnnotation | None"
     arity: tuple[int, int]
