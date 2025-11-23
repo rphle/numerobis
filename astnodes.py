@@ -210,6 +210,12 @@ class Variable(AstNode):
 
 
 @dataclass(kw_only=True, frozen=True)
+class VariableDeclaration(AstNode):
+    name: Identifier
+    type: "Unit | FunctionAnnotation"
+
+
+@dataclass(kw_only=True, frozen=True)
 class ForLoop(AstNode):
     iterators: list[Identifier]
     iterable: AstNode

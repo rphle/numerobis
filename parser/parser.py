@@ -37,6 +37,7 @@ from astnodes import (
     Unit,
     UnitDefinition,
     Variable,
+    VariableDeclaration,
     WhileLoop,
     nodeloc,
 )
@@ -154,6 +155,13 @@ class Parser(ParserTemplate):
         if self._peek().type == "COLON":
             self._consume("COLON")
             type_token = self.unit(standalone=True)
+
+        if self._peek().type != "ASSIGN" and type_token is not None:
+            return VariableDeclaration(
+                name=Identifier(name=name.value, loc=name.loc),
+                type=type_token,
+                loc=nodeloc(name, type_token),
+            )
 
         self._consume("ASSIGN")
         expr = self.expression()

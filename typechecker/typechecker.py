@@ -26,11 +26,18 @@ from astnodes import (
     Unit,
     UnitDefinition,
     Variable,
+    VariableDeclaration,
     WhileLoop,
 )
 from classes import E, ModuleMeta
 from environment import Env, Namespaces
-from exceptions import ConversionError, Exceptions, uNameError, uSyntaxError, uTypeError
+from exceptions import (
+    Exceptions,
+    uConversionError,
+    uNameError,
+    uSyntaxError,
+    uTypeError,
+)
 from typechecker.analysis import simplify
 from typechecker.process_types import Processor
 from typechecker.types import (
@@ -46,6 +53,7 @@ from typechecker.types import (
     RangeType,
     SliceType,
     T,
+    UndefinedType,
     dimcheck,
     types,
     unify,
@@ -335,7 +343,7 @@ class Typechecker:
                 and typ != value.type()
             ):
                 self.errors.throw(
-                    ConversionError,
+                    uConversionError,
                     f"Cannot convert '{value.type()}' to '{typ}'",
                     loc=node.loc,
                 )
@@ -353,7 +361,7 @@ class Typechecker:
             return value.edit(content=value.content.edit(dimension=target))
 
         self.errors.throw(
-            ConversionError,
+            uConversionError,
             f"Cannot convert [[bold]{format_dimension(value.dim())}[/bold]] to [[bold]{format_dimension(target)}[/bold]]",
             loc=node.loc,
         )
@@ -495,6 +503,8 @@ class Typechecker:
         if "#function" in env.meta:
             if isinstance(item, AnyType):
                 raise UnresolvedAnyParam()
+        if isinstance(item, UndefinedType):
+            self.errors.nameError(node)
         return item
 
     def if_(self, node: If, env: Env):
@@ -723,7 +733,7 @@ class Typechecker:
                     expected_str = format_dimension(expected)
                     actual_str = format_dimension(dimension)
                     self.errors.throw(
-                        ConversionError,
+                        uConversionError,
                         f"unit '{node.name.name}' declared as '{node.dimension.name}' [{expected_str}] but has dimension [{actual_str}]",
                         loc=node.name.loc,
                     )
@@ -773,6 +783,17 @@ class Typechecker:
 
         value = value.edit(node=link)
         env.set("names")(name=node.name.name, value=value, _hash=_hash)
+        return NoneType()
+
+    def variable_declaration_(self, node: VariableDeclaration, env: Env):
+        if node.name.name in env.names:
+            self.errors.throw(
+                uNameError,
+                f"'{node.name.name}' cannot be redeclared",
+                loc=node.loc,
+            )
+
+        env.set("names")(name=node.name.name, value=UndefinedType())
         return NoneType()
 
     def while_loop_(self, node: WhileLoop, env: Env):

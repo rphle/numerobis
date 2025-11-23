@@ -123,6 +123,11 @@ class NeverType(UType):
 
 
 @dataclass(kw_only=True, frozen=True)
+class UndefinedType(UType):
+    pass
+
+
+@dataclass(kw_only=True, frozen=True)
 class ListType(UType):
     content: T = NeverType()
 
