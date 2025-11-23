@@ -179,7 +179,10 @@ class FunctionType(UType):
     def check_args(self, *args: T) -> Optional["FunctionType"]:
         global env
         env = {}
-        params = [param.complete(arg) for param, arg in zip(self.params, args)]
+        params = [
+            param.complete(arg) if not isinstance(param, AnyType) else NeverType()
+            for param, arg in zip(self.params, args)
+        ]
         if len(args) == len(self.params) and all(
             unify(p, a) for p, a in zip(params, args)
         ):
@@ -304,6 +307,11 @@ _numberoverload = Overload(
     FunctionType(params=[IntType(), FloatType()], return_type=FloatType()),
     FunctionType(params=[FloatType(), FloatType()], return_type=FloatType()),
 )
+_boolnumberoverload = Overload(
+    FunctionType(params=[IntType(), IntType()], return_type=BoolType()),
+    FunctionType(params=[IntType(), FloatType()], return_type=BoolType()),
+    FunctionType(params=[FloatType(), FloatType()], return_type=BoolType()),
+)
 
 
 def _conv(this, *types):
@@ -315,7 +323,12 @@ def _conv(this, *types):
     }
 
 
-_ops = ["add", "sub", "mul", "div", "mod", "pow", "eq", "lt", "gt", "le", "ge", "ne"]
+_ops = ["add", "sub", "mul", "div", "mod", "pow"]
+_boolops = ["lt", "gt", "le", "ge"]
+_eq = {
+    f"__{typ}__": FunctionType(params=[AnyType(), AnyType()], return_type=BoolType())
+    for typ in ["eq", "ne"]
+}
 
 types: dict[str, Struct] = {
     "Any": Struct({}),
@@ -323,12 +336,16 @@ types: dict[str, Struct] = {
         {
             **_conv("Int", "Bool", "Str", "Float"),
             **{f"__{op}__": _numberoverload for op in _ops},
+            **{f"__{op}__": _boolnumberoverload for op in _boolops},
+            **_eq,
         }
     ),
     "Float": Struct(
         {
             **_conv("Float", "Bool", "Str", "Int"),
             **{f"__{op}__": _numberoverload for op in _ops},
+            **{f"__{op}__": _boolnumberoverload for op in _boolops},
+            **_eq,
         }
     ),
     "Bool": Struct({**_conv("Bool", "Bool", "Str")}),
@@ -351,6 +368,7 @@ types: dict[str, Struct] = {
                     return_type=StrType(),
                 ),
             ),
+            **_eq,
         },
     ),
     "List": Struct(
@@ -373,7 +391,8 @@ types: dict[str, Struct] = {
                     return_type=ListType(content=VarType("T")),
                 ),
             ),
+            **_eq,
         },
     ),
-    "Range": Struct({}),
+    "Range": Struct({**_eq}),
 }
