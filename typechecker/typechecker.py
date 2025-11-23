@@ -270,10 +270,12 @@ class Typechecker:
             for name, arg in args.items():
                 new_env.set("names")(name, arg[1])
             new_env.meta["#function"] = callee
+            self.errors.stack.append(node.loc)
 
             callee_node = self.unlink(self.namespaces.nodes[callee.node])
             assert isinstance(callee_node, Function)
             return_type = self.check(callee_node.body, env=new_env)
+            self.errors.stack.pop()
         else:
             return_type = callee.return_type
 

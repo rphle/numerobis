@@ -16,13 +16,24 @@ class uException:
         help: str | None = None,
         preview: bool = True,
         loc: Location | None = None,
+        stack: list[Location] = [],
         exit: bool = True,
     ):
         console = rich.console.Console()
+
+        for previous in stack:
+            location = f"{module.path or '<unknown>'}" + (
+                f":{previous.line}:{previous.col}" if previous else ""
+            )
+            console.print(
+                f"[dim]at {location}[/dim]",
+                highlight=False,
+                emoji=False,
+            )
+
         error_type = self.__class__.__name__.removeprefix("u").replace("_", " ")
 
         # Header
-        console.print()
         location = f"{module.path or '<unknown>'}" + (
             f":{loc.line}:{loc.col}" if loc else ""
         )
@@ -119,8 +130,9 @@ class uModuleNotFound(uException):
 
 
 class Exceptions:
-    def __init__(self, module: ModuleMeta):
+    def __init__(self, module: ModuleMeta, stack: list[Location] = []):
         self.module = module
+        self.stack = stack
 
     def unexpectedToken(
         self,
@@ -132,6 +144,7 @@ class Exceptions:
             module=self.module,
             help=help,
             loc=tok.loc,
+            stack=self.stack,
         )
 
     def unexpectedEOF(self, loc: Location | None = None):
@@ -139,6 +152,7 @@ class Exceptions:
             "unexpected end of file",
             module=self.module,
             loc=loc,
+            stack=self.stack,
         )
 
     def binOpMismatch(self, node: BinOp, left, right, env: dict):
@@ -163,6 +177,7 @@ class Exceptions:
             f"incompatible dimensions in {operation}: [[bold]{left}[/bold]] vs [[bold]{right}[/bold]]",
             module=self.module,
             loc=node.loc,
+            stack=self.stack,
         )
 
     def binOpTypeMismatch(self, node: BinOp | BoolOp, left, right):
@@ -180,6 +195,7 @@ class Exceptions:
             f"unsupported operand type(s) for '{operation}': '{left.type()}' and '{right.type()}'",
             module=self.module,
             loc=node.loc,
+            stack=self.stack,
         )
 
     def nameError(self, name: Identifier):
@@ -187,6 +203,7 @@ class Exceptions:
             f"name '{name.name}' is not defined",
             module=self.module,
             loc=name.loc,
+            stack=self.stack,
         )
 
     def invalidParameterNumber(self, node):
@@ -194,6 +211,7 @@ class Exceptions:
             f"Invalid number of parameters for '{node.callee.name}'",
             loc=node.loc,
             module=self.module,
+            stack=self.stack,
         )
 
     def throw(
@@ -203,4 +221,6 @@ class Exceptions:
         help: str | None = None,
         loc: Location | None = None,
     ):
-        exception(message=message, module=self.module, help=help, loc=loc)
+        exception(
+            message=message, module=self.module, help=help, loc=loc, stack=self.stack
+        )
