@@ -1,5 +1,4 @@
 from functools import lru_cache
-from parser.parser import Parser
 from pathlib import Path
 from typing import Optional
 
@@ -9,6 +8,7 @@ from classes import ModuleMeta
 from environment import Namespaces
 from exceptions import Exceptions, uImportError, uModuleNotFound, uSyntaxError
 from lexer.lexer import lex
+from parser.parser import Parser
 from typechecker.typechecker import Typechecker
 
 
