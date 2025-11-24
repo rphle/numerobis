@@ -207,8 +207,11 @@ class Typechecker:
             )
 
         assert isinstance(callee, FunctionType)
-
-        if callee.unresolved:
+        if (
+            callee.unresolved
+            and "#function" in env.meta
+            and env.meta["#function"].node == callee.node
+        ):
             _name = f"{callee._name}() " if callee._name else ""
             _missing = (
                 "an explicit return type"
@@ -423,6 +426,7 @@ class Typechecker:
         for iterator in node.iterators:
             new_env.set("names")(self.unlink(iterator, attrs=["name"]).name, value)
         self.check(node.body, env=new_env)
+        return NoneType()
 
     def function_(self, node: Function, env: Env, link: int):
         name = getattr(node.name, "name", None)
@@ -492,11 +496,10 @@ class Typechecker:
                 loc=self.unlink(node.body).loc,
             )
 
-        if signature.unresolved:
-            signature = signature.edit(
-                return_type=body,
-                unresolved=None,
-            )
+        signature = signature.edit(
+            return_type=unify(return_type, body) if return_type is not None else body,
+            unresolved=None,
+        )
         if name is not None:
             env.set("names")(name, signature)
 
@@ -539,7 +542,7 @@ class Typechecker:
                 loc=node.loc,
             )
 
-        return branches[0]
+        return unify(*branches)
 
     def index_(self, node: Index, env: Env):
         value = self.check(node.iterable, env=env)

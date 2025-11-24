@@ -1,7 +1,5 @@
 import dataclasses
 import math
-from parser.template import ParserTemplate
-from parser.unitparser import UnitParser
 
 from astnodes import (
     AstNode,
@@ -43,6 +41,8 @@ from astnodes import (
 )
 from classes import ModuleMeta
 from exceptions import uSyntaxError
+from parser.template import ParserTemplate
+from parser.unitparser import UnitParser
 
 
 class Parser(ParserTemplate):
@@ -478,9 +478,8 @@ class Parser(ParserTemplate):
                     index.append(self.expression())
 
                     if len(index) < 2 and self._peek().type == "COLON":
+                        index.append(None)
                         self._consume("COLON")
-                    else:
-                        pass
 
             end = self._consume("RBRACKET")
 
