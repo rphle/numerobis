@@ -3,7 +3,7 @@ from classes import ModuleMeta
 from environment import Env
 from exceptions.exceptions import Exceptions
 from typechecker.analysis import analyze
-from typechecker.types import AnyType, ListType, NeverType, NumberType, T, types
+from typechecker.types import AnyType, ListType, NumberType, T, types
 
 
 class Processor:
@@ -32,7 +32,7 @@ class Processor:
                 return NumberType(
                     typ=node[0].name,  # type: ignore
                     dimensionless=True,
-                    dimension=[NeverType()],
+                    dimension=[],
                 )
             return AnyType(node[0].name)
 

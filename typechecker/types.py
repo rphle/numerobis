@@ -71,7 +71,7 @@ class NumberType(UType):
     def type(self) -> str:
         d = (
             f"[[bold]{typechecker.utils.format_dimension(self.dimension)}[/bold]]"
-            if self.dimension != [NeverType]
+            if self.dimension != []
             else ""
         )
         return self.typ + d
@@ -125,9 +125,6 @@ class VarType(UType):
 
 @dataclass(kw_only=True, frozen=True)
 class NeverType(UType):
-    def dim(self) -> list:
-        return [NeverType()]
-
     def __eq__(self, other) -> bool:
         return True
 
@@ -268,9 +265,8 @@ def dimcheck(a: T, b: T) -> bool:
         return True
 
     dims = [a.dim(), b.dim()]
-    for dim in dims:
-        if any(isinstance(item, NeverType) for item in dim):
-            return True
+    if any(item == [] for item in dims):
+        return True
 
     return dims[0] == dims[1]
 
