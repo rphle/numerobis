@@ -5,15 +5,16 @@ import rich.markup
 
 from astnodes import BinOp, BoolOp, Identifier, Location, Token
 from classes import ModuleMeta
+from exceptions import msgparser
+from exceptions.msgparser import ErrorMessage
 from typechecker.utils import format_dimension, repr_dimension
 
 
 class uException:
     def __init__(
         self,
-        message,
+        message: ErrorMessage,
         module: ModuleMeta,
-        help: str | None = None,
         preview: bool = True,
         loc: Location | None = None,
         stack: list[Location] = [],
@@ -31,18 +32,18 @@ class uException:
                 emoji=False,
             )
 
-        error_type = self.__class__.__name__.removeprefix("u").replace("_", " ")
-
         # Header
         location = f"{module.path or '<unknown>'}" + (
             f":{loc.line}:{loc.col}" if loc else ""
         )
         console.print(
-            f"[bold red]{error_type}[/bold red] [dim]at {location}[/dim]",
+            f"[bold red]{message.type}[/bold red] [dim]at {location}[/dim]",
             highlight=False,
             emoji=False,
         )
-        console.print(f"  {message}", highlight=False)
+        console.print(
+            f"  [dim][{message.code}][/dim] {message.message}", highlight=False
+        )
 
         # Code preview
         source_lines = module.source.splitlines()
@@ -85,99 +86,47 @@ class uException:
                 marker = f"{' ' * len(f'{prefix}{src[start : line.col - 1]}')}[red bold]{underline}[/bold red]"
 
                 console.print(
-                    f"[dim]      │[/dim]   {marker}",
+                    f"[dim]      |[/dim]   {marker}",
                     highlight=False,
                 )
 
-        if help:
-            console.print(f"  [dim]{help}[/dim]", highlight=False)
+        if message.help:
+            console.print(f"  [dim]{message.help}[/dim]", highlight=False)
 
         console.print()
         if exit:
             sys.exit(1)
 
 
-class uError(uException):
-    pass
-
-
-class uSyntaxError(uException):
-    pass
-
-
-class uNameError(uException):
-    pass
-
-
-class uTypeError(uException):
-    pass
-
-
-class uConversionError(uException):
-    pass
-
-
-class uCircularImport(uException):
-    pass
-
-
-class uImportError(uException):
-    pass
-
-
-class uModuleNotFound(uException):
-    pass
-
-
 class Exceptions:
     def __init__(self, module: ModuleMeta, stack: list[Location] = []):
         self.module = module
         self.stack = stack
+        self.codes = msgparser.parse("exceptions/messages.txt")
 
-    def unexpectedToken(
-        self,
-        tok: Token,
-        help: str | None = None,
-    ):
-        uSyntaxError(
-            f"unexpected token '{tok.value}'",
-            module=self.module,
-            help=help,
-            loc=tok.loc,
-            stack=self.stack,
-        )
+    def unexpectedToken(self, tok: Token, help: str | None = None):
+        self.throw(1, token=tok.value, loc=tok.loc)
 
     def unexpectedEOF(self, loc: Location | None = None):
-        uSyntaxError(
-            "unexpected end of file",
-            module=self.module,
-            loc=loc,
-            stack=self.stack,
-        )
+        self.throw(2, loc=loc)
 
     def binOpMismatch(self, node: BinOp, left, right, env: dict):
-        operation = {
-            "add": "addition",
-            "sub": "subtraction",
-        }[node.op.name]
+        operation = {"add": "addition", "sub": "subtraction"}[node.op.name]
 
-        left, right = [
+        left_str, right_str = [
             "[/bold]] / [[bold]".join(
-                [
-                    format_dimension(dim)
-                    if not isinstance(dim, int)
-                    else f"{dim} more …"
-                    for dim in repr_dimension(side.dimension, env=env)
-                ]
+                format_dimension(dim) if not isinstance(dim, int) else f"{dim} more …"
+                for dim in repr_dimension(side.dimension, env=env)
             )
             for side in (left, right)
         ]
 
-        uTypeError(
-            f"incompatible dimensions in {operation}: [[bold]{left}[/bold]] vs [[bold]{right}[/bold]]",
-            module=self.module,
+        self.throw(
+            703,
+            operation=operation,
+            left=f"[[bold]{left_str}[/bold]]",
+            right=f"[[bold]{right_str}[/bold]]",
             loc=node.loc,
-            stack=self.stack,
         )
 
     def binOpTypeMismatch(self, node: BinOp | BoolOp, left, right):
@@ -191,36 +140,26 @@ class Exceptions:
             "intdiv": "//",
         }.get(node.op.name, node.op.name)
 
-        uTypeError(
-            f"unsupported operand type(s) for '{operation}': '{left.type()}' and '{right.type()}'",
-            module=self.module,
-            loc=node.loc,
-            stack=self.stack,
+        self.throw(
+            502, operation=operation, left=left.type(), right=right.type(), loc=node.loc
         )
 
     def nameError(self, name: Identifier):
-        uNameError(
-            f"name '{name.name}' is not defined",
-            module=self.module,
-            loc=name.loc,
-            stack=self.stack,
-        )
+        self.throw(601, name=name.name, loc=name.loc)
 
     def invalidParameterNumber(self, node):
-        uTypeError(
-            f"Invalid number of parameters for '{node.callee.name}'",
-            loc=node.loc,
-            module=self.module,
-            stack=self.stack,
-        )
+        self.throw(701, callee=node.callee.name, loc=node.loc)
 
     def throw(
-        self,
-        exception: type[uException],
-        message: str,
-        help: str | None = None,
-        loc: Location | None = None,
+        self, code: int, loc: Location | None = None, help: str | None = None, **kwargs
     ):
-        exception(
-            message=message, module=self.module, help=help, loc=loc, stack=self.stack
-        )
+        try:
+            message = self.codes[f"E{code:03d}"]
+        except KeyError:
+            raise ValueError(f"Unknown error code: {code}")
+
+        message.message = message.message.format(**kwargs)
+        if help:
+            message.help = help
+
+        uException(message=message, module=self.module, loc=loc)

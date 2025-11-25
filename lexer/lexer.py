@@ -1,7 +1,7 @@
 import lexer.plylex as plylex
 from astnodes import Location, Token
 from classes import ModuleMeta
-from exceptions import Exceptions
+from exceptions.exceptions import Exceptions
 
 
 class LexTokens:

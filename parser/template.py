@@ -2,7 +2,7 @@ from itertools import islice
 
 from astnodes import Float, Identifier, Integer, Location, Operator, Token, Unit
 from classes import ModuleMeta
-from exceptions import Exceptions, uSyntaxError
+from exceptions.exceptions import Exceptions
 
 
 class ParserTemplate:
@@ -61,9 +61,7 @@ class ParserTemplate:
         number = split[0].replace("_", "")
         exponent = split[1] if len(split) > 1 else ""
         if "." in exponent:
-            self.errors.throw(
-                uSyntaxError, f"Invalid number literal: {token.value}", loc=token.loc
-            )
+            self.errors.throw(7, token=token.value, loc=token.loc)
 
         unit = Unit(unit=[])
         if "." in number or exponent.startswith("-"):

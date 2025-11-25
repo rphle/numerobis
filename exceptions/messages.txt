@@ -1,0 +1,190 @@
+[E001 / SyntaxError]
+Unexpected token '{token}'
+
+[E002 / SyntaxError]
+Unexpected end of file
+
+[E003 / SyntaxError]
+Expected unit after '@'
+
+[E004 / SyntaxError]
+Expected identifier or list of identifiers after '@'
+
+[E005 / SyntaxError]
+Unexpected token '{token}'
+Did you mean to define a parameterized unit? Use brackets […] instead of parentheses.
+
+[E006 / SyntaxError]
+Unit parameters must have type annotations
+
+[E007 / SyntaxError]
+Invalid number literal: {token}
+
+[E009 / SyntaxError]
+Expected identifier
+
+[E014 / SyntaxError]
+Conditional expression must have an else branch
+
+[E015 / SyntaxError]
+'@' cannot be used within a list of identifiers
+
+[E016 / SyntaxError]
+{operator} is not a valid operator in unit expressions
+
+[E017 / SyntaxError]
+Parameters can only be referenced in unit declarations
+
+
+
+[E101 / ValueError]
+Exponent must be a dimensionless scalar
+
+
+
+[E502 / TypeError]
+Unsupported operand type(s) for '{operation}': '{left}' and '{right}'
+
+[E503 / TypeError]
+'{node}' is a type, not a {actual}
+
+[E504 / TypeError]
+'{name}' cannot be parameterized
+
+[E505 / TypeError]
+Function must return the same type and dimension on all paths
+
+[E506 / TypeError]
+'{type}' is not callable
+
+[E507 / TypeError]
+recursive function {name} requires parameter type annotations
+
+[E508 / TypeError]
+recursive function {name} requires a return type annotation
+
+[E509 / TypeError]
+{name}() got multiple values for argument '{arg}'
+
+[E510 / TypeError]
+{name}() got an unexpected keyword argument '{arg}'
+
+[E511 / TypeError]
+positional argument follows keyword argument
+
+[E512 / TypeError]
+{name}() takes {n_params} argument{plural} but {n_args} were given
+
+[E513 / TypeError]
+Expected parameter of {kind} {expected} for argument '{name}', but got {actual}
+
+[E514 / TypeError]
+'{operator}' not supported between '{left}' and '{right}'
+
+[E515 / TypeError]
+Cannot convert '{left}' to '{right}'
+
+[E516 / TypeError]
+'{type}' is not iterable
+
+[E517 / TypeError]
+cannot unpack non-iterable '{type}' object
+
+[E518 / TypeError]
+parameter '{param}' declared as {kind} {expected} but defaults to {actual}
+
+[E519 / TypeError]
+{value} is different from the declared return {kind} {expected}
+
+[E520 / TypeError]
+condition must be a type implementing '__bool__', got '{type}'
+
+[E521 / TypeError]
+both branches must return the same {kind}: {then} vs {else_}
+
+[E522 / TypeError]
+'{type}' is not subscriptable
+
+[E523 / TypeError]
+invalid index type '{index}' for '{type}'
+
+[E524 / TypeError]
+list elements may not be type 'Any'
+
+[E525 / TypeError]
+list elements must be of the same {kind}
+
+[E526 / TypeError]
+range boundary must be an integer, got '{type}'
+
+[E527 / TypeError]
+range boundary must be dimensionless
+
+[E528 / TypeError]
+range step must be a number, got '{type}'
+
+[E529 / TypeError]
+range step must be dimensionless
+
+[E530 / TypeError]
+return statement outside function
+
+[E531 / TypeError]
+type is different from the declared return {kind} {expected}
+
+[E532 / TypeError]
+slice indices must be 'Int' or None, not '{type}'
+
+[E533 / TypeError]
+bad operand type for unary -: '{type}'
+
+[E534 / TypeError]
+unsupported operand type for 'not': '{type}'
+
+[E535 / TypeError]
+'{name}' is overwritten in an incompatible manner: {kind} {value} cannot be assigned to {declared}
+
+[E536 / TypeError]
+'{name}' declared as {declared} but has {kind} {value}
+
+
+
+[E601 / NameError]
+Name '{name}' is not defined
+
+[E602 / NameError]
+undefined {kind} '{name}'
+
+[E603 / NameError]
+'{name}' is already defined
+
+[E604 / NameError]
+'{name}' cannot be redeclared
+
+
+
+[E701 / TypeError]
+Invalid number of parameters for '{callee}'
+
+[E702 / TypeError]
+Right operand of pow must be dimensionless, got [{dimension}]
+
+[E703 / TypeError]
+Incompatible dimensions in {operation}: {left} vs {right}
+
+[E704 / TypeError]
+unit '{name}' declared as '{dimension}' [{expected}] but has dimension [{actual}]
+
+
+
+[E801 / SyntaxError]
+import declarations may only appear at top level of a module
+
+[E802 / ModuleNotFound]
+failed to resolve import: module '{module}' does not exist
+
+[E803 / ImportError]
+failed to resolve import: unit or dimension '{name}' does not exist
+
+[E804 / ImportError]
+failed to resolve import: name '{name}' does not exist"

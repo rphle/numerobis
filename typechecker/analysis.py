@@ -14,7 +14,7 @@ from astnodes import (
 )
 from classes import E, ModuleMeta
 from environment import Env
-from exceptions import Exceptions, uNameError, uTypeError
+from exceptions.exceptions import Exceptions
 from typechecker.types import types
 
 
@@ -98,17 +98,16 @@ def analyze(module: ModuleMeta):
                         case Identifier():
                             if node.name in types.keys():
                                 self.errors.throw(
-                                    uTypeError,
-                                    f"'{node.name}' is a type, not a {self.typ}",
-                                    loc=node.loc,
+                                    503, node=node.name, actual=self.typ, loc=node.loc
                                 )
 
                             if node.name not in self.env(self.typs):
                                 suggestion = self.env.suggest(self.typs)(node.name)
 
                                 self.errors.throw(
-                                    uNameError,
-                                    f"undefined {self.typ} '{node.name}'",
+                                    602,
+                                    kind=self.typ,
+                                    name=node.name,
                                     help=f"did you mean '{suggestion}'?"
                                     if suggestion
                                     else None,

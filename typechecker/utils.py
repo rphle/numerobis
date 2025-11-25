@@ -1,5 +1,3 @@
-import rich.markup
-
 from astnodes import AstNode, Identifier
 from classes import E
 from typechecker.types import FunctionType, NeverType, Overload, T, dimcheck, unify
@@ -74,11 +72,7 @@ def _check_method(method, *args) -> FunctionType | None:
 
 def _mismatch(a: T, b: T) -> tuple[str, str, str] | None:
     if not unify(a, b):
-        return (
-            "type",
-            f"'{rich.markup.escape(a.type())}'",
-            f"'{rich.markup.escape(b.type())}'",
-        )
+        return ("type", f"'{a.type()}", f"'{b.type()}")
     elif not dimcheck(a, b):
         value = (
             "dimension",

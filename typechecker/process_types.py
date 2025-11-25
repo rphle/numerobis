@@ -1,7 +1,7 @@
 from astnodes import AstNode, Call, Identifier, Unit
 from classes import ModuleMeta
 from environment import Env
-from exceptions import Exceptions, uTypeError
+from exceptions.exceptions import Exceptions
 from typechecker.analysis import analyze
 from typechecker.types import AnyType, ListType, NeverType, NumberType, T, types
 
@@ -58,11 +58,7 @@ class Processor:
                         content=self.type(node[0].args[0].value.unit, env=env)
                     )
                 case _:
-                    self.errors.throw(
-                        uTypeError,
-                        f"'{node[0].callee.name}' cannot be parameterized",
-                        loc=node[0].loc,
-                    )
+                    self.errors.throw(504, name=node[0].callee.name, loc=node[0].loc)
 
         return NumberType(
             typ="Float",

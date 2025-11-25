@@ -1,4 +1,5 @@
 from functools import lru_cache
+from parser.parser import Parser
 from pathlib import Path
 from typing import Optional
 
@@ -6,9 +7,10 @@ import declare
 from astnodes import FromImport, Import
 from classes import ModuleMeta
 from environment import Namespaces
-from exceptions import Exceptions, uImportError, uModuleNotFound, uSyntaxError
+from exceptions.exceptions import (
+    Exceptions,
+)
 from lexer.lexer import lex
-from parser.parser import Parser
 from typechecker.typechecker import Typechecker
 
 
@@ -43,11 +45,7 @@ class Module:
         if node := next(
             (node for node in self.ast if isinstance(node, (Import, FromImport))), None
         ):
-            self.errors.throw(
-                exception=uSyntaxError,
-                message="import declarations may only appear at top level of a module",
-                loc=node.loc,
-            )
+            self.errors.throw(801, loc=node.loc)
 
         resolver = ModuleResolver(search_paths=[self.meta.path.parent.resolve()])
         paths = []
@@ -55,11 +53,7 @@ class Module:
             try:
                 paths.append(resolver.resolve(node.module.name.removeprefix("@")))
             except FileNotFoundError:
-                self.errors.throw(
-                    exception=uModuleNotFound,
-                    message=f"failed to resolve import: module '{node.module.name}' does not exist",
-                    loc=node.loc,
-                )
+                self.errors.throw(802, module=node.module.name, loc=node.loc)
 
         modules = [Module(path) for path in paths]
         for module, node in zip(modules, nodes):
@@ -84,9 +78,7 @@ class Module:
                                 self.namespaces.write(typ, n, module.namespaces(typ)[n])
                             except KeyError:
                                 self.errors.throw(
-                                    exception=uImportError,
-                                    message=f"failed to resolve import: unit or dimension '{name.name.removeprefix('@')}' does not exist",
-                                    loc=name.loc,
+                                    803, name=name.name.removeprefix("@"), loc=name.loc
                                 )
                         else:
                             # import name
@@ -103,11 +95,11 @@ class Module:
                                     if name.name in module.namespaces(ns)
                                 ]
                                 self.errors.throw(
-                                    exception=uImportError,
+                                    804,
+                                    name=name.name,
                                     help=f"the module does export a {help[0][:-1]} named '{name.name}', did you forget the '@' prefix?"
                                     if help
                                     else "",
-                                    message=f"failed to resolve import: name '{name.name}' does not exist",
                                     loc=name.loc,
                                 )
                     self.namespaces.write(

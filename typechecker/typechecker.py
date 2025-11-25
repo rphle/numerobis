@@ -31,12 +31,8 @@ from astnodes import (
 )
 from classes import E, ModuleMeta
 from environment import Env, Namespaces
-from exceptions import (
+from exceptions.exceptions import (
     Exceptions,
-    uConversionError,
-    uNameError,
-    uSyntaxError,
-    uTypeError,
 )
 from typechecker.analysis import simplify
 from typechecker.process_types import Processor
@@ -139,8 +135,8 @@ class Typechecker:
                 assert right.typ in {"Float", "Int"}
                 if not right.dimensionless:
                     self.errors.throw(
-                        uTypeError,
-                        f"Right operand of pow must be dimensionless, got [{format_dimension(right.dimension)}]",
+                        702,
+                        dimension=format_dimension(right.dimension),
                         loc=node.right.loc,
                     )
                 dimension = []
@@ -168,11 +164,7 @@ class Typechecker:
 
         def check_return(returns: T | None, checked: T):
             if returns is not None and _mismatch(returns, checked):
-                self.errors.throw(
-                    uTypeError,
-                    "Function must return the same type and dimension on all paths",
-                    loc=node.loc,
-                )
+                self.errors.throw(505, loc=node.loc)
             return checked
 
         for i, statement in enumerate(node.body):
@@ -202,9 +194,7 @@ class Typechecker:
     def call_(self, node: Call, env: Env):
         callee = self.check(node.callee, env=env)
         if not callee.name("Function"):
-            self.errors.throw(
-                uTypeError, f"'{callee.type()}' is not callable", loc=node.loc
-            )
+            self.errors.throw(506, type=callee.type(), loc=node.loc)
 
         assert isinstance(callee, FunctionType)
         if (
@@ -213,14 +203,9 @@ class Typechecker:
             and env.meta["#function"].node == callee.node
         ):
             _name = f"{callee._name}() " if callee._name else ""
-            _missing = (
-                "an explicit return type"
-                if callee.unresolved == "recursive"
-                else "explicit parameter types"
-            )
             self.errors.throw(
-                uTypeError,
-                f"recursive function {_name}requires {_missing}",
+                508 if callee.unresolved == "recursive" else 507,
+                name=_name,
                 loc=callee._loc,
             )
 
@@ -231,31 +216,25 @@ class Typechecker:
             if arg.name:
                 if arg.name.name in args:
                     self.errors.throw(
-                        uTypeError,
-                        f"{callee._name}() got multiple values for argument '{arg.name.name}'",
-                        loc=arg.loc,
+                        509, name=callee._name, arg=arg.name.name, loc=arg.loc
                     )
                 if arg.name.name not in callee.param_names:
                     self.errors.throw(
-                        uTypeError,
-                        f"{callee._name}() got an unexpected keyword argument '{arg.name.name}'",
-                        loc=arg.loc,
+                        510, name=callee._name, arg=arg.name.name, loc=arg.loc
                     )
 
                 name = arg.name.name
                 i = -1
             else:
                 if i < 0:
-                    self.errors.throw(
-                        uSyntaxError,
-                        "positional argument follows keyword argument",
-                        loc=arg.loc,
-                    )
+                    self.errors.throw(511, loc=arg.loc)
                 if i >= len(callee.param_names):
                     self.errors.throw(
-                        uTypeError,
-                        f"{callee._name}() takes {len(callee.param_names)} argument{'s' if len(callee.param_names) != 1 else ''} "
-                        f"but {len(node.args)} were given",
+                        512,
+                        name=callee._name,
+                        n_params=len(callee.param_names),
+                        plural="s" if len(callee.param_names) != 1 else "",
+                        n_args=len(node.args),
                         loc=node.loc,
                     )
                 name = callee.param_names[i]
@@ -268,8 +247,11 @@ class Typechecker:
 
             if mismatch := _mismatch(typ, param):
                 self.errors.throw(
-                    uTypeError,
-                    f"Expected parameter of {mismatch[0]} {mismatch[2]} for argument '{name}', but got {mismatch[1]}",
+                    513,
+                    kind=mismatch[0],
+                    expected=mismatch[2],
+                    name=name,
+                    actual=mismatch[1],
                     loc=arg.loc,
                 )
 
@@ -331,8 +313,10 @@ class Typechecker:
                     "ne": "!=",
                 }
                 self.errors.throw(
-                    uTypeError,
-                    f"'{ops[op.name]}' not supported between '{left.type()}' and '{right.type()}'",
+                    514,
+                    operator=ops[op.name],
+                    left=left.type(),
+                    right=right.type(),
                     loc=sides[0].loc.merge(sides[1].loc),
                 )
 
@@ -352,11 +336,7 @@ class Typechecker:
                 f"__{typ.lower()}__" not in types[value.name()].fields
                 and typ != value.type()
             ):
-                self.errors.throw(
-                    uConversionError,
-                    f"Cannot convert '{value.type()}' to '{typ}'",
-                    loc=node.loc,
-                )
+                self.errors.throw(515, left=value.type(), right=typ, loc=node.loc)
             if typ in {"Int", "Float"}:  # don't erase dimension
                 return value.edit(typ=typ)
             return AnyType(typ)
@@ -371,19 +351,16 @@ class Typechecker:
             return value.edit(content=value.content.edit(dimension=target))
 
         self.errors.throw(
-            uConversionError,
-            f"Cannot convert [[bold]{format_dimension(value.dim())}[/bold]] to [[bold]{format_dimension(target)}[/bold]]",
+            515,
+            left=f"[[bold]{format_dimension(value.dim())}[/bold]]",
+            right=f"[[bold]{format_dimension(target)}[/bold]]",
             loc=node.loc,
         )
 
     def dimension_definition_(self, node: DimensionDefinition, env: Env):
         """Process dimension definitions"""
         if node.name.name in env.units or node.name.name in env.dimensions:
-            self.errors.throw(
-                uNameError,
-                f"'{node.name.name}' already defined",
-                loc=node.name.loc,
-            )
+            self.errors.throw(603, name=node.name.name, loc=node.name.loc)
 
         dimension = []
 
@@ -401,11 +378,7 @@ class Typechecker:
     def for_loop_(self, node: ForLoop, env: Env):
         iterable = self.check(node.iterable, env=env)
         if not iterable.name("List", "Range"):
-            self.errors.throw(
-                uTypeError,
-                f"'{iterable.type()}' is not iterable",
-                loc=node.iterable.loc,
-            )
+            self.errors.throw(516, type=iterable.type(), loc=node.iterable.loc)
         if isinstance(iterable, ListType) and iterable.content.name("Never"):
             return NoneType()
 
@@ -415,8 +388,8 @@ class Typechecker:
         if len(node.iterators) > 1:
             if not isinstance(value, ListType):
                 self.errors.throw(
-                    uTypeError,
-                    f"cannot unpack non-iterable '{value.type()}' object",
+                    517,
+                    type=value.type(),
                     loc=node.iterators[0].loc.merge(node.iterators[-1].loc),
                 )
             else:
@@ -448,8 +421,11 @@ class Typechecker:
 
                 if mismatch := _mismatch(params[i], default):
                     self.errors.throw(
-                        uTypeError,
-                        f"parameter '{param.name.name}' declared as {mismatch[0]} {mismatch[1]} but defaults to {mismatch[2]}",
+                        518,
+                        param=param.name.name,
+                        kind=mismatch[0],
+                        expected=mismatch[1],
+                        actual=mismatch[2],
                         loc=param.loc,
                     )
 
@@ -491,8 +467,10 @@ class Typechecker:
 
         if return_type and (mismatch := _mismatch(body, return_type)):
             self.errors.throw(
-                uTypeError,
-                f"{mismatch[1]} is different from the declared return {mismatch[0]} {mismatch[2]}",
+                519,
+                value=mismatch[1],
+                kind=mismatch[0],
+                expected=mismatch[2],
                 loc=self.unlink(node.body).loc,
             )
 
@@ -521,11 +499,7 @@ class Typechecker:
 
     def if_(self, node: If, env: Env):
         if (typ := self.check(node.condition, env=env).type()) != "Bool":
-            self.errors.throw(
-                uTypeError,
-                f"condition must be a Boolean, got '{typ}'",
-                loc=node.condition.loc,
-            )
+            self.errors.throw(520, type=typ, loc=node.condition.loc)
 
         branches = [
             self.check(branch, env=env)
@@ -537,9 +511,7 @@ class Typechecker:
 
         if mismatch := _mismatch(*branches):
             self.errors.throw(
-                uTypeError,
-                f"both branches must return the same {mismatch[0]}: {mismatch[1]} vs {mismatch[2]}",
-                loc=node.loc,
+                521, kind=mismatch[0], then=mismatch[1], else_=mismatch[2], loc=node.loc
             )
 
         return unify(*branches)
@@ -553,17 +525,14 @@ class Typechecker:
                 raise ValueError()
             checked = _check_method(method, value, index)
         except ValueError:
-            self.errors.throw(
-                uTypeError,
-                f"'{value.type()}' is not subscriptable",
-                loc=node.loc,
-            )
+            self.errors.throw(522, type=value.type(), loc=node.loc)
             return
 
         if checked is None:
             self.errors.throw(
-                uTypeError,
-                f"Invalid index type '{index.type()}' for '{value.type()}'",
+                523,
+                type=value.type(),
+                index=index.type(),
                 loc=node.loc,
             )
         elif isinstance(value, ListType) and value.content.name("Never"):
@@ -575,16 +544,10 @@ class Typechecker:
         for element in node.items:
             element_type = self.check(element, env=env)
             if element_type.name("Any"):
-                self.errors.throw(
-                    uTypeError,
-                    "list elements may not be type 'Any'",
-                    loc=self.unlink(element, ["loc"]).loc,
-                )
+                self.errors.throw(524, loc=self.unlink(element, ["loc"]).loc)
             if mismatch := _mismatch(content, element_type):
                 self.errors.throw(
-                    uTypeError,
-                    f"list elements must be of the same {mismatch[0]}",
-                    loc=self.unlink(element, ["loc"]).loc,
+                    525, kind=mismatch[0], loc=self.unlink(element, ["loc"]).loc
                 )
 
             content = unify(content, element_type)  # type: ignore
@@ -605,53 +568,36 @@ class Typechecker:
             checked = self.check(part, env=env)
             if not checked.name("Int"):
                 self.errors.throw(
-                    uTypeError,
-                    f"range boundary must be an integer, got '{checked.type()}'",
-                    loc=self.unlink(part, ["loc"]).loc,
+                    526, type=checked.type(), loc=self.unlink(part, ["loc"]).loc
                 )
             elif not checked.dimless():
-                self.errors.throw(
-                    uTypeError,
-                    "range boundary must be dimensionless",
-                    loc=self.unlink(part, ["loc"]).loc,
-                )
+                self.errors.throw(527, loc=self.unlink(part, ["loc"]).loc)
 
         if node.step is not None:
             value = self.check(node.step, env=env)
             if not value.name("Int", "Float"):
-                self.errors.throw(
-                    uTypeError,
-                    f"range step must be a number, got '{value.type()}'",
-                    loc=node.step.loc,
-                )
+                self.errors.throw(528, type=value.type(), loc=node.step.loc)
             elif not value.dimless():
-                self.errors.throw(
-                    uTypeError,
-                    "range step must be dimensionless",
-                    loc=node.step.loc,
-                )
+                self.errors.throw(529, loc=node.step.loc)
 
         assert isinstance(value, NumberType)
         return RangeType(value=NumberType(typ=value.typ))
 
     def return_(self, node: Return, env: Env):
         if "#function" not in env.meta:
-            self.errors.throw(
-                uSyntaxError,
-                "return statement outside function",
-                loc=node.loc,
-            )
+            self.errors.throw(530, loc=node.loc)
         return_type = env.meta["#function"].return_type
 
         value = self.check(node.value, env=env) if node.value else NoneType()
 
         if return_type and (mismatch := _mismatch(value, return_type)):
             self.errors.throw(
-                uTypeError,
-                f"{mismatch[1]} is different from the declared return {mismatch[0]} {mismatch[2]}",
+                531,
+                type=mismatch[1],
+                kind=mismatch[0],
+                expected=mismatch[2],
                 loc=node.loc,
             )
-            pass
 
         value.meta("#return", True)
         return value
@@ -661,11 +607,7 @@ class Typechecker:
             if part is not None and not (checked := self.check(part, env=env)).name(
                 "Int"
             ):
-                self.errors.throw(
-                    uTypeError,
-                    f"slice indices must be 'Int' or None, not '{checked.type()}'",
-                    loc=part.loc,
-                )
+                self.errors.throw(532, type=checked.type(), loc=part.loc)
         return SliceType()
 
     def type_(self, node: Unit | FunctionAnnotation, env: Env):
@@ -684,21 +626,14 @@ class Typechecker:
         if node.op.name == "sub":
             operand = self.check(node.operand, env=env)
             if not isinstance(operand, NumberType):
-                self.errors.throw(
-                    uTypeError,
-                    f"bad operand type for unary -: '{operand.type()}'",
-                    loc=node.loc,
-                )
+                self.errors.throw(533, type=operand.type(), loc=node.loc)
 
             return operand
         elif node.op.name == "not":
             operand = self.check(node.operand, env=env)
             method = types[operand.name()]["__bool__"]
             if method is None:
-                self.errors.throw(
-                    uTypeError,
-                    f"unsupported operand type for 'not': '{operand.type()}'",
-                )
+                self.errors.throw(534, type=operand.type(), loc=node.loc)
             return operand
 
         raise NotImplementedError(f"UnaryOp not implemented: {node.op.name}")
@@ -710,11 +645,7 @@ class Typechecker:
         """Process unit definitions with proper dimension checking"""
 
         if node.name.name in env.units or node.name.name in env.dimensions:
-            self.errors.throw(
-                uNameError,
-                f"'{node.name.name}' already defined",
-                loc=node.name.loc,
-            )
+            self.errors.throw(603, name=node.name.name, loc=node.name.loc)
 
         dimension = []
 
@@ -727,8 +658,9 @@ class Typechecker:
                 if node.dimension.name not in env.dimensions:
                     suggestion = env.suggest("dimensions")(node.dimension.name)
                     self.errors.throw(
-                        uNameError,
-                        f"undefined dimension '{node.dimension.name}'",
+                        602,
+                        kind="dimension",
+                        name=node.dimension.name,
                         help=f"did you mean '{suggestion}'?" if suggestion else None,
                         loc=node.dimension.loc,
                     )
@@ -745,8 +677,11 @@ class Typechecker:
                     expected_str = format_dimension(expected)
                     actual_str = format_dimension(dimension)
                     self.errors.throw(
-                        uConversionError,
-                        f"unit '{node.name.name}' declared as '{node.dimension.name}' [{expected_str}] but has dimension [{actual_str}]",
+                        704,
+                        name=node.name.name,
+                        dimension=node.dimension.name,
+                        expected=expected_str,
+                        actual=actual_str,
                         loc=node.name.loc,
                     )
 
@@ -761,18 +696,17 @@ class Typechecker:
         if node.name.name in env.names:
             if mismatch := _mismatch(env.get("names")(node.name.name), value):
                 self.errors.throw(
-                    uTypeError,
-                    f"'{node.name.name}' is overwritten in an incompatible manner: {mismatch[0]} {mismatch[2]} cannot be assigned to {mismatch[1]}",
+                    535,
+                    name=node.name.name,
+                    kind=mismatch[0],
+                    value=mismatch[2],
+                    declared=mismatch[1],
                     loc=node.loc,
                 )
             _hash = env.names[node.name.name]
 
         if _hash is not None and node.type:
-            self.errors.throw(
-                uNameError,
-                f"'{node.name.name}' cannot be redeclared",
-                loc=node.loc,
-            )
+            self.errors.throw(604, name=node.name.name, loc=node.loc)
 
         if node.type:
             annotation = self.type_(node.type, env=env)
@@ -788,8 +722,11 @@ class Typechecker:
             if mismatch := _mismatch(annotation, value):
                 if mismatch:
                     self.errors.throw(
-                        uTypeError,
-                        f"'{node.name.name}' declared as {mismatch[1]} but has {mismatch[0]} {mismatch[2]}",
+                        536,
+                        name=node.name.name,
+                        declared=mismatch[1],
+                        kind=mismatch[0],
+                        value=mismatch[2],
                         loc=node.loc,
                     )
 
@@ -800,11 +737,7 @@ class Typechecker:
 
     def variable_declaration_(self, node: VariableDeclaration, env: Env):
         if node.name.name in env.names:
-            self.errors.throw(
-                uNameError,
-                f"'{node.name.name}' cannot be redeclared",
-                loc=node.loc,
-            )
+            self.errors.throw(604, name=node.name.name, loc=node.loc)
 
         env.set("names")(name=node.name.name, value=UndefinedType())
         return NoneType()
@@ -813,11 +746,7 @@ class Typechecker:
         cond = self.check(node.condition, env=env.copy())
 
         if "__bool__" not in types[cond.name()].fields:
-            self.errors.throw(
-                uTypeError,
-                f"condition must be a type implementing '__bool__', got '{cond.name()}'",
-                loc=node.loc,
-            )
+            self.errors.throw(520, type=cond.name(), loc=node.loc)
 
         self.check(node.body, env=env)
 

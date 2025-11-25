@@ -1,5 +1,7 @@
 import dataclasses
 import math
+from parser.template import ParserTemplate
+from parser.unitparser import UnitParser
 
 from astnodes import (
     AstNode,
@@ -40,9 +42,6 @@ from astnodes import (
     nodeloc,
 )
 from classes import ModuleMeta
-from exceptions import uSyntaxError
-from parser.template import ParserTemplate
-from parser.unitparser import UnitParser
 
 
 class Parser(ParserTemplate):
@@ -138,8 +137,7 @@ class Parser(ParserTemplate):
             """Reference unit namespace"""
             if self._peek(2, ignore_whitespace=False).type not in {"LPAREN", "ID"}:
                 self.errors.throw(
-                    uSyntaxError,
-                    message="Expected unit",
+                    3,
                     loc=Location(line=self.tok.loc.line, col=self.tok.loc.col + 1),
                 )
             self._consume("AT")
@@ -199,10 +197,7 @@ class Parser(ParserTemplate):
 
         params = []
         if self._peek().type == "LPAREN":
-            self.errors.unexpectedToken(
-                self._peek(),
-                help="Did you mean to define a parameterized unit? Use brackets […] instead of parentheses.",
-            )
+            self.errors.throw(5, token=self._peek(), loc=self._peek().loc)
         if self._peek().type == "LBRACKET":
             """
             Parse unit parameters
@@ -212,9 +207,7 @@ class Parser(ParserTemplate):
                 p: dict[str, AstNode] = {}
                 p["name"] = self._make_id(self._consume("ID"))
                 if self._peek().type in {"ASSIGN", "COMMA"}:
-                    self.errors.unexpectedToken(
-                        self._peek(), help="Unit parameters must have type annotations"
-                    )
+                    self.errors.throw(6, loc=self._peek().loc)
                 self._consume("COLON")
                 p["type"] = self.unit(standalone=True)
 
@@ -316,11 +309,7 @@ class Parser(ParserTemplate):
             self._consume("ELSE")
             else_branch = self.block() if not expression else self.expression()
         elif expression:
-            self.errors.throw(
-                uSyntaxError,
-                message="Conditional expression must have an else branch",
-                loc=nodeloc(_if, then_branch),
-            )
+            self.errors.throw(4, loc=nodeloc(_if, then_branch))
 
         return If(
             condition=condition,
@@ -652,11 +641,7 @@ class Parser(ParserTemplate):
             self._clear()
             if self._peek().type == "AT":
                 if atted_until >= i:
-                    self.errors.throw(
-                        uSyntaxError,
-                        "'@' cannot be used within a list of identifiers",
-                        loc=self._peek(ignore_whitespace=False).loc,
-                    )
+                    self.errors.throw(15, loc=self._peek(ignore_whitespace=False).loc)
                 # parse unit namespace references
                 self._consume("AT")
                 match self._peek(ignore_whitespace=False).type:
@@ -667,9 +652,7 @@ class Parser(ParserTemplate):
                         atted_until = i
                     case _:
                         self.errors.throw(
-                            uSyntaxError,
-                            "Expected identifier or list of identifiers after '@'",
-                            loc=self._peek(ignore_whitespace=False).loc,
+                            14, loc=self._peek(ignore_whitespace=False).loc
                         )
 
             name_tok = self._consume("ID", ignore_whitespace=False)

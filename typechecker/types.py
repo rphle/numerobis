@@ -1,6 +1,8 @@
 from dataclasses import dataclass, field, replace
 from typing import Any, Literal, Optional, Union, overload
 
+import typechecker.utils
+
 env = {}
 
 T = Union[
@@ -67,7 +69,12 @@ class NumberType(UType):
     value: float | int = 0
 
     def type(self) -> str:
-        return self.typ
+        d = (
+            f"[[bold]{typechecker.utils.format_dimension(self.dimension)}[/bold]]"
+            if self.dimension != [NeverType]
+            else ""
+        )
+        return self.typ + d
 
     def dim(self) -> list:
         return self.dimension

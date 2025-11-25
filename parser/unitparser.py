@@ -14,7 +14,6 @@ from astnodes import (
     nodeloc,
 )
 from classes import ModuleMeta
-from exceptions import uSyntaxError
 
 
 class UnitParser(ParserTemplate):
@@ -57,10 +56,7 @@ class UnitParser(ParserTemplate):
             nodes.append(self.power())
 
         if self.peek().type in {"PLUS", "MINUS", "MOD", "INTDIVIDE"}:
-            self.errors.unexpectedToken(
-                self.peek(),
-                help=f"{self.peek().value} is not a valid operator in unit expressions",
-            )
+            self.errors.throw(16, operator=self.peek().value, location=self.peek().loc)
 
         return nodes
 
@@ -69,10 +65,7 @@ class UnitParser(ParserTemplate):
         if self.tokens and self.peek().type == "POWER":
             op = self._make_op(self._consume())
             if self.peek().type != "NUMBER":
-                self.errors.unexpectedToken(
-                    self.peek(),
-                    help="Exponent must be a dimensionless scalar",
-                )
+                self.errors.throw(101, loc=self.peek().loc)
             right = self._parse_number(self._consume("NUMBER"))
             node = BinOp(op=op, left=node, right=right, loc=nodeloc(node, right))
         return node
@@ -97,10 +90,7 @@ class UnitParser(ParserTemplate):
     def call(self) -> AstNode:
         node = self.atom()
         if self.peek(ignore_whitespace=False).type == "LPAREN":
-            self.errors.unexpectedToken(
-                self.peek(),
-                help="Did you mean to call a parameterized unit? Use brackets […] instead of parentheses.",
-            )
+            self.errors.throw(5, loc=self.peek().loc)
 
         while self.peek(ignore_whitespace=False).type == "LBRACKET":
             self._consume("LBRACKET")
@@ -146,15 +136,13 @@ class UnitParser(ParserTemplate):
             case "AT":
                 """Reference parameter"""
                 if self._peek(ignore_whitespace=False).type != "ID":
-                    uSyntaxError(
-                        message="Expected identifier",
-                        module=self.module,
+                    self.errors.throw(
+                        9,
                         loc=Location(line=self.tok.loc.line, col=self.tok.loc.col + 1),
                     )
                 if not self.standalone:
-                    uSyntaxError(
-                        message="Parameters can only be referenced in unit declarations",
-                        module=self.module,
+                    self.errors.throw(
+                        17,
                         loc=Location(line=self.tok.loc.line, col=self.tok.loc.col + 1),
                     )
                 node = self._consume("ID")
