@@ -31,8 +31,7 @@ class Processor:
             if node[0].name in ["Int", "Float"]:
                 return NumberType(
                     typ=node[0].name,  # type: ignore
-                    dimensionless=True,
-                    dimension=[],
+                    dim=None,
                 )
             return AnyType(node[0].name)
 
@@ -48,7 +47,7 @@ class Processor:
                         self.errors.invalidParameterNumber(node[0])
                     return NumberType(
                         typ=node[0].callee.name,
-                        dimension=self.dimension(node[0].args[0].value, env=env),
+                        dim=self.dimension(node[0].args[0].value, env=env),
                     )
                 case "List":
                     if len(node[0].args) != 1:
@@ -62,6 +61,6 @@ class Processor:
 
         return NumberType(
             typ="Float",
-            dimension=self.dimension(node, env=env),
+            dim=self.dimension(node, env=env),
             _meta={"#dimension-only": True},
         )

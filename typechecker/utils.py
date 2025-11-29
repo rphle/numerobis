@@ -1,3 +1,7 @@
+from typing import Optional, TypeGuard
+
+from typeguard import typechecked
+
 from astnodes import AstNode, Identifier
 from classes import E
 from typechecker.types import FunctionType, NeverType, Overload, T, dimcheck, unify
@@ -10,6 +14,9 @@ class UnresolvedAnyParam(Exception):
 def format_dimension(dims) -> str:
     """Format dimension for error messages"""
     num, denom = [], []
+
+    if dims is None:
+        return "1"
 
     for d in dims:
         exp = 1
@@ -76,6 +83,11 @@ def _mismatch(a: T, b: T) -> tuple[str, str, str] | None:
     elif not dimcheck(a, b):
         value = (
             "dimension",
-            *(f"[[bold]{format_dimension(x.dim())}[/bold]]" for x in [a, b]),
+            *(f"[[bold]{format_dimension(x.dim)}[/bold]]" for x in [a, b]),
         )
         return value  # type: ignore
+
+
+@typechecked
+def dimful(dim: Optional[list]) -> TypeGuard[list]:
+    return dim is not None and dim != []

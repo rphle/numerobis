@@ -1,3 +1,5 @@
+import re
+
 import typechecker.linking as linking
 from astnodes import (
     AstNode,
@@ -58,6 +60,7 @@ from typechecker.utils import (
     UnresolvedAnyParam,
     _check_method,
     _mismatch,
+    dimful,
     format_dimension,
 )
 from utils import camel2snake_pattern
@@ -113,34 +116,32 @@ class Typechecker:
                         node, left, right, env=env.export("dimensions")
                     )
 
-                return left.edit(dimension=left.dimension)
+                return left.edit(dim=left.dim)
             case "mul" | "div":
-                if right.dimensionless and left.dimensionless:
+                if not dimful(right.dim):
                     return left
+                elif not dimful(left.dim):
+                    return right
 
                 if node.op.name == "mul":
-                    r = right.dimension
+                    r = right.dim
                 else:
-                    base = (
-                        right.dimension[0]
-                        if len(right.dimension) == 1
-                        else right.dimension
-                    )
+                    base = right.dim[0] if len(right.dim) == 1 else right.dim
                     r = [E(base=base, exponent=-1.0)]
 
-                dimension = simplify(left.dimension + r)
+                dimension = simplify(left.dim + r)
 
-                return left.edit(dimension=dimension)
+                return left.edit(dim=dimension)
             case "pow":
                 assert right.typ in {"Float", "Int"}
-                if not right.dimensionless:
+                if dimful(right.dim):
                     self.errors.throw(
                         702,
-                        dimension=format_dimension(right.dimension),
-                        loc=node.right.loc,
+                        dimension=format_dimension(right.dim),
+                        loc=self.unlink(node.right).loc,
                     )
                 dimension = []
-                for item in left.dimension:
+                for item in left.dim or []:
                     if isinstance(item, E):
                         dimension.append(
                             E(base=item.base, exponent=item.exponent * right.value)
@@ -148,9 +149,9 @@ class Typechecker:
                     else:
                         dimension.append(E(base=item, exponent=right.value))
 
-                return left.edit(dimension=simplify(dimension))
+                return left.edit(dim=simplify(dimension))
             case "mod":
-                if left.dimension != right.dimension:
+                if not dimcheck(left, right):
                     self.errors.binOpMismatch(
                         node, left, right, env=env.export("dimensions")
                     )
@@ -344,15 +345,17 @@ class Typechecker:
         # unit conversion
         target = self.processor.unit(node.unit, env=env.copy())
 
-        if isinstance(value, NumberType) and (value.dim() == target or value.dimless()):
-            return value.edit(dimension=target)
-        elif value.name("List") and (value.dim() == target or value.dimless()):
+        if isinstance(value, NumberType) and (
+            value.dim == target or not dimful(value.dim)
+        ):
+            return value.edit(dim=target)
+        elif value.name("List") and (value.dim == target or not dimful(value.dim)):
             assert isinstance(value, ListType)
-            return value.edit(content=value.content.edit(dimension=target))
+            return value.edit(content=value.content.edit(dim=target))
 
         self.errors.throw(
             515,
-            left=f"[[bold]{format_dimension(value.dim())}[/bold]]",
+            left=f"[[bold]{format_dimension(value.dim)}[/bold]]",
             right=f"[[bold]{format_dimension(target)}[/bold]]",
             loc=node.loc,
         )
@@ -369,10 +372,7 @@ class Typechecker:
 
         env.set("dimensions")(
             name=node.name.name,
-            value=Dimension(
-                dimension=dimension or [node.name],
-                dimensionless=dimension == [],
-            ),
+            value=Dimension(dimension=dimension or [node.name]),
         )
 
     def for_loop_(self, node: ForLoop, env: Env):
@@ -557,8 +557,7 @@ class Typechecker:
         dimension = self.processor.unit(node.unit, env=env)
         return NumberType(
             typ=type(node).__name__.removesuffix("eger"),  # type: ignore ; 'Integer' to 'Int'
-            dimension=dimension,
-            dimensionless=dimension == [],
+            dim=dimension,
             value=float(node.value) ** float(node.exponent if node.exponent else 1),
         )
 
@@ -570,14 +569,14 @@ class Typechecker:
                 self.errors.throw(
                     526, type=checked.type(), loc=self.unlink(part, ["loc"]).loc
                 )
-            elif not checked.dimless():
+            elif dimful(checked.dim):
                 self.errors.throw(527, loc=self.unlink(part, ["loc"]).loc)
 
         if node.step is not None:
             value = self.check(node.step, env=env)
             if not value.name("Int", "Float"):
                 self.errors.throw(528, type=value.type(), loc=node.step.loc)
-            elif not value.dimless():
+            elif dimful(value.dim):
                 self.errors.throw(529, loc=node.step.loc)
 
         assert isinstance(value, NumberType)
@@ -684,6 +683,24 @@ class Typechecker:
                         actual=actual_str,
                         loc=node.name.loc,
                     )
+
+        if not node.dimension and dimension == []:
+            # Independent units without dimension annotation are automatically assigned to a dimension of their Titled name,
+            # as long as such a name is not already defined
+            titled = node.name.name.title()
+            dimension = [Identifier(name=titled)]
+            if (
+                titled in env.units
+                or titled == node.name.name
+                or not re.match(r"[a-zA-Z]", node.name.name[0])
+            ):
+                self.errors.throw(705, name=node.name.name, loc=node.name.loc)
+
+            if titled not in env.dimensions:
+                env.set("dimensions")(
+                    name=titled,
+                    value=Dimension(dimension=dimension),
+                )
 
         env.set("units")(
             name=node.name.name, value=Dimension(dimension or [node.dimension])

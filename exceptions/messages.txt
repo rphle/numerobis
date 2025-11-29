@@ -175,6 +175,10 @@ Incompatible dimensions in {operation}: {left} vs {right}
 [E704 / TypeError]
 unit '{name}' declared as '{dimension}' [{expected}] but has dimension [{actual}]
 
+[E705 / NameError]
+Could not automatically assign dimension to '{name}'
+Independent units without dimension annotation are automatically assigned to a dimension of their Titled name
+
 
 
 [E801 / SyntaxError]

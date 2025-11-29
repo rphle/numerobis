@@ -24,6 +24,7 @@ T = Union[
 class UType:
     _meta: dict = field(default_factory=dict)
     node: Optional[int] = None
+    dim: Optional[list] = None
 
     @overload
     def name(self) -> str: ...
@@ -37,12 +38,6 @@ class UType:
 
     def type(self) -> str:
         return self.name()
-
-    def dim(self) -> list:
-        return []
-
-    def dimless(self) -> bool:
-        return True
 
     def edit(self, **kwargs):
         return replace(self, **kwargs)
@@ -64,20 +59,16 @@ class NoneType(UType):
 @dataclass(kw_only=True, frozen=True)
 class NumberType(UType):
     typ: Literal["Int", "Float"] = "Float"
-    dimension: list = field(default_factory=list)
-    dimensionless: bool = False
+    dim: Optional[list] = None
     value: float | int = 0
 
     def type(self) -> str:
         d = (
-            f"[[bold]{typechecker.utils.format_dimension(self.dimension)}[/bold]]"
-            if self.dimension != []
+            f"[[bold]{typechecker.utils.format_dimension(self.dim)}[/bold]]"
+            if self.dim != []
             else ""
         )
         return self.typ + d
-
-    def dim(self) -> list:
-        return self.dimension
 
     @overload
     def name(self) -> str: ...
@@ -88,9 +79,6 @@ class NumberType(UType):
         if names:
             return n in names
         return n
-
-    def dimless(self) -> bool:
-        return self.dimensionless
 
 
 @dataclass(kw_only=True, frozen=True)
@@ -137,15 +125,10 @@ class UndefinedType(UType):
 @dataclass(kw_only=True, frozen=True)
 class ListType(UType):
     content: T = NeverType()
+    dim: Optional[list] = content.dim
 
     def type(self) -> str:
         return f"List[{self.content.type()}]"
-
-    def dim(self) -> list:
-        return self.content.dim()
-
-    def dimless(self) -> bool:
-        return self.content.dimless()
 
     def complete(self, value: Optional[T] = None):
         return self.edit(content=self.content.complete(getattr(value, "content", None)))
@@ -264,8 +247,8 @@ def dimcheck(a: T, b: T) -> bool:
     if a.name("Never", "Any") or b.name("Never", "Any"):
         return True
 
-    dims = [a.dim(), b.dim()]
-    if any(item == [] for item in dims):
+    dims = [a.dim, b.dim]
+    if any(item is None for item in dims):
         return True
 
     return dims[0] == dims[1]
@@ -274,7 +257,6 @@ def dimcheck(a: T, b: T) -> bool:
 @dataclass(frozen=True)
 class Dimension:
     dimension: list = field(default_factory=list)
-    dimensionless: bool = False
 
 
 class Overload:
