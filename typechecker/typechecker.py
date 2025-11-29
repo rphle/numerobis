@@ -430,7 +430,7 @@ class Typechecker:
                     )
 
         return_type = (
-            self.type_(node.return_type, env=env) if node.return_type else None
+            self.type_(node.return_type, env=env) if node.return_type else NeverType()
         )
         arity = (sum(1 for p in node.params if p.default is None), len(params))
 
@@ -439,15 +439,11 @@ class Typechecker:
             _loc=node.loc.span("start", "assign"),
             params=params,
             param_names=[param.name.name for param in node.params],
-            unresolved="recursive",
+            return_type=return_type,
+            unresolved=None if node.return_type else "recursive",
             node=link,
             arity=arity,
         )
-        if return_type:
-            signature = signature.edit(
-                return_type=return_type,
-                unresolved=None,
-            )
 
         if name is not None:
             env.set("names")(name, signature)
@@ -465,7 +461,7 @@ class Typechecker:
                 env.set("names")(name, signature)
             return signature
 
-        if return_type and (mismatch := _mismatch(body, return_type)):
+        if mismatch := _mismatch(body, return_type):
             self.errors.throw(
                 519,
                 value=mismatch[1],
@@ -475,8 +471,7 @@ class Typechecker:
             )
 
         signature = signature.edit(
-            return_type=unify(return_type, body) if return_type is not None else body,
-            unresolved=None,
+            return_type=unify(return_type, body), unresolved=None
         )
         if name is not None:
             env.set("names")(name, signature)

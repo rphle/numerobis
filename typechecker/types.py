@@ -147,7 +147,7 @@ class RangeType(UType):
 @dataclass(kw_only=True, frozen=True)
 class FunctionType(UType):
     params: list[T] = field(default_factory=list)
-    return_type: T = NoneType()
+    return_type: T = field(default_factory=lambda: AnyType())
     param_names: list[str] = field(default_factory=list)
     arity: tuple[int, int] = (0, 0)
     unresolved: Optional[Literal["recursive", "parameters"]] = None

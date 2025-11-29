@@ -79,7 +79,7 @@ def _check_method(method, *args) -> FunctionType | None:
 
 def _mismatch(a: T, b: T) -> tuple[str, str, str] | None:
     if not unify(a, b):
-        return ("type", f"'{a.type()}", f"'{b.type()}")
+        return ("type", f"'{a.type()}'", f"'{b.type()}'")
     elif not dimcheck(a, b):
         value = (
             "dimension",

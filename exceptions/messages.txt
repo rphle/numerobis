@@ -130,7 +130,7 @@ range step must be dimensionless
 return statement outside function
 
 [E531 / TypeError]
-type is different from the declared return {kind} {expected}
+{type} is different from the declared return {kind} {expected}
 
 [E532 / TypeError]
 slice indices must be 'Int' or None, not '{type}'
