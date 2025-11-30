@@ -1,3 +1,4 @@
+import dataclasses
 import sys
 
 import rich.console
@@ -116,7 +117,7 @@ class Exceptions:
         left_str, right_str = [
             "[/bold]] / [[bold]".join(
                 format_dimension(dim) if not isinstance(dim, int) else f"{dim} more …"
-                for dim in repr_dimension(side.dimension, env=env)
+                for dim in repr_dimension(side.dim, env=env)
             )
             for side in (left, right)
         ]
@@ -154,7 +155,7 @@ class Exceptions:
         self, code: int, loc: Location | None = None, help: str | None = None, **kwargs
     ):
         try:
-            message = self.codes[f"E{code:03d}"]
+            message = dataclasses.replace(self.codes[f"E{code:03d}"])  # copy
         except KeyError:
             raise ValueError(f"Unknown error code: {code}")
 

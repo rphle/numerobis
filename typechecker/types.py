@@ -3,7 +3,22 @@ from typing import Any, Literal, Optional, Union, overload
 
 import typechecker.utils
 
-env = {}
+
+class VarEnv:
+    def __init__(self):
+        self.types = {}
+        self.dims = {}
+
+    def clear(self):
+        self.types.clear()
+        self.dims.clear()
+
+    def __getitem__(self, key):
+        return self.__getattribute__(key)
+
+
+varenv = VarEnv()
+
 
 T = Union[
     "NoneType",
@@ -94,21 +109,29 @@ class StrType(UType):
 @dataclass(frozen=True)
 class VarType(UType):
     _name: str
+    kind: str = "types"
 
     def type(self) -> str:
-        if self._name not in env:
+        if self._name not in varenv[self.kind]:
             return "?" + self._name
-        return env[self._name].type()
+        return varenv[self.kind][self._name].type()
 
     def complete(self, value: Optional[T] = None):
-        global env
         if value is None:
-            return env.get(self._name, self)
-        if self._name not in env:
-            env[self._name] = value
-        elif not unify(value, env[self._name]) or not dimcheck(value, env[self._name]):
+            return varenv[self.kind].get(self._name, self)
+        if self._name not in varenv[self.kind]:
+            varenv[self.kind][self._name] = value
+        elif not unify(value, varenv[self.kind][self._name]) or not dimcheck(
+            value, varenv[self.kind][self._name]
+        ):
             return self
         return value
+
+
+@dataclass(frozen=True)
+class VarDim(VarType):
+    _name: str
+    kind: str = "types"
 
 
 @dataclass(kw_only=True, frozen=True)
@@ -164,8 +187,8 @@ class FunctionType(UType):
         return f"![[{', '.join(args)}], {self.return_type.type()}]"
 
     def check_args(self, *args: T) -> Optional["FunctionType"]:
-        global env
-        env = {}
+        global varenv
+        varenv.clear()
         params = [
             param.complete(arg) if not isinstance(param, AnyType) else NeverType()
             for param, arg in zip(self.params, args)
@@ -179,12 +202,7 @@ class FunctionType(UType):
 class AnyType(UType):
     _instance = None
 
-    def __new__(
-        cls,
-        name: str = "any",
-        _meta: dict = {},
-        node: Optional[int] = None,
-    ) -> "T":
+    def __new__(cls, name: str = "any", **kwargs) -> "T":
         if name == "any":
             if cls._instance is None:
                 cls._instance = super().__new__(cls)
@@ -206,7 +224,7 @@ class AnyType(UType):
         if t is None:
             raise ValueError(f"Unknown type name: {name!r}")
 
-        t = t.edit(_meta=_meta, node=node)
+        t = t.edit(**kwargs)
         return t
 
 
