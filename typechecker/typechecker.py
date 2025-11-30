@@ -270,6 +270,9 @@ class Typechecker:
             for name, arg in args.items():
                 new_env.set("names")(name, arg[1])
             new_env.meta["#function"] = callee
+            if callee.meta("#curried"):
+                callee._meta["#curried"].update(new_env.names)
+                new_env.names = callee._meta["#curried"]
 
             callee_node = self.unlink(self.namespaces.nodes[callee.node])
             assert isinstance(callee_node, Function)
@@ -444,6 +447,7 @@ class Typechecker:
             node=link,
             arity=arity,
         )
+        signature.meta("#curried", env.names)
 
         if name is not None:
             env.set("names")(name, signature)
@@ -487,7 +491,10 @@ class Typechecker:
 
         if "#function" in env.meta:
             if isinstance(item, AnyType):
-                raise UnresolvedAnyParam()
+                current_func = env.meta.get("#function")
+                if current_func and getattr(current_func, "param_names", None):
+                    if node.name in current_func.param_names:
+                        raise UnresolvedAnyParam()
         if isinstance(item, UndefinedType):
             self.errors.nameError(node)
         return item
@@ -761,6 +768,7 @@ class Typechecker:
             self.errors.throw(520, type=cond.name(), loc=node.loc)
 
         self.check(node.body, env=env)
+        return NoneType()
 
     def check(self, link, env: Env) -> T:
         if isinstance(link, linking.Link):
