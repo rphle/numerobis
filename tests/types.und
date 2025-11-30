@@ -1,0 +1,203 @@
+from si import @(metre, kilogram, second, Mass, Length, Time)
+
+# ---
+x: Int = 5
+
+# ---
+y: Float = 10.5
+
+# ---
+s: Str = "hello"
+
+# ---
+b: Bool = true
+
+# ---
+m: Mass = 10 kilogram
+
+# ---
+d: Length = 20 metre
+
+# ---
+t: Time = 5 second
+
+# ---
+v: Length / Time = 10 metre / second
+
+# ---
+a: Length / Time^2 = 9.8 metre / second^2
+
+# ---
+f: Mass * Length / Time^2 = 50 kilogram * metre / second^2
+
+# ---
+lst: List = [1, 2, 3]
+
+# ---
+strings: List = ["a", "b", "c"]
+
+# ---
+masses: List = [1 kilogram, 2 kilogram, 3 kilogram]
+
+# ---
+nested: List = [[1, 2], [3, 4]]
+
+# Empty: List = []
+
+# ---
+r: Range = 0..10
+
+# ---
+range_step: Range = 0..100..5
+
+# ---
+func: ![[x: Int], Int] = !(x: Int): Int = x + 1
+
+# ---
+generic_func: ![[x], Int] = !(x) = 42
+
+# ---
+mass_func: ![[m: Mass], Mass] = !(m: Mass): Mass = m * 2
+
+# ---
+multi_param: ![[a: Int, b: Int], Int] = !(a: Int, b: Int): Int = a + b
+
+# ---
+higher_order: ![[f: ![[x: Int], Int], n: Int], Int] = !(f: ![[x: Int], Int], n: Int): Int = f(n)
+
+# ---
+x: Int = 5
+y: Int = x + 10
+
+# ---
+m: Mass = 10 kilogram
+doubled: Mass = m * 2
+
+# ---
+lst: List = [1, 2, 3]
+first: Int = lst[0]
+
+# ---
+speed: Length / Time = 100 metre / 10 second
+distance: Length = speed * 5 second
+
+# ---
+compute!(x: Int): Int = x * 2
+result: Int = compute(5)
+
+# E503
+x = 5
+y: x = 10
+
+# E503
+dimension TestDim
+value: TestDim = 10
+
+# E503
+f!(x: Int): Int = x
+result = f(Int)
+
+# E504
+x = 5
+result = x[Int]
+
+# E504
+s = "hello"
+result = s[Mass]
+
+# E504
+dimension TestDim
+result = TestDim[Length]
+
+# E522
+x = 5
+x[0]
+
+# E522
+y = 10.5
+y[1]
+
+# E522
+b = true
+b[0]
+
+# E522
+m = 5 kilogram
+m[0]
+
+# E522
+f!(x: Int) = x * 2
+f[0]
+
+# E523
+lst = [1, 2, 3]
+lst["hello"]
+
+# E523
+words = ["a", "b", "c"]
+words[true]
+
+# E523
+masses = [1 kilogram, 2 kilogram]
+masses[5 kilogram]
+
+# E523
+"hello"[2.5]
+
+# E523
+[1, 2, 3][false]
+
+# E536
+x: Int = 5
+x = "hello"
+
+# E536
+y: Float = 10.5
+y = true
+
+# E536
+m: Mass = 5 kilogram
+m = 10 metre
+
+# E536
+d: Length = 10 metre
+d = 5 second
+
+# E536
+lst: List = [1, 2, 3]
+lst = 5
+
+# E536
+f: ![[x: Int], Int] = !(x: Int): Int = x
+f = 10
+
+# E536
+x = 5
+x = 10.5
+x = "test"
+
+# E535
+x: Int = 5
+x = 10.5
+
+# E535
+m: Mass = 10 kilogram
+m = 5 metre
+
+# E535
+y: Float = 5.5
+y = "hello"
+
+# E535
+lst: List = [1, 2, 3]
+lst = "not a list"
+
+# E536
+x: Int = 5
+y: Int = 10
+x = y + 2.5
+
+# E536
+m: Mass = 10 kilogram
+n: Length = 20 metre
+m = n

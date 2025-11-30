@@ -1,0 +1,177 @@
+from si import @(metre, kilogram, second, Mass, Length)
+
+# ---
+if true then 1 else 0
+
+# ---
+if false then 1 else 0
+
+# ---
+if 5 < 10 then "yes" else "no"
+
+# ---
+if 10 > 5 then 5 kilogram else 3 kilogram
+
+# ---
+if true then 10 metre else 5 metre
+
+# ---
+x = if 5 < 10 then 100 else 200
+
+# ---
+result = if true then "success" else "failure"
+
+# ---
+mass = if 5 < 10 then 5 kilogram else 10 kilogram
+
+# ---
+if true then { 5 } else { 10 }
+
+# ---
+if false then { "a" } else { "b" }
+
+# ---
+if 5 < 10 then { x = 5; x + 10 } else { y = 20; y - 5 }
+
+# ---
+if true then {
+    a = 5
+    b = 10
+    a + b
+} else {
+    c = 20
+    c * 2
+}
+
+# ---
+nested = if true then (if false then 1 else 2) else 3
+
+# ---
+result = if 5 < 10 then (if 3 > 2 then "a" else "b") else "c"
+
+# ---
+if true then {
+    if false then 1 else 2
+} else {
+    if true then 3 else 4
+}
+
+# ---
+x = 10
+if x < 5 then "small" else (if x < 15 then "medium" else "large")
+
+# ---
+a = 5
+b = 10
+if a < b then {
+    if a < 3 then "very small" else "small"
+} else {
+    if a > 15 then "large" else "medium"
+}
+
+# ---
+if 5 < 10 and 3 > 2 then 1 else 0
+
+# ---
+if true or false then "yes" else "no"
+
+# ---
+if not (5 > 10) then "correct" else "wrong"
+
+# ---
+if (5 < 10 and 3 < 7) or (2 > 8) then 1 else 0
+
+# ---
+x = 5
+if x < 10 then x + 5 else x - 5
+
+# ---
+m = 10 kilogram
+adjusted = if m > 5 kilogram then m + 2 kilogram else m - 1 kilogram
+
+# ---
+flag = true
+result = if flag then (if not flag then 1 else 2) else 3
+
+# E014
+if true then 5
+
+# E014
+if false then "hello"
+
+# E014
+if 5 < 10 then 100
+
+# E521
+if true then 5 else "hello"
+
+# E521
+if false then "world" else 10
+
+# E521
+if true then 5 kilogram else 10 metre
+
+# E521
+if false then 10 second else 5 kilogram
+
+# E521
+if true then 5 else 10.5
+
+# E521
+if true then 5.5 else "test"
+
+# E521
+if false then true else 5
+
+# E521
+if true then [1, 2, 3] else 5
+
+# E521
+if false then 5 kilogram else 10
+
+# E521
+if true then 10 metre else 5
+
+# E521
+if true then {
+    5 kilogram
+} else {
+    10 metre
+}
+
+# E521
+if false then {
+    x = 5
+    x + 10 metre
+} else {
+    y = 3
+    y * 5 kilogram
+}
+
+# E521
+nested = if true then (if false then 5 else 10 kilogram) else 15
+
+# E521
+if true then (if false then 5 kilogram else 10 kilogram) else 5 metre
+
+# E520
+if 5 then 1 else 0
+
+# E520
+if 10.5 then "yes" else "no"
+
+# E520
+if "hello" then 1 else 0
+
+# E520
+if 5 kilogram then 1 else 0
+
+# E520
+if 10 metre then "yes" else "no"
+
+# E520
+x = 5
+if x then 1 else 0
+
+# E520
+if [1, 2, 3] then 1 else 0

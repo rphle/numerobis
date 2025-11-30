@@ -15,11 +15,21 @@ from typechecker.typechecker import Typechecker
 
 
 class Module:
-    def __init__(self, path: str | Path):
-        self.meta = ModuleMeta(Path(path), open(path, "r", encoding="utf-8").read())
+    def __init__(
+        self,
+        path: str | Path,
+        source: Optional[str] = None,
+        namespaces: Optional[Namespaces] = None,
+    ):
+        self.meta = ModuleMeta(
+            Path(path),
+            open(path, "r", encoding="utf-8").read() if source is None else source,
+        )
         self.errors = Exceptions(module=self.meta)
 
         self.namespaces = Namespaces(names=declare.names.copy())
+        if namespaces is not None:
+            self.namespaces.update(namespaces)
 
     def process(self):
         self.parse()

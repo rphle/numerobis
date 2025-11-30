@@ -1,0 +1,205 @@
+from si import @(metre, kilogram, second, newton, joule, watt, pascal)
+from si import @(Mass, Length, Time, Force, Energy, Power, Pressure)
+
+# ---
+mass = 10 kilogram
+velocity = 5 metre/second
+momentum = mass * velocity
+
+# ---
+mass = 2 kilogram
+velocity = 10 metre/second
+kinetic_energy = (mass * velocity^2) / 2
+
+# ---
+mass = 5 kilogram
+height = 20 metre
+g = 9.8 metre/second^2
+potential_energy = mass * g * height
+
+# ---
+force = 100 newton
+distance = 10 metre
+work = force * distance
+
+# ---
+work = 500 joule
+time = 10 second
+power = work / time
+
+# ---
+power = 100 watt
+time = 5 second
+energy = power * time
+
+# ---
+mass = 10 kilogram
+acceleration = 5 metre/second^2
+force = mass * acceleration
+
+# ---
+initial_velocity = 0 metre/second
+acceleration = 10 metre/second^2
+time = 5 second
+final_velocity = initial_velocity + acceleration * time
+
+# ---
+initial_velocity = 0 metre/second
+acceleration = 10 metre/second^2
+time = 5 second
+displacement = initial_velocity * time + (acceleration * time^2) / 2
+
+# ---
+force = 50 newton
+area = 2 metre^2
+pressure = force / area
+
+# ---
+pressure = 100 pascal
+area = 5 metre^2
+force = pressure * area
+
+# ---
+mass1 = 10 kilogram
+velocity1 = 5 metre/second
+mass2 = 20 kilogram
+velocity2 = 3 metre/second
+total_momentum = mass1 * velocity1 + mass2 * velocity2
+
+# ---
+spring_constant = 100 newton/metre
+displacement = 0.5 metre
+force = spring_constant * displacement
+
+# ---
+mass = 1 kilogram
+spring_constant = 100 newton/metre
+angular_frequency = (spring_constant / mass)^0.5
+
+# ---
+radius = 10 metre
+angular_velocity = 2 (1/second)
+linear_velocity = radius * angular_velocity
+
+# ---
+mass = 5 kilogram
+radius = 2 metre
+angular_velocity = 3 (1/second)
+centripetal_force = mass * radius * angular_velocity^2
+
+# ---
+mass = 10 kilogram
+velocity = 20 metre/second
+radius = 50 metre
+centripetal_acceleration = velocity^2 / radius
+
+# ---
+distance = 100 metre
+time = 10 second
+average_speed = distance / time
+
+# ---
+initial_velocity = 10 metre/second
+final_velocity = 30 metre/second
+time = 4 second
+acceleration = (final_velocity - initial_velocity) / time
+
+# ---
+mass = 50 kilogram
+height = 10 metre
+g = 9.8 metre/second^2
+weight = mass * g
+
+# ---
+force = 100 newton
+time = 5 second
+impulse = force * time
+
+# ---
+initial_momentum = 50 kilogram * 10 metre/second
+final_momentum = 50 kilogram * 5 metre/second
+impulse = final_momentum - initial_momentum
+
+# ---
+mass = 2 kilogram
+length = 1 metre
+moment_of_inertia = mass * length^2
+
+# ---
+moment_of_inertia = 10 kilogram * metre^2
+angular_velocity = 5 (1/second)
+rotational_energy = (moment_of_inertia * angular_velocity^2) / 2
+
+# ---
+torque = 50 newton * metre
+angular_displacement = 10 (1 / 1)
+work = torque * angular_displacement
+
+# ---
+power = 1000 watt
+force = 100 newton
+velocity = power / force
+
+# Efficiency = 0.8
+input_power = 1000 watt
+output_power = efficiency * input_power
+
+# ---
+mass_flow_rate = 10 kilogram/second
+velocity = 5 metre/second
+force = mass_flow_rate * velocity
+
+# ---
+density = 1000 kilogram/metre^3
+volume = 2 metre^3
+mass = density * volume
+
+# ---
+mass = 5 kilogram
+volume = 0.01 metre^3
+density = mass / volume
+
+# ---
+projectile_velocity = 20 metre/second
+angle = 45
+g = 9.8 metre/second^2
+time_of_flight = (2 * projectile_velocity) / g
+
+# ---
+initial_velocity = 30 metre/second
+g = 9.8 metre/second^2
+max_height = (initial_velocity^2) / (2 * g)
+
+# Elastic_modulus = 200e9 pascal
+strain = 0.001
+stress = elastic_modulus * strain
+
+# ---
+coefficient = 0.5
+normal_force = 100 newton
+friction_force = coefficient * normal_force
+
+# E703
+mass = 10 kilogram
+time = 5 second
+invalid = mass + time
+
+# E703
+force = 50 newton
+energy = 100 joule
+wrong = force + energy
+
+# E703
+velocity = 10 metre/second
+acceleration = 5 metre/second^2
+bad = velocity + acceleration
+
+# E703
+pressure = 100 pascal
+force = 50 newton
+incompatible = pressure + force
+
+# E703
+mass = 10 kilogram
+length = 5 metre
+error = mass - length

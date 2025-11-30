@@ -1,0 +1,277 @@
+from si import @(metre, kilogram, second, newton, joule, km, gram, Mass, Length, Time, Force, Energy)
+
+# ---
+result = (5 + 3) * 2 - 1
+
+# ---
+value = 10 / (2 + 3) + 7
+
+# ---
+calc = 2^(3 + 1) * 5 - 10
+
+# ---
+nested = ((5 + 3) * 2 - 1) / (10 - 7)
+
+# ---
+complex_bool = (5 < 10 and 3 > 2) or (7 != 7 and false)
+
+# ---
+chained = (true or false) and (not false) xor true
+
+# ---
+combined = (5 < 10) and (not (3 > 7)) or (2 == 2)
+
+# ---
+physics = 10 kilogram * 9.8 metre/second^2 * 5 metre
+
+# Energy = (5 kilogram * (10 metre/second)^2) / 2
+
+# ---
+work = 50 newton * 10 metre + 20 joule
+
+# ---
+momentum = (10 kilogram * 5 metre/second) + (20 kilogram * 3 metre/second)
+
+# ---
+compound = ((100 metre / 10 second) * 5 second) + 50 metre
+
+# ---
+ratio = (1000 metre -> km) / (1 km)
+
+# ---
+converted = ((5000 metre -> km) + 10 km) * 2
+
+# ---
+multi_convert = (1000 gram -> kilogram) * 10 metre / second^2
+
+# ---
+speed = 100 metre / (10 second)
+distance = speed * 5 second
+total = distance + 50 metre
+
+# ---
+mass = 10 kilogram
+acceleration = 5 metre/second^2
+force = mass * acceleration
+work = force * 10 metre
+power = work / 2 second
+
+# ---
+result = if (5 < 10 and 3 > 2) then (100 + 50) * 2 else 0
+
+# ---
+value = if true then (if false then 1 else 2) * 3 else (if true then 4 else 5) + 6
+
+# ---
+computed = if (10 > 5) then 5 kilogram * 2 + 3 kilogram else 1 kilogram
+
+# ---
+f!(x) = x * 2 + 5
+g!(y) = y - 3
+h!(z) = f(g(z)) + g(f(z))
+h(10)
+
+# ---
+compose!(a, b, c, x) = a(b(c(x)))
+add_one!(n) = n + 1
+double!(n) = n * 2
+square!(n) = n * n
+compose(add_one, double, square, 3)
+
+# ---
+map!(f, lst) = if lst == [] then [] else [f(lst[0])] + map(f, lst[1:])
+transform!(x) = x * 2 + 1
+map(transform, [1, 2, 3, 4, 5])
+
+# ---
+lst = [1, 2, 3, 4, 5]
+first = lst[0]
+last = lst[-1]
+middle = lst[1:4]
+result = first + last + middle[1]
+
+# ---
+nested = [[1, 2], [3, 4], [5, 6]]
+value = nested[1][0] + nested[0][1] + nested[2][1]
+
+# ---
+matrix = [[[1, 2], [3, 4]], [[5, 6], [7, 8]]]
+element = matrix[1][0][1]
+
+# ---
+text = "Hello, World!"
+substring = text[0:5]
+char = text[7]
+reversed = text[::-1]
+
+# ---
+combined = ("Hello" + " " + "World")[0:5] + "!"
+
+# ---
+repeated = ("x" * 3 + "y" * 2)[2:4]
+
+# ---
+for_result = [x * 2 for x in [1, 2, 3]]
+
+# ---
+sum = 0
+for i in 0..10 do {
+    if i % 2 == 0 then {
+        sum = sum + i
+    }
+}
+
+# ---
+product = 1
+for n in 1..6 do {
+    product = product * n
+}
+
+# ---
+accumulator = []
+for x in [1, 2, 3, 4, 5] do {
+    if x > 2 then {
+        accumulator = accumulator + [x * 2]
+    }
+}
+
+# ---
+counter = 0
+while counter < 10 do {
+    if counter % 2 == 0 then {
+        counter = counter + 2
+    } else {
+        counter = counter + 1
+    }
+}
+
+# ---
+make_processor!(scale) = {
+    !(x) = {
+        temp = x * scale
+        temp + 10
+    }
+}
+processor = make_processor(5)
+processor(3)
+
+# ---
+apply_ops!(x, ops) = {
+    if ops == [] then x
+    else apply_ops(ops[0](x), ops[1:])
+}
+add_one!(n) = n + 1
+double!(n) = n * 2
+apply_ops(5, [add_one, double, add_one])
+
+# ---
+pipeline = !(x) = (x + 5) * 2 - 3
+nested_call = pipeline(pipeline(pipeline(1)))
+
+# ---
+fibonacci!(n: Int): Int = {
+    if n <= 1 then {
+        return n
+    }
+    a = fibonacci(n - 1)
+    b = fibonacci(n - 2)
+    return a + b
+}
+fibonacci(10)
+
+# ---
+complex_recursive!(n: Int, acc: Int = 0): Int = {
+    if n <= 0 then return acc
+    if n % 2 == 0 then {
+        return complex_recursive(n / 2, acc + n)
+    } else {
+        return complex_recursive(n - 1, acc + n * 2)
+    }
+}
+complex_recursive(10)
+
+# ---
+dimension_chain = ((10 kilogram * 5 metre/second^2) * 20 metre) / 4 second
+
+# ---
+unit_arithmetic = (1000 metre -> km) + (500 metre -> km) * 2 - (0.5 km)
+
+# ---
+mixed_ops = (5 kilogram + 3 kilogram) * (10 metre / 5 metre) + 2 kilogram
+
+# ---
+force_calc = ((20 kilogram + 5 kilogram) * 10 metre/second^2) / 5
+
+# Energy_calc = (10 kilogram * ((5 metre/second)^2 + (3 metre/second)^2)) / 2
+
+# ---
+multi_step = {
+    mass = 10 kilogram
+    vel = 5 metre/second
+    ke = (mass * vel^2) / 2
+    ke + 50 joule
+}
+
+# ---
+conditional_calc = {
+    x = 10
+    y = if x > 5 then x * 2 else x / 2
+    z = y + 3
+    if z > 20 then z * 10 else z + 100
+}
+
+# ---
+list_operations = {
+    base = [1, 2, 3]
+    doubled = [x * 2 for x in base]
+    filtered = [x for x in doubled if x > 3]
+    sum = 0
+    for x in filtered do {
+        sum = sum + x
+    }
+    sum
+}
+
+# ---
+nested_structures = {
+    data = [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
+    total = 0
+    for row in data do {
+        for val in row do {
+            if val % 2 == 0 then {
+                total = total + val
+            }
+        }
+    }
+    total
+}
+
+# ---
+higher_order_chain = {
+    apply!(f, x) = f(x)
+    twice!(f, x) = f(f(x))
+    inc!(n) = n + 1
+    result = twice(!(x) = apply(inc, x), 5)
+    result
+}
+
+# ---
+((5 kilogram + 3 kilogram) * 2 - 1 kilogram) * 10 metre / second^2
+
+# ---
+(((10 metre / 2 second) + (5 metre / 1 second)) * 3 second) / 2
+
+# E703
+(5 kilogram + 10 metre) * 2
+
+# E703
+10 newton + (5 kilogram * 3 metre)
+
+# E703
+(100 metre / 10 second) + 50 kilogram
+
+# E521
+if (5 < 10 and 3 > 2) then 100 kilogram else 50 metre
+
+# E521
+value = if true then (if false then 1 kilogram else 2 kilogram) else 3 metre

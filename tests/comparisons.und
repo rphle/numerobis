@@ -1,0 +1,142 @@
+from si import @(metre, kilogram, second, Mass, Length)
+
+# ---
+5 < 10
+
+# ---
+10 > 5
+
+# ---
+5 <= 5
+
+# ---
+10 >= 10
+
+# ---
+5 == 5
+
+# ---
+5 != 10
+
+# ---
+5.5 < 10.2
+
+# ---
+3.0 >= 3.0
+
+# ---
+2.5 == 2.5
+
+# ---
+3.0 != 2.9
+
+# ---
+5 < 10.0
+
+# ---
+10.0 >= 5
+
+# ---
+5 kilogram < 10 kilogram
+
+# ---
+10 metre > 5 metre
+
+# ---
+5 kilogram <= 5 kilogram
+
+# ---
+10 metre >= 10 metre
+
+# ---
+5 kilogram == 5 kilogram
+
+# ---
+5 metre != 10 metre
+
+# ---
+5 < 10 < 15
+
+# ---
+10 > 5 > 3
+
+# ---
+5 <= 10 <= 15
+
+# ---
+15 >= 10 >= 5
+
+# ---
+3 < 5 == 5 <= 10
+
+# ---
+5 kilogram < 10 kilogram < 15 kilogram
+
+# ---
+10 metre > 5 metre > 1 metre
+
+# ---
+5 kilogram <= 10 kilogram <= 15 kilogram
+
+# ---
+"hello" == "hello"
+
+# ---
+"abc" != "def"
+
+# ---
+"a" < "b"
+
+# ---
+"z" > "a"
+
+# ---
+true == true
+
+# ---
+false != true
+
+# ---
+true == false
+
+# ---
+5 < 10 and 3 < 7
+
+# ---
+5 > 10 or 3 < 7
+
+# ---
+not (5 > 10)
+
+# ---
+5 kilogram < 10 kilogram and 3 metre < 7 metre
+
+# E514
+5 kilogram < 10 metre
+
+# E514
+10 second > 5 kilogram
+
+# E514
+5 kilogram == 5 metre
+
+# E514
+10 metre != 10 second
+
+# E514
+5 kilogram < 10 metre < 15 kilogram
+
+# E514
+10 metre > 5 kilogram > 1 metre
+
+# E514
+"hello" < 5
+
+# E514
+true == 5
+
+# E514
+5 < "world"
+
+# E514
+false != 10

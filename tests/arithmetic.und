@@ -1,0 +1,226 @@
+from si import @(metre, second, kilogram, Mass, Length, Time)
+
+# ---
+5 + 3
+
+# ---
+10 - 4
+
+# ---
+3 * 7
+
+# ---
+20 / 4
+
+# ---
+10 % 3
+
+# ---
+2^3
+
+# ---
+5.5 + 2.3
+
+# ---
+10.0 - 3.5
+
+# ---
+2.5 * 4.0
+
+# ---
+15.0 / 3.0
+
+# ---
+7.5 % 2.5
+
+# ---
+2.0^3.0
+
+# ---
+5 + 3.5
+
+# ---
+10.0 - 2
+
+# ---
+3 * 4.5
+
+# ---
+20.0 / 5
+
+# ---
+2^3.5
+
+# ---
+-5
+
+# ---
++5
+
+# ---
+--5
+
+# ---
+---5
+
+# ---
+-(10 + 5)
+
+# ---
++(10 - 3)
+
+# ---
+5 kilogram + 3 kilogram
+
+# ---
+10 metre - 4 metre
+
+# ---
+3 kilogram * 2
+
+# ---
+2 * 3 kilogram
+
+# ---
+10 metre / 2
+
+# ---
+10 metre / 2.0
+
+# ---
+10 metre % 3 metre
+
+# ---
+5 kilogram * 2 metre
+
+# ---
+10 metre / 2 second
+
+# ---
+10 metre^2
+
+# ---
+(5 metre)^3
+
+# ---
+(10 metre/second) * 5 second
+
+# ---
+100 kilogram * 10 metre/second^2
+
+# ---
+-(5 kilogram)
+
+# ---
++(10 metre)
+
+# ---
+-(-5 metre)
+
+# ---
+5 + 3 * 2
+
+# ---
+(5 + 3) * 2
+
+# ---
+10 - 4 / 2
+
+# ---
+2^3 + 1
+
+# ---
+2^(3 + 1)
+
+# ---
+10 metre + 5 metre - 3 metre
+
+# ---
+5 kilogram * 2 * 3
+
+# ---
+100 metre / 10 / 2
+
+# ---
+2 metre^2 * 3 metre
+
+# ---
+10 kilogram * 5 metre / 2 second
+
+# ---
+1_000
+
+# ---
+1_234.567_89
+
+# ---
+1e3
+
+# ---
+1.5e-2
+
+# ---
+6.022e23
+
+# ---
+1_000 kilogram
+
+# ---
+1.5e3 metre
+
+# E502
+5 kilogram + 10 metre
+
+# E502
+10 second - 5 kilogram
+
+# E502
+"hello" + 5
+
+# E502
+5 + "hello"
+
+# E502
+true + 5
+
+# E502
+5 + false
+
+# E502
+5 kilogram % 3 metre
+
+# E533
+-"hello"
+
+# E533
+-true
+
+# E533
+-[1, 2, 3]
+
+# E101
+2^(3 kilogram)
+
+# E101
+(2 metre)^(3 second)
+
+# E702
+(2 metre)^(3 kilogram)
+
+# E703
+5 kilogram + 10 metre
+
+# E703
+10 metre * 5 second + 20 kilogram
+
+# E703
+(10 kilogram + 5 metre) * 2
+
+# E007
+1.2.3
+
+# E007
+1e2e3
+
+# E007
+1.2e3.4

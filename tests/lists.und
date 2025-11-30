@@ -1,55 +1,314 @@
-from si import @(Mass, kg)
+from si import @(metre, kilogram, second, Mass, Length)
 
-5 * [1,2,3]
-mylist: List = [1, 2, 3] + [1,2]
+# ---
+[]
 
-add!(n: Int, l: List) = n*l
-add(4, [])
+# ---
+[1]
 
-x: List = [[]]
-y: List = [[], []]
+# ---
+[1, 2, 3]
+
+# ---
+[1, 2, 3, 4, 5]
+
+# ---
+["a", "b", "c"]
+
+# ---
+[true, false, true]
+
+# ---
+[1.5, 2.5, 3.5]
+
+# ---
+[1 kilogram, 2 kilogram, 3 kilogram]
+
+# ---
+[1 metre, 2 metre, 3 metre, 4 metre]
+
+# ---
+[[]]
+
+# ---
+[[1, 2], [3, 4]]
+
+# ---
+[[1], [2, 3], [4, 5, 6]]
+
+# ---
+[[[1, 2]], [[3, 4]]]
+
+# ---
+[[[[1]]]]
+
+# ---
+[[], []]
+
+# ---
+[[], [1, 2], []]
+
+# ---
+[[1 kilogram, 2 kilogram], [3 kilogram, 4 kilogram]]
+
+# ---
+x: List = []
+
+# ---
+y: List = [1, 2, 3]
+
+# ---
+z: List = [[1], [2]]
+
+# ---
+masses: List = [1 kilogram, 2 kilogram]
+
+# ---
+lst = [1, 2, 3]
+lst[0]
+
+# ---
+words = ["a", "b", "c"]
+words[1]
+
+# ---
+nested = [[1, 2], [3, 4]]
+nested[0]
+
+# ---
+masses = [1 kilogram, 2 kilogram, 3 kilogram]
+masses[2]
+
+# ---
+lst = [1, 2, 3, 4, 5]
+lst[-1]
+
+# ---
+lst = [1, 2, 3]
+lst[-2]
+
+# ---
+words = ["a", "b", "c"]
+words[-3]
+
+# ---
+lst = [1, 2, 3, 4, 5]
+lst[0:3]
+
+# ---
+lst = [1, 2, 3, 4, 5]
+lst[1:]
+
+# ---
+lst = [1, 2, 3, 4, 5]
+lst[:3]
+
+# ---
+lst = [1, 2, 3, 4, 5]
+lst[:]
+
+# ---
+lst = [1, 2, 3, 4, 5]
+lst[1:4]
+
+# ---
+masses = [1 kilogram, 2 kilogram, 3 kilogram, 4 kilogram]
+masses[1:3]
+
+# ---
+lst = [1, 2, 3, 4, 5]
+lst[::2]
+
+# ---
+lst = [1, 2, 3, 4, 5]
+lst[::-1]
+
+# ---
+lst = [1, 2, 3, 4, 5]
+lst[1::2]
+
+# ---
+lst = [1, 2, 3, 4, 5]
+lst[:3:1]
+
+# ---
+[1, 2] + [3, 4]
+
+# ---
+["a"] + ["b", "c"]
+
+# ---
+[1 kilogram] + [2 kilogram, 3 kilogram]
+
+# ---
+[[1]] + [[2]]
+
+# ---
+[] + [1, 2, 3]
+
+# ---
+[1, 2] + []
+
+# ---
+[] + []
+
+# ---
+[1, 2] + [3, 4] + [5, 6]
+
+# ---
+[[1, 2]] + [[3, 4]] + [[5, 6]]
+
+# ---
+2 * [1, 2, 3]
+
+# ---
+3 * ["a", "b"]
+
+# ---
+0 * [1, 2, 3]
+
+# ---
+5 * [1 kilogram, 2 kilogram]
+
+# ---
+[1, 2, 3] * 2
+
+# ---
+["a", "b"] * 3
+
+# ---
+[1 metre, 2 metre] * 2
+
+# Empty = []
+empty + [1 metre]
+
+# ---
+base: List = []
+base + [5 kilogram]
+
+# ---
+init: List = [[]]
+init + [[1, 2]]
+
+# ---
+partial = [1, 2]
+partial + [3 kilogram]
+
+# ---
+lst = [!(x: Int): Int = x + 1, !(x: Int): Int = x * 2]
+lst[0]
+
+# ---
+funcs = [!(x) = x * 2, !(x) = x + 1]
+funcs[0](5)
+
+# E525
+[1, "hello"]
+
+# E525
+[5, true]
+
+# E525
+[1 kilogram, 1 metre]
+
+# E525
+[5 kilogram, 10]
+
+# E525
+[10, 5 metre]
+
+# E525
+["a", 5, true]
+
+# E525
+[1, 2, 3, "hello"]
+
+# E525
+[1 kilogram, 2 metre, 3 second]
+
+# E525
+[[1, 2], [3, "a"]]
+
+# E525
+[[1 kilogram], [2 metre]]
+
+# E525
+[[], [1], ["hello"]]
+
+# E524
+x: List = [1, 2, 3]
+y: List = ["a", "b"]
 x + y
 
-f!(x: Int): Int = x+1
+# E524
+masses = [1 kilogram, 2 kilogram]
+lengths = [1 metre, 2 metre]
+masses + lengths
 
-[ f ] + [] # works
+# E524
+[1, 2] + ["a", "b"]
 
-[ [], [[]], [[], [[]]] ]
-[[]] + [[[]]]
+# E524
+[5] + [true]
 
-a = []
-if true then {
-    a = []
-} else {
-    a = [5]
-}
+# E524
+[1 kilogram] + [1 metre]
 
-a + [2]
+# E524
+[[1, 2]] + [[3, "a"]]
 
-[[]] + [[1]]
+# E524
+[[]] + [[1], ["hello"]]
 
-u = [[], [1,2,3], []]
-v = [[1], [], []]
+# E523
+lst = [1, 2, 3]
+lst["hello"]
 
-u + v
+# E523
+words = ["a", "b", "c"]
+words[1.5]
 
-[[]] + [[[ ]]]
+# E523
+masses = [1 kilogram, 2 kilogram]
+masses[true]
 
+# E523
+nested = [[1], [2]]
+nested[1 kilogram]
 
-1 + [1, 2, 3][1]
+# E532
+lst = [1, 2, 3, 4, 5]
+lst["a":3]
 
-"hey"[2]
+# E532
+lst = [1, 2, 3, 4, 5]
+lst[1:true]
 
-[1,2,3][1:2]
-[1,2,3][:2]
-[1,2,3][::]
-[1,2,3][::-1]
+# E532
+lst = [1, 2, 3, 4, 5]
+lst[1.5:3]
 
-[!(x: Int): Int = x+1, !(x: Int): Int = 2]
+# E532
+lst = [1, 2, 3, 4, 5]
+lst[0:2.5]
 
-#[
-([])[:2]
+# E516
+x = 5
+for i in x do i
 
-(1,2; 3) # vector/array
-(["hey", 5 kg, 1234, ["dog", "cat"]]) #tuple
-]#
+# E516
+s = "hello"
+for c in s do c
+
+# E516
+m = 5 kilogram
+for x in m do x
+
+# E517
+x, y = 5
+
+# E517
+a, b = "hello"
+
+# E517
+m, n = 5 kilogram

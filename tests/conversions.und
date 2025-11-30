@@ -1,0 +1,169 @@
+from si import @(metre, kilogram, second, km, gram, hour, Mass, Length, Time)
+
+# ---
+1000 metre -> km
+
+# ---
+5 km -> metre
+
+# ---
+1000 gram -> kilogram
+
+# ---
+2 kilogram -> gram
+
+# ---
+3600 second -> hour
+
+# ---
+2 hour -> second
+
+# ---
+distance = 5000 metre
+distance -> km
+
+# ---
+mass = 500 gram
+mass -> kilogram
+
+# ---
+time = 7200 second
+time -> hour
+
+# ---
+speed = 100 metre / second
+speed -> (km / hour)
+
+# ---
+acceleration = 10 metre / second^2
+acceleration -> (km / hour^2)
+
+# ---
+force = 1000 kilogram * metre / second^2
+force -> (gram * km / hour^2)
+
+# ---
+ratio = 1000 metre / 1 km
+ratio -> Int
+
+# ---
+pure = 5 metre / 5 metre
+pure -> Float
+
+# ---
+dimensionless = (100 gram / 1 kilogram) * 10
+dimensionless -> Int
+
+# ---
+x = 5
+x -> Str
+
+# ---
+y = 10.5
+y -> Str
+
+# ---
+flag = true
+flag -> Str
+
+# ---
+mass = 10 kilogram
+mass -> Str
+
+# ---
+distance = 100 metre
+distance -> Str
+
+# ---
+speed = 50 metre / second
+speed -> Str
+
+# ---
+x = 42
+(x -> Str) + " is the answer"
+
+# ---
+count = 5
+"Count: " + (count -> Str)
+
+# ---
+mass = 10 kilogram
+"Mass: " + (mass -> Str) + " kg"
+
+# ---
+(1000 metre -> km) + 5 km
+
+# ---
+(2 kilogram -> gram) + 500 gram
+
+# ---
+dist1 = 1000 metre -> km
+dist2 = 5 km
+dist1 + dist2
+
+# ---
+((10 metre / second) -> (km / hour)) + 50 (km / hour)
+
+# E515
+5 kilogram -> metre
+
+# E515
+10 metre -> second
+
+# E515
+20 second -> kilogram
+
+# E515
+distance = 100 metre
+distance -> Mass
+
+# E515
+mass = 10 kilogram
+mass -> Length
+
+# E515
+time = 5 second
+time -> Mass
+
+# E515
+speed = 10 metre / second
+speed -> Mass
+
+# E515
+force = 50 kilogram * metre / second^2
+force -> Length
+
+# E515
+5 metre -> Int
+
+# E515
+10 kilogram -> Float
+
+# E515
+20 second -> Bool
+
+# E515
+mass = 10 kilogram
+mass -> Int
+
+# E515
+distance = 100 metre
+distance -> Float
+
+# E515
+"hello" -> Int
+
+# E515
+true -> Float
+
+# E515
+[1, 2, 3] -> Str
+
+# E515
+5 -> kilogram
+
+# E515
+10.5 -> metre
+
+# E515
+"test" -> kilogram

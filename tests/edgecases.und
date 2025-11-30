@@ -1,0 +1,255 @@
+from si import @(metre, kilogram, second, km, gram, Mass, Length, Time)
+
+# ---
+0
+
+# ---
+0.0
+
+# ---
+0 kilogram
+
+# ---
+0 metre
+
+# ---
+0 second
+
+# ---
+0 kilogram + 5 kilogram
+
+# ---
+5 metre + 0 metre
+
+# ---
+0 kilogram * 5
+
+# ---
+0 metre / 10
+
+# ---
+5 kilogram * 0
+
+# ---
+0 * 10 metre
+
+# ---
+0 kilogram / 5
+
+# ---
+0 metre^2
+
+# ---
+(0 kilogram)^3
+
+# ---
+0 kilogram == 0 kilogram
+
+# ---
+0 metre < 5 metre
+
+# ---
+0 kilogram != 5 kilogram
+
+# ---
+ratio = 1000 metre / 1 km
+
+# ---
+pure = 5 metre / 5 metre
+
+# ---
+dimensionless = (10 kilogram / 10 kilogram) * 5
+
+# ---
+result = (100 metre / 1 km) + 0.5
+
+# ---
+x = 1 metre^0
+
+# ---
+y = (5 kilogram)^0
+
+# ---
+z = (10 second)^0
+
+# ---
+unit_val = (1 metre / 1 metre) * 10
+
+# ---
+one = 1 kilogram / 1 kilogram
+
+# ---
+sqrt_area = (16 metre^2)^0.5
+
+# ---
+cube_root = (8 metre^3)^(1.0/3.0)
+
+# ---
+fourth_power = (2 metre)^4
+
+# ---
+fractional = (9 metre^2)^(3.0/2.0)
+
+# ---
+negative_exp = (5 metre)^(-1)
+
+# ---
+inverse = (10 kilogram)^(-2)
+
+# ---
+1 / (5 metre)
+
+# ---
+1 / (10 kilogram * metre)
+
+# ---
+per_time = 1 / (5 second)
+
+# ---
+very_small = 1e-100
+
+# ---
+very_large = 1e100
+
+# ---
+tiny_mass = 1e-50 kilogram
+
+# ---
+huge_distance = 1e50 metre
+
+# ---
+speed_of_light = 299_792_458 metre / second
+
+# ---
+planck = 6.62607015e-34 kilogram * metre^2 / second
+
+# ---
+deep = [[[[[[1, 2]]]]]]
+
+# ---
+deep_masses = [[[[1 kilogram]]]]
+
+# ---
+nested_empty = [[[[[]]]]]
+
+# ---
+mixed_depth = [1, [2, [3, [4, [5]]]]]
+
+# ---
+x = 5
+x = x
+
+# ---
+m = 10 kilogram
+m = m + 0 kilogram
+
+# ---
+identity!(x) = x
+identity(identity(identity(5)))
+
+# ---
+self_ref!(x) = if x == 0 then 0 else self_ref(x)
+
+# ///
+mutual_a!(n) = if n <= 0 then 0 else mutual_b(n - 1)
+mutual_b!(n) = if n <= 0 then 1 else mutual_a(n - 1)
+mutual_a(5)
+
+# ---
+f!(x) = g(x)
+g!(y) = f(y)
+
+# ---
+make_func!() = !(x) = make_func()
+
+# Empty_string = ""
+
+# Empty_list: List = []
+
+# Empty_block = {}
+
+# ---
+just_zero = { 0 }
+
+# ---
+single = [5]
+
+# ---
+single_mass = [1 kilogram]
+
+# ---
+repeated = [1, 1, 1, 1, 1]
+
+# ---
+same_masses = [5 kilogram, 5 kilogram, 5 kilogram]
+
+# ---
+[1, 2, 3][10]
+
+# ---
+"hello"[100]
+
+# ---
+[1, 2, 3][-10]
+
+# ---
+lst = [1, 2, 3]
+lst[0:100]
+
+# ---
+"test"[0:1000]
+
+# ---
+[1, 2, 3][5:10]
+
+# Epsilon = 1e-300
+
+# ---
+tiny = 1e-300 kilogram
+
+# ---
+max_float = 1.7976931348623157e308
+
+# ---
+min_positive = 2.2250738585072014e-308
+
+# ---
+huge_exp = (2 metre)^100
+
+# ---
+nested_power = ((2 metre)^2)^3
+
+# ---
+x = if true then if true then if true then 5 else 4 else 3 else 2
+
+# ---
+many_ops = 1 + 2 - 3 * 4 / 5 % 6
+
+# ---
+bool_chain = true and true or false and true or false
+
+# ---
+compare_chain = 1 < 2 < 3 < 4 < 5 < 6
+
+# ---
+long_sum = 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1
+
+# ---
+long_product = 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2
+
+# E703
+0 kilogram + 0 metre
+
+# E703
+0 metre - 0 second
+
+# E703
+zero_mass = 0 kilogram
+zero_length = 0 metre
+zero_mass + zero_length
+
+# E502
+0 + "hello"
+
+# E502
+0 kilogram + "test"

@@ -1,42 +1,166 @@
-from si import @(kilogram, second)
+from si import @(kilogram, metre)
 
-if true then 2kilogram else 3 kilogram
+# ---
+true and true
 
-if true xor false then {
-    "beep"
-} else {
-    "boop"
-}
-if 10 >= 10 > 5 and 3 < 4 then 1 else 0;
+# ---
+true and false
 
-var1 = 10
-var2 = 5
+# ---
+false and true
 
+# ---
+false and false
 
-if var1 > var2 then echo("var1 is greater than var2") else echo("var2 is greater than var1")
+# ---
+true or true
 
-if var1 > var2 then   # indentation optional for readability
-  echo("var1 is greater than var2")
-else if var1 == var2 then  # 'else if' is naturally supported by syntax
-  echo("var1 is equal to var2")
-else
-  echo("var2 is greater than var1")
+# ---
+true or false
 
-user_input = 42
-if user_input == 42 then
-  {
-    win = (if user_input == 42 then true else false)
-    echo("you win!")
-  }
-else
-  echo("you lose!")
+# ---
+false or true
 
-if 5 > 3 then 1 else 0;
-if true and false then 1 else 0;
-if true or false then 1 else 0;
-if false and (1/0) then 1 else 0;
+# ---
+false or false
 
+# ---
+true xor true
 
-# Logical NOT
-not false      # # a# complicated # comm\ent
-not not false;
+# ---
+true xor false
+
+# ---
+false xor true
+
+# ---
+false xor false
+
+# ---
+not true
+
+# ---
+not false
+
+# ---
+not not true
+
+# ---
+not not not false
+
+# ---
+true and true and true
+
+# ---
+false or false or true
+
+# ---
+true xor false xor true
+
+# ---
+(true and false) or true
+
+# ---
+true and (false or true)
+
+# ---
+not (true and false)
+
+# ---
+not true or not false
+
+# ---
+(true or false) and (false or true)
+
+# ---
+true and false or true
+
+# ---
+true or false and true
+
+# ---
+5 < 10 and 3 > 2
+
+# ---
+10 < 5 or 7 > 3
+
+# ---
+not (5 == 5)
+
+# ---
+5 < 10 and not (3 > 7)
+
+# ---
+(5 < 10 or 3 > 7) and (2 < 4)
+
+# ---
+true and 5 < 10
+
+# ---
+false or "a" < "b"
+
+# ---
+not (5 == 10) and true
+
+# ---
+5 < 10 and 3 < 7 and 2 < 4
+
+# ---
+false or false or false or true
+
+# ---
+true and (false or (true and false))
+
+# E520
+5 and true
+
+# E520
+true and 10
+
+# E520
+false or 5
+
+# E520
+10 or true
+
+# E520
+not 5
+
+# E520
+not "hello"
+
+# E520
+5 xor true
+
+# E520
+true xor 10
+
+# E520
+5 kilogram and true
+
+# E520
+true or 10 metre
+
+# E520
+not (5 kilogram)
+
+# E534
+not 5
+
+# E534
+not (10 + 5)
+
+# E534
+not [1, 2, 3]
+
+# E520
+if 5 then 1 else 0
+
+# E520
+if "hello" then 1 else 0
+
+# E520
+if 5 kilogram then 1 else 0
+
+# E520
+if [1, 2, 3] then 1 else 0

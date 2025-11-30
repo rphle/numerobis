@@ -1,0 +1,94 @@
+from si import @metre
+1 metre
+
+# ---
+from si import @kilogram
+5 kilogram
+
+# ---
+from si import @(metre, kilogram, second)
+10 metre + 20 metre
+
+# ---
+from si import @(Mass, Length, Time)
+x: Mass = 10 kilogram
+
+# ---
+from si import @(metre, km)
+1000 metre -> km
+
+# ---
+from si import @(newton, joule, watt)
+50 newton * 10 metre
+
+# ---
+from si import @(metre, kilogram, second, Mass, Length, Time)
+distance: Length = 100 metre
+
+# ---
+from si import *
+10 metre + 5 kilogram
+
+# ---
+from si import *
+speed = 100 metre / second
+
+# ---
+from si import *
+dimension MyDim
+unit my_unit: MyDim
+
+# E802
+from nonexistent import @metre
+
+# E802
+from fake_module import @kilogram
+
+# E802
+from invalid import *
+
+# E803
+from si import @nonexistent_unit
+
+# E803
+from si import @fake_dimension
+
+# E803
+from si import @(metre, nonexistent)
+
+# E803
+from si import @(Mass, FakeDimension)
+
+# E804
+from si import nonexistent
+
+# E804
+from si import fake_name
+
+# E801
+x = 5
+from si import @metre
+
+# E801
+y = 10
+from si import *
+
+# E801
+if true then {
+    from si import @metre
+}
+
+# E801
+for i in [1, 2, 3] do {
+    from si import @kilogram
+}
+
+# E801
+f!() = {
+    from si import @second
+}
+
+# E801
+while true do {
+    from si import @metre
+}

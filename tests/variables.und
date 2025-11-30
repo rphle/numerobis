@@ -1,11 +1,186 @@
-from si import @(Mass, kg, LuminousIntensity, candela)
+from si import @(metre, kilogram, second, Mass, Length, Time)
 
-var1 = 10
-var2 = 203.5kg
-lol = "hahaha"
-num: Int = 5kg
+# ---
+x = 5
 
-x: LuminousIntensity = 1 candela
-y: Int = if true and false then 1 else 0;
+# ---
+y = 10.5
 
-α = 9.81
+# ---
+z = "hello"
+
+# ---
+flag = true
+
+# ---
+mass = 5 kilogram
+
+# ---
+distance = 10 metre
+
+# ---
+time = 5 second
+
+# ---
+x = 5
+y = x + 3
+
+# ---
+a = 10
+b = a * 2
+c = a + b
+
+# ---
+m = 5 kilogram
+force = m * 10 metre/second^2
+
+# ---
+x: Int = 5
+
+# ---
+y: Float = 10.5
+
+# ---
+s: Str = "hello"
+
+# ---
+b: Bool = true
+
+# ---
+m: Mass = 5 kilogram
+
+# ---
+d: Length = 10 metre
+
+# ---
+t: Time = 5 second
+
+# ---
+x: Int = 5
+y: Int = x + 10
+
+# ---
+m: Mass = 10 kilogram
+force: Mass * Length / Time^2 = m * 5 metre/second^2
+
+# ---
+x = 5
+x = 10
+
+# ---
+y = "hello"
+y = "world"
+
+# ---
+z = 5 kilogram
+z = 10 kilogram
+
+# ---
+a = 5
+a = a + 1
+
+# ---
+total = 0
+total = total + 10
+total = total * 2
+
+# ---
+m = 5 kilogram
+m = m + 3 kilogram
+m = m * 2
+
+# ---
+α = 5
+
+# ---
+β = 10.5
+
+# ---
+γ = "test"
+
+# ---
+Δ = 5 kilogram
+
+# ---
+x_1 = 5
+
+# ---
+var_name = 10
+
+# ---
+my_variable = "test"
+
+# ---
+CamelCase = 5
+
+# E601
+undefined_var
+
+# E601
+x = y + 5
+
+# E601
+result = undefined_function(5)
+
+# E602
+x = 5
+y: UndefinedType = 10
+
+# E603
+x = 5
+x = 10
+x = 15
+
+# E603
+y: Int = 5
+y: Float = 10.5
+
+# E604
+x: Int = 5
+x: Float = 10.0
+
+# E604
+m: Mass = 5 kilogram
+m: Length = 10 metre
+
+# E536
+x: Int = 5
+x = "hello"
+
+# E536
+y: Float = 10.5
+y = true
+
+# E536
+m: Mass = 5 kilogram
+m = 10 metre
+
+# E536
+d: Length = 10 metre
+d = 5 kilogram
+
+# E536
+x = 5
+x = "hello"
+
+# E536
+m = 5 kilogram
+m = 10 metre
+
+# E536
+x = 5
+x = 10.5
+x = "test"
+
+# E535
+x: Mass = 5 kilogram
+x = 10 metre
+
+# E535
+y: Length = 10 metre
+y = 5 kilogram
+
+# E535
+m: Mass = 5 kilogram
+n: Mass = 10 kilogram
+m = n + 5 metre

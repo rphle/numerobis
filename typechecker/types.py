@@ -184,7 +184,8 @@ class FunctionType(UType):
         ]
         if self.arity[0] != self.arity[1]:
             args.insert(self.arity[0], "/")
-        return f"![[{', '.join(args)}], {self.return_type.type()}]"
+
+        return f"![\\[{', '.join(args)}], {self.return_type.type()}]"
 
     def check_args(self, *args: T) -> Optional["FunctionType"]:
         global varenv
@@ -253,7 +254,8 @@ def unify(a: T, b: T) -> Optional[T]:
             if a.arity != b.arity:
                 return
             parts = [
-                unify(x, y) and dimcheck(x, y)
+                (unify(x, y) if "Any" not in (x.name(), y.name()) else AnyType())
+                and dimcheck(x, y)
                 for x, y in zip(a.params + [a.return_type], b.params + [b.return_type])
             ]
             return a if all(parts) else None
@@ -398,4 +400,5 @@ types: dict[str, Struct] = {
         },
     ),
     "Range": Struct({**_eq}),
+    "Function": Struct({**_eq}),
 }

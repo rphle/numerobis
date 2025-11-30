@@ -1,0 +1,207 @@
+from si import @(metre, kilogram, Mass, Length)
+
+# ---
+x = 5
+{
+    y = 10
+    x + y
+}
+
+# ---
+outer = 10
+{
+    inner = 20
+    result = outer + inner
+}
+
+# ---
+a = 5
+if true then {
+    b = 10
+    a + b
+} else {
+    c = 20
+    a + c
+}
+
+# ---
+total = 0
+for i in [1, 2, 3] do {
+    temp = i * 2
+    total = total + temp
+}
+
+# ---
+counter = 0
+while counter < 5 do {
+    increment = 1
+    counter = counter + increment
+}
+
+# ---
+f!(x) = {
+    y = x * 2
+    z = y + 10
+    z
+}
+f(5)
+
+# ---
+outer_func!(a) = {
+    inner_func!(b) = a + b
+    inner_func(10)
+}
+outer_func(5)
+
+# ---
+make_counter!() = {
+    count = 0
+    !(increment) = {
+        count = count + increment
+        count
+    }
+}
+
+# ---
+global = 100
+modify_global!() = {
+    global = 200
+    global
+}
+modify_global()
+
+# ---
+x = 5
+if true then {
+    x = 10
+}
+x
+
+# ---
+y = 10
+for i in [1, 2, 3] do {
+    y = y + i
+}
+y
+
+# ---
+z = 0
+while z < 5 do {
+    z = z + 1
+}
+z
+
+# ---
+outer!(x) = {
+    inner!(y) = {
+        deepest!(z) = x + y + z
+        deepest(1)
+    }
+    inner(2)
+}
+outer(3)
+
+# ---
+f!(a) = {
+    g!(b) = {
+        h!(c) = a + b + c
+        h
+    }
+    g
+}
+func = f(1)(2)
+func(3)
+
+# ---
+x = 5
+y = {
+    x = 10
+    x + 5
+}
+x
+
+# ---
+a = 100
+{
+    a = 200
+    {
+        a = 300
+    }
+}
+a
+
+# ---
+m = 5 kilogram
+{
+    m = 10 kilogram
+    m + 5 kilogram
+}
+
+# ---
+distance = 100 metre
+if true then {
+    distance = 200 metre
+}
+distance
+
+# ---
+mass = 10 kilogram
+for i in [1, 2, 3] do {
+    mass = mass + 1 kilogram
+}
+mass
+
+# ---
+param_func!(x) = {
+    x = x * 2
+    x
+}
+param_func(5)
+
+# ---
+shadow_test!(x) = {
+    y = x + 5
+    {
+        y = x + 10
+        y
+    }
+}
+shadow_test(5)
+
+# E601
+{
+    local = 10
+}
+local
+
+# E601
+if true then {
+    scoped_var = 20
+}
+scoped_var
+
+# E601
+for i in [1, 2, 3] do {
+    loop_var = i * 2
+}
+loop_var
+
+# E601
+while true do {
+    while_var = 5
+}
+while_var
+
+# E601
+f!(x) = {
+    inner_var = x * 2
+}
+inner_var
+
+# E601
+outer!() = {
+    inner!() = {
+        deep_var = 10
+    }
+}
+deep_var

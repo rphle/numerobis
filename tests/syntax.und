@@ -1,0 +1,32 @@
+from si import @(metre, kilogram, Mass, Length)
+
+# E005
+unit test(x): Length = 10 metre
+
+# E005
+unit bad(a, b): Mass = 5 kilogram
+
+# E006
+unit param[x]: Length = x
+
+# E006
+unit generic[T]: Mass = 5 kilogram
+
+# E009
+x = 5
+identifier
+
+# E009
+y: Length
+
+# E015
+@(x, @y, z)
+
+# E015
+dimension @Test, @Other
+
+# E017
+unit test[x]: Length = x
+
+# E017
+unit param[n]: Mass = n kilogram

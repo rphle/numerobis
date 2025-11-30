@@ -1,0 +1,197 @@
+from si import @(metre, kilogram, second, Mass, Length, Time)
+
+# ---
+identity!(x) = x
+identity(5)
+
+# ---
+identity!(x) = x
+identity("hello")
+
+# ---
+identity!(x) = x
+identity(5 kilogram)
+
+# ---
+identity!(x) = x
+identity([1, 2, 3])
+
+# ---
+identity!(x) = x
+a = identity(5)
+b = identity("test")
+c = identity(10 kilogram)
+
+# ---
+double!(x) = x * 2
+double(5)
+
+# ---
+double!(x) = x * 2
+double(10.5)
+
+# ---
+double!(x) = x * 2
+double(5 kilogram)
+
+# ---
+double!(x) = x * 2
+double([1, 2, 3])
+
+# ---
+add!(a, b) = a + b
+add(5, 10)
+
+# ---
+add!(a, b) = a + b
+add("hello", "world")
+
+# ---
+add!(a, b) = a + b
+add(5 kilogram, 10 kilogram)
+
+# ---
+add!(a, b) = a + b
+add([1, 2], [3, 4])
+
+# ---
+poly!(x) = x * x
+area = poly(5 metre)
+
+# ---
+poly!(x) = x * x
+int_squared = poly(3)
+
+# ---
+poly!(x) = x * x
+mass_squared = poly(10 kilogram)
+
+# ---
+first!(lst) = lst[0]
+first([1, 2, 3])
+
+# ---
+first!(lst) = lst[0]
+first(["a", "b", "c"])
+
+# ---
+first!(lst) = lst[0]
+first([1 kilogram, 2 kilogram])
+
+# ---
+length!(lst) = if lst == [] then 0 else 1 + length(lst[1:])
+length([1, 2, 3, 4, 5])
+
+# ---
+length!(lst) = if lst == [] then 0 else 1 + length(lst[1:])
+length(["a", "b", "c"])
+
+# ---
+length!(lst) = if lst == [] then 0 else 1 + length(lst[1:])
+length([1 kilogram, 2 kilogram, 3 kilogram])
+
+# ---
+map!(f, lst) = if lst == [] then [] else [f(lst[0])] + map(f, lst[1:])
+double!(x) = x * 2
+map(double, [1, 2, 3])
+
+# ---
+map!(f, lst) = if lst == [] then [] else [f(lst[0])] + map(f, lst[1:])
+add_unit!(x) = x + 1 kilogram
+map(add_unit, [1 kilogram, 2 kilogram, 3 kilogram])
+
+# ---
+compose!(f, g, x) = f(g(x))
+add_one!(n) = n + 1
+double!(n) = n * 2
+compose(double, add_one, 5)
+
+# ---
+apply_twice!(f, x) = f(f(x))
+increment!(n) = n + 1
+apply_twice(increment, 10)
+
+# ---
+make_adder!(n) = !(x) = x + n
+add_five = make_adder(5)
+add_five(10)
+
+# ---
+make_adder!(n) = !(x) = x + n
+add_mass = make_adder(5 kilogram)
+add_mass(10 kilogram)
+
+# ---
+curry!(f, a) = !(b) = f(a, b)
+add!(x, y) = x + y
+add_five = curry(add, 5)
+add_five(10)
+
+# ---
+const!(x, y) = x
+const(5, 10)
+
+# ---
+const!(x, y) = x
+const("hello", 100)
+
+# ---
+const!(x, y) = x
+const(5 kilogram, 10 metre)
+
+# Either!(flag, a, b) = if flag then a else b
+either(true, 5, 10)
+
+# Either!(flag, a, b) = if flag then a else b
+either(false, "yes", "no")
+
+# Either!(flag, a, b) = if flag then a else b
+either(true, 5 kilogram, 10 kilogram)
+
+# Empty_to_default!(lst, default) = if lst == [] then [default] else lst
+empty_to_default([], 5)
+
+# Empty_to_default!(lst, default) = if lst == [] then [default] else lst
+empty_to_default([1, 2], 10)
+
+# Empty_to_default!(lst, default) = if lst == [] then [default] else lst
+empty_to_default([], 5 kilogram)
+
+# ---
+chain!(f, g, h, x) = h(g(f(x)))
+a!(n) = n + 1
+b!(n) = n * 2
+c!(n) = n - 3
+chain(a, b, c, 5)
+
+# ---
+flip!(f, a, b) = f(b, a)
+subtract!(x, y) = x - y
+flip(subtract, 3, 10)
+
+# ---
+repeat!(f, n, x) = if n <= 0 then x else repeat(f, n - 1, f(x))
+double!(x) = x * 2
+repeat(double, 3, 5)
+
+# E703
+mixed!(x) = x + 5 kilogram
+mixed(10 metre)
+
+# E703
+incompatible!(a, b) = a + b
+incompatible(5 kilogram, 10 metre)
+
+# E703
+conflicted!(x) = {
+    y = x + 5 kilogram
+    z = x + 10 metre
+    y
+}
+
+# E521
+branch_mismatch!(flag, x) = if flag then x else x * 2 kilogram
+branch_mismatch(true, 5)
+
+# E521
+inconsistent!(x) = if x == 0 then 5 kilogram else 10 metre

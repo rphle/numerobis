@@ -1,23 +1,247 @@
-a: Range = 0..10..2
+from si import @(metre, kilogram, second, Mass, Length)
 
-for i in 0..10 do echo(i)
+# ---
+for i in [1, 2, 3] do i
 
-i = 0
-for x in [1,2,3,4] do {
-  echo(x)
-  i = i + x
+# ---
+for x in [10, 20, 30] do x * 2
+
+# ---
+for s in ["a", "b", "c"] do s + "!"
+
+# ---
+for m in [1 kilogram, 2 kilogram, 3 kilogram] do m + 5 kilogram
+
+# ---
+total = 0
+for x in [1, 2, 3, 4, 5] do {
+    total = total + x
 }
 
-for a,b in [[1,2],[3,4]] do {
-  echo(a+b)
+# ---
+result = 1
+for n in [1, 2, 3, 4] do {
+    result = result * n
 }
 
-while true do
-  echo("infinite loop")
-
-tries = 0
-while input() != 42 do {
-  tries = tries + 1
-  echo("you lose!, try again!")
+# ---
+sum_mass = 0 kilogram
+for m in [1 kilogram, 2 kilogram, 3 kilogram] do {
+    sum_mass = sum_mass + m
 }
-echo("you win!")
+
+# ---
+output = ""
+for s in ["Hello", " ", "World"] do {
+    output = output + s
+}
+
+# ---
+for item in [[1, 2], [3, 4]] do item[0]
+
+# ---
+for inner in [[[1]], [[2]]] do inner[0][0]
+
+# ---
+for masses in [[1 kilogram, 2 kilogram], [3 kilogram]] do masses[0]
+
+# ---
+count = 0
+for x in [1, 2, 3] do {
+    for y in [10, 20] do {
+        count = count + 1
+    }
+}
+
+# ---
+for i in [1, 2] do {
+    for j in [3, 4] do {
+        i + j
+    }
+}
+
+# ---
+for outer in [[1, 2], [3, 4]] do {
+    for inner in outer do {
+        inner * 2
+    }
+}
+
+# ---
+for a, b in [[1, 2], [3, 4]] do a + b
+
+# ---
+for x, y in [[10, 20], [30, 40]] do x * y
+
+# ---
+for m, d in [[1 kilogram, 2 metre], [3 kilogram, 4 metre]] do m
+
+# ---
+for first, second in [["a", "b"], ["c", "d"]] do first + second
+
+# ---
+sum_x = 0
+sum_y = 0
+for x, y in [[1, 2], [3, 4], [5, 6]] do {
+    sum_x = sum_x + x
+    sum_y = sum_y + y
+}
+
+# ---
+for i in 0..5 do i
+
+# ---
+for n in 1..10 do n * 2
+
+# ---
+for x in 0..3 do x + 5
+
+# ---
+total = 0
+for i in 0..10 do {
+    total = total + i
+}
+
+# ---
+for i in 0..10..2 do i
+
+# ---
+for n in 1..20..3 do n
+
+# ---
+for x in 10..0..-1 do x
+
+# ---
+for i in 0..10..1 do i
+
+# ---
+sum = 0
+for n in 0..100..5 do {
+    sum = sum + n
+}
+
+# ---
+while true do 5
+
+# ---
+while false do 10
+
+# ---
+counter = 0
+while counter < 5 do {
+    counter = counter + 1
+}
+
+# ---
+x = 10
+while x > 0 do {
+    x = x - 1
+}
+
+# ---
+flag = true
+while flag do {
+    flag = false
+}
+
+# ---
+while true do {
+    while true do {
+        5
+    }
+}
+
+# ---
+outer = 0
+while outer < 3 do {
+    inner = 0
+    while inner < 2 do {
+        inner = inner + 1
+    }
+    outer = outer + 1
+}
+
+# ---
+x = 0
+while x < 5 do {
+    for i in [1, 2, 3] do {
+        x = x + 1
+    }
+}
+
+# ---
+for i in [1, 2, 3] do {
+    counter = 0
+    while counter < i do {
+        counter = counter + 1
+    }
+}
+
+# ---
+a: Range = 0..10
+
+# ---
+r: Range = 0..100..5
+
+# ---
+range_var = 1..20
+
+# E527
+for i in 0 kilogram..10 kilogram do i
+
+# E527
+for n in 1 metre..20 metre do n
+
+# E527
+for x in 0 second..5 second..1 second do x
+
+# E527
+r: Range = 0 kilogram..10 kilogram
+
+# E528
+for i in 0..10..2 kilogram do i
+
+# E528
+for n in 1..20..3 metre do n
+
+# E529
+for i in 0..10..2 kilogram do i
+
+# E529
+for n in 1..20..3 metre do n
+
+# E526
+for i in 0.5..10.5 do i
+
+# E526
+for n in 1.2..20.8 do n
+
+# E526
+r: Range = 0.5..10.5
+
+# E520
+while 5 do 10
+
+# E520
+while "hello" do 5
+
+# E520
+while 5 kilogram do 1
+
+# E520
+x = 10
+while x do {
+    x = x - 1
+}
+
+# E525
+for x, y in [[1, 2], [3, "hello"]] do x
+
+# E525
+for a, b in [[1 kilogram, 2 kilogram], [3 metre, 4 metre]] do a
+
+# E525
+total = 0 kilogram
+for m in [1 kilogram, 2 metre, 3 kilogram] do {
+    total = total + m
+}

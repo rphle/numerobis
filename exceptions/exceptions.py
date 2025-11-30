@@ -112,7 +112,11 @@ class Exceptions:
         self.throw(2, loc=loc)
 
     def binOpMismatch(self, node: BinOp, left, right, env: dict):
-        operation = {"add": "addition", "sub": "subtraction"}[node.op.name]
+        operation = {
+            "add": "addition",
+            "sub": "subtraction",
+            "mod": "modulo operation",
+        }[node.op.name]
 
         left_str, right_str = [
             "[/bold]] / [[bold]".join(

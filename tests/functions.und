@@ -1,22 +1,380 @@
-from si import @(Length, Time, kilogram, second, meter)
+from si import @(metre, kilogram, second, Mass, Length, Time)
 
-test = "hello"
+# ---
+identity!(x) = x
+identity(5)
 
-f!(a: Int, b: Int): Int = a + b * 2
-h!(x=0) = x
-g!(a: Int, b: Int, c: Float = 0.0): Int = a + b + c
+# ---
+double!(x) = x * 2
+double(10)
 
-hello!(name: Str): Str = { output = "Hello, " + name + "!"; return output; }
-echo(hello("John"))
+# ---
+add!(a, b) = a + b
+add(5, 3)
 
-fibonacci!(n: Int): Int = {
-    if n <= 1 then
-        return 5
-    return fibonacci(n - 1) + fibonacci(n - 2)
+# ---
+greet!(name) = "Hello, " + name
+greet("World")
+
+# ---
+add_mass!(m) = m + 5 kilogram
+add_mass(10 kilogram)
+
+# ---
+speed!(d, t) = d / t
+speed(100 metre, 10 second)
+
+# ---
+identity!(x: Int) = x
+identity(5)
+
+# ---
+double!(x: Float) = x * 2.0
+double(5.5)
+
+# ---
+add!(a: Int, b: Int) = a + b
+add(5, 3)
+
+# ---
+concat!(s1: Str, s2: Str) = s1 + s2
+concat("Hello", "World")
+
+# ---
+add_mass!(m: Mass) = m + 5 kilogram
+add_mass(10 kilogram)
+
+# ---
+speed!(d: Length, t: Time) = d / t
+speed(100 metre, 10 second)
+
+# ---
+identity!(x: Int): Int = x
+identity(5)
+
+# ---
+double!(x: Float): Float = x * 2.0
+double(5.5)
+
+# ---
+add!(a: Int, b: Int): Int = a + b
+add(5, 3)
+
+# ---
+mass_product!(m1: Mass, m2: Mass): Mass^2 = m1 * m2
+mass_product(5 kilogram, 10 kilogram)
+
+# ---
+force!(m: Mass, a: Length/Time^2): Mass*Length/Time^2 = m * a
+force(10 kilogram, 9.8 metre/second^2)
+
+# ---
+default_add!(x, y=10) = x + y
+default_add(5)
+
+# ---
+greet!(name, greeting="Hello") = greeting + ", " + name
+greet("World")
+
+# ---
+scale_mass!(m, factor=2) = m * factor
+scale_mass(5 kilogram)
+
+# ---
+default_add!(x: Int, y: Int = 10): Int = x + y
+default_add(5)
+
+# ---
+scale!(value: Mass, factor: Int = 2): Mass = value * factor
+scale(5 kilogram)
+
+# ---
+default_add!(x, y=10) = x + y
+default_add(5, 20)
+
+# ---
+greet!(name, greeting="Hello") = greeting + ", " + name
+greet("World", "Hi")
+
+# ---
+scale_mass!(m, factor=2) = m * factor
+scale_mass(5 kilogram, 3)
+
+# ---
+add!(a: Int, b: Int = 5, c: Int = 10): Int = a + b + c
+add(1)
+
+# ---
+add!(a: Int, b: Int = 5, c: Int = 10): Int = a + b + c
+add(1, 2)
+
+# ---
+add!(a: Int, b: Int = 5, c: Int = 10): Int = a + b + c
+add(1, 2, 3)
+
+# ---
+compute!(x: Int, y: Int = 10, z: Int = 20): Int = x + y + z
+compute(5, z=30)
+
+# ---
+greet!(name: Str, greeting: Str = "Hello", punct: Str = "!"): Str = greeting + " " + name + punct
+greet("World", punct=".")
+
+# ---
+factorial!(n: Int): Int = if n <= 1 then 1 else n * factorial(n - 1)
+factorial(5)
+
+# ---
+fib!(n: Int): Int = if n <= 1 then n else fib(n - 1) + fib(n - 2)
+fib(10)
+
+# ---
+sum_list!(lst: List): Int = if lst == [] then 0 else lst[0] + sum_list(lst[1:])
+sum_list([1, 2, 3, 4, 5])
+
+# ---
+countdown!(n: Int) = if n <= 0 then 0 else countdown(n - 1)
+countdown(5)
+
+# ---
+identity!(x) = x
+double!(y) = identity(y) * 2
+double(5)
+
+# ---
+add_five!(x) = x + 5
+scale!(y) = add_five(y) * 2
+scale(10)
+
+# ---
+add_mass!(m) = m + 5 kilogram
+double_mass!(m) = add_mass(m) * 2
+double_mass(10 kilogram)
+
+# ---
+f!(x) = x * 2
+g!(y) = y + 3
+h!(z) = g(f(z))
+h(5)
+
+# ---
+outer!(x) = {
+    inner!(y) = x + y
+    inner(10)
+}
+outer(5)
+
+# ---
+make_adder!(n) = {
+    !(x) = x + n
+}
+add_five = make_adder(5)
+add_five(10)
+
+# ---
+counter!() = {
+    x = 0
+    !(increment) = {
+        x = x + increment
+        x
+    }
 }
 
-distance!(speed: Length/Time, time: Time): Length = speed * time
-distance(1.0 meter/second)
+# ---
+apply!(f, x) = f(x)
+double!(n) = n * 2
+apply(double, 5)
 
-f!(x) = 1;
-fibonacci(n=(if true then 1 else 2));
+# ---
+map_func!(f, lst: List): List = {
+    if lst == [] then []
+    else [f(lst[0])] + map_func(f, lst[1:])
+}
+double!(x) = x * 2
+map_func(double, [1, 2, 3])
+
+# ---
+compose!(f, g) = !(x) = f(g(x))
+add_one!(n) = n + 1
+double!(n) = n * 2
+add_then_double = compose(double, add_one)
+add_then_double(5)
+
+# ---
+simple!() = 5
+simple()
+
+# ---
+with_block!() = { 10 }
+with_block()
+
+# ---
+multi_line!() = {
+    x = 5
+    y = 10
+    x + y
+}
+multi_line()
+
+# ---
+return_early!(x: Int): Int = {
+    if x < 0 then return 0
+    x * 2
+}
+return_early(5)
+
+# ---
+multiple_returns!(x: Int): Int = {
+    if x < 0 then return -1
+    if x == 0 then return 0
+    return 1
+}
+multiple_returns(5)
+
+# ---
+nested_returns!(x: Int): Int = {
+    if x < 10 then {
+        if x < 5 then return 1
+        return 2
+    }
+    return 3
+}
+nested_returns(7)
+
+# E507
+recursive_no_type!(n) = if n <= 1 then 1 else n * recursive_no_type(n - 1)
+
+# E508
+recursive_no_return!(n: Int) = if n <= 1 then 1 else n * recursive_no_return(n - 1)
+
+# E505
+inconsistent!(): Int = if true then 5 else "hello"
+
+# E505
+multi_return!(): Int = {
+    if true then return 5
+    return "hello"
+}
+
+# E505
+block_mismatch!(): Int = {
+    if true then { return 5 }
+    { return 10.5 }
+}
+
+# E512
+add!(a: Int, b: Int) = a + b
+add(5)
+
+# E512
+triple!(a: Int, b: Int, c: Int) = a + b + c
+triple(1, 2, 3, 4)
+
+# E512
+no_args!() = 5
+no_args(10)
+
+# E513
+add_ints!(a: Int, b: Int) = a + b
+add_ints(5, "hello")
+
+# E513
+need_mass!(m: Mass) = m * 2
+need_mass(5)
+
+# E513
+need_length!(d: Length) = d + 10 metre
+need_length(5 kilogram)
+
+# E513
+typed_add!(a: Int, b: Float) = a + b
+typed_add(5, 10)
+
+# E513
+mass_func!(m: Mass) = m + 5 kilogram
+mass_func(10 metre)
+
+# E518
+wrong_default!(x: Int = "hello"): Int = x
+
+# E518
+mass_default!(m: Mass = 10 metre): Mass = m
+
+# E518
+length_default!(d: Length = 5 kilogram): Length = d
+
+# E518
+type_mismatch_default!(x: Float = true): Float = x
+
+# E519
+wrong_return_dim!(x: Mass = 5 metre): Mass = x
+
+# E519
+inconsistent_default!(): Int = {
+    x: Mass = 5 kilogram
+    x
+}
+
+# E531
+wrong_return!(x: Int): Mass = x
+
+# E531
+return_wrong_type!(): Length = 5 kilogram
+
+# E531
+return_dimensionless!(): Mass = 5
+
+# E531
+explicit_return!(): Mass = {
+    return 5 metre
+}
+
+# E531
+block_return!(): Length = {
+    x = 5 kilogram
+    x
+}
+
+# E530
+x = return 5
+
+# E530
+y = 10 + (return 20)
+
+# E530
+if true then return 5 else 10
+
+# E506
+x = 5
+x(10)
+
+# E506
+y = "hello"
+y(5)
+
+# E506
+z = 10 kilogram
+z()
+
+# E506
+result = (5 + 3)(10)
+
+# E509
+add!(a: Int, b: Int) = a + b
+add(a=5, a=10)
+
+# E509
+triple!(x: Int, y: Int, z: Int) = x + y + z
+triple(1, x=5, y=10)
+
+# E510
+add!(a: Int, b: Int) = a + b
+add(a=5, c=10)
+
+# E510
+greet!(name: Str) = "Hello, " + name
+greet(greeting="Hi")
+
+# E511
+add!(a: Int, b: Int) = a + b
+add(5, a=10)
