@@ -42,11 +42,6 @@ class Module:
         ):
             nodes.append(self.ast.pop(0))  # type: ignore
 
-        if node := next(
-            (node for node in self.ast if isinstance(node, (Import, FromImport))), None
-        ):
-            self.errors.throw(801, loc=node.loc)
-
         resolver = ModuleResolver(search_paths=[self.meta.path.parent.resolve()])
         paths = []
         for i, node in enumerate(nodes):

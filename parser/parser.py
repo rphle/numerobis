@@ -47,6 +47,8 @@ from classes import ModuleMeta
 class Parser(ParserTemplate):
     def __init__(self, tokens: list[Token], module: ModuleMeta):
         super().__init__(tokens=tokens, module=module)
+        # flag becomes False as soon as a non-import statement is encountered
+        self.imports_allowed = True
 
     def start(self) -> list[AstNode]:
         statements = []
@@ -61,6 +63,9 @@ class Parser(ParserTemplate):
     def statement(self) -> AstNode:
         self._clear()
         first = self._peek()
+
+        if self.imports_allowed and first.type not in ["IMPORT", "FROM"]:
+            self.imports_allowed = False
 
         if first.type == "ID" and self._peek(2).type in {"ASSIGN", "COLON"}:
             """Variable declaration"""
@@ -138,7 +143,7 @@ class Parser(ParserTemplate):
             if self._peek(2, ignore_whitespace=False).type not in {"LPAREN", "ID"}:
                 self.errors.throw(
                     3,
-                    loc=Location(line=self.tok.loc.line, col=self.tok.loc.col + 1),
+                    loc=Location(line=first.loc.line, col=first.loc.col + 1),
                 )
             self._consume("AT")
             return self.unit()
@@ -607,6 +612,9 @@ class Parser(ParserTemplate):
 
     def import_stmt(self) -> Import:
         start = self._consume("IMPORT")
+        if not self.imports_allowed:
+            self.errors.throw(801, loc=start.loc)
+
         module_name = self._consume("ID")
         module = self._make_id(module_name)
 
@@ -620,6 +628,9 @@ class Parser(ParserTemplate):
 
     def from_import_stmt(self) -> FromImport:
         start = self._consume("FROM")
+        if not self.imports_allowed:
+            self.errors.throw(801, loc=start.loc)
+
         module_name = self._consume("ID")
         module = self._make_id(module_name)
 
