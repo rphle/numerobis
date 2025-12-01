@@ -1,4 +1,6 @@
 import re
+import uuid
+from copy import deepcopy
 
 import typechecker.linking as linking
 from astnodes import (
@@ -211,7 +213,7 @@ class Typechecker:
             )
 
         node = self.unlink(node, attrs=["args"])
-        args: dict[str, tuple[T, T]] = {}
+        args: dict[str, tuple[T, T, str]] = {}
         i = 0
         for arg in node.args:
             if arg.name:
@@ -243,6 +245,7 @@ class Typechecker:
 
             typ = self.check(arg.value, env=env)
             param = callee.params[callee.param_names.index(name)]
+            _hash = callee.param_hashes[callee.param_names.index(name)]
             if param.name("Any"):
                 param = typ
 
@@ -256,29 +259,29 @@ class Typechecker:
                     loc=arg.loc,
                 )
 
-            args[name] = (param, unify(param, typ))  # type: ignore
+            args[name] = (param, unify(param, typ), _hash)  # type: ignore
 
         if callee.node is None:
             return callee.return_type
 
         # Check if constraints can be updated and the function body re-checked for better inference
         recheck = callee.unresolved == "parameters" or any(
-            a.type() != b.type() for a, b in list(args.values())
+            a.type() != b.type() for a, b, _ in list(args.values())
         )
         if recheck:
             new_env = env.copy()
             for name, arg in args.items():
-                new_env.set("names")(name, arg[1])
+                new_env.set("names")(name, arg[1], _hash=arg[2])
             new_env.meta["#function"] = callee
             if callee.meta("#curried"):
                 callee._meta["#curried"].update(new_env.names)
                 new_env.names = callee._meta["#curried"]
 
-            callee_node = self.unlink(self.namespaces.nodes[callee.node])
-            assert isinstance(callee_node, Function)
-
             self.errors.stack.append(node.loc)
-            return_type = self.check(callee_node.body, env=new_env)
+            return_type = self.check(
+                self.namespaces.nodes[callee.node].body,  # type:ignore
+                env=new_env,
+            )
             self.errors.stack.pop()
         else:
             return_type = callee.return_type
@@ -410,7 +413,7 @@ class Typechecker:
         params = [
             self.type_(_p.type, env=env)
             if (_p := self.unlink(p)).type is not None
-            else AnyType()
+            else AnyType(unresolved=link)
             for p in node.params
         ]
         node = self.unlink(node, attrs=["params"])
@@ -436,12 +439,14 @@ class Typechecker:
             self.type_(node.return_type, env=env) if node.return_type else NeverType()
         )
         arity = (sum(1 for p in node.params if p.default is None), len(params))
+        param_hashes = [f"{param.name.name}-{uuid.uuid4()}" for param in node.params]
 
         signature = FunctionType(
             _name=name,
             _loc=node.loc.span("start", "assign"),
             params=params,
             param_names=[param.name.name for param in node.params],
+            param_hashes=param_hashes,
             return_type=return_type,
             unresolved=None if node.return_type else "recursive",
             node=link,
@@ -454,16 +459,18 @@ class Typechecker:
 
         new_env = env.copy()
         for i, param in enumerate(params):
-            new_env.set("names")(node.params[i].name.name, param)
+            new_env.set("names")(node.params[i].name.name, param, _hash=param_hashes[i])
         new_env.meta["#function"] = signature
 
         try:
             body = self.check(node.body, env=new_env)
-        except UnresolvedAnyParam:
-            signature = signature.edit(unresolved="parameters")
-            if name is not None:
-                env.set("names")(name, signature)
-            return signature
+        except UnresolvedAnyParam as e:
+            if str(e) == str(link):
+                signature = signature.edit(unresolved="parameters")
+                if name is not None:
+                    env.set("names")(name, signature)
+                return signature
+            raise e
 
         if mismatch := _mismatch(body, return_type):
             self.errors.throw(
@@ -490,11 +497,9 @@ class Typechecker:
             return
 
         if "#function" in env.meta:
-            if isinstance(item, AnyType):
-                current_func = env.meta.get("#function")
-                if current_func and getattr(current_func, "param_names", None):
-                    if node.name in current_func.param_names:
-                        raise UnresolvedAnyParam()
+            if isinstance(item, AnyType) and item.unresolved:
+                raise UnresolvedAnyParam(item.unresolved)
+
         if isinstance(item, UndefinedType):
             self.errors.nameError(node)
         return item

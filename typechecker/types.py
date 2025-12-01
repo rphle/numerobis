@@ -172,6 +172,7 @@ class FunctionType(UType):
     params: list[T] = field(default_factory=list)
     return_type: T = field(default_factory=lambda: AnyType())
     param_names: list[str] = field(default_factory=list)
+    param_hashes: list[str] = field(default_factory=list)
     arity: tuple[int, int] = (0, 0)
     unresolved: Optional[Literal["recursive", "parameters"]] = None
     _name: Optional[str] = field(default=None, compare=False)
@@ -201,13 +202,11 @@ class FunctionType(UType):
 
 
 class AnyType(UType):
-    _instance = None
+    unresolved: Optional[str] = None
 
-    def __new__(cls, name: str = "any", **kwargs) -> "T":
+    def __new__(cls, name: str = "any", unresolved=None, **kwargs) -> "T":
         if name == "any":
-            if cls._instance is None:
-                cls._instance = super().__new__(cls)
-            return cls._instance
+            return super().__new__(cls)
 
         t = {
             "none": NoneType(),
@@ -227,6 +226,10 @@ class AnyType(UType):
 
         t = t.edit(**kwargs)
         return t
+
+    def __init__(self, name="any", unresolved=None, **kwargs):
+        self.unresolved = unresolved
+        super().__init__()
 
 
 def unify(a: T, b: T) -> Optional[T]:
