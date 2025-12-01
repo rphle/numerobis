@@ -1,6 +1,5 @@
 import re
 import uuid
-from copy import deepcopy
 
 import typechecker.linking as linking
 from astnodes import (
@@ -245,7 +244,9 @@ class Typechecker:
 
             typ = self.check(arg.value, env=env)
             param = callee.params[callee.param_names.index(name)]
-            _hash = callee.param_hashes[callee.param_names.index(name)]
+            print(callee.param_names, callee.param_addrs)
+            adress = callee.param_addrs[callee.param_names.index(name)]
+
             if param.name("Any"):
                 param = typ
 
@@ -259,7 +260,9 @@ class Typechecker:
                     loc=arg.loc,
                 )
 
-            args[name] = (param, unify(param, typ), _hash)  # type: ignore
+            args[name] = (param, unify(param, typ), adress)  # type: ignore
+            # enable lexical scoping
+            env.glob.names[adress] = args[name][1]
 
         if callee.node is None:
             return callee.return_type
@@ -271,7 +274,7 @@ class Typechecker:
         if recheck:
             new_env = env.copy()
             for name, arg in args.items():
-                new_env.set("names")(name, arg[1], _hash=arg[2])
+                new_env.set("names")(name, arg[1], adress=arg[2])
             new_env.meta["#function"] = callee
             if callee.meta("#curried"):
                 callee._meta["#curried"].update(new_env.names)
@@ -439,14 +442,14 @@ class Typechecker:
             self.type_(node.return_type, env=env) if node.return_type else NeverType()
         )
         arity = (sum(1 for p in node.params if p.default is None), len(params))
-        param_hashes = [f"{param.name.name}-{uuid.uuid4()}" for param in node.params]
+        param_addrs = [f"{param.name.name}-{uuid.uuid4()}" for param in node.params]
 
         signature = FunctionType(
             _name=name,
             _loc=node.loc.span("start", "assign"),
             params=params,
             param_names=[param.name.name for param in node.params],
-            param_hashes=param_hashes,
+            param_addrs=param_addrs,
             return_type=return_type,
             unresolved=None if node.return_type else "recursive",
             node=link,
@@ -459,7 +462,7 @@ class Typechecker:
 
         new_env = env.copy()
         for i, param in enumerate(params):
-            new_env.set("names")(node.params[i].name.name, param, _hash=param_hashes[i])
+            new_env.set("names")(node.params[i].name.name, param, adress=param_addrs[i])
         new_env.meta["#function"] = signature
 
         try:
@@ -498,6 +501,8 @@ class Typechecker:
 
         if "#function" in env.meta:
             if isinstance(item, AnyType) and item.unresolved:
+                print(node.name, item)
+                print(env.names)
                 raise UnresolvedAnyParam(item.unresolved)
 
         if isinstance(item, UndefinedType):
@@ -621,6 +626,9 @@ class Typechecker:
             return FunctionType(
                 params=[self.type_(param, env=env) for param in node.params],
                 param_names=[param.name for param in node.param_names],
+                param_addrs=[
+                    f"{param.name}-{uuid.uuid4()}" for param in node.param_names
+                ],
                 return_type=self.type_(node.return_type, env=env)
                 if node.return_type
                 else NoneType(),
@@ -716,7 +724,7 @@ class Typechecker:
     def variable_(self, node: Variable, env: Env, link: int):
         value = self.check(node.value, env=env)
 
-        _hash = None
+        adress = None
         if node.name.name in env.names:
             if mismatch := _mismatch(env.get("names")(node.name.name), value):
                 self.errors.throw(
@@ -727,9 +735,9 @@ class Typechecker:
                     declared=mismatch[1],
                     loc=node.loc,
                 )
-            _hash = env.names[node.name.name]
+            adress = env.names[node.name.name]
 
-        if _hash is not None and node.type:
+        if adress is not None and node.type:
             self.errors.throw(604, name=node.name.name, loc=node.loc)
 
         if node.type:
@@ -756,7 +764,7 @@ class Typechecker:
 
         if not isinstance(value, FunctionType):
             value = value.edit(node=link)
-        env.set("names")(name=node.name.name, value=value, _hash=_hash)
+        env.set("names")(name=node.name.name, value=value, adress=adress)
         return NoneType()
 
     def variable_declaration_(self, node: VariableDeclaration, env: Env):

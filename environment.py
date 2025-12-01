@@ -98,14 +98,14 @@ class Env:
         return _get
 
     def set(self, namespace: namespace_names):
-        def _set(name: str, value: Any, _hash: Optional[str] = None):
-            if _hash is None:
+        def _set(name: str, value: Any, adress: Optional[str] = None):
+            if adress is None:
                 if self.level > 0:
-                    _hash = f"{name}-{uuid.uuid4()}"
+                    adress = f"{name}-{uuid.uuid4()}"
                 else:
-                    _hash = name
-            self.glob.write(namespace, _hash, value)
-            self(namespace)[name] = _hash
+                    adress = name
+            self.glob.write(namespace, adress, value)
+            self(namespace)[name] = adress
 
         return _set
 
