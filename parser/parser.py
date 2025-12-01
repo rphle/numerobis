@@ -442,77 +442,69 @@ class Parser(ParserTemplate):
         if self._peek().type in {"PLUS", "MINUS"}:
             ops = []
             while self._peek().type in {"PLUS", "MINUS"}:
-                op_token = self._consume()
-                ops.append(op_token)
+                ops.append(self._consume())
 
-            operand = self.call()
+            operand = self.postfix()
 
             if sum(1 for op in ops if op.type == "MINUS") % 2 == 1:
                 op = self._make_op(next(op for op in ops if op.type == "MINUS"))
                 return UnaryOp(op=op, operand=operand, loc=nodeloc(op, operand))
-            else:
-                return operand
+            return operand
 
-        return self.index()
+        return self.postfix()
 
-    def index(self) -> AstNode:
-        node = self.call()
-        if self._peek(ignore_whitespace=False).type == "LBRACKET":
-            self._consume("LBRACKET")
-
-            index = []
-            while True:
-                if self._peek().type == "RBRACKET" or len(index) >= 3:
-                    break
-
-                if self._peek().type == "COLON":
-                    index.append(None)
-                    self._consume("COLON")
-                else:
-                    index.append(self.expression())
-
-                    if len(index) < 2 and self._peek().type == "COLON":
-                        index.append(None)
-                        self._consume("COLON")
-
-            end = self._consume("RBRACKET")
-
-            if len(index) == 1 and index[0] is not None:
-                index = index[0]
-            else:
-                index += [None] * (3 - len(index))
-                index = Slice(
-                    start=index[0],
-                    stop=index[1],
-                    step=index[2],
-                )
-            node = Index(iterable=node, index=index, loc=nodeloc(node, end))
-        return node
-
-    def call(self) -> AstNode:
+    def postfix(self) -> AstNode:
+        """
+        Postfix chaining for calls and indexing/slices.
+        Starts from `range_()` (preserves range precedence) then repeatedly
+        applies `( ... )` or `[ ... ]` as long as either appears immediately after.
+        """
         node = self.range_()
-        while self._peek(ignore_whitespace=False).type == "LPAREN":
-            self._consume("LPAREN")
-            args = []
-            while self._peek().type != "RPAREN":
-                name = None
-                if self._peek(2).type == "ASSIGN":
-                    name = self._make_id(self._consume("ID"))
-                    self._consume("ASSIGN")
-                arg = self.expression()
-
-                args.append(
-                    CallArg(
-                        name=name, value=arg, loc=nodeloc(name if name else arg, arg)
+        while self._peek(ignore_whitespace=False).type in {"LPAREN", "LBRACKET"}:
+            if self._peek(ignore_whitespace=False).type == "LPAREN":
+                # CALL
+                self._consume("LPAREN")
+                args = []
+                while self._peek().type != "RPAREN":
+                    name = None
+                    if self._peek(2).type == "ASSIGN":
+                        name = self._make_id(self._consume("ID"))
+                        self._consume("ASSIGN")
+                    arg = self.expression()
+                    args.append(
+                        CallArg(
+                            name=name,
+                            value=arg,
+                            loc=nodeloc(name if name else arg, arg),
+                        )
                     )
-                )
-
-                if self._peek().type == "RPAREN":
-                    break
-                self._consume("COMMA")
-
-            end = self._consume("RPAREN")
-            node = Call(callee=node, args=args, loc=nodeloc(node, end))
+                    if self._peek().type == "RPAREN":
+                        break
+                    self._consume("COMMA")
+                end = self._consume("RPAREN")
+                node = Call(callee=node, args=args, loc=nodeloc(node, end))
+            else:
+                # INDEX / SLICE
+                self._consume("LBRACKET")
+                parts = []
+                while True:
+                    if self._peek().type == "RBRACKET" or len(parts) >= 3:
+                        break
+                    if self._peek().type == "COLON":
+                        parts.append(None)
+                        self._consume("COLON")
+                    else:
+                        parts.append(self.expression())
+                        if len(parts) < 2 and self._peek().type == "COLON":
+                            parts.append(None)
+                            self._consume("COLON")
+                end = self._consume("RBRACKET")
+                if len(parts) == 1 and parts[0] is not None:
+                    idx = parts[0]
+                else:
+                    parts += [None] * (3 - len(parts))
+                    idx = Slice(start=parts[0], stop=parts[1], step=parts[2])
+                node = Index(iterable=node, index=idx, loc=nodeloc(node, end))
         return node
 
     def range_(self) -> AstNode:
