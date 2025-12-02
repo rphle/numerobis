@@ -252,7 +252,9 @@ def unify(a: T, b: T) -> Optional[T]:
             )
         case ListType(), ListType():
             content = unify(a.content, b.content)
-            return ListType(content=content) if content else None
+            return (
+                ListType(content=content, _meta=a._meta | b._meta) if content else None
+            )
         case FunctionType(), FunctionType():
             if a.arity != b.arity:
                 return

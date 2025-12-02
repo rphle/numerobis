@@ -263,6 +263,16 @@ class Typechecker:
             # enable lexical scoping
             env.glob.names[adress] = args[name][1]
 
+        if len(args) < len(callee.param_names):
+            self.errors.throw(
+                512,
+                name=callee._name,
+                n_params=len(callee.param_names),
+                plural="s" if len(callee.param_names) != 1 else "",
+                n_args=len(node.args),
+                loc=node.loc,
+            )
+
         if callee.node is None:
             return callee.return_type
 
