@@ -45,6 +45,8 @@ class Processor:
                 case "Float" | "Int":
                     if len(node[0].args) != 1:
                         self.errors.invalidParameterNumber(node[0])
+                    elif node[0].args[0].name is not None:
+                        self.errors.throw(605, loc=node[0].args[0].loc)
                     return NumberType(
                         typ=node[0].callee.name,
                         dim=self.dimension(node[0].args[0].value, env=env),
@@ -52,6 +54,8 @@ class Processor:
                 case "List":
                     if len(node[0].args) != 1:
                         self.errors.invalidParameterNumber(node[0])
+                    elif node[0].args[0].name is not None:
+                        self.errors.throw(605, loc=node[0].args[0].loc)
                     assert isinstance(node[0].args[0].value, Unit)
                     return ListType(
                         content=self.type(node[0].args[0].value.unit, env=env)

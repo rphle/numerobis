@@ -244,7 +244,6 @@ class Typechecker:
 
             typ = self.check(arg.value, env=env)
             param = callee.params[callee.param_names.index(name)]
-            print(callee.param_names, callee.param_addrs)
             adress = callee.param_addrs[callee.param_names.index(name)]
 
             if param.name("Any"):
@@ -501,8 +500,6 @@ class Typechecker:
 
         if "#function" in env.meta:
             if isinstance(item, AnyType) and item.unresolved:
-                print(node.name, item)
-                print(env.names)
                 raise UnresolvedAnyParam(item.unresolved)
 
         if isinstance(item, UndefinedType):

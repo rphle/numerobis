@@ -161,6 +161,9 @@ undefined {kind} '{name}'
 [E604 / NameError]
 '{name}' cannot be redeclared
 
+[E605 / NameError]
+type does not support keyword arguments
+
 
 
 [E701 / TypeError]

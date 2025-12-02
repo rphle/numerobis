@@ -37,6 +37,7 @@ times_per_test = {}
 tests_dir = Path("tests")
 files = sorted(os.listdir(tests_dir))
 verbose = "--verbose" in sys.argv
+full = "--full" in sys.argv
 
 
 if len(sys.argv) - verbose > 1:
@@ -105,7 +106,7 @@ for test in itertools.chain.from_iterable(file[1] for _, file in tests.items()):
             highlight=False,
             emoji=False,
         )
-        if verbose:
+        if verbose or full:
             console.print(
                 rich.padding.Padding(
                     f"[dim]{rich.markup.escape(test.output)}[/dim]",
@@ -115,6 +116,20 @@ for test in itertools.chain.from_iterable(file[1] for _, file in tests.items()):
                 emoji=False,
             )
     else:
+        if full:
+            console.print(
+                f"[bold green][PASS] [/bold green][green]{test.file}:{test.line}[/green]",
+                highlight=False,
+                emoji=False,
+            )
+            console.print(
+                rich.padding.Padding(
+                    f"[dim]{rich.markup.escape(test.output)}[/dim]",
+                    pad=(0, 0, 0, 2),
+                ),
+                highlight=False,
+                emoji=False,
+            )
         ratio[0] += 1
 
     cumulative += test.time
