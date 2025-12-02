@@ -631,6 +631,16 @@ class Typechecker:
                 else NoneType(),
                 arity=node.arity,
             )
+        elif (
+            len(node.unit) == 1
+            and isinstance(node.unit[0], Call)
+            and isinstance(node.unit[0].callee, Identifier)
+            and node.unit[0].callee.name == "List"
+        ):
+            lst = node.unit[0].args[0]
+            assert isinstance(lst.value, (Unit, FunctionAnnotation))
+            return ListType(content=self.type_(lst.value, env=env))
+
         return self.processor.type(node.unit, env=env)
 
     def unary_op_(self, node: UnaryOp, env: Env):

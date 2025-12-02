@@ -3,7 +3,7 @@ from classes import ModuleMeta
 from environment import Env
 from exceptions.exceptions import Exceptions
 from typechecker.analysis import analyze
-from typechecker.types import AnyType, ListType, NumberType, T, types
+from typechecker.types import AnyType, NumberType, T, types
 
 
 class Processor:
@@ -52,13 +52,8 @@ class Processor:
                         dim=self.dimension(node[0].args[0].value, env=env),
                     )
                 case "List":
-                    if len(node[0].args) != 1:
-                        self.errors.invalidParameterNumber(node[0])
-                    elif node[0].args[0].name is not None:
-                        self.errors.throw(605, loc=node[0].args[0].loc)
-                    assert isinstance(node[0].args[0].value, Unit)
-                    return ListType(
-                        content=self.type(node[0].args[0].value.unit, env=env)
+                    raise ValueError(
+                        "paremetric lists are implemented directly in the typechecker!"
                     )
                 case _:
                     self.errors.throw(504, name=node[0].callee.name, loc=node[0].loc)

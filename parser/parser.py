@@ -688,6 +688,23 @@ class Parser(ParserTemplate):
     def type(self):
         if self._peek().type == "BANG":
             return self.function_annotation()
+        elif self._peek().type == "ID" and self._peek().value == "List":
+            name = Identifier(name="List", loc=self._consume("ID").loc)
+            if self._peek(ignore_whitespace=True).type == "LBRACKET":
+                self._consume("LBRACKET")
+                content = self.type()
+                self._consume("RBRACKET")
+                return Unit(
+                    unit=[
+                        Call(
+                            callee=name,
+                            args=[CallArg(name=None, value=content)],
+                            loc=name.loc.merge(content.loc),
+                        )
+                    ]
+                )
+            else:
+                return Unit(unit=[Identifier(name="List", loc=name.loc)])
         else:
             return self.unit(standalone=True)
 
