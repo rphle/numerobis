@@ -56,6 +56,8 @@ class UType:
         return self.name()
 
     def edit(self, **kwargs):
+        if "_meta" not in kwargs:
+            kwargs["_meta"] = dict(self._meta)
         return replace(self, **kwargs)
 
     def complete(self, value: Optional[T] = None):
