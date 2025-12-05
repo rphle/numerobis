@@ -137,8 +137,8 @@ class Typechecker:
                 assert right.typ in {"Float", "Int"}
                 if dimful(right.dim):
                     self.errors.throw(
-                        702,
-                        dimension=format_dimension(right.dim),
+                        101,
+                        value=f", not {format_dimension(right.dim)}",
                         loc=self.unlink(node.right).loc,
                     )
                 dimension = []
@@ -263,7 +263,7 @@ class Typechecker:
             # enable lexical scoping
             env.glob.names[adress] = args[name][1]
 
-        if len(args) < len(callee.param_names):
+        if len(args) < callee.arity[0]:
             self.errors.throw(
                 512,
                 name=callee._name,
@@ -284,7 +284,13 @@ class Typechecker:
             new_env = env.copy()
             for name, arg in args.items():
                 new_env.set("names")(name, arg[1], adress=arg[2])
+            for i, default in enumerate(callee.param_defaults):
+                idx = callee.arity[0] + i
+                name = callee.param_names[idx]
+                if name not in args:
+                    new_env.set("names")(name, default, adress=callee.param_addrs[idx])
             new_env.meta["#function"] = callee
+
             if callee.meta("#curried"):
                 callee._meta["#curried"].update(new_env.names)
                 new_env.names = callee._meta["#curried"]
@@ -331,6 +337,7 @@ class Typechecker:
                     "ge": ">=",
                     "ne": "!=",
                 }
+                sides = [self.unlink(side) for side in sides]
                 self.errors.throw(
                     514,
                     operator=ops[op.name],
@@ -353,7 +360,7 @@ class Typechecker:
             typ = node.unit.unit[0].name
             if (
                 f"__{typ.lower()}__" not in types[value.name()].fields
-                and typ != value.type()
+                and typ != value.name()
             ):
                 self.errors.throw(515, left=value.type(), right=typ, loc=node.loc)
             if typ in {"Int", "Float"}:  # don't erase dimension
@@ -428,10 +435,12 @@ class Typechecker:
             else AnyType(unresolved=link)
             for p in node.params
         ]
+        defaults = []
         node = self.unlink(node, attrs=["params"])
         for i, param in enumerate(node.params):
             if param.default is not None:
                 default = self.check(param.default, env=env)
+                defaults.append(default)
 
                 if params[i].type() == "Any":
                     params[i] = default
@@ -459,6 +468,7 @@ class Typechecker:
             params=params,
             param_names=[param.name.name for param in node.params],
             param_addrs=param_addrs,
+            param_defaults=defaults,
             return_type=return_type,
             unresolved=None if node.return_type else "recursive",
             node=link,
@@ -538,6 +548,14 @@ class Typechecker:
     def index_(self, node: Index, env: Env):
         value = self.check(node.iterable, env=env)
         index = self.check(node.index, env=env)
+
+        if dimful(index.dim):
+            self.errors.throw(
+                537,
+                dimension=f"[[bold]{format_dimension(index.dim)}[/bold]]",
+                loc=node.loc,
+            )
+
         method = types[value.name()]["__getitem__"]
         try:
             if method is None:
@@ -548,12 +566,7 @@ class Typechecker:
             return
 
         if checked is None:
-            self.errors.throw(
-                523,
-                type=value.type(),
-                index=index.type(),
-                loc=node.loc,
-            )
+            self.errors.throw(523, type=value.type(), index=index.type(), loc=node.loc)
         elif isinstance(value, ListType) and value.content.name("Never"):
             return AnyType()
         else:
@@ -594,9 +607,11 @@ class Typechecker:
         if node.step is not None:
             value = self.check(node.step, env=env)
             if not value.name("Int", "Float"):
-                self.errors.throw(528, type=value.type(), loc=node.step.loc)
+                self.errors.throw(
+                    528, type=value.type(), loc=self.unlink(node.step, ["loc"]).loc
+                )
             elif dimful(value.dim):
-                self.errors.throw(529, loc=node.step.loc)
+                self.errors.throw(529, loc=self.unlink(node.step, ["loc"]).loc)
 
         assert isinstance(value, NumberType)
         return RangeType(value=NumberType(typ=value.typ))
@@ -610,8 +625,8 @@ class Typechecker:
 
         if return_type and (mismatch := _mismatch(value, return_type)):
             self.errors.throw(
-                531,
-                type=mismatch[1],
+                519,
+                value=mismatch[1],
                 kind=mismatch[0],
                 expected=mismatch[2],
                 loc=node.loc,
@@ -778,6 +793,9 @@ class Typechecker:
                         value=mismatch[2],
                         loc=node.loc,
                     )
+
+            value = unify(annotation, value)
+            assert value is not None
 
         if not isinstance(value, FunctionType):
             value = value.edit(node=link)

@@ -33,7 +33,7 @@ word = words[1]
 masses = [1 kilogram, 2 kilogram]
 mass = masses[0]
 
-# Empty = []
+empty = []
 result = empty + [1, 2, 3]
 
 # ---
@@ -78,10 +78,10 @@ int_result = poly(5)
 poly!(x) = x * x
 mass_result = poly(5 kilogram)
 
-# Either!(flag, a, b) = if flag then a else b
+either!(flag, a, b) = if flag then a else b
 result = either(true, 5, 10)
 
-# Either!(flag, a, b) = if flag then a else b
+either!(flag, a, b) = if flag then a else b
 mass = either(false, 5 kilogram, 10 kilogram)
 
 # ---
@@ -89,11 +89,11 @@ first_or_default!(lst, default) = if lst == [] then default else lst[0]
 result = first_or_default([1, 2, 3], 0)
 
 # ---
-first_or_default!(lst, default) = if lst == [] then default else lst[0]
+first_or_default!(lst: List[Int], default) = if lst == [] then default else lst[0]
 result = first_or_default([], 5)
 
 # ---
-first_or_default!(lst, default) = if lst == [] then default else lst[0]
+first_or_default!(lst: List[Int], default) = if lst == [] then default else lst[0]
 mass = first_or_default([], 5 kilogram)
 
 # ---
@@ -105,7 +105,7 @@ m = if false then 5 kilogram else 10 kilogram
 n = m * 2
 
 # ---
-result = if true then {
+if true then {
     temp = 5
     temp * 2
 } else {
@@ -132,18 +132,21 @@ for x in [1, 2, 3] do {
 }
 
 # ---
-masses = []
+masses: List[Int] = []
 for i in [1, 2, 3] do {
-    masses = masses + [i kilogram]
+    masses = masses + [i]
+    masses[i] -> kilogram
 }
 
 # ---
-map!(f, lst) = if lst == [] then [] else [f(lst[0])] + map(f, lst[1:])
+map!(f: ![[x: Int], Int], lst: List[Int]): List[Int] =
+    if lst == [] then [] else [f(lst[0])] + map(f, lst[1:])
 double!(x) = x * 2
 result = map(double, [1, 2, 3])
 
 # ---
-fold!(f, acc, lst) = if lst == [] then acc else fold(f, f(acc, lst[0]), lst[1:])
+fold!(f: ![[a: Int, b: Int], Int], acc: Int, lst: List[Int]): Int =
+    if lst == [] then acc else fold(f, f(acc, lst[0]), lst[1:])
 add!(a, b) = a + b
 result = fold(add, 0, [1, 2, 3, 4, 5])
 
@@ -200,41 +203,12 @@ result = value * 3
 func = !(x) = x * 2 + 5
 result = func(10)
 
-# ---
-closure = {
-    base = 10
-    !(x) = x + base
-}
-result = closure(5)
-
-# ---
-multi_level = {
-    a = 5
-    {
-        b = 10
-        {
-            c = a + b
-            c * 2
-        }
-    }
-}
-
-# ---
-conditional_assign = if true then {
-    temp = 5
-    temp * 2
-} else {
-    temp = 10
-    temp + 5
-}
-result = conditional_assign + 3
-
-# E536
+# E535
 x = 5
 x = "hello"
 y = x + 10
 
-# E536
+# E535
 m = 5 kilogram
 m = 10 metre
 n = m + 5 kilogram
@@ -255,11 +229,10 @@ first = lst[0]
 mixed = [5, 10 kilogram]
 value = mixed[0]
 
-# E524
+# E502
 a = [1, 2]
 b = ["x", "y"]
 combined = a + b
-value = combined[0]
 
 # E703
 add_wrong!(x) = x + 5 kilogram

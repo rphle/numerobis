@@ -42,7 +42,7 @@ ratio = (1000 metre -> km) / (1 km)
 converted = ((5000 metre -> km) + 10 km) * 2
 
 # ---
-multi_convert = (1000 gram -> kilogram) * 10 metre / second^2
+multi_convert = (1000 gram -> kilogram) * 10 metre/second^2
 
 # ---
 speed = 100 metre / (10 second)
@@ -79,7 +79,8 @@ square!(n) = n * n
 compose(add_one, double, square, 3)
 
 # ---
-map!(f, lst) = if lst == [] then [] else [f(lst[0])] + map(f, lst[1:])
+map!(f: ![[x: Int], Int], lst: List[Int]): List[Int] =
+    if lst == [] then [] else [f(lst[0])] + map(f, lst[1:])
 transform!(x) = x * 2 + 1
 map(transform, [1, 2, 3, 4, 5])
 
@@ -109,9 +110,6 @@ combined = ("Hello" + " " + "World")[0:5] + "!"
 
 # ---
 repeated = ("x" * 3 + "y" * 2)[2:4]
-
-# ---
-for_result = [x * 2 for x in [1, 2, 3]]
 
 # ---
 sum = 0
@@ -146,20 +144,23 @@ while counter < 10 do {
 }
 
 # ---
-make_processor!(scale) = {
+make_processor!(scale) =
     !(x) = {
         temp = x * scale
         temp + 10
     }
-}
+
 processor = make_processor(5)
 processor(3)
 
 # ---
-apply_ops!(x, ops) = {
+apply_ops!(
+    x: Int,
+    ops: List[![[n: Int], Int]]
+): Int =
     if ops == [] then x
     else apply_ops(ops[0](x), ops[1:])
-}
+
 add_one!(n) = n + 1
 double!(n) = n * 2
 apply_ops(5, [add_one, double, add_one])
@@ -205,58 +206,38 @@ force_calc = ((20 kilogram + 5 kilogram) * 10 metre/second^2) / 5
 # Energy_calc = (10 kilogram * ((5 metre/second)^2 + (3 metre/second)^2)) / 2
 
 # ---
-multi_step = {
-    mass = 10 kilogram
-    vel = 5 metre/second
-    ke = (mass * vel^2) / 2
-    ke + 50 joule
-}
+mass = 10 kilogram
+vel = 5 metre/second
+ke = (mass * vel^2) / 2
+ke + 50 joule
 
 # ---
-conditional_calc = {
-    x = 10
-    y = if x > 5 then x * 2 else x / 2
-    z = y + 3
-    if z > 20 then z * 10 else z + 100
-}
+x = 10
+y = if x > 5 then x * 2 else x / 2
+z = y + 3
+if z > 20 then z * 10 else z + 100
 
 # ---
-list_operations = {
-    base = [1, 2, 3]
-    doubled = [x * 2 for x in base]
-    filtered = [x for x in doubled if x > 3]
-    sum = 0
-    for x in filtered do {
-        sum = sum + x
-    }
-    sum
-}
-
-# ---
-nested_structures = {
-    data = [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
-    total = 0
-    for row in data do {
-        for val in row do {
-            if val % 2 == 0 then {
-                total = total + val
-            }
+data = [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
+total = 0
+for row in data do {
+    for val in row do {
+        if val % 2 == 0 then {
+            total = total + val
         }
     }
-    total
 }
+total
 
 # ---
-higher_order_chain = {
-    apply!(f, x) = f(x)
-    twice!(f, x) = f(f(x))
-    inc!(n) = n + 1
-    result = twice(!(x) = apply(inc, x), 5)
-    result
-}
+apply!(f, x) = f(x)
+twice!(f, x) = f(f(x))
+inc!(n) = n + 1
+result = twice(!(x) = apply(inc, x), 5)
+result
 
 # ---
-((5 kilogram + 3 kilogram) * 2 - 1 kilogram) * 10 metre / second^2
+((5 kilogram + 3 kilogram) * 2 - 1 kilogram) * 10 metre/second^2
 
 # ---
 (((10 metre / 2 second) + (5 metre / 1 second)) * 3 second) / 2

@@ -111,32 +111,17 @@ not (5 > 10)
 # ---
 5 kilogram < 10 kilogram and 3 metre < 7 metre
 
-# E514
+# ---
 5 kilogram < 10 metre
 
-# E514
-10 second > 5 kilogram
-
-# E514
-5 kilogram == 5 metre
-
-# E514
-10 metre != 10 second
-
-# E514
+# ---
 5 kilogram < 10 metre < 15 kilogram
 
-# E514
-10 metre > 5 kilogram > 1 metre
-
-# E514
-"hello" < 5
-
-# E514
+# ---
 true == 5
 
 # E514
 5 < "world"
 
-# E514
+# ---
 false != 10

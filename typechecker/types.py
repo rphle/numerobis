@@ -2,6 +2,7 @@ from dataclasses import dataclass, field, replace
 from typing import Any, Literal, Optional, Union, overload
 
 import typechecker.utils
+from utils import isanyofinstance
 
 
 class VarEnv:
@@ -81,7 +82,7 @@ class NumberType(UType):
         d = (
             f"[[bold]{typechecker.utils.format_dimension(self.dim)}[/bold]]"
             if self.dim != []
-            else ""
+            else "[1]"
         )
         return self.typ + d
 
@@ -131,7 +132,7 @@ class VarType(UType):
 @dataclass(frozen=True)
 class VarDim(VarType):
     _name: str
-    kind: str = "types"
+    kind: str = "dims"
 
 
 @dataclass(kw_only=True, frozen=True)
@@ -149,6 +150,10 @@ class UndefinedType(UType):
 class ListType(UType):
     content: T = NeverType()
     dim: Optional[list] = content.dim
+
+    def __post_init__(self):
+        if self.dim is None:
+            object.__setattr__(self, "dim", self.content.dim)
 
     def type(self) -> str:
         return f"List[{self.content.type()}]"
@@ -173,6 +178,7 @@ class FunctionType(UType):
     return_type: T = field(default_factory=lambda: AnyType())
     param_names: list[str] = field(default_factory=list)
     param_addrs: list[str] = field(default_factory=list)
+    param_defaults: list[T] = field(default_factory=list)
     arity: tuple[int, int] = (0, 0)
     unresolved: Optional[Literal["recursive", "parameters"]] = None
     _name: Optional[str] = field(default=None, compare=False)
@@ -233,6 +239,8 @@ class AnyType(UType):
 
 
 def unify(a: T, b: T) -> Optional[T]:
+    if isanyofinstance((a, b), AnyType):
+        return None
     match a, b:
         case NeverType(), _:
             return b
@@ -316,11 +324,13 @@ _numberoverload = Overload(
     FunctionType(params=[IntType(), IntType()], return_type=IntType()),
     FunctionType(params=[IntType(), FloatType()], return_type=FloatType()),
     FunctionType(params=[FloatType(), FloatType()], return_type=FloatType()),
+    FunctionType(params=[FloatType(), IntType()], return_type=FloatType()),
 )
 _boolnumberoverload = Overload(
     FunctionType(params=[IntType(), IntType()], return_type=BoolType()),
     FunctionType(params=[IntType(), FloatType()], return_type=BoolType()),
-    FunctionType(params=[FloatType(), FloatType()], return_type=BoolType()),
+    FunctionType(params=[FloatType(), FloatType()], return_type=FloatType()),
+    FunctionType(params=[FloatType(), IntType()], return_type=BoolType()),
 )
 
 
@@ -358,7 +368,7 @@ types: dict[str, Struct] = {
             **_eq,
         }
     ),
-    "Bool": Struct({**_conv("Bool", "Bool", "Str")}),
+    "Bool": Struct({**_conv("Bool", "Bool", "Str"), **_eq}),
     "Str": Struct(
         {
             **_conv("Str", "Bool"),
@@ -378,6 +388,12 @@ types: dict[str, Struct] = {
                     return_type=StrType(),
                 ),
             ),
+            **{
+                f"__{op}__": FunctionType(
+                    params=[StrType(), StrType()], return_type=BoolType()
+                )
+                for op in _boolops
+            },
             **_eq,
         },
     ),
@@ -389,7 +405,8 @@ types: dict[str, Struct] = {
                 return_type=ListType(content=VarType("T")),
             ),
             "__mul__": FunctionType(
-                params=[ListType(), IntType()], return_type=ListType()
+                params=[ListType(content=VarType("T")), IntType()],
+                return_type=ListType(content=VarType("T")),
             ),
             "__getitem__": Overload(
                 FunctionType(
@@ -401,6 +418,12 @@ types: dict[str, Struct] = {
                     return_type=ListType(content=VarType("T")),
                 ),
             ),
+            **{
+                f"__{op}__": FunctionType(
+                    params=[ListType(), ListType()], return_type=BoolType()
+                )
+                for op in _boolops
+            },
             **_eq,
         },
     ),

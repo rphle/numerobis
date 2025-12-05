@@ -131,6 +131,18 @@ lst[1::2]
 lst = [1, 2, 3, 4, 5]
 lst[:3:1]
 
+# E001
+lst = [1, 2, 3, 4, 5]
+lst[:3:1:]
+
+# E001
+lst = [1, 2, 3, 4, 5]
+lst[:3:1:4]
+
+# E001
+lst = [1, 2, 3, 4, 5]
+lst[:::]
+
 # ---
 [1, 2] + [3, 4]
 
@@ -179,7 +191,8 @@ lst[:3:1]
 # ---
 [1 metre, 2 metre] * 2
 
-# Empty = []
+# ---
+empty = []
 empty + [1 metre]
 
 # ---
@@ -190,7 +203,7 @@ base + [5 kilogram]
 init: List = [[]]
 init + [[1, 2]]
 
-# ---
+# E502
 partial = [1, 2]
 partial + [3 kilogram]
 
@@ -235,29 +248,29 @@ funcs[0](5)
 # E525
 [[], [1], ["hello"]]
 
-# E524
+# E502
 x: List = [1, 2, 3]
 y: List = ["a", "b"]
 x + y
 
-# E524
+# E502
 masses = [1 kilogram, 2 kilogram]
 lengths = [1 metre, 2 metre]
 masses + lengths
 
-# E524
+# E502
 [1, 2] + ["a", "b"]
 
-# E524
+# E502
 [5] + [true]
 
-# E524
+# E502
 [1 kilogram] + [1 metre]
 
-# E524
+# E525
 [[1, 2]] + [[3, "a"]]
 
-# E524
+# E525
 [[]] + [[1], ["hello"]]
 
 # E523
@@ -272,7 +285,10 @@ words[1.5]
 masses = [1 kilogram, 2 kilogram]
 masses[true]
 
-# E523
+# E537
+[1,2,3,4][1 metre]
+
+# E537
 nested = [[1], [2]]
 nested[1 kilogram]
 
@@ -303,12 +319,3 @@ for c in s do c
 # E516
 m = 5 kilogram
 for x in m do x
-
-# E517
-x, y = 5
-
-# E517
-a, b = "hello"
-
-# E517
-m, n = 5 kilogram

@@ -92,7 +92,9 @@ class uException:
                 )
 
         if message.help:
-            console.print(f"  [dim]{message.help}[/dim]", highlight=False)
+            console.print(
+                f"  [dim]{rich.markup.escape(message.help)}[/dim]", highlight=False
+            )
 
         console.print()
         if exit:

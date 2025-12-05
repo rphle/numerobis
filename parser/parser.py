@@ -149,8 +149,14 @@ class Parser(ParserTemplate):
             return self.unit()
         elif self._peek().type == "BANG":
             return self.function(anonymous=True)
+        elif first.type == "ID" and self._peek(2).type == "BANG":
+            # Named function as expression is not allowed
+            self.errors.throw(
+                19,
+                loc=first.loc.merge(self._peek(2).loc),
+            )
 
-        return self.conversion()
+        return self.range_()
 
     def variable(self) -> AstNode:
         name = self._consume("ID")
@@ -240,7 +246,18 @@ class Parser(ParserTemplate):
         if self._peek().type == "ASSIGN":
             self._consume("ASSIGN")
             self._clear()
-            unit = self.unit(standalone=True)
+            factor = None
+            if self._peek().type == "NUMBER" and self._peek(2).type not in [
+                "DIVIDE",
+                "TIMES",
+            ]:
+                factor = self._parse_number(self._consume("NUMBER"))
+            if self._peek().type == "ID" or not factor:
+                unit = self.unit(standalone=True)
+            else:
+                unit = Unit(unit=[])
+            if factor:
+                unit.unit.insert(0, factor)
 
         return UnitDefinition(
             name=self._make_id(name),
@@ -314,7 +331,7 @@ class Parser(ParserTemplate):
             self._consume("ELSE")
             else_branch = self.block() if not expression else self.expression()
         elif expression:
-            self.errors.throw(4, loc=nodeloc(_if, then_branch))
+            self.errors.throw(14, loc=nodeloc(_if, then_branch))
 
         return If(
             condition=condition,
@@ -352,6 +369,24 @@ class Parser(ParserTemplate):
             condition=condition,
             body=body,
             loc=nodeloc(_while, body),
+        )
+
+    def range_(self) -> AstNode:
+        parts = [self.conversion(), None, None]
+
+        i = 1
+        while self._peek(ignore_whitespace=False).type == "RANGE" and i < 3:
+            self._consume("RANGE")
+            parts[i] = self.conversion()
+            i += 1
+
+        if i == 1:
+            return parts[0]
+        return Range(
+            start=parts[0],
+            end=parts[1],
+            step=parts[2],
+            loc=parts[0].loc.merge(getattr(parts[2], "loc", parts[1].loc)),
         )
 
     def conversion(self) -> AstNode:
@@ -453,77 +488,74 @@ class Parser(ParserTemplate):
 
         return self.postfix()
 
+    def call(self, node: AstNode) -> AstNode:
+        self._consume("LPAREN")
+        args = []
+        while self._peek().type != "RPAREN":
+            name = None
+            if self._peek(2).type == "ASSIGN":
+                name = self._make_id(self._consume("ID"))
+                self._consume("ASSIGN")
+            arg = self.expression()
+            args.append(
+                CallArg(
+                    name=name,
+                    value=arg,
+                    loc=nodeloc(name if name else arg, arg),
+                )
+            )
+            if self._peek().type == "RPAREN":
+                break
+            self._consume("COMMA")
+        _end = self._consume("RPAREN")
+        return Call(callee=node, args=args, loc=nodeloc(node, _end))
+
+    def index(self, node: AstNode) -> AstNode:
+        self._consume("LBRACKET")
+        parts = []
+        colon_count = 0
+
+        while self._peek().type != "RBRACKET":
+            if self._peek().type == "COLON":
+                if colon_count >= 2:
+                    break
+                parts.append(None)
+                self._consume("COLON")
+                colon_count += 1
+            else:
+                parts.append(self.expression())
+
+                if self._peek().type == "COLON":
+                    if colon_count >= 2:
+                        break
+                    self._consume("COLON")
+                    colon_count += 1
+
+        _end = self._consume("RBRACKET")
+
+        if colon_count == 0:
+            idx = parts[0]
+        else:
+            parts += [None] * (3 - len(parts))
+            idx = Slice(start=parts[0], stop=parts[1], step=parts[2])
+
+        node = Index(iterable=node, index=idx, loc=nodeloc(node, _end))
+        return node
+
     def postfix(self) -> AstNode:
         """
         Postfix chaining for calls and indexing/slices.
         Starts from `range_()` (preserves range precedence) then repeatedly
         applies `( ... )` or `[ ... ]` as long as either appears immediately after.
         """
-        node = self.range_()
+        node = self.atom()
         while self._peek(ignore_whitespace=False).type in {"LPAREN", "LBRACKET"}:
             if self._peek(ignore_whitespace=False).type == "LPAREN":
-                # CALL
-                self._consume("LPAREN")
-                args = []
-                while self._peek().type != "RPAREN":
-                    name = None
-                    if self._peek(2).type == "ASSIGN":
-                        name = self._make_id(self._consume("ID"))
-                        self._consume("ASSIGN")
-                    arg = self.expression()
-                    args.append(
-                        CallArg(
-                            name=name,
-                            value=arg,
-                            loc=nodeloc(name if name else arg, arg),
-                        )
-                    )
-                    if self._peek().type == "RPAREN":
-                        break
-                    self._consume("COMMA")
-                end = self._consume("RPAREN")
-                node = Call(callee=node, args=args, loc=nodeloc(node, end))
+                node = self.call(node)
             else:
-                # INDEX / SLICE
-                self._consume("LBRACKET")
-                parts = []
-                while True:
-                    if self._peek().type == "RBRACKET" or len(parts) >= 3:
-                        break
-                    if self._peek().type == "COLON":
-                        parts.append(None)
-                        self._consume("COLON")
-                    else:
-                        parts.append(self.expression())
-                        if len(parts) < 2 and self._peek().type == "COLON":
-                            parts.append(None)
-                            self._consume("COLON")
-                end = self._consume("RBRACKET")
-                if len(parts) == 1 and parts[0] is not None:
-                    idx = parts[0]
-                else:
-                    parts += [None] * (3 - len(parts))
-                    idx = Slice(start=parts[0], stop=parts[1], step=parts[2])
-                node = Index(iterable=node, index=idx, loc=nodeloc(node, end))
+                node = self.index(node)
+
         return node
-
-    def range_(self) -> AstNode:
-        parts = [self.atom(), None, None]
-
-        i = 1
-        while self._peek(ignore_whitespace=False).type == "RANGE" and i < 3:
-            self._consume("RANGE")
-            parts[i] = self.atom()
-            i += 1
-
-        if i == 1:
-            return parts[0]
-        return Range(
-            start=parts[0],
-            end=parts[1],
-            step=parts[2],
-            loc=parts[0].loc.merge(getattr(parts[2], "loc", parts[1].loc)),
-        )
 
     def list(self) -> AstNode:
         start = self.tok
@@ -723,6 +755,8 @@ class Parser(ParserTemplate):
                 arity.append(arity[0])
             else:
                 param_names.append(self._make_id(self._consume("ID")))
+                if self._peek().type != "COLON":
+                    self.errors.throw(18, self._peek().loc)
                 self._consume("COLON")
                 params.append(self.type())
                 arity[-1] += 1

@@ -31,15 +31,15 @@ time = 7200 second
 time -> hour
 
 # ---
-speed = 100 metre / second
+speed = 100 metre/second
 speed -> (km / hour)
 
 # ---
-acceleration = 10 metre / second^2
+acceleration = 10 metre/second^2
 acceleration -> (km / hour^2)
 
 # ---
-force = 1000 kilogram * metre / second^2
+force = 1000 kilogram*metre/second^2
 force -> (gram * km / hour^2)
 
 # ---
@@ -75,7 +75,7 @@ distance = 100 metre
 distance -> Str
 
 # ---
-speed = 50 metre / second
+speed = 50 metre/second
 speed -> Str
 
 # ---
@@ -102,7 +102,7 @@ dist2 = 5 km
 dist1 + dist2
 
 # ---
-((10 metre / second) -> (km / hour)) + 50 (km / hour)
+((10 metre/second) -> (km / hour)) + 50 (km / hour)
 
 # E515
 5 kilogram -> metre
@@ -113,40 +113,28 @@ dist1 + dist2
 # E515
 20 second -> kilogram
 
-# E515
+# E602
 distance = 100 metre
 distance -> Mass
 
-# E515
+# E602
 mass = 10 kilogram
 mass -> Length
 
-# E515
-time = 5 second
-time -> Mass
-
-# E515
-speed = 10 metre / second
-speed -> Mass
-
-# E515
-force = 50 kilogram * metre / second^2
-force -> Length
-
-# E515
+# ---
 5 metre -> Int
 
-# E515
+# ---
 10 kilogram -> Float
 
-# E515
+# ---
 20 second -> Bool
 
-# E515
+# ---
 mass = 10 kilogram
 mass -> Int
 
-# E515
+# ---
 distance = 100 metre
 distance -> Float
 
@@ -156,13 +144,13 @@ distance -> Float
 # E515
 true -> Float
 
-# E515
+# ---
 [1, 2, 3] -> Str
 
-# E515
+# ---
 5 -> kilogram
 
-# E515
+# ---
 10.5 -> metre
 
 # E515

@@ -100,7 +100,7 @@ inverse = (10 kilogram)^(-2)
 1 / (5 metre)
 
 # ---
-1 / (10 kilogram * metre)
+1 / (10 kilogram*metre)
 
 # ---
 per_time = 1 / (5 second)
@@ -118,10 +118,10 @@ tiny_mass = 1e-50 kilogram
 huge_distance = 1e50 metre
 
 # ---
-speed_of_light = 299_792_458 metre / second
+speed_of_light = 299_792_458 metre/second
 
 # ---
-planck = 6.62607015e-34 kilogram * metre^2 / second
+planck = 6.62607015e-34 (kilogram * metre^2 / second)
 
 # ---
 deep = [[[[[[1, 2]]]]]]
@@ -132,7 +132,7 @@ deep_masses = [[[[1 kilogram]]]]
 # ---
 nested_empty = [[[[[]]]]]
 
-# ---
+# E525
 mixed_depth = [1, [2, [3, [4, [5]]]]]
 
 # ---
@@ -155,7 +155,7 @@ mutual_a!(n) = if n <= 0 then 0 else mutual_b(n - 1)
 mutual_b!(n) = if n <= 0 then 1 else mutual_a(n - 1)
 mutual_a(5)
 
-# ---
+# E601
 f!(x) = g(x)
 g!(y) = f(y)
 
@@ -168,7 +168,7 @@ make_func!() = !(x) = make_func()
 
 # Empty_block = {}
 
-# ---
+# E001
 just_zero = { 0 }
 
 # ---

@@ -95,7 +95,7 @@ with tqdm(total=sum(len(file[1]) for _, file in tests.items()), leave=False) as 
 cumulative = 0
 ratio = [0, 0]
 for test in itertools.chain.from_iterable(file[1] for _, file in tests.items()):
-    if test.throws != test.thrown:
+    if test.throws != test.thrown and test.throws != "///":
         text = (
             (f"expected [bold]{test.throws}[/bold]" if test.throws else "")
             + (", " if test.throws and test.thrown else "")

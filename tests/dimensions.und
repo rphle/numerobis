@@ -5,31 +5,31 @@ from si import @(metre, kilogram, second, newton, joule, watt)
 dimension TestDim
 
 # ---
-dimension Length
-dimension Area = Length^2
+dimension Length1
+dimension Area = Length1^2
 
 # ---
-dimension Time
+dimension Time1
 dimension Frequency = 1 / Time
 
 # ---
-dimension Mass
-dimension Length
+dimension Mass1
+dimension Length1
 dimension Velocity = Length / Time
 
 # ---
-dimension Length
-dimension Time
+dimension Length1
+dimension Time1
 dimension Acceleration = Length / Time^2
 
 # ---
-dimension Mass
-dimension Length
-dimension Time
-dimension Force = Mass * Length / Time^2
+dimension Mass1
+dimension Length1
+dimension Time1
+dimension Force1 = Mass * Length / Time^2
 
 # ---
-dimension Length
+dimension Length1
 dimension Area = Length^2
 dimension Volume = Length^3
 
@@ -40,10 +40,10 @@ dimension Complex = Length^2 * Mass / Time^3
 unit meter: Length
 
 # ---
-unit second: Time
+unit second1: Time
 
 # ---
-unit kilogram: Mass
+unit kilogram1: Mass
 
 # ---
 unit my_unit: Length = 10 metre
@@ -55,20 +55,20 @@ unit kilometer: Length = 1000 metre
 unit my_time: Time = 60 second
 
 # ---
-dimension Time
+dimension Time1
 dimension Frequency = 1 / Time
-unit second: Time
+unit second1: Time
 unit hertz: Frequency = 1 / second
 
 # ---
-dimension Mass
-dimension Length
-dimension Time
-dimension Force = Mass * Length / Time^2
-unit kilogram: Mass
-unit metre: Length
-unit second: Time
-unit newton: Force = kilogram * metre / second^2
+dimension Mass1
+dimension Length1
+dimension Time1
+dimension Force1 = Mass * Length / Time^2
+unit kilogram1: Mass
+unit metre1: Length
+unit second1: Time
+unit newton1: Force = kilogram * metre / second^2
 
 # ---
 unit my_force: Force = 5 newton
@@ -104,7 +104,7 @@ unit compound: Force = 10 kilogram * metre / second^2
 5 metre * 2 metre
 
 # ---
-10 kilogram * 5 metre / second^2
+10 kilogram * 5 (metre / second^2)
 
 # ---
 distance = 100 metre
@@ -113,7 +113,7 @@ speed = distance / time
 
 # ---
 mass = 10 kilogram
-acceleration = 5 metre / second^2
+acceleration = 5 metre/second^2
 force = mass * acceleration
 
 # ---
@@ -127,7 +127,7 @@ time = 5 second
 energy = power * time
 
 # ---
-velocity = 20 metre / second
+velocity = 20 metre/second
 time = 5 second
 distance = velocity * time
 
@@ -138,10 +138,6 @@ side = area^0.5
 # ---
 volume = 8 metre^3
 side = volume^(1.0/3.0)
-
-# ---
-freq = 1 / second
-period = 1 / freq
 
 # ---
 x: Length = 10 metre
@@ -156,10 +152,10 @@ t: Time = 20 second
 f: Force = 50 newton
 
 # ---
-v: Length / Time = 10 metre / second
+v: Length / Time = 10 metre/second
 
 # ---
-a: Length / Time^2 = 9.8 metre / second^2
+a: Length / Time^2 = 9.8 metre/second^2
 
 # Energy: Force * Length = 100 joule
 
@@ -167,7 +163,7 @@ a: Length / Time^2 = 9.8 metre / second^2
 power: Energy / Time = 50 watt
 
 # ---
-complex: Mass * Length^2 / Time^3 = 100 kilogram * metre^2 / second^3
+complex: Mass * Length^2 / Time^3 = 100 (kilogram * metre^2 / second^3)
 
 # E703
 5 metre + 10 kilogram
@@ -187,7 +183,7 @@ mass = 10 kilogram
 distance + mass
 
 # E703
-speed = 10 metre / second
+speed = 10 metre/second
 force = 50 newton
 speed + force
 
@@ -216,11 +212,11 @@ unit my_newton: MyForce = 10 kilogram
 dimension Speed = Length / Time
 unit my_speed: Speed = 5 kilogram
 
-# E705
-unit ambiguous
+# ---
+unit test
 
-# E705
-unit unclear = 10
+# ---
+unit auto = 10
 
 # E016
 dimension Test = Length + Mass
@@ -231,15 +227,15 @@ dimension Bad = Length - Time
 # E016
 unit test = 5 metre + 3 kilogram
 
-# E003
+# E001
 dimension @BadName
 
-# E003
+# E001
 unit @bad_unit: Length
 
-# E004
+# E003
 @
 
-# E004
-dimension Length
+# ---
+dimension Length1
 @Length

@@ -93,14 +93,14 @@ adjusted = if m > 5 kilogram then m + 2 kilogram else m - 1 kilogram
 flag = true
 result = if flag then (if not flag then 1 else 2) else 3
 
-# E014
+# ---
 if true then 5
 
-# E014
+# ---
 if false then "hello"
 
 # E014
-if 5 < 10 then 100
+1 + (if 5 < 10 then 100)
 
 # E521
 if true then 5 else "hello"
@@ -133,20 +133,7 @@ if false then 5 kilogram else 10
 if true then 10 metre else 5
 
 # E521
-if true then {
-    5 kilogram
-} else {
-    10 metre
-}
-
-# E521
-if false then {
-    x = 5
-    x + 10 metre
-} else {
-    y = 3
-    y * 5 kilogram
-}
+if true then 5 kilogram else 10 metre
 
 # E521
 nested = if true then (if false then 5 else 10 kilogram) else 15

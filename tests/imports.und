@@ -10,7 +10,7 @@ from si import @(metre, kilogram, second)
 10 metre + 20 metre
 
 # ---
-from si import @(Mass, Length, Time)
+from si import @(Mass, Length, Time, kilogram)
 x: Mass = 10 kilogram
 
 # ---
@@ -25,13 +25,13 @@ from si import @(newton, joule, watt)
 from si import @(metre, kilogram, second, Mass, Length, Time)
 distance: Length = 100 metre
 
-# ---
+# E703
 from si import *
 10 metre + 5 kilogram
 
 # ---
 from si import *
-speed = 100 metre / second
+speed = 100 metre/second
 
 # ---
 from si import *

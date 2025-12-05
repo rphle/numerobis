@@ -65,7 +65,7 @@ class UnitParser(ParserTemplate):
         if self.tokens and self.peek().type == "POWER":
             op = self._make_op(self._consume())
             if self.peek().type != "NUMBER":
-                self.errors.throw(101, loc=self.peek().loc)
+                self.errors.throw(101, value="", loc=self.peek().loc)
             right = self._parse_number(self._consume("NUMBER"))
             node = BinOp(op=op, left=node, right=right, loc=nodeloc(node, right))
         return node

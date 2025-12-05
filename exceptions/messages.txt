@@ -35,10 +35,17 @@ Conditional expression must have an else branch
 [E017 / SyntaxError]
 Parameters can only be referenced in unit declarations
 
+[E018 / SyntaxError]
+Parameters of a function annotation must have both name and type specified
+example: ![[a: type, b: type, ...], ...]
+
+[E019 / SyntaxError]
+Named functions are not allowed here
+
 
 
 [E101 / ValueError]
-Exponent must be a dimensionless scalar
+Exponent must be a dimensionless scalar{value}
 
 
 
@@ -129,9 +136,6 @@ range step must be dimensionless
 [E530 / TypeError]
 return statement outside function
 
-[E531 / TypeError]
-{type} is different from the declared return {kind} {expected}
-
 [E532 / TypeError]
 slice indices must be 'Int' or None, not '{type}'
 
@@ -146,6 +150,9 @@ unsupported operand type for 'not': '{type}'
 
 [E536 / TypeError]
 '{name}' declared as {declared} but has {kind} {value}
+
+[E537 / TypeError]
+indices must be dimensionless, not {dimension}
 
 
 
@@ -168,9 +175,6 @@ type does not support keyword arguments
 
 [E701 / TypeError]
 Invalid number of parameters for '{callee}'
-
-[E702 / TypeError]
-Right operand of pow must be dimensionless, got [{dimension}]
 
 [E703 / TypeError]
 Incompatible dimensions in {operation}: {left} vs {right}

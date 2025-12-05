@@ -168,10 +168,10 @@ from si import @(metre, second, kilogram, Mass, Length, Time)
 # ---
 1.5e3 metre
 
-# E502
+# E703
 5 kilogram + 10 metre
 
-# E502
+# E703
 10 second - 5 kilogram
 
 # E502
@@ -186,7 +186,7 @@ true + 5
 # E502
 5 + false
 
-# E502
+# E703
 5 kilogram % 3 metre
 
 # E533
@@ -204,7 +204,7 @@ true + 5
 # E101
 (2 metre)^(3 second)
 
-# E702
+# 101
 (2 metre)^(3 kilogram)
 
 # E703
@@ -216,10 +216,10 @@ true + 5
 # E703
 (10 kilogram + 5 metre) * 2
 
-# E007
+# E001
 1.2.3
 
-# E007
+# E602
 1e2e3
 
 # E007

@@ -15,7 +15,7 @@ def format_dimension(dims) -> str:
     """Format dimension for error messages"""
     num, denom = [], []
 
-    if dims is None:
+    if dims is None or dims == []:
         return "1"
 
     for d in dims:

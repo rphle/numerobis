@@ -73,7 +73,7 @@ for a, b in [[1, 2], [3, 4]] do a + b
 # ---
 for x, y in [[10, 20], [30, 40]] do x * y
 
-# ---
+# E525
 for m, d in [[1 kilogram, 2 metre], [3 kilogram, 4 metre]] do m
 
 # ---
@@ -106,7 +106,7 @@ for i in 0..10 do {
 for i in 0..10..2 do i
 
 # ---
-for n in 1..20..3 do n
+for n in -1..20..3 do n
 
 # ---
 for x in 10..0..-1 do x
@@ -183,6 +183,15 @@ a: Range = 0..10
 # ---
 r: Range = 0..100..5
 
+# E001
+r: Range = 0..100..5..
+
+# E001
+r: Range = 0..100..5..2
+
+# E001
+r: Range = 0....5
+
 # ---
 range_var = 1..20
 
@@ -199,10 +208,10 @@ for x in 0 second..5 second..1 second do x
 r: Range = 0 kilogram..10 kilogram
 
 # E528
-for i in 0..10..2 kilogram do i
+for i in 0..10..true do i
 
 # E528
-for n in 1..20..3 metre do n
+for n in 1..20.."test" do n
 
 # E529
 for i in 0..10..2 kilogram do i
@@ -219,16 +228,16 @@ for n in 1.2..20.8 do n
 # E526
 r: Range = 0.5..10.5
 
-# E520
+# ---
 while 5 do 10
 
-# E520
+# ---
 while "hello" do 5
 
-# E520
+# ---
 while 5 kilogram do 1
 
-# E520
+# ---
 x = 10
 while x do {
     x = x - 1

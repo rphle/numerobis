@@ -126,12 +126,12 @@ length = 1 metre
 moment_of_inertia = mass * length^2
 
 # ---
-moment_of_inertia = 10 kilogram * metre^2
+moment_of_inertia = 10 (kilogram * metre^2)
 angular_velocity = 5 (1/second)
 rotational_energy = (moment_of_inertia * angular_velocity^2) / 2
 
 # ---
-torque = 50 newton * metre
+torque = 50 newton*metre
 angular_displacement = 10 (1 / 1)
 work = torque * angular_displacement
 
@@ -140,7 +140,7 @@ power = 1000 watt
 force = 100 newton
 velocity = power / force
 
-# Efficiency = 0.8
+efficiency = 0.8
 input_power = 1000 watt
 output_power = efficiency * input_power
 
@@ -170,7 +170,7 @@ initial_velocity = 30 metre/second
 g = 9.8 metre/second^2
 max_height = (initial_velocity^2) / (2 * g)
 
-# Elastic_modulus = 200e9 pascal
+elastic_modulus = 200e9 pascal
 strain = 0.001
 stress = elastic_modulus * strain
 

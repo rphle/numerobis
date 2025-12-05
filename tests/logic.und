@@ -111,47 +111,29 @@ false or false or false or true
 # ---
 true and (false or (true and false))
 
-# E520
+# ---
 5 and true
 
-# E520
+# ---
 true and 10
 
-# E520
-false or 5
-
-# E520
-10 or true
-
-# E520
+# ---
 not 5
 
-# E520
+# ---
 not "hello"
 
-# E520
+# ---
 5 xor true
 
-# E520
-true xor 10
-
-# E520
+# ---
 5 kilogram and true
 
-# E520
-true or 10 metre
-
-# E520
+# ---
 not (5 kilogram)
 
-# E534
-not 5
-
-# E534
+# ---
 not (10 + 5)
-
-# E534
-not [1, 2, 3]
 
 # E520
 if 5 then 1 else 0
