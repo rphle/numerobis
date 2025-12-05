@@ -204,7 +204,7 @@ class FunctionType(UType):
             for param, arg in zip(self.params, args)
         ]
         if len(args) == len(self.params) and all(
-            unify(p, a) for p, a in zip(params, args)
+            unify(p, a) and dimcheck(p, a) for p, a in zip(params, args)
         ):
             return self.edit(return_type=self.return_type.complete())
 
@@ -213,7 +213,7 @@ class AnyType(UType):
     unresolved: Optional[str] = None
 
     def __new__(cls, name: str = "any", unresolved=None, **kwargs) -> "T":
-        if name == "any":
+        if name.lower() == "any":
             return super().__new__(cls)
 
         t = {
@@ -331,7 +331,7 @@ _numberoverload = Overload(
 _boolnumberoverload = Overload(
     FunctionType(params=[IntType(), IntType()], return_type=BoolType()),
     FunctionType(params=[IntType(), FloatType()], return_type=BoolType()),
-    FunctionType(params=[FloatType(), FloatType()], return_type=FloatType()),
+    FunctionType(params=[FloatType(), FloatType()], return_type=BoolType()),
     FunctionType(params=[FloatType(), IntType()], return_type=BoolType()),
 )
 
@@ -378,7 +378,7 @@ types: dict[str, Struct] = {
                 params=[StrType(), StrType()], return_type=StrType()
             ),
             "__mul__": FunctionType(
-                params=[StrType(), IntType()], return_type=StrType()
+                params=[StrType(), NumberType(typ="Int", dim=[])], return_type=StrType()
             ),
             "__getitem__": Overload(
                 FunctionType(
@@ -407,7 +407,7 @@ types: dict[str, Struct] = {
                 return_type=ListType(content=VarType("T")),
             ),
             "__mul__": FunctionType(
-                params=[ListType(content=VarType("T")), IntType()],
+                params=[ListType(content=VarType("T")), NumberType(typ="Int", dim=[])],
                 return_type=ListType(content=VarType("T")),
             ),
             "__getitem__": Overload(

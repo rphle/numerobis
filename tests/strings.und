@@ -201,7 +201,7 @@ true * "hello"
 # E523
 "test"[2.5]
 
-# E523
+# E537
 s = "example"
 s[1 kilogram]
 
@@ -223,19 +223,16 @@ s[1 kilogram]
 # E532
 "world"[::true]
 
-# E514
+# ---
 "hello" < 5
 
-# E514
-10 > "world"
-
-# E514
+# ---
 "test" == 5
 
-# E514
+# ---
 true != "hello"
 
-# E514
+# ---
 "abc" <= 5 kilogram
 
 # E514

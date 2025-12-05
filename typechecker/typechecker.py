@@ -117,7 +117,7 @@ class Typechecker:
                         node, left, right, env=env.export("dimensions")
                     )
 
-                return left.edit(dim=left.dim)
+                return definition.return_type.edit(dim=left.dim)
             case "mul" | "div":
                 if not dimful(right.dim):
                     return left
@@ -758,6 +758,8 @@ class Typechecker:
 
         adress = None
         if node.name.name in env.names:
+            if node.type:
+                self.errors.throw(604, name=node.name.name, loc=node.loc)
             if mismatch := _mismatch(env.get("names")(node.name.name), value):
                 self.errors.throw(
                     535,
@@ -768,9 +770,6 @@ class Typechecker:
                     loc=node.loc,
                 )
             adress = env.names[node.name.name]
-
-        if adress is not None and node.type:
-            self.errors.throw(604, name=node.name.name, loc=node.loc)
 
         if node.type:
             annotation = self.type_(node.type, env=env)

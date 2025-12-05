@@ -126,12 +126,12 @@ result = undefined_function(5)
 x = 5
 y: UndefinedType = 10
 
-# E603
+# ---
 x = 5
 x = 10
 x = 15
 
-# E603
+# E604
 y: Int = 5
 y: Float = 10.5
 
@@ -144,30 +144,27 @@ m: Mass = 5 kilogram
 m: Length = 10 metre
 
 # E536
-x: Int = 5
-x = "hello"
+x: Int = "hello"
 
 # E536
-y: Float = 10.5
-y = true
+y: Float = true
 
 # E536
-m: Mass = 5 kilogram
-m = 10 metre
+m: Mass = 10 metre
 
-# E536
+# E535
 d: Length = 10 metre
 d = 5 kilogram
 
-# E536
+# E535
 x = 5
 x = "hello"
 
-# E536
+# E535
 m = 5 kilogram
 m = 10 metre
 
-# E536
+# E535
 x = 5
 x = 10.5
 x = "test"
@@ -180,7 +177,7 @@ x = 10 metre
 y: Length = 10 metre
 y = 5 kilogram
 
-# E535
+# E703
 m: Mass = 5 kilogram
 n: Mass = 10 kilogram
 m = n + 5 metre

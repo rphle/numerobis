@@ -22,13 +22,13 @@ d: Length = 20 metre
 t: Time = 5 second
 
 # ---
-v: Length / Time = 10 metre / second
+v: Length / Time = 10 metre/second
 
 # ---
-a: Length / Time^2 = 9.8 metre / second^2
+a: Length / Time^2 = 9.8 metre/second^2
 
 # ---
-f: Mass * Length / Time^2 = 50 kilogram * metre / second^2
+f: Mass * Length / Time^2 = 50 kilogram*metre/second^2
 
 # ---
 lst: List = [1, 2, 3]
@@ -54,7 +54,7 @@ range_step: Range = 0..100..5
 func: ![[x: Int], Int] = !(x: Int): Int = x + 1
 
 # ---
-generic_func: ![[x], Int] = !(x) = 42
+generic_func: ![[x: Any], Int] = !(x) = 42
 
 # ---
 mass_func: ![[m: Mass], Mass] = !(m: Mass): Mass = m * 2
@@ -85,27 +85,27 @@ distance: Length = speed * 5 second
 compute!(x: Int): Int = x * 2
 result: Int = compute(5)
 
-# E503
+# E602
 x = 5
 y: x = 10
 
-# E503
+# E536
 dimension TestDim
 value: TestDim = 10
 
-# E503
+# E601
 f!(x: Int): Int = x
 result = f(Int)
 
-# E504
+# E601
 x = 5
 result = x[Int]
 
-# E504
+# E601
 s = "hello"
 result = s[Mass]
 
-# E504
+# E601
 dimension TestDim
 result = TestDim[Length]
 
@@ -137,7 +137,7 @@ lst["hello"]
 words = ["a", "b", "c"]
 words[true]
 
-# E523
+# E537
 masses = [1 kilogram, 2 kilogram]
 masses[5 kilogram]
 
@@ -147,31 +147,31 @@ masses[5 kilogram]
 # E523
 [1, 2, 3][false]
 
-# E536
+# E535
 x: Int = 5
 x = "hello"
 
-# E536
+# E535
 y: Float = 10.5
 y = true
 
-# E536
+# E535
 m: Mass = 5 kilogram
 m = 10 metre
 
-# E536
+# E535
 d: Length = 10 metre
 d = 5 second
 
-# E536
+# E535
 lst: List = [1, 2, 3]
 lst = 5
 
-# E536
+# E535
 f: ![[x: Int], Int] = !(x: Int): Int = x
 f = 10
 
-# E536
+# E535
 x = 5
 x = 10.5
 x = "test"
@@ -192,12 +192,12 @@ y = "hello"
 lst: List = [1, 2, 3]
 lst = "not a list"
 
-# E536
+# E535
 x: Int = 5
 y: Int = 10
 x = y + 2.5
 
-# E536
+# E535
 m: Mass = 10 kilogram
 n: Length = 20 metre
 m = n
@@ -206,4 +206,4 @@ m = n
 x: Int[n=5] = 2
 
 # E605
-y: List[content=Str] = ["test"]
+y: Int[dim=Mass] = 1 kilogram
