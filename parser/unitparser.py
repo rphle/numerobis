@@ -1,5 +1,4 @@
 import dataclasses
-from parser.template import ParserTemplate
 
 from astnodes import (
     AstNode,
@@ -14,6 +13,8 @@ from astnodes import (
     nodeloc,
 )
 from classes import ModuleMeta
+
+from .template import ParserTemplate
 
 
 class UnitParser(ParserTemplate):

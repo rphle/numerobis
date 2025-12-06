@@ -6,15 +6,15 @@ import rich.markup
 
 from astnodes import BinOp, BoolOp, Identifier, Location, Token
 from classes import ModuleMeta
-from exceptions import msgparser
-from exceptions.msgparser import ErrorMessage
 from typechecker.utils import format_dimension, repr_dimension
+
+from . import msgparser
 
 
 class uException:
     def __init__(
         self,
-        message: ErrorMessage,
+        message: msgparser.ErrorMessage,
         module: ModuleMeta,
         preview: bool = True,
         loc: Location | None = None,

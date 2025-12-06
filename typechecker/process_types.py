@@ -1,9 +1,11 @@
+from analysis.canonicalize import Canonicalizer
 from astnodes import AstNode, Call, Identifier, Unit
 from classes import ModuleMeta
 from environment import Env
 from exceptions.exceptions import Exceptions
-from typechecker.analysis import analyze
-from typechecker.types import AnyType, NumberType, T, types
+
+from .operators import typetable
+from .types import AnyType, NumberType, T
 
 
 class Processor:
@@ -14,19 +16,19 @@ class Processor:
         self.module = module
         self.errors = Exceptions(module=module)
 
-        self.analyze = analyze(module)
+        self.canonicalizer = Canonicalizer(module)
 
     def unit(self, node, env: Env):
-        return self.analyze("unit")(node, env)
+        return self.canonicalizer.run("unit", node, env)
 
     def dimension(self, node, env: Env):
-        return self.analyze("dimension")(node, env)
+        return self.canonicalizer.run("dimension", node, env)
 
     def type(self, node: list[AstNode | Unit], env: Env) -> T:
         if (
             len(node) == 1
             and isinstance(node[0], Identifier)
-            and node[0].name in types.keys()
+            and node[0].name in typetable.keys()
         ):
             if node[0].name in ["Int", "Float"]:
                 return NumberType(
@@ -39,7 +41,7 @@ class Processor:
             len(node) == 1
             and isinstance(node[0], Call)
             and isinstance(node[0].callee, Identifier)
-            and node[0].callee.name in types.keys()
+            and node[0].callee.name in typetable.keys()
         ):
             match node[0].callee.name:
                 case "Float" | "Int":

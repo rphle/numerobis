@@ -1,7 +1,7 @@
 import re
 import uuid
 
-import typechecker.linking as linking
+from analysis.canonicalize import simplify
 from astnodes import (
     AstNode,
     BinOp,
@@ -37,9 +37,12 @@ from environment import Env, Namespaces
 from exceptions.exceptions import (
     Exceptions,
 )
-from typechecker.analysis import simplify
-from typechecker.process_types import Processor
-from typechecker.types import (
+from utils import camel2snake_pattern
+
+from . import linking
+from .operators import typetable
+from .process_types import Processor
+from .types import (
     AnyType,
     BoolType,
     Dimension,
@@ -54,17 +57,15 @@ from typechecker.types import (
     T,
     UndefinedType,
     dimcheck,
-    types,
     unify,
 )
-from typechecker.utils import (
+from .utils import (
     UnresolvedAnyParam,
     _check_method,
     _mismatch,
     dimful,
     format_dimension,
 )
-from utils import camel2snake_pattern
 
 
 class Typechecker:
@@ -88,9 +89,9 @@ class Typechecker:
         definition = None
         for i, field in enumerate(
             [
-                types[left.name()][f"__{node.op.name}__"],
-                types[right.name()][f"__r{node.op.name}__"],
-                types[right.name()][f"__{node.op.name}__"],
+                typetable[left.name()][f"__{node.op.name}__"],
+                typetable[right.name()][f"__r{node.op.name}__"],
+                typetable[right.name()][f"__{node.op.name}__"],
             ]
         ):
             try:
@@ -186,8 +187,8 @@ class Typechecker:
         left, right = [self.check(side, env=env) for side in (node.left, node.right)]
 
         if (
-            "__bool__" not in types[left.name()].fields
-            or "__bool__" not in types[right.name()].fields
+            "__bool__" not in typetable[left.name()].fields
+            or "__bool__" not in typetable[right.name()].fields
         ):
             self.errors.binOpTypeMismatch(node, left, right)
 
@@ -322,9 +323,9 @@ class Typechecker:
                     return any(func.check_args(left, right) for func in field.functions)
 
             for field in (
-                types[left.name()][f"__{op.name}__"],
-                types[right.name()][f"__r{op.name}__"],
-                types[right.name()][f"__{op.name}__"],
+                typetable[left.name()][f"__{op.name}__"],
+                typetable[right.name()][f"__r{op.name}__"],
+                typetable[right.name()][f"__{op.name}__"],
             ):
                 if _check_field(field):
                     break
@@ -354,12 +355,12 @@ class Typechecker:
         if (
             len(node.unit.unit) == 1
             and isinstance(node.unit.unit[0], Identifier)
-            and node.unit.unit[0].name in types.keys()
+            and node.unit.unit[0].name in typetable.keys()
         ):
             # type conversion
             typ = node.unit.unit[0].name
             if (
-                f"__{typ.lower()}__" not in types[value.name()].fields
+                f"__{typ.lower()}__" not in typetable[value.name()].fields
                 and typ != value.name()
             ):
                 self.errors.throw(515, left=value.type(), right=typ, loc=node.loc)
@@ -556,7 +557,7 @@ class Typechecker:
                 loc=node.loc,
             )
 
-        method = types[value.name()]["__getitem__"]
+        method = typetable[value.name()]["__getitem__"]
         try:
             if method is None:
                 raise ValueError()
@@ -677,7 +678,7 @@ class Typechecker:
             return operand
         elif node.op.name == "not":
             operand = self.check(node.operand, env=env)
-            method = types[operand.name()]["__bool__"]
+            method = typetable[operand.name()]["__bool__"]
             if method is None:
                 self.errors.throw(534, type=operand.type(), loc=node.loc)
             return operand
@@ -811,7 +812,7 @@ class Typechecker:
     def while_loop_(self, node: WhileLoop, env: Env):
         cond = self.check(node.condition, env=env.copy())
 
-        if "__bool__" not in types[cond.name()].fields:
+        if "__bool__" not in typetable[cond.name()].fields:
             self.errors.throw(520, type=cond.name(), loc=node.loc)
 
         self.check(node.body, env=env)

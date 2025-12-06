@@ -4,7 +4,8 @@ from typeguard import typechecked
 
 from astnodes import AstNode, Identifier
 from classes import E
-from typechecker.types import FunctionType, NeverType, Overload, T, dimcheck, unify
+
+from .types import FunctionType, NeverType, Overload, T, dimcheck, unify
 
 
 class UnresolvedAnyParam(Exception):
