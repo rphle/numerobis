@@ -1,0 +1,20 @@
+from si import @(W, ThermodynamicTemperature, K)
+
+# ---
+dimension Length
+
+unit m: Length
+unit km: Length = 1000 m
+
+2km + 40m
+
+# ---
+unit dB: 1 = 10 * 10^(_ W / W)
+
+20dB + 20dB
+
+
+# ---
+unit C: ThermodynamicTemperature = _ + 273K
+
+3C + 5C

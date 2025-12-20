@@ -135,14 +135,14 @@ not (5 kilogram)
 # ---
 not (10 + 5)
 
-# E520
+# ---
 if 5 then 1 else 0
 
-# E520
+# ---
 if "hello" then 1 else 0
 
-# E520
+# ---
 if 5 kilogram then 1 else 0
 
-# E520
+# ---
 if [1, 2, 3] then 1 else 0

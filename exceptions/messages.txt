@@ -30,7 +30,7 @@ Conditional expression must have an else branch
 '@' cannot be used within a list of identifiers
 
 [E016 / SyntaxError]
-{operator} is not a valid operator in unit expressions
+{operator} is not a valid operator here
 
 [E017 / SyntaxError]
 Parameters can only be referenced in unit declarations
@@ -42,10 +42,13 @@ example: ![[a: type, b: type, ...], ...]
 [E019 / SyntaxError]
 Named functions are not allowed here
 
+[E020 / SyntaxError]
+{statement} may only appear at top level of a module
+
 
 
 [E101 / ValueError]
-Exponent must be a dimensionless scalar{value}
+Exponent must be a dimensionless scalar, not {value}
 
 
 
@@ -154,6 +157,9 @@ unsupported operand type for 'not': '{type}'
 [E537 / TypeError]
 indices must be dimensionless, not {dimension}
 
+[E538 / TypeError]
+cannot convert to function
+
 
 
 [E601 / NameError]
@@ -180,7 +186,7 @@ Invalid number of parameters for '{callee}'
 Incompatible dimensions in {operation}: {left} vs {right}
 
 [E704 / TypeError]
-unit '{name}' declared as '{dimension}' [{expected}] but has dimension [{actual}]
+unit '{name}' declared as [{expected}] but has dimension [{actual}]
 
 [E705 / NameError]
 Could not automatically assign dimension to '{name}'

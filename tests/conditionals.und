@@ -141,24 +141,24 @@ nested = if true then (if false then 5 else 10 kilogram) else 15
 # E521
 if true then (if false then 5 kilogram else 10 kilogram) else 5 metre
 
-# E520
+# ---
 if 5 then 1 else 0
 
-# E520
+# ---
 if 10.5 then "yes" else "no"
 
-# E520
+# ---
 if "hello" then 1 else 0
 
-# E520
+# ---
 if 5 kilogram then 1 else 0
 
-# E520
+# ---
 if 10 metre then "yes" else "no"
 
-# E520
+# ---
 x = 5
 if x then 1 else 0
 
-# E520
+# ---
 if [1, 2, 3] then 1 else 0

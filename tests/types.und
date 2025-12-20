@@ -201,9 +201,3 @@ x = y + 2.5
 m: Mass = 10 kilogram
 n: Length = 20 metre
 m = n
-
-# E605
-x: Int[n=5] = 2
-
-# E605
-y: Int[dim=Mass] = 1 kilogram

@@ -1,9 +1,31 @@
 import dataclasses
 from typing import Optional, TypeVar
 
-from astnodes import AstNode, CallArg, FunctionAnnotation, Identifier, Operator, Unit
+from nodes.ast import (
+    DimensionDefinition,
+    Expression,
+    FromImport,
+    FunctionAnnotation,
+    Identifier,
+    Import,
+    Operator,
+    Type,
+    UnitDefinition,
+)
+from nodes.core import AstNode
 
 T = TypeVar("T", bound=AstNode)
+_exclude = (
+    Expression,
+    UnitDefinition,
+    DimensionDefinition,
+    Identifier,
+    Operator,
+    FunctionAnnotation,
+    FromImport,
+    Import,
+    Type,
+)
 
 
 @dataclasses.dataclass(frozen=True)
@@ -15,20 +37,19 @@ def _link(node: AstNode) -> tuple[Link, dict[int, AstNode]]:
     table: dict[int, AstNode] = {}
     fields: dict[str, Link | list[Link]] = {}
 
-    for field in dataclasses.fields(node):
-        value = getattr(node, field.name)
-        if isinstance(value, AstNode) and not isinstance(
-            value, (Unit, Identifier, Operator, CallArg, FunctionAnnotation)
-        ):
-            this, linked = _link(value)
-            table.update(linked)
-            fields[field.name] = this
-        elif isinstance(value, list):
-            fields[field.name] = []
-            for item in value:
-                this, linked = _link(item)
+    if not isinstance(node, _exclude):
+        for field in dataclasses.fields(node):
+            value = getattr(node, field.name)
+            if isinstance(value, AstNode) and not isinstance(value, _exclude):
+                this, linked = _link(value)
                 table.update(linked)
-                fields[field.name].append(this)  # type: ignore
+                fields[field.name] = this
+            elif isinstance(value, list):
+                fields[field.name] = []
+                for item in value:
+                    this, linked = _link(item)
+                    table.update(linked)
+                    fields[field.name].append(this)  # type: ignore
 
     cropped = dataclasses.replace(
         node,

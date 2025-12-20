@@ -163,7 +163,7 @@ a: Length / Time^2 = 9.8 metre/second^2
 power: Energy / Time = 50 watt
 
 # ---
-complex: Mass * Length^2 / Time^3 = 100 (kilogram * metre^2 / second^3)
+complex: Mass * Length^2 / Time^(-3) = 100 (kilogram * metre^2 / second^(-3))
 
 # E703
 5 metre + 10 kilogram
@@ -174,8 +174,8 @@ complex: Mass * Length^2 / Time^3 = 100 (kilogram * metre^2 / second^3)
 # E703
 100 newton + 50 joule
 
-# E703
-10 watt - 5 newton
+# E101
+10 watt - 5 newton^(2*joule)
 
 # E703
 distance = 100 metre
@@ -214,6 +214,7 @@ unit my_speed: Speed = 5 kilogram
 
 # ---
 unit test
+x: Test = 2 test
 
 # ---
 unit auto = 10
@@ -224,8 +225,11 @@ dimension Test = Length + Mass
 # E016
 dimension Bad = Length - Time
 
-# E016
-unit test = 5 metre + 3 kilogram
+# ---
+unit add = 5 metre + 3 kilogram
+
+# ---
+unit sub = 5 metre - 3 kilogram
 
 # E001
 dimension @BadName
@@ -237,5 +241,5 @@ unit @bad_unit: Length
 @
 
 # ---
-dimension Length1
-@Length
+# dimension Length1
+# @Length

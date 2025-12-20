@@ -1,7 +1,9 @@
 from dataclasses import dataclass, field, replace
 from typing import Any, Literal, Optional, Union, overload
 
-from utils import isanyofinstance
+from exceptions.exceptions import Mismatch
+from nodes.unit import Expression, One
+from utils import isallofinstance, isanyofinstance
 
 
 class VarEnv:
@@ -32,6 +34,7 @@ T = Union[
     "SliceType",
     "ListType",
     "FunctionType",
+    "DimensionType",
 ]
 
 
@@ -39,7 +42,7 @@ T = Union[
 class UType:
     _meta: dict = field(default_factory=dict)
     node: Optional[int] = None
-    dim: Optional[list] = None
+    dim: Optional[Expression | One] = None
 
     @overload
     def name(self) -> str: ...
@@ -50,9 +53,6 @@ class UType:
         if names:
             return n in names
         return n
-
-    def type(self) -> str:
-        return self.name()
 
     def edit(self, **kwargs):
         if "_meta" not in kwargs:
@@ -70,19 +70,23 @@ class UType:
 
 
 class NoneType(UType):
-    pass
+    dim = One()
+
+    def __eq__(self, other) -> bool:
+        return isinstance(other, NoneType)
+
+    def __str__(self) -> str:
+        return "None"
 
 
 @dataclass(kw_only=True, frozen=True)
 class NumberType(UType):
     typ: Literal["Int", "Float"] = "Float"
-    dim: Optional[list] = None
+    dim: Optional[Expression | One] = None
     value: float | int = 0
 
-    def type(self) -> str:
-        from .utils import format_dimension
-
-        d = f"[[bold]{format_dimension(self.dim)}[/bold]]" if self.dim != [] else "[1]"
+    def __str__(self) -> str:
+        d = f"[{self.dim}]" if self.dim else "[1]"
         return self.typ + d
 
     @overload
@@ -98,12 +102,20 @@ class NumberType(UType):
 
 @dataclass(kw_only=True, frozen=True)
 class BoolType(UType):
-    pass
+    def __eq__(self, other) -> bool:
+        return isinstance(other, BoolType)
+
+    def __str__(self) -> str:
+        return "Bool"
 
 
 @dataclass(kw_only=True, frozen=True)
 class StrType(UType):
-    pass
+    def __eq__(self, other) -> bool:
+        return isinstance(other, StrType)
+
+    def __str__(self) -> str:
+        return "Str"
 
 
 @dataclass(frozen=True)
@@ -111,10 +123,10 @@ class VarType(UType):
     _name: str
     kind: str = "types"
 
-    def type(self) -> str:
+    def __str__(self) -> str:
         if self._name not in varenv[self.kind]:
             return "?" + self._name
-        return varenv[self.kind][self._name].type()
+        return str(varenv[self.kind][self._name])
 
     def complete(self, value: Optional[T] = None):
         if value is None:
@@ -148,14 +160,14 @@ class UndefinedType(UType):
 @dataclass(kw_only=True, frozen=True)
 class ListType(UType):
     content: T = NeverType()
-    dim: Optional[list] = content.dim
+    dim: Optional[Expression | One] = content.dim
 
     def __post_init__(self):
         if self.dim is None:
             object.__setattr__(self, "dim", self.content.dim)
 
-    def type(self) -> str:
-        return f"List[{self.content.type()}]"
+    def __str__(self) -> str:
+        return f"List[{self.content}]"
 
     def complete(self, value: Optional[T] = None):
         return self.edit(content=self.content.complete(getattr(value, "content", None)))
@@ -163,12 +175,24 @@ class ListType(UType):
 
 @dataclass(kw_only=True, frozen=True)
 class SliceType(UType):
-    pass
+    def __str__(self):
+        return "Slice"
+
+    def __eq__(self, other):
+        return isinstance(other, SliceType)
 
 
 @dataclass(kw_only=True, frozen=True)
 class RangeType(UType):
     value: NumberType = NumberType(typ="Int")
+
+    def __str__(self):
+        return f"Range[{self.value}]"
+
+    def __eq__(self, other):
+        if not isinstance(other, RangeType):
+            return False
+        return self.value == other.value
 
 
 @dataclass(kw_only=True, frozen=True)
@@ -183,27 +207,43 @@ class FunctionType(UType):
     _name: Optional[str] = field(default=None, compare=False)
     _loc: Any = field(default=None)
 
-    def type(self):
+    def __str__(self):
         args = [
-            f"{name}: {param.type()}"
-            for name, param in zip(self.param_names, self.params)
+            f"{name}: {param}" for name, param in zip(self.param_names, self.params)
         ]
         if self.arity[0] != self.arity[1]:
             args.insert(self.arity[0], "/")
 
-        return f"![\\[{', '.join(args)}], {self.return_type.type()}]"
+        return f"![\\[{', '.join(args)}], {self.return_type}]"
 
-    def check_args(self, *args: T) -> Optional["FunctionType"]:
+    def check_args(self, *args: T) -> "FunctionType | Mismatch | None":
         global varenv
         varenv.clear()
         params = [
             param.complete(arg) if not isinstance(param, AnyType) else NeverType()
             for param, arg in zip(self.params, args)
         ]
-        if len(args) == len(self.params) and all(
-            unify(p, a) and dimcheck(p, a) for p, a in zip(params, args)
-        ):
-            return self.edit(return_type=self.return_type.complete())
+
+        if len(args) != len(self.params):
+            return
+        for param, arg in zip(params, args):
+            typ, dim = unify(param, arg), dimcheck(param, arg)
+            if not typ:
+                return typ
+            elif not dim:
+                return dim
+
+        return self.edit(return_type=self.return_type.complete())
+
+
+@dataclass(kw_only=True, frozen=True)
+class Constant(UType):
+    value: T
+
+
+@dataclass(frozen=True)
+class DimensionType(UType):
+    dim: Optional[Expression | One] = None
 
 
 class AnyType(UType):
@@ -237,58 +277,67 @@ class AnyType(UType):
         super().__init__()
 
 
-def unify(a: T, b: T) -> Optional[T]:
+def unify(a: T, b: T) -> T | Mismatch:
+    mismatch = Mismatch("type", a, b)
+
     if isanyofinstance((a, b), AnyType):
-        return None
-    match a, b:
-        case NeverType(), _:
-            return b
-        case _, NeverType():
-            return a
-        case AnyType(), _:
-            return None
-        case _, AnyType():
-            return None
-        case NumberType(), NumberType():
-            return (
-                a
-                if a.typ == b.typ
-                or a.meta("#dimension-only")
-                or b.meta("#dimension-only")
-                else None
+        return mismatch
+
+    if isanyofinstance((a, b), NeverType):
+        return [a, b][isinstance(a, NeverType)]
+
+    if isanyofinstance((a, b), DimensionType):
+        ab = [a, b]
+        dimidx = int(isinstance(b, DimensionType))
+        if not (isallofinstance(ab, DimensionType) or isanyofinstance(ab, NumberType)):
+            ab[dimidx] = NumberType(
+                typ="Number",  # type: ignore
+                dim=ab[dimidx].dim,
             )
+            return Mismatch("type", *ab)
+        elif isanyofinstance(ab, NumberType):
+            numidx = int(not dimidx)
+            if not (mismatch := dimcheck(a, b)):
+                return mismatch
+            return ab[numidx].edit(dim=ab[dimidx].dim)
+        else:
+            return a
+
+    match a, b:
+        case NumberType(), NumberType():
+            return a if a.typ == b.typ else mismatch
         case ListType(), ListType():
             content = unify(a.content, b.content)
+            if isinstance(content, Mismatch):
+                return content
             return (
-                ListType(content=content, _meta=a._meta | b._meta) if content else None
+                ListType(content=content, _meta=a._meta | b._meta)
+                if content
+                else mismatch
             )
         case FunctionType(), FunctionType():
             if a.arity != b.arity:
-                return
+                return mismatch
             parts = [
                 (unify(x, y) if "Any" not in (x.name(), y.name()) else AnyType())
                 and dimcheck(x, y)
                 for x, y in zip(a.params + [a.return_type], b.params + [b.return_type])
             ]
-            return a if all(parts) else None
+            return a if all(parts) else mismatch
         case _, _:
-            return a if a.type() == b.type() else None
+            return a if a == b else mismatch
 
 
-def dimcheck(a: T, b: T) -> bool:
-    if a.name("Never", "Any") or b.name("Never", "Any"):
+def dimcheck(a: T, b: T) -> Literal[True] | Mismatch:
+    if (
+        a.name("Never", "Any")
+        or b.name("Never", "Any")
+        or a.dim is None
+        or b.dim is None
+        or a.dim == b.dim
+    ):
         return True
-
-    dims = [a.dim, b.dim]
-    if any(item is None for item in dims):
-        return True
-
-    return dims[0] == dims[1]
-
-
-@dataclass(frozen=True)
-class Dimension:
-    dimension: list = field(default_factory=list)
+    return Mismatch("dimension", a.dim, b.dim)
 
 
 class Overload:

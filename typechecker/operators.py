@@ -1,3 +1,5 @@
+from nodes.unit import One
+
 from .types import (
     AnyType,
     BoolType,
@@ -69,7 +71,8 @@ typetable: dict[str, Struct] = {
                 params=[StrType(), StrType()], return_type=StrType()
             ),
             "__mul__": FunctionType(
-                params=[StrType(), NumberType(typ="Int", dim=[])], return_type=StrType()
+                params=[StrType(), NumberType(typ="Int", dim=One())],
+                return_type=StrType(),
             ),
             "__getitem__": Overload(
                 FunctionType(
@@ -98,7 +101,10 @@ typetable: dict[str, Struct] = {
                 return_type=ListType(content=VarType("T")),
             ),
             "__mul__": FunctionType(
-                params=[ListType(content=VarType("T")), NumberType(typ="Int", dim=[])],
+                params=[
+                    ListType(content=VarType("T")),
+                    NumberType(typ="Int", dim=One()),
+                ],
                 return_type=ListType(content=VarType("T")),
             ),
             "__getitem__": Overload(
@@ -122,4 +128,5 @@ typetable: dict[str, Struct] = {
     ),
     "Range": Struct({**_eq}),
     "Function": Struct({**_eq}),
+    "Dimension": Struct({}),
 }

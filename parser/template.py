@@ -1,8 +1,11 @@
 from itertools import islice
+from typing import Optional
 
-from astnodes import Float, Identifier, Integer, Location, Operator, Token, Unit
 from classes import ModuleMeta
 from exceptions.exceptions import Exceptions
+from nodes.ast import Identifier, Operator
+from nodes.core import Location, Token
+from nodes.unit import Expression, Product, Sum, UnitNode
 
 
 class ParserTemplate:
@@ -56,15 +59,5 @@ class ParserTemplate:
         name = tok.type.lower()
         return Operator(name=names.get(name, name), loc=tok.loc)
 
-    def _parse_number(self, token: Token) -> Float | Integer:
-        split = token.value.lower().split("e")
-        number = split[0].replace("_", "")
-        exponent = split[1] if len(split) > 1 else ""
-        if "." in exponent:
-            self.errors.throw(7, token=token.value, loc=token.loc)
-
-        unit = Unit(unit=[])
-        if "." in number or exponent.startswith("-"):
-            return Float(value=number, exponent=exponent, unit=unit, loc=token.loc)
-        else:
-            return Integer(value=number, exponent=exponent, unit=unit, loc=token.loc)
+    def _make_unit(self, node: Optional[UnitNode] = None) -> Expression:
+        return Expression(Sum([Product([node] if node else [])]))

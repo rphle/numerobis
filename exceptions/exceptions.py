@@ -1,14 +1,25 @@
 import dataclasses
 import sys
+from typing import Any, Literal
 
 import rich.console
 import rich.markup
 
-from astnodes import BinOp, BoolOp, Identifier, Location, Token
 from classes import ModuleMeta
-from typechecker.utils import format_dimension, repr_dimension
+from nodes.ast import BinOp, BoolOp, Identifier
+from nodes.core import Location, Token
 
 from . import msgparser
+
+
+@dataclasses.dataclass(frozen=True)
+class Mismatch:
+    kind: Literal["type", "dimension"]
+    left: Any
+    right: Any
+
+    def __bool__(self) -> Literal[False]:
+        return False
 
 
 class uException:
@@ -113,43 +124,34 @@ class Exceptions:
     def unexpectedEOF(self, loc: Location | None = None):
         self.throw(2, loc=loc)
 
-    def binOpMismatch(self, node: BinOp, left, right, env: dict):
-        operation = {
-            "add": "addition",
-            "sub": "subtraction",
-            "mod": "modulo operation",
-        }[node.op.name]
+    def binOpMismatch(self, node: BinOp | BoolOp, mismatch: Mismatch):
+        left, right = mismatch.left, mismatch.right
+        if mismatch.kind == "dimension":
+            operation = {
+                "add": "addition",
+                "sub": "subtraction",
+                "mod": "modulo operation",
+            }[node.op.name]
 
-        left_str, right_str = [
-            "[/bold]] / [[bold]".join(
-                format_dimension(dim) if not isinstance(dim, int) else f"{dim} more …"
-                for dim in repr_dimension(side.dim, env=env)
+            self.throw(
+                703,
+                operation=operation,
+                left=f"[[bold]{left}[/bold]]",
+                right=f"[[bold]{right}[/bold]]",
+                loc=node.loc,
             )
-            for side in (left, right)
-        ]
 
-        self.throw(
-            703,
-            operation=operation,
-            left=f"[[bold]{left_str}[/bold]]",
-            right=f"[[bold]{right_str}[/bold]]",
-            loc=node.loc,
-        )
-
-    def binOpTypeMismatch(self, node: BinOp | BoolOp, left, right):
-        operation = {
-            "add": "+",
-            "sub": "-",
-            "mul": "*",
-            "div": "/",
-            "pow": "^",
-            "mod": "%",
-            "intdiv": "//",
-        }.get(node.op.name, node.op.name)
-
-        self.throw(
-            502, operation=operation, left=left.type(), right=right.type(), loc=node.loc
-        )
+        elif mismatch.kind == "type":
+            operation = {
+                "add": "+",
+                "sub": "-",
+                "mul": "*",
+                "div": "/",
+                "pow": "^",
+                "mod": "%",
+                "intdiv": "//",
+            }.get(node.op.name, node.op.name)
+            self.throw(502, operation=operation, left=left, right=right, loc=node.loc)
 
     def nameError(self, name: Identifier):
         self.throw(601, name=name.name, loc=name.loc)

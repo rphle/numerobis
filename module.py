@@ -3,14 +3,14 @@ from parser.parser import Parser
 from pathlib import Path
 from typing import Optional
 
+
 import declare
-from astnodes import FromImport, Import
-from classes import ModuleMeta
+from analysis.dimchecker import Dimchecker
+from classes import Header, ModuleMeta
 from environment import Namespaces
-from exceptions.exceptions import (
-    Exceptions,
-)
+from exceptions.exceptions import Exceptions
 from lexer.lexer import lex
+from nodes.ast import Import
 from typechecker.typechecker import Typechecker
 
 
@@ -31,37 +31,35 @@ class Module:
         if namespaces is not None:
             self.namespaces.update(namespaces)
 
+        self.header: Header = Header()
+
     def process(self):
         self.parse()
         self.resolve_imports()
+        self.dimcheck()
         self.typecheck()
 
     def parse(self):
         lexed = lex(self.meta.source, module=self.meta)
         parser = Parser(lexed, module=self.meta)
         self.ast = parser.start()
+        self.header = parser.header
+        del parser
 
     def resolve_imports(self):
         if len(self.ast) == 0:
             return
 
-        # Find and verifiy import nodes first
-        nodes: list[Import | FromImport] = []
-        while len(self.ast) > 0 and isinstance(
-            (node := self.ast[0]), (Import, FromImport)
-        ):
-            nodes.append(self.ast.pop(0))  # type: ignore
-
         resolver = ModuleResolver(search_paths=[self.meta.path.parent.resolve()])
         paths = []
-        for i, node in enumerate(nodes):
+        for i, node in enumerate(self.header.imports):
             try:
                 paths.append(resolver.resolve(node.module.name.removeprefix("@")))
             except FileNotFoundError:
                 self.errors.throw(802, module=node.module.name, loc=node.loc)
 
         modules = [Module(path) for path in paths]
-        for module, node in zip(modules, nodes):
+        for module, node in zip(modules, self.header.imports):
             module.process()
             if isinstance(node, Import):
                 self.namespaces.write("imports", node.module.name, module.namespaces)
@@ -110,6 +108,13 @@ class Module:
                     self.namespaces.write(
                         "imports", node.module.name, module.namespaces
                     )
+
+    def dimcheck(self):
+        dc = Dimchecker(
+            module=self.meta, namespaces=self.namespaces, header=self.header
+        )
+        dc.start()
+        self.namespaces = dc.env
 
     def typecheck(self):
         ts = Typechecker(self.ast, module=self.meta, namespaces=self.namespaces)

@@ -2,8 +2,9 @@ import uuid
 from difflib import get_close_matches
 from typing import Any, Callable, Literal, Optional, overload
 
-from astnodes import AstNode
-from typechecker.types import Dimension, T
+from nodes.core import AstNode
+from nodes.unit import Expression, One
+from typechecker.types import T
 
 namespace_names = Literal["names", "dimensions", "units", "imports", "nodes"]
 
@@ -12,8 +13,8 @@ class Namespaces:
     def __init__(
         self,
         names: dict[str, T] | None = None,
-        dimensions: dict[str, "Dimension"] | None = None,
-        units: dict[str, "Dimension"] | None = None,
+        dimensions: dict[str, Expression | One | None] | None = None,
+        units: dict[str, Expression | One | None] | None = None,
         imports: dict[str, "Namespaces"] | None = None,
         nodes: dict[int, AstNode] | None = None,
     ):
@@ -43,6 +44,13 @@ class Namespaces:
 
     def write(self, name: namespace_names, key: str, value: Any):
         getattr(self, name)[key] = value
+
+    def suggest(self, namespace: namespace_names, name: str):
+        """Get suggestion for misspelled name"""
+
+        available_keys = getattr(self, namespace).keys()
+        matches = get_close_matches(name, available_keys, n=1, cutoff=0.6)
+        return matches[0] if matches else None
 
 
 class Env:
@@ -90,9 +98,9 @@ class Env:
     @overload
     def get(
         self, namespace: Literal["dimensions", "units"]
-    ) -> Callable[[str], Dimension]: ...
-    def get(self, namespace: namespace_names) -> Callable[[str], T | Dimension]:
-        def _get(name: str) -> T | Dimension:
+    ) -> Callable[[str], Expression | None]: ...
+    def get(self, namespace: namespace_names) -> Callable[[str], T | Expression | None]:
+        def _get(name: str) -> T | Expression | None:
             return self.glob(namespace)[self(namespace)[name]]
 
         return _get

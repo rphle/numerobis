@@ -334,6 +334,7 @@ explicit_return!(): Mass = {
 block_return!(): Length = {
     x = 5 kilogram
     x
+    return true
 }
 
 # E001

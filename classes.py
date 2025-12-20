@@ -1,8 +1,7 @@
-import dataclasses
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
-from astnodes import AstNode
+from nodes.ast import AstNode, DimensionDefinition, FromImport, Import, UnitDefinition
 
 
 @dataclass
@@ -11,7 +10,14 @@ class ModuleMeta:
     source: str
 
 
-@dataclasses.dataclass(kw_only=True, frozen=True)
+@dataclass(kw_only=True, frozen=True)
 class E:
     base: "AstNode | list | E"
     exponent: float
+
+
+@dataclass
+class Header:
+    imports: list[Import | FromImport] = field(default_factory=list)
+    units: list[UnitDefinition] = field(default_factory=list)
+    dimensions: list[DimensionDefinition] = field(default_factory=list)

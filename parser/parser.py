@@ -1,7 +1,8 @@
 import dataclasses
 import math
 
-from astnodes import (
+from classes import Header, ModuleMeta
+from nodes.ast import (
     AstNode,
     BinOp,
     Block,
@@ -14,6 +15,7 @@ from astnodes import (
     Continue,
     Conversion,
     DimensionDefinition,
+    Float,
     ForLoop,
     FromImport,
     Function,
@@ -22,27 +24,28 @@ from astnodes import (
     If,
     Import,
     Index,
+    Integer,
     List,
-    Location,
     Param,
     Range,
     Return,
     Slice,
     String,
-    Token,
     Tuple,
+    Type,
     UnaryOp,
-    Unit,
     UnitDefinition,
+    UnitReference,
     Variable,
     VariableDeclaration,
     WhileLoop,
-    nodeloc,
 )
-from classes import ModuleMeta
+from nodes.core import Location, Token, nodeloc
+from nodes.unit import Expression, One
+from typechecker.operators import typetable
 
 from .template import ParserTemplate
-from .unitparser import UnitParser
+from .units.unitparser import UnitParser, UnitParserConfig
 
 
 class Parser(ParserTemplate):
@@ -50,6 +53,7 @@ class Parser(ParserTemplate):
         super().__init__(tokens=tokens, module=module)
         # flag becomes False as soon as a non-import statement is encountered
         self.imports_allowed = True
+        self.header = Header()
 
     def start(self) -> list[AstNode]:
         statements = []
@@ -59,13 +63,19 @@ class Parser(ParserTemplate):
 
             if self._peek().type == "SEMICOLON":
                 self._consume("SEMICOLON")
+
         return statements
 
     def statement(self) -> AstNode:
         self._clear()
         first = self._peek()
 
-        if self.imports_allowed and first.type not in ["IMPORT", "FROM"]:
+        if self.imports_allowed and first.type not in [
+            "IMPORT",
+            "FROM",
+            "UNIT",
+            "DIMENSION",
+        ]:
             self.imports_allowed = False
 
         if first.type == "ID" and self._peek(2).type in {"ASSIGN", "COLON"}:
@@ -147,7 +157,7 @@ class Parser(ParserTemplate):
                     loc=Location(line=first.loc.line, col=first.loc.col + 1),
                 )
             self._consume("AT")
-            return self.unit()
+            return UnitReference(unit=self.unit())
         elif self._peek().type == "BANG":
             return self.function(anonymous=True)
         elif first.type == "ID" and self._peek(2).type == "BANG":
@@ -186,37 +196,57 @@ class Parser(ParserTemplate):
     def dimension_def(self) -> AstNode:
         start = self._consume("DIMENSION")
         name = self._consume("ID")
+
+        if not self.imports_allowed:
+            self.errors.throw(20, statement="dimension definitions", loc=start.loc)
+
         value = None
         if self._peek().type == "ASSIGN":
             self._consume("ASSIGN")
             self._clear()
-            value = self.unit(standalone=True)
+            value = self.unit(standalone=True, constants=True)
 
-        return DimensionDefinition(
+        node = DimensionDefinition(
             name=self._make_id(name),
             value=value,
             loc=nodeloc(start, value or name),
         )
+        self.header.dimensions.append(node)
+        return node
 
     def unit_def(self) -> AstNode:
         start = self._consume("UNIT")
         name = self._consume("ID")
 
+        if not self.imports_allowed:
+            self.errors.throw(20, statement="unit definitions", loc=start.loc)
+
         dimension = None
         if self._peek().type == "COLON":
             self._consume("COLON")
-            dimension = self._make_id(self._consume("ID"))
+            if self._peek().type == "ID":
+                dimension = self._make_id(self._consume("ID"))
+            elif self._peek().type == "NUMBER" and self._peek().value == "1":
+                self._consume("NUMBER")
+                dimension = Identifier(name="1", loc=self.tok.loc)
+            else:
+                self.errors.throw(
+                    1,
+                    token=self._peek().value,
+                    loc=self._peek().loc,
+                    help="Expected dimension",
+                )
 
         params = []
         if self._peek().type == "LPAREN":
-            self.errors.throw(5, token=self._peek(), loc=self._peek().loc)
+            self.errors.throw(5, token=self._peek().value, loc=self._peek().loc)
         if self._peek().type == "LBRACKET":
             """
             Parse unit parameters
             """
             self._consume("LBRACKET")
             while self._peek().type != "RBRACKET":
-                p: dict[str, AstNode] = {}
+                p = {}
                 p["name"] = self._make_id(self._consume("ID"))
                 if self._peek().type in {"ASSIGN", "COMMA"}:
                     self.errors.throw(6, loc=self._peek().loc)
@@ -247,26 +277,23 @@ class Parser(ParserTemplate):
         if self._peek().type == "ASSIGN":
             self._consume("ASSIGN")
             self._clear()
-            factor = None
-            if self._peek().type == "NUMBER" and self._peek(2).type not in [
-                "DIVIDE",
-                "TIMES",
-            ]:
-                factor = self._parse_number(self._consume("NUMBER"))
-            if self._peek().type == "ID" or not factor:
-                unit = self.unit(standalone=True)
-            else:
-                unit = Unit(unit=[])
-            if factor:
-                unit.unit.insert(0, factor)
+            unit = self.unit(
+                standalone=True,
+                calls=True,
+                unitful_numbers=True,
+                constants=True,
+                addition=True,
+            )
 
-        return UnitDefinition(
+        node = UnitDefinition(
             name=self._make_id(name),
             dimension=dimension,
             params=params,
             value=unit,
             loc=nodeloc(start, unit or name),
         )
+        self.header.units.append(node)
+        return node
 
     def function(self, anonymous=False) -> AstNode:
         name = self._make_id(self._consume("ID")) if not anonymous else None
@@ -395,14 +422,19 @@ class Parser(ParserTemplate):
         if len(self.tokens) >= 2 and self._peek().type == "CONVERSION":
             op = self._make_op(self._consume("CONVERSION"))
             display_only = self.tok.value.startswith("(")
-            unit = self.unit(standalone=True)
+            target = self.type()
+
+            if isinstance(target, FunctionAnnotation):
+                self.errors.throw(538)
+                raise
+
             node = Conversion(
                 op=op,
                 value=node,
-                unit=unit,
+                target=target,
                 display_only=display_only,
                 loc=nodeloc(
-                    node, unit if not display_only else self._consume("RPAREN")
+                    node, target if not display_only else self._consume("RPAREN")
                 ),
             )
         return node
@@ -593,13 +625,25 @@ class Parser(ParserTemplate):
         end = self._consume("RPAREN")
         return Tuple(items=items, loc=nodeloc(start, end))
 
-    def unit(self, standalone: bool = False) -> Unit:
-        parser = UnitParser(
-            tokens=self.tokens, module=self.module, standalone=standalone
+    def unit(
+        self,
+        standalone: bool = False,
+        calls: bool = False,
+        unitful_numbers: bool = False,
+        constants: bool = False,
+        addition: bool = False,
+    ) -> Expression | One:
+        config = UnitParserConfig(
+            standalone=standalone,
+            calls=calls,
+            unitful_numbers=unitful_numbers,
+            constants=constants,
+            addition=addition,
         )
+        parser = UnitParser(tokens=self.tokens, module=self.module, config=config)
         unit = parser.start()
         self.tokens = parser.tokens
-        return unit
+        return unit if unit else One()
 
     def atom(self) -> AstNode:
         tok = self._consume(
@@ -649,7 +693,9 @@ class Parser(ParserTemplate):
             alias_name = self._consume("ID")
             alias = self._make_id(alias_name)
 
-        return Import(module=module, alias=alias, loc=nodeloc(start, alias or module))
+        node = Import(module=module, alias=alias, loc=nodeloc(start, alias or module))
+        self.header.imports.append(node)
+        return node
 
     def from_import_stmt(self) -> FromImport:
         start = self._consume("FROM")
@@ -667,9 +713,11 @@ class Parser(ParserTemplate):
         # Check for 'import *'
         if self._peek().type == "TIMES":
             self._consume("TIMES")
-            return FromImport(
+            node = FromImport(
                 module=module, names=None, aliases=None, loc=nodeloc(start, self.tok)
             )
+            self.header.imports.append(node)
+            return node
 
         i = 0
         atted_until = -1
@@ -714,30 +762,33 @@ class Parser(ParserTemplate):
             i += 1
 
         end = aliases[-1] if aliases[-1] else names[-1]
-        return FromImport(
+
+        node = FromImport(
             module=module, names=names, aliases=aliases, loc=nodeloc(start, end)
         )
+        self.header.imports.append(node)
+        return node
 
-    def type(self):
+    def type(self) -> Type | FunctionAnnotation | Expression | One:
         if self._peek().type == "BANG":
             return self.function_annotation()
-        elif self._peek().type == "ID" and self._peek().value == "List":
-            name = Identifier(name="List", loc=self._consume("ID").loc)
+        elif self._peek().type == "ID" and self._peek().value in list(typetable.keys()):
+            token = self._consume("ID")
+            name = Identifier(name=token.value, loc=token.loc)
             if self._peek(ignore_whitespace=True).type == "LBRACKET":
-                self._consume("LBRACKET")
-                content = self.type()
-                self._consume("RBRACKET")
-                return Unit(
-                    unit=[
-                        Call(
-                            callee=name,
-                            args=[CallArg(name=None, value=content)],
-                            loc=name.loc.merge(content.loc),
-                        )
-                    ]
-                )
+                if name.name in ["Int", "Float", "List"]:
+                    self._consume("LBRACKET")
+                    param = self.type()
+                    self._consume("RBRACKET")
+                    return Type(name=name, param=param, loc=name.loc.merge(param.loc))
+                else:
+                    self.errors.unexpectedToken(
+                        self._peek(ignore_whitespace=True),
+                        help=f"Type '{name.name}' cannot be parameterized",
+                    )
+                    raise
             else:
-                return Unit(unit=[Identifier(name="List", loc=name.loc)])
+                return Type(name=name, param=None, loc=name.loc)
         else:
             return self.unit(standalone=True)
 
@@ -781,3 +832,16 @@ class Parser(ParserTemplate):
             arity=tuple(arity),  # type: ignore
             loc=_bang.loc.merge(_end.loc),
         )
+
+    def _parse_number(self, token: Token) -> Float | Integer:
+        split = token.value.lower().split("e")
+        number = split[0].replace("_", "")
+        exponent = split[1] if len(split) > 1 else ""
+        if "." in exponent:
+            self.errors.throw(7, token=token.value, loc=token.loc)
+
+        unit = self._make_unit()
+        if "." in number or exponent.startswith("-"):
+            return Float(value=number, exponent=exponent, unit=unit, loc=token.loc)
+        else:
+            return Integer(value=number, exponent=exponent, unit=unit, loc=token.loc)
