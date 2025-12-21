@@ -590,7 +590,7 @@ class Parser(ParserTemplate):
 
         return node
 
-    def list(self) -> AstNode:
+    def list_(self) -> AstNode:
         start = self.tok
         items = []
         while self._peek().type != "RBRACKET":
@@ -603,7 +603,7 @@ class Parser(ParserTemplate):
         end = self._consume("RBRACKET")
         return List(items=items, loc=nodeloc(start, end))
 
-    def tuple(self) -> AstNode:
+    def tuple_(self) -> AstNode:
         """Tuple literal `([...])` or simple `()`"""
         start = self.tok
         self._consume("LBRACKET")
@@ -667,7 +667,7 @@ class Parser(ParserTemplate):
                 return String(value=tok.value, loc=tok.loc)
             case "LBRACKET":
                 """List literal"""
-                return self.list()
+                return self.list_()
             case "LPAREN":
                 if self._peek(ignore_whitespace=False).type != "LBRACKET":
                     node = self.expression()
@@ -675,7 +675,7 @@ class Parser(ParserTemplate):
                     node = dataclasses.replace(node, loc=nodeloc(node, self.tok))
                     return node
                 else:
-                    return self.tuple()
+                    return self.tuple_()
             case _:
                 raise SyntaxError(f"Unexpected token {tok}")
 

@@ -296,9 +296,9 @@ def unify(a: T, b: T) -> T | Mismatch:
             return a
 
     match a, b:
-        case NumberType(), NumberType():
+        case NumberType() as a, NumberType() as b:
             return a if a.typ == b.typ else mismatch
-        case ListType(), ListType():
+        case ListType() as a, ListType() as b:
             content = unify(a.content, b.content)
             if isinstance(content, Mismatch):
                 return content
@@ -307,7 +307,7 @@ def unify(a: T, b: T) -> T | Mismatch:
                 if content
                 else mismatch
             )
-        case FunctionType(), FunctionType():
+        case FunctionType() as a, FunctionType() as b:
             if a.arity != b.arity:
                 return mismatch
             parts = [
@@ -316,8 +316,8 @@ def unify(a: T, b: T) -> T | Mismatch:
                 for x, y in zip(a.params + [a.return_type], b.params + [b.return_type])
             ]
             return a if all(parts) else mismatch
-        case _, _:
-            return a if a == b else mismatch
+
+    return a if a == b else mismatch
 
 
 def dimcheck(a: T, b: T) -> Literal[True] | Mismatch:

@@ -26,6 +26,7 @@ def _check_method(method, *args) -> FunctionType | Mismatch | None:
 
 def nomismatch(a: T, b: T) -> Mismatch | Literal[True]:
     if not (mismatch := unify(a, b)):
+        assert isinstance(mismatch, Mismatch)
         return mismatch
     elif not (mismatch := dimcheck(a, b)):
         return mismatch
