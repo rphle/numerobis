@@ -53,10 +53,10 @@ Exponent must be a dimensionless scalar, not {value}
 
 
 [E502 / TypeError]
-Unsupported operand type(s) for '{operation}': '{left}' and '{right}'
+Unsupported operand type(s) for '{operation}': {left} and {right}
 
 [E503 / TypeError]
-'{node}' is a type, not a {actual}
+{node} is a type, not a {actual}
 
 [E504 / TypeError]
 '{name}' cannot be parameterized
@@ -65,7 +65,7 @@ Unsupported operand type(s) for '{operation}': '{left}' and '{right}'
 Function must return the same type and dimension on all paths
 
 [E506 / TypeError]
-'{type}' is not callable
+{type} is not callable
 
 [E507 / TypeError]
 recursive function {name} requires parameter type annotations
@@ -89,16 +89,16 @@ positional argument follows keyword argument
 Expected parameter of {kind} {expected} for argument '{name}', but got {actual}
 
 [E514 / TypeError]
-'{operator}' not supported between '{left}' and '{right}'
+'{operator}' not supported between {left} and {right}
 
 [E515 / TypeError]
-Cannot convert '{left}' to '{right}'
+Cannot convert {left} to {right}
 
 [E516 / TypeError]
-'{type}' is not iterable
+{type} is not iterable
 
 [E517 / TypeError]
-cannot unpack non-iterable '{type}' object
+cannot unpack non-iterable {type} object
 
 [E518 / TypeError]
 parameter '{param}' declared as {kind} {expected} but defaults to {actual}
@@ -107,16 +107,16 @@ parameter '{param}' declared as {kind} {expected} but defaults to {actual}
 {value} is different from the declared return {kind} {expected}
 
 [E520 / TypeError]
-condition must be a type implementing '__bool__', got '{type}'
+condition must be a type implementing '__bool__', got {type}
 
 [E521 / TypeError]
 both branches must return the same {kind}: {then} vs {else_}
 
 [E522 / TypeError]
-'{type}' is not subscriptable
+{type} is not subscriptable
 
 [E523 / TypeError]
-invalid index type '{index}' for '{type}'
+invalid index type '{index}' for {type}
 
 [E524 / TypeError]
 list elements may not be type 'Any'
@@ -125,13 +125,13 @@ list elements may not be type 'Any'
 list elements must be of the same {kind}
 
 [E526 / TypeError]
-range boundary must be an integer, got '{type}'
+range boundary must be an integer, got {type}
 
 [E527 / TypeError]
 range boundary must be dimensionless
 
 [E528 / TypeError]
-range step must be a number, got '{type}'
+range step must be a number, got {type}
 
 [E529 / TypeError]
 range step must be dimensionless
@@ -140,13 +140,13 @@ range step must be dimensionless
 return statement outside function
 
 [E532 / TypeError]
-slice indices must be 'Int' or None, not '{type}'
+slice indices must be 'Int' or None, not {type}
 
 [E533 / TypeError]
-bad operand type for unary -: '{type}'
+bad operand type for unary -: {type}
 
 [E534 / TypeError]
-unsupported operand type for 'not': '{type}'
+unsupported operand type for 'not': {type}
 
 [E535 / TypeError]
 '{name}' is overwritten in an incompatible manner: {kind} {value} cannot be assigned to {declared}
@@ -186,7 +186,7 @@ Invalid number of parameters for '{callee}'
 Incompatible dimensions in {operation}: {left} vs {right}
 
 [E704 / TypeError]
-unit '{name}' declared as [{expected}] but has dimension [{actual}]
+unit '{name}' declared as {expected} but has dimension {actual}
 
 [E705 / NameError]
 Could not automatically assign dimension to '{name}'

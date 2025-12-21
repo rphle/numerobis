@@ -1,0 +1,21 @@
+from si import @Time, @second
+
+dimension Information
+dimension DataRate = Information / Time
+dimension StorageCapacity = Information
+
+unit bit: Information
+unit byte: Information = 8 * bit
+unit kilobyte: Information = 1024 * byte
+unit KB: Information = kilobyte
+unit megabyte: Information = 1024 * kilobyte
+unit MB: Information = megabyte
+unit gigabyte: Information = 1024 * megabyte
+unit GB: Information = gigabyte
+unit terabyte: Information = 1024 * gigabyte
+unit TB: Information = terabyte
+
+unit bps: DataRate = bit / second
+unit kbps: DataRate = 1000 * bps
+unit Mbps: DataRate = 1000 * kbps
+unit Gbps: DataRate = 1000 * Mbps

@@ -376,8 +376,8 @@ class Typechecker:
 
         self.errors.throw(
             515,
-            left=f"[[bold]{value.dim}[/bold]]",
-            right=f"[[bold]{target}[/bold]]",
+            left=value.dim,
+            right=target,
             loc=node.loc,
         )
 
@@ -539,7 +539,7 @@ class Typechecker:
         if index.dim:
             self.errors.throw(
                 537,
-                dimension=f"[[bold]{index.dim}[/bold]]",
+                dimension=index.dim,
                 loc=node.loc,
             )
 

@@ -1,0 +1,52 @@
+# How many photons are received per bit transmitted from Voyager 1?
+#
+# This calculation is adapted from a Physics Stack Exchange answer [1] and a Numbat example [2].
+#
+# [1] https://physics.stackexchange.com/a/816710
+# [2] https://github.com/sharkdp/numbat/blob/master/examples/voyager.nbt
+
+from si import @Power
+from si import @(m, km, s, GHz, W)
+from information import @(bit, bps)
+from constants import π, c, ℏ, @π
+
+# ---
+
+unit photons: 1;
+unit photon = photons;
+
+# Voyager radio transmission:
+datarate = 160 bps
+f = 8.3 GHz
+P_transmit = 23 W
+
+ω = 2π * f
+λ = c / f
+
+energy_per_photon = ℏ * ω
+
+photon_rate = P_transmit / energy_per_photon -> photon/s
+
+echo("Voyager sends data at a rate of {datarate} with {P_transmit}.")
+echo("At a frequency of {f}, this amounts to {photon_rate}.")
+
+# Voyager dish antenna:
+d_voyager = 3.7 m
+
+# Voyagers distance to Earth:
+R = 25.4e9 km  # as of 2025
+
+# Diameter of receiver dish:
+d_receiver = 70 m
+
+irradiance = P_transmit / (4π * R^2)
+P_received: Power = irradiance * (π * d_voyager / λ)^2 * (π * d_receiver^2 / 4)
+
+echo("A {d_receiver} dish on Earth will receive {P_received -> aW} of power.")
+
+photon_rate_receiver = P_received / energy_per_photon -> photon/s
+photons_per_bit = photon_rate_receiver / datarate -> photon/bit
+
+echo()
+echo("This corresponds to {photon_rate_receiver}.")
+echo("Which means {photons_per_bit}.")

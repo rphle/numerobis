@@ -70,6 +70,7 @@ unit cd: LuminousIntensity = candela
 # SI Derived Units with Special Names
 unit hertz: Frequency = 1 / second
 unit Hz: Frequency = hertz
+unit GHz: Frequency = hertz * 1e9
 
 unit radian: Angle = 1
 unit rad: Angle = radian

@@ -1,26 +1,20 @@
-# Basic Imperial Units for Testing
 from si import @Length, @Mass, @Time, @Volume
 from si import @metre, @kilogram, @second, @cubic_metre  # Assuming cubic_metre is available
 
-# Imperial Length Units
 unit inch = 0.0254 * metre
 unit foot = 12 * inch
 unit mile = 5280 * foot
 
-# Imperial Mass Units
 unit pound = 0.453592 * kilogram
 
-# Common aliases
 unit ft = foot
 unit mi = mile
 unit lb = pound
 
-# Additional common imperial units
 unit yard = 3 * foot
 unit yd = yard
 unit ounce = pound / 16
 unit oz = ounce
 
-# Imperial Volume Units
 unit gallon = 0.00378541 * cubic_metre  # US gallon (1 US gallon ≈ 0.00378541 cubic meters)
 unit gal = gallon

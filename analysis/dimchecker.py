@@ -92,6 +92,8 @@ class Dimchecker:
                     actual=value,
                     loc=node.name.loc,
                 )
+            elif not node.dimension:
+                dimension = value
 
         assert dimension is None or isinstance(dimension, (Expression, One))
         if node.dimension is None and node.value is None:

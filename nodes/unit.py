@@ -1,6 +1,8 @@
+from collections import Counter
 from dataclasses import dataclass
 from math import prod
 from typing import Optional
+
 
 from .core import Identifier, UnitNode
 
@@ -34,7 +36,7 @@ class Product(UnitNode):
     def __eq__(self, other):
         if not isinstance(other, Product):
             return False
-        return self.values == other.values
+        return Counter(self.values) == Counter(other.values)
 
     def __bool__(self):
         return any(value for value in self.values)
@@ -76,7 +78,7 @@ class Sum(UnitNode):
     def __eq__(self, other):
         if not isinstance(other, Sum):
             return False
-        return self.values == other.values
+        return Counter(self.values) == Counter(other.values)
 
     def __bool__(self):
         return any(value for value in self.values)

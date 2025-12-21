@@ -136,8 +136,8 @@ class Exceptions:
             self.throw(
                 703,
                 operation=operation,
-                left=f"[[bold]{left}[/bold]]",
-                right=f"[[bold]{right}[/bold]]",
+                left=left,
+                right=right,
                 loc=node.loc,
             )
 

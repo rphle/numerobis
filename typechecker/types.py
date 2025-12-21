@@ -68,15 +68,15 @@ class UType:
             self._meta[key] = value
         return self._meta.get(key)
 
+    def __str__(self):
+        return f"'{self.name()}'"
+
 
 class NoneType(UType):
     dim = One()
 
     def __eq__(self, other) -> bool:
         return isinstance(other, NoneType)
-
-    def __str__(self) -> str:
-        return "None"
 
 
 @dataclass(kw_only=True, frozen=True)
@@ -86,8 +86,8 @@ class NumberType(UType):
     value: float | int = 0
 
     def __str__(self) -> str:
-        d = f"[{self.dim}]" if self.dim else "[1]"
-        return self.typ + d
+        d = str(self.dim) if self.dim else "[[bold]1[/bold]]"
+        return f"'{self.typ}{d}'"
 
     @overload
     def name(self) -> str: ...
@@ -105,17 +105,11 @@ class BoolType(UType):
     def __eq__(self, other) -> bool:
         return isinstance(other, BoolType)
 
-    def __str__(self) -> str:
-        return "Bool"
-
 
 @dataclass(kw_only=True, frozen=True)
 class StrType(UType):
     def __eq__(self, other) -> bool:
         return isinstance(other, StrType)
-
-    def __str__(self) -> str:
-        return "Str"
 
 
 @dataclass(frozen=True)
@@ -167,7 +161,7 @@ class ListType(UType):
             object.__setattr__(self, "dim", self.content.dim)
 
     def __str__(self) -> str:
-        return f"List[{self.content}]"
+        return f"'List[{str(self.content).strip("'")}]'"
 
     def complete(self, value: Optional[T] = None):
         return self.edit(content=self.content.complete(getattr(value, "content", None)))
@@ -175,9 +169,6 @@ class ListType(UType):
 
 @dataclass(kw_only=True, frozen=True)
 class SliceType(UType):
-    def __str__(self):
-        return "Slice"
-
     def __eq__(self, other):
         return isinstance(other, SliceType)
 
@@ -187,7 +178,7 @@ class RangeType(UType):
     value: NumberType = NumberType(typ="Int")
 
     def __str__(self):
-        return f"Range[{self.value}]"
+        return f"'Range[{self.value}]'"
 
     def __eq__(self, other):
         if not isinstance(other, RangeType):
@@ -209,12 +200,13 @@ class FunctionType(UType):
 
     def __str__(self):
         args = [
-            f"{name}: {param}" for name, param in zip(self.param_names, self.params)
+            f"{name}: {str(param).strip("'")}"
+            for name, param in zip(self.param_names, self.params)
         ]
         if self.arity[0] != self.arity[1]:
             args.insert(self.arity[0], "/")
 
-        return f"![\\[{', '.join(args)}], {self.return_type}]"
+        return f"![\\[{', '.join(args)}], {str(self.return_type).strip('')}]"
 
     def check_args(self, *args: T) -> "FunctionType | Mismatch | None":
         global varenv
