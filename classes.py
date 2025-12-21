@@ -1,19 +1,13 @@
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from nodes.ast import AstNode, DimensionDefinition, FromImport, Import, UnitDefinition
+from nodes.ast import DimensionDefinition, FromImport, Import, UnitDefinition
 
 
 @dataclass
 class ModuleMeta:
     path: Path
     source: str
-
-
-@dataclass(kw_only=True, frozen=True)
-class E:
-    base: "AstNode | list | E"
-    exponent: float
 
 
 @dataclass
