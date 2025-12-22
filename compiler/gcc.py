@@ -2,24 +2,33 @@ import subprocess
 from pathlib import Path
 
 
-def compile(code: str, output: str | Path = "output/output"):
+def _pkg(name: str):
     cflags = (
-        subprocess.check_output(["pkg-config", "--cflags", "glib-2.0"], text=True)
+        subprocess.check_output(["pkg-config", "--cflags", name], text=True)
         .strip()
         .split()
     )
     libs = (
-        subprocess.check_output(["pkg-config", "--libs", "glib-2.0"], text=True)
+        subprocess.check_output(["pkg-config", "--libs", name], text=True)
         .strip()
         .split()
     )
+    return cflags, libs
+
+
+def compile(code: str, output: str | Path = "output/output"):
+    glib_cflags, glib_libs = _pkg("glib-2.0")
+    gc_cflags, gc_libs = _pkg("bdw-gc")
 
     cmd = (
         ["gcc", "-x", "c", "-", "-Icompiler/runtime", "-o", str(output)]
-        + cflags
-        + libs
+        + glib_cflags
+        + gc_cflags
+        + glib_libs
+        + gc_libs
         + ["-lm"]
     )
+
     return subprocess.run(
         cmd,
         input=code,

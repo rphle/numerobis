@@ -42,7 +42,7 @@ class Compiler:
         self.errors = Exceptions(module=module)
         self.env = namespaces
 
-        self.include = set()
+        self.include = set({"unidad/runtime"})
         self._defined_addrs = set()
 
     def bin_op_(self, node: BinOp, link: int) -> str:
@@ -152,7 +152,7 @@ class Compiler:
             return f"{value}E{node.exponent}"
 
     def string_(self, node: String, link: int) -> str:
-        return node.value
+        return f"g_string_new({node.value})"
 
     def variable_(self, node: Variable, link: int) -> str:
         out = tstr("$type $name = $value")
@@ -198,7 +198,6 @@ class Compiler:
             case NumberType():
                 return "long" if value.typ == "Int" else "double"
             case StrType():
-                self.include.add("glib")
                 return "GString"
             case BoolType():
                 self.include.add("stdbool")
