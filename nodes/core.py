@@ -78,6 +78,7 @@ class Token:
 @dataclass(kw_only=True, frozen=True)
 class AstNode:
     loc: Location = field(default_factory=lambda: Location(), repr=False, compare=False)
+    meta: dict = field(default_factory=dict, repr=False, compare=False)
 
     def hash(self) -> int:
         struct = self._struct()

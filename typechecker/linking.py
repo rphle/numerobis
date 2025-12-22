@@ -25,6 +25,7 @@ _exclude = (
     FromImport,
     Import,
     Type,
+    dict,
 )
 
 

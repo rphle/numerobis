@@ -562,7 +562,9 @@ class Typechecker:
             self.errors.throw(523, type=value, index=index, loc=node.loc)
             raise
 
-        self._typelink(link, typ=value)
+        self.namespaces.nodes[link].meta["function"] = (
+            f"{value.name().lower()}__get{'slice' if index.name('Slice') else 'item'}__"
+        )
         if isinstance(value, ListType) and value.content.name("Never"):
             return AnyType()
         else:

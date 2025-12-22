@@ -18,6 +18,7 @@ from nodes.ast import (
     If,
     Index,
     Integer,
+    Slice,
     String,
     UnaryOp,
     Variable,
@@ -28,6 +29,7 @@ from typechecker.types import BoolType, NumberType, StrType
 from utils import camel2snake_pattern
 
 from . import gcc as gnucc
+from .constants import SLICE_NONE
 from .tstr import tstr
 
 
@@ -43,7 +45,7 @@ class Compiler:
         self.errors = Exceptions(module=module)
         self.env = namespaces
 
-        self.include = set({"unidad/runtime"})
+        self.include = set({"unidad/runtime", "unidad/constants"})
         self._defined_addrs = set()
 
     def bin_op_(self, node: BinOp, link: int) -> str:
@@ -146,14 +148,16 @@ class Compiler:
         return str(out)
 
     def index_(self, node: Index, link: int) -> str:
+        if "slice" in node.meta["function"]:
+            return self.slice_(node, link)
+
         out = tstr("$func($this, $index)")
 
-        iterable_type = self.env.names[self._link2addr(link)].name().lower()
-        out["func"] = f"{iterable_type}__getitem__"
+        out["func"] = node.meta["function"]
         out["this"] = self.compile(node.iterable)
         out["index"] = self.compile(node.index)
 
-        self.include.add(f"unidad/types/{iterable_type}")
+        self.include.add(f"unidad/types/{node.meta['function'].split('__')[0]}")
 
         return str(out)
 
@@ -163,6 +167,22 @@ class Compiler:
             return str(value)
         else:
             return f"{value}E{node.exponent}"
+
+    def slice_(self, node: Index, link: int) -> str:
+        index = self.unlink(node.index)
+        assert isinstance(index, Slice)
+        out = tstr("$func($this, $start, $stop)")
+
+        out["func"] = node.meta["function"]
+        out["this"] = self.compile(node.iterable)
+        out["start"] = (
+            self.compile(index.start) if index.start is not None else SLICE_NONE
+        )
+        out["stop"] = self.compile(index.stop) if index.stop is not None else SLICE_NONE
+
+        self.include.add(f"unidad/types/{node.meta['function'].split('__')[0]}")
+
+        return str(out)
 
     def string_(self, node: String, link: int) -> str:
         return f"g_string_new({node.value})"
