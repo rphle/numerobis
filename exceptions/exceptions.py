@@ -1,5 +1,6 @@
 import dataclasses
 import sys
+import textwrap
 from typing import Any, Literal
 
 import rich.console
@@ -104,7 +105,8 @@ class uException:
 
         if message.help:
             console.print(
-                f"  [dim]{rich.markup.escape(message.help)}[/dim]", highlight=False
+                textwrap.indent(f"[dim]{rich.markup.escape(message.help)}[/dim]", "  "),
+                highlight=False,
             )
 
         console.print()

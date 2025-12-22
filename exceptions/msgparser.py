@@ -25,6 +25,7 @@ def parse(path: str) -> dict[str, ErrorMessage]:
             raise SyntaxError("Must start with a valid header")
         elif line.strip():
             if len(items[-1]) == 4:
+                print(items)
                 raise ValueError("An item may not have more than two fields")
             items[-1].append(line.strip())
 

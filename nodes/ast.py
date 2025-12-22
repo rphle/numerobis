@@ -20,6 +20,7 @@ class If(AstNode):
     condition: AstNode
     then_branch: AstNode
     else_branch: AstNode | None = None
+    expression: bool = False
 
 
 @dataclass(kw_only=True, frozen=True)

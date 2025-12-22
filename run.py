@@ -72,6 +72,8 @@ with tqdm(total=sum(len(file[1]) for _, file in tests.items()), leave=False) as 
             try:
                 with redirect_stdout(output):
                     mod.process()
+                    mod.compile()
+
             except SystemExit:
                 pass
             except Exception as e:

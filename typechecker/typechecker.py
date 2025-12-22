@@ -134,13 +134,17 @@ class Typechecker:
                         loc=self.unlink(node.right).loc,
                     )
                 if not left.dim:
-                    return left
+                    return left.edit(typ="Float")
 
                 assert isinstance(right, NumberType)
                 dimension = Power(base=left.dim, exponent=Scalar(right.value))
                 dimension = simplify(dimension)
                 assert dimension is not None
-                return left.edit(dim=Expression(dimension))
+                return (
+                    NumberType(typ="Float", dim=Expression(dimension))
+                    if isinstance(left, Expression)
+                    else left.edit(dim=Expression(dimension))
+                )
             case "mod":
                 if not (mismatch := dimcheck(left, right)):
                     self.errors.binOpMismatch(node, mismatch)
@@ -488,7 +492,8 @@ class Typechecker:
             return_type=unify(return_type, body), unresolved=None
         )
         if name is not None:
-            env.set("names")(name, signature)
+            adress = env.set("names")(name, signature)
+            self.namespaces.typed[link] = adress  # map node link to type adress
 
         return signature
 
@@ -737,14 +742,18 @@ class Typechecker:
 
         if not isinstance(value, FunctionType):
             value = value.edit(node=link)
-        env.set("names")(name=node.name.name, value=value, adress=adress)
+        assigned = env.set("names")(name=node.name.name, value=value, adress=adress)
+        self.namespaces.typed[link] = assigned  # map node link to type adress
         return NoneType()
 
-    def variable_declaration_(self, node: VariableDeclaration, env: Env):
+    def variable_declaration_(self, node: VariableDeclaration, env: Env, link: int):
         if node.name.name in env.names:
             self.errors.throw(604, name=node.name.name, loc=node.loc)
 
-        env.set("names")(name=node.name.name, value=UndefinedType())
+        annotation = self.type_(node.type, env=env)
+
+        assigned = env.set("names")(name=node.name.name, value=annotation)
+        self.namespaces.typed[link] = assigned  # map node link to type adress
         return NoneType()
 
     def while_loop_(self, node: WhileLoop, env: Env):
@@ -769,17 +778,9 @@ class Typechecker:
                 name = type(node).__name__.removesuffix("ing").removesuffix("ean")
 
                 ret = AnyType(name)
-            case Variable() | Function():
+            case Variable() | VariableDeclaration() | Function():
                 name = camel2snake_pattern.sub("_", type(node).__name__).lower() + "_"
-                ret = getattr(self, name)(
-                    node,
-                    env=env,
-                    **(
-                        {"link": link.target}
-                        if name in ["variable_", "function_"]
-                        else {}
-                    ),
-                )
+                ret = getattr(self, name)(node, env=env, link=link.target)
             case DimensionDefinition() | UnitDefinition() | FromImport() | Import():
                 return  # type: ignore
             case _:

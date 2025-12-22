@@ -3,14 +3,15 @@ from parser.parser import Parser
 from pathlib import Path
 from typing import Optional
 
-
-import declare
+import typechecker.declare as declare
 from analysis.dimchecker import Dimchecker
 from classes import Header, ModuleMeta
+from compiler.compiler import Compiler
 from environment import Namespaces
 from exceptions.exceptions import Exceptions
 from lexer.lexer import lex
 from nodes.ast import Import
+from typechecker.linking import Link
 from typechecker.typechecker import Typechecker
 
 
@@ -32,6 +33,7 @@ class Module:
             self.namespaces.update(namespaces)
 
         self.header: Header = Header()
+        self.program: list[Link] = []
 
     def process(self):
         self.parse()
@@ -119,6 +121,12 @@ class Module:
     def typecheck(self):
         ts = Typechecker(self.ast, module=self.meta, namespaces=self.namespaces)
         ts.start()
+        self.program = ts.program
+
+    def compile(self):
+        compiler = Compiler(self.program, module=self.meta, namespaces=self.namespaces)
+        compiler.start()
+        compiler.gcc()
 
 
 class ModuleResolver:

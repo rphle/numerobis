@@ -1,3 +1,4 @@
+import random
 from dataclasses import dataclass, field, fields
 
 import mmh3
@@ -80,7 +81,7 @@ class AstNode:
 
     def hash(self) -> int:
         struct = self._struct()
-        return mmh3.hash(str(struct))
+        return mmh3.hash(str(struct), seed=random.randint(0, 2**32 - 1))
 
     def _struct(self):
         return (

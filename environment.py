@@ -6,7 +6,7 @@ from nodes.core import AstNode
 from nodes.unit import Expression, One
 from typechecker.types import T
 
-namespace_names = Literal["names", "dimensions", "units", "imports", "nodes"]
+namespace_names = Literal["names", "dimensions", "units", "imports", "nodes", "typed"]
 
 
 class Namespaces:
@@ -17,12 +17,14 @@ class Namespaces:
         units: dict[str, Expression | One | None] | None = None,
         imports: dict[str, "Namespaces"] | None = None,
         nodes: dict[int, AstNode] | None = None,
+        typed: dict[int, str] | None = None,
     ):
         self.names = names or {}
         self.dimensions = dimensions or {}
         self.units = units or {}
         self.imports = imports or {}
         self.nodes = nodes or {}
+        self.typed = typed or {}
 
     def copy(self):
         return Namespaces(
@@ -31,6 +33,7 @@ class Namespaces:
             self.units.copy(),
             self.imports.copy(),
             self.nodes.copy(),
+            self.typed.copy(),
         )
 
     def update(self, other: "Namespaces"):
@@ -38,6 +41,7 @@ class Namespaces:
         self.dimensions.update(other.dimensions)
         self.units.update(other.units)
         self.nodes.update(other.nodes)
+        self.typed.update(other.typed)
 
     def __call__(self, name: namespace_names) -> dict[str, Any]:
         return getattr(self, name)
@@ -114,6 +118,7 @@ class Env:
                     adress = name
             self.glob.write(namespace, adress, value)
             self(namespace)[name] = adress
+            return adress
 
         return _set
 

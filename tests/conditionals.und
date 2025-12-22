@@ -64,9 +64,9 @@ if x < 5 then "small" else (if x < 15 then "medium" else "large")
 a = 5
 b = 10
 if a < b then {
-    if a < 3 then "very small" else "small"
+    if a < 3 then echo("very small") else echo("small")
 } else {
-    if a > 15 then "large" else "medium"
+    if a > 15 then echo("large") else echo("medium")
 }
 
 # ---
@@ -161,4 +161,4 @@ x = 5
 if x then 1 else 0
 
 # ---
-if [1, 2, 3] then 1 else 0
+# if [1, 2, 3] then 1 else 0

@@ -365,6 +365,7 @@ class Parser(ParserTemplate):
             condition=condition,
             then_branch=then_branch,
             else_branch=else_branch,
+            expression=expression,
             loc=nodeloc(condition, else_branch if else_branch else then_branch),
         )
 

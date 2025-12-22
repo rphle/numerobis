@@ -1,0 +1,6 @@
+x: Int
+x = 1
+y = x + 2e2
+y = y / 1
+z = (y+x)^(-2)
+echo(z)

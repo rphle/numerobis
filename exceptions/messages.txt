@@ -205,3 +205,8 @@ failed to resolve import: unit or dimension '{name}' does not exist
 
 [E804 / ImportError]
 failed to resolve import: name '{name}' does not exist"
+
+
+
+[E901 / CompilerError]
+Command failed: {command}

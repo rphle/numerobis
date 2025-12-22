@@ -115,7 +115,7 @@ not (5 > 10)
 5 kilogram < 10 metre
 
 # ---
-5 kilogram < 10 metre < 15 kilogram
+5 kilogram < 10 metre < 15 kilogram or 10 metre > 5 metre > 1 metre
 
 # ---
 true == 5
