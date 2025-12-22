@@ -16,6 +16,7 @@ from nodes.ast import (
     Compare,
     Float,
     If,
+    Index,
     Integer,
     String,
     UnaryOp,
@@ -144,6 +145,18 @@ class Compiler:
 
         return str(out)
 
+    def index_(self, node: Index, link: int) -> str:
+        out = tstr("$func($this, $index)")
+
+        iterable_type = self.env.names[self._link2addr(link)].name().lower()
+        out["func"] = f"{iterable_type}__getitem__"
+        out["this"] = self.compile(node.iterable)
+        out["index"] = self.compile(node.index)
+
+        self.include.add(f"unidad/types/{iterable_type}")
+
+        return str(out)
+
     def number_(self, node: Integer | Float) -> str:
         value = node.value
         if not node.exponent:
@@ -256,7 +269,7 @@ class Compiler:
 
     def gcc(self):
         try:
-            gnucc.compile(self.code)
+            gnucc.compile(self.code, include=list(self.include))
             print(gnucc.run().stdout)
         except subprocess.CalledProcessError as e:
             self.errors.throw(901, command=" ".join(map(str, e.cmd)), help=e.stderr)

@@ -1,4 +1,5 @@
 import uuid
+from typing import Optional
 
 from analysis.dimchecker import Dimchecker
 from analysis.simplifier import simplify
@@ -492,8 +493,8 @@ class Typechecker:
             return_type=unify(return_type, body), unresolved=None
         )
         if name is not None:
-            adress = env.set("names")(name, signature)
-            self.namespaces.typed[link] = adress  # map node link to type adress
+            address = env.set("names")(name, signature)
+            self._typelink(link, address=address)  # map node link to type address
 
         return signature
 
@@ -537,7 +538,7 @@ class Typechecker:
 
         return unify(*branches)
 
-    def index_(self, node: Index, env: Env):
+    def index_(self, node: Index, env: Env, link: int):
         value = self.check(node.iterable, env=env)
         index = self.check(node.index, env=env)
 
@@ -559,7 +560,10 @@ class Typechecker:
 
         if not checked:
             self.errors.throw(523, type=value, index=index, loc=node.loc)
-        elif isinstance(value, ListType) and value.content.name("Never"):
+            raise
+
+        self._typelink(link, typ=value)
+        if isinstance(value, ListType) and value.content.name("Never"):
             return AnyType()
         else:
             return checked.return_type
@@ -742,8 +746,8 @@ class Typechecker:
 
         if not isinstance(value, FunctionType):
             value = value.edit(node=link)
-        assigned = env.set("names")(name=node.name.name, value=value, adress=adress)
-        self.namespaces.typed[link] = assigned  # map node link to type adress
+        address = env.set("names")(name=node.name.name, value=value, adress=adress)
+        self._typelink(link, address=address)  # map node link to type adress
         return NoneType()
 
     def variable_declaration_(self, node: VariableDeclaration, env: Env, link: int):
@@ -752,8 +756,8 @@ class Typechecker:
 
         annotation = self.type_(node.type, env=env)
 
-        assigned = env.set("names")(name=node.name.name, value=annotation)
-        self.namespaces.typed[link] = assigned  # map node link to type adress
+        address = env.set("names")(name=node.name.name, value=annotation)
+        self._typelink(link, address=address)  # map node link to type adress
         return NoneType()
 
     def while_loop_(self, node: WhileLoop, env: Env):
@@ -778,7 +782,7 @@ class Typechecker:
                 name = type(node).__name__.removesuffix("ing").removesuffix("ean")
 
                 ret = AnyType(name)
-            case Variable() | VariableDeclaration() | Function():
+            case Variable() | VariableDeclaration() | Function() | Index():
                 name = camel2snake_pattern.sub("_", type(node).__name__).lower() + "_"
                 ret = getattr(self, name)(node, env=env, link=link.target)
             case DimensionDefinition() | UnitDefinition() | FromImport() | Import():
@@ -811,3 +815,16 @@ class Typechecker:
 
     def unlink(self, node, attrs=None):
         return linking.unlink(self.namespaces.nodes, node, attrs)
+
+    def _typelink(
+        self,
+        link: int,
+        address: Optional[str] = None,
+        typ: Optional[T] = None,
+    ):
+        if address is None:
+            if typ is None:
+                raise ValueError("Type must be provided if address is not")
+            address = f"$typelink-{uuid.uuid4()}"
+            self.namespaces.names[address] = typ
+        self.namespaces.typed[link] = address

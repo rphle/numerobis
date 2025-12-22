@@ -16,12 +16,18 @@ def _pkg(name: str):
     return cflags, libs
 
 
-def compile(code: str, output: str | Path = "output/output"):
+def compile(
+    code: str, output: str | Path = "output/output", include: list[str | Path] = []
+):
     glib_cflags, glib_libs = _pkg("glib-2.0")
     gc_cflags, gc_libs = _pkg("bdw-gc")
 
+    include = [f"compiler/runtime/{f}.c" for f in include]
+
     cmd = (
-        ["gcc", "-x", "c", "-", "-Icompiler/runtime", "-o", str(output)]
+        ["gcc", "-x", "c", "-", "-o", str(output)]
+        + [f for f in include if Path(f).is_file()]
+        + ["-Icompiler/runtime"]
         + glib_cflags
         + gc_cflags
         + glib_libs
