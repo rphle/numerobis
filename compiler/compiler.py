@@ -1,5 +1,4 @@
 import subprocess
-from functools import lru_cache
 from typing import Any
 
 import typechecker.declare as declare
@@ -25,7 +24,7 @@ from nodes.ast import (
 )
 from nodes.core import Identifier
 from typechecker.linking import Link
-from typechecker.types import BoolType, NumberType, StrType
+from typechecker.types import BoolType, NumberType, StrType, T
 from utils import camel2snake_pattern
 
 from . import gcc as gnucc
@@ -49,27 +48,33 @@ class Compiler:
         self._defined_addrs = set()
 
     def bin_op_(self, node: BinOp, link: int) -> str:
-        out = tstr("$left $op $right")
+        operands = [self.compile(node.left), self.compile(node.right)]
+        if "function" not in node.meta:
+            # two numbers
+            out = tstr("$left $op $right")
+            out["left"], out["right"] = operands
 
-        out["left"] = self.compile(node.left)
-        out["right"] = self.compile(node.right)
-
-        match node.op.name:
-            case "pow":
-                self.include.add("math")
-                return f"pow({out['left']}, {out['right']})"
-            case "mod":
-                self.include.add("math")
-                return f"fmod({out['left']}, {out['right']})"
-            case _:
-                out["op"] = {
-                    "add": "+",
-                    "sub": "-",
-                    "mul": "*",
-                    "div": "/",
-                    "pow": "^",
-                    "intdiv": "//",
-                }[node.op.name]
+            match node.op.name:
+                case "pow":
+                    self.include.add("math")
+                    return f"pow({out['left']}, {out['right']})"
+                case "mod":
+                    self.include.add("math")
+                    return f"fmod({out['left']}, {out['right']})"
+                case _:
+                    out["op"] = {
+                        "add": "+",
+                        "sub": "-",
+                        "mul": "*",
+                        "div": "/",
+                        "pow": "^",
+                        "intdiv": "//",
+                    }[node.op.name]
+        else:
+            out = tstr("$func($left, $right)")
+            reverse = node.meta["function"][0] == "right"
+            out["left"], out["right"] = operands if not reverse else operands[::-1]
+            out["func"] = node.meta["function"][1]
 
         return str(out)
 
@@ -148,16 +153,16 @@ class Compiler:
         return str(out)
 
     def index_(self, node: Index, link: int) -> str:
-        if "slice" in node.meta["function"]:
+        if self._link2type(node.index) == "slice":
             return self.slice_(node, link)
 
         out = tstr("$func($this, $index)")
 
-        out["func"] = node.meta["function"]
+        out["func"] = f"{self._link2type(link)}__getitem__"
         out["this"] = self.compile(node.iterable)
         out["index"] = self.compile(node.index)
 
-        self.include.add(f"unidad/types/{node.meta['function'].split('__')[0]}")
+        self.include.add(f"unidad/types/{self._link2type(link)}")
 
         return str(out)
 
@@ -173,36 +178,36 @@ class Compiler:
         assert isinstance(index, Slice)
         out = tstr("$func($this, $start, $stop)")
 
-        out["func"] = node.meta["function"]
+        out["func"] = f"{self._link2type(link)}__getslice__"
         out["this"] = self.compile(node.iterable)
         out["start"] = (
             self.compile(index.start) if index.start is not None else SLICE_NONE
         )
         out["stop"] = self.compile(index.stop) if index.stop is not None else SLICE_NONE
 
-        self.include.add(f"unidad/types/{node.meta['function'].split('__')[0]}")
+        self.include.add(f"unidad/types/{self._link2type(link)}")
 
         return str(out)
 
     def string_(self, node: String, link: int) -> str:
+        self.include.add("unidad/types/str")
         return f"g_string_new({node.value})"
 
     def variable_(self, node: Variable, link: int) -> str:
         out = tstr("$type $name = $value")
-        addr = self._link2addr(link)
+        addr = node.meta["address"]
 
         out["name"] = self.compile(node.name)
-        out["type"] = self.typelink(link)
+        out["type"] = self.type_(self._node2type(node))
         out["value"] = self.compile(node.value)
-
-        if out["type"] == "GString":
-            out["name"] = f"*{out['name']}"
 
         if addr in self._defined_addrs:
             out.remove("type")
             out.strip()
         else:
             self._defined_addrs.add(addr)
+            if out["type"] == "GString":
+                out["name"] = f"*{out['name']}"
 
         return str(out)
 
@@ -218,25 +223,23 @@ class Compiler:
         out = tstr("$type $name")
 
         out["name"] = self.compile(node.name)
-        out["type"] = self.typelink(link)
+        out["type"] = self.type_(self._node2type(node))
 
-        self._defined_addrs.add(self._link2addr(link))
+        self._defined_addrs.add(node.meta["address"])
 
         return str(out)
 
-    def typelink(self, link: int) -> str:
-        value = self.env.names[self._link2addr(link)]
-
-        match value:
+    def type_(self, node: T | Any) -> str:
+        match node:
             case NumberType():
-                return "long" if value.typ == "Int" else "double"
+                return "long" if node.typ == "Int" else "double"
             case StrType():
                 return "GString"
             case BoolType():
                 self.include.add("stdbool")
                 return "bool"
 
-        raise ValueError(f"Unknown type {value}")
+        raise ValueError(f"Unknown type {node}")
 
     def unlink(self, link: int | Link | Any):
         if isinstance(link, (int, Link)):
@@ -294,6 +297,11 @@ class Compiler:
         except subprocess.CalledProcessError as e:
             self.errors.throw(901, command=" ".join(map(str, e.cmd)), help=e.stderr)
 
-    @lru_cache(maxsize=None)
-    def _link2addr(self, link: int) -> str:
+    def _node2type(self, node) -> T:
+        return self.env.names[node.meta["address"]]
+
+    def _link2type(self, link: int | Link | Any) -> str:
+        link = link.target if isinstance(link, Link) else link
+        if not isinstance(link, int):
+            raise TypeError(f"Expected int, got {type(link).__name__}")
         return self.env.typed[link]

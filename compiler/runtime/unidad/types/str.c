@@ -3,13 +3,7 @@
 #include <stddef.h>
 
 static size_t gstring_len(GString *self) {
-  const char *p = self->str;
-  size_t len = 0;
-  while (*p) {
-    len++;
-    p = g_utf8_next_char(p);
-  }
-  return len;
+  return g_utf8_strlen(self->str, self->len);
 }
 
 GString *str__getitem__(GString *self, ssize_t index) {
@@ -35,13 +29,17 @@ GString *str__getitem__(GString *self, ssize_t index) {
   return g_string_new(buf);
 }
 
-GString *str__getslice__(GString *self, ssize_t start, ssize_t end) {
-  size_t len = gstring_len(self);
+GString *str__getslice__(GString *self, ssize_t start, ssize_t end,
+                         ssize_t step) {
+  ssize_t len = (ssize_t)gstring_len(self);
+
+  if (step == 0)
+    return g_string_new("");
 
   if (start == SLICE_NONE)
-    start = 0;
+    start = (step < 0) ? len - 1 : 0;
   if (end == SLICE_NONE)
-    end = len;
+    end = (step < 0) ? -len - 1 : len;
 
   // Handle negative indices
   if (start < 0)
@@ -51,30 +49,52 @@ GString *str__getslice__(GString *self, ssize_t start, ssize_t end) {
 
   // Clamp to bounds
   if (start < 0)
-    start = 0;
-  if (end > (ssize_t)len)
+    start = (step < 0) ? -1 : 0;
+  if (start > len)
+    start = len;
+  if (end < 0)
+    end = (step < 0) ? -1 : 0;
+  if (end > len)
     end = len;
-  if (start >= end)
-    return g_string_new("");
 
+  // Build array of character positions
+  const char *str_end = self->str + self->len;
+  const char **positions = g_malloc((len + 1) * sizeof(char *));
   const char *p = self->str;
-  const char *begin = NULL;
-  const char *finish = NULL;
+  size_t pos_idx = 0;
 
-  for (size_t i = 0; *p && i <= (size_t)end; i++) {
-    if ((ssize_t)i == start)
-      begin = p;
-    if ((ssize_t)i == end) {
-      finish = p;
-      break;
-    }
+  while (p < str_end) {
+    positions[pos_idx++] = p;
     p = g_utf8_next_char(p);
   }
+  positions[pos_idx] = str_end; // Mark the end
 
-  if (!begin)
-    begin = self->str;
-  if (!finish)
-    finish = self->str + self->len;
+  GString *result = g_string_new("");
 
-  return g_string_new_len(begin, finish - begin);
+  for (ssize_t i = start; step > 0 ? i < end : i > end; i += step) {
+    if (i >= 0 && i < len) {
+      const char *char_start = positions[i];
+      const char *char_end = positions[i + 1];
+      g_string_append_len(result, char_start, char_end - char_start);
+    }
+  }
+
+  g_free(positions);
+  return result;
+}
+
+GString *str__add__(GString *self, GString *other) {
+  GString *result = g_string_sized_new(self->len + other->len);
+  g_string_append_len(result, self->str, self->len);
+  g_string_append_len(result, other->str, other->len);
+  return result;
+}
+
+GString *str__mul__(GString *self, ssize_t n) {
+  if (n <= 0)
+    return g_string_new("");
+  GString *result = g_string_sized_new(self->len * n);
+  for (ssize_t i = 0; i < n; i++)
+    g_string_append_len(result, self->str, self->len);
+  return result;
 }

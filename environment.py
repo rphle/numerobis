@@ -110,15 +110,15 @@ class Env:
         return _get
 
     def set(self, namespace: namespace_names):
-        def _set(name: str, value: Any, adress: Optional[str] = None):
-            if adress is None:
+        def _set(name: str, value: Any, address: Optional[str] = None):
+            if address is None:
                 if self.level > 0:
-                    adress = f"{name}-{uuid.uuid4()}"
+                    address = f"{name}-{uuid.uuid4()}"
                 else:
-                    adress = name
-            self.glob.write(namespace, adress, value)
-            self(namespace)[name] = adress
-            return adress
+                    address = name
+            self.glob.write(namespace, address, value)
+            self(namespace)[name] = address
+            return address
 
         return _set
 

@@ -1,5 +1,4 @@
 import uuid
-from typing import Optional
 
 from analysis.dimchecker import Dimchecker
 from analysis.simplifier import simplify
@@ -77,7 +76,7 @@ class Typechecker:
 
         self.dimchecker = Dimchecker(module=module, namespaces=namespaces)
 
-    def bin_op_(self, node: BinOp, env: Env) -> T:
+    def bin_op_(self, node: BinOp, env: Env, link: int) -> T:
         """Check dimensional consistency in mathematical operations"""
         left, right = [self.check(side, env=env) for side in (node.left, node.right)]
 
@@ -86,18 +85,23 @@ class Typechecker:
             and isinstance(right, (NumberType, DimensionType))
         ):
             definition = None
+            methods = [
+                (left, f"__{node.op.name}__"),
+                (right, f"__r{node.op.name}__"),
+                (right, f"__{node.op.name}__"),
+            ]
             for i, field in enumerate(
-                [
-                    typetable[left.name()][f"__{node.op.name}__"],
-                    typetable[right.name()][f"__r{node.op.name}__"],
-                    typetable[right.name()][f"__{node.op.name}__"],
-                ]
+                [typetable[operand.name()][method] for operand, method in methods]
             ):
                 try:
                     if checked := _check_method(
                         field, *([left, right] if i < 2 else [right, left])
                     ):
                         definition = checked
+                        self.namespaces.nodes[link].meta["function"] = (
+                            "left" if i == 0 else "right",
+                            f"{left.name().lower() if i == 0 else right.name().lower()}{methods[i][1]}",
+                        )
                         break
                 except ValueError:
                     pass
@@ -287,12 +291,12 @@ class Typechecker:
 
             new_env = env.copy()
             for name, arg in args.items():
-                new_env.set("names")(name, arg[1], adress=arg[2])
+                new_env.set("names")(name, arg[1], address=arg[2])
             for i, default in enumerate(callee.param_defaults):
                 idx = callee.arity[0] + i
                 name = callee.param_names[idx]
                 if name not in args:
-                    new_env.set("names")(name, default, adress=callee.param_addrs[idx])
+                    new_env.set("names")(name, default, address=callee.param_addrs[idx])
             new_env.meta["#function"] = callee
 
             if callee.meta("#curried"):
@@ -467,7 +471,9 @@ class Typechecker:
 
         new_env = env.copy()
         for i, param in enumerate(params):
-            new_env.set("names")(node.params[i].name.name, param, adress=param_addrs[i])
+            new_env.set("names")(
+                node.params[i].name.name, param, address=param_addrs[i]
+            )
         new_env.meta["#function"] = signature
 
         try:
@@ -494,7 +500,7 @@ class Typechecker:
         )
         if name is not None:
             address = env.set("names")(name, signature)
-            self._typelink(link, address=address)  # map node link to type address
+            node.meta["address"] = address
 
         return signature
 
@@ -538,7 +544,7 @@ class Typechecker:
 
         return unify(*branches)
 
-    def index_(self, node: Index, env: Env, link: int):
+    def index_(self, node: Index, env: Env):
         value = self.check(node.iterable, env=env)
         index = self.check(node.index, env=env)
 
@@ -562,9 +568,6 @@ class Typechecker:
             self.errors.throw(523, type=value, index=index, loc=node.loc)
             raise
 
-        self.namespaces.nodes[link].meta["function"] = (
-            f"{value.name().lower()}__get{'slice' if index.name('Slice') else 'item'}__"
-        )
         if isinstance(value, ListType) and value.content.name("Never"):
             return AnyType()
         else:
@@ -707,7 +710,7 @@ class Typechecker:
     def variable_(self, node: Variable, env: Env, link: int):
         value = self.check(node.value, env=env)
 
-        adress = None
+        address = None
         if node.name.name in env.names:
             if node.type:
                 self.errors.throw(604, name=node.name.name, loc=node.loc)
@@ -720,7 +723,7 @@ class Typechecker:
                     declared=mismatch.left,
                     loc=node.loc,
                 )
-            adress = env.names[node.name.name]
+            address = env.names[node.name.name]
 
         if node.type:
             annotation = self.type_(node.type, env=env)
@@ -748,18 +751,18 @@ class Typechecker:
 
         if not isinstance(value, FunctionType):
             value = value.edit(node=link)
-        address = env.set("names")(name=node.name.name, value=value, adress=adress)
-        self._typelink(link, address=address)  # map node link to type adress
+        address = env.set("names")(name=node.name.name, value=value, address=address)
+        node.meta["address"] = address
         return NoneType()
 
-    def variable_declaration_(self, node: VariableDeclaration, env: Env, link: int):
+    def variable_declaration_(self, node: VariableDeclaration, env: Env):
         if node.name.name in env.names:
             self.errors.throw(604, name=node.name.name, loc=node.loc)
 
         annotation = self.type_(node.type, env=env)
 
         address = env.set("names")(name=node.name.name, value=annotation)
-        self._typelink(link, address=address)  # map node link to type adress
+        node.meta["address"] = address
         return NoneType()
 
     def while_loop_(self, node: WhileLoop, env: Env):
@@ -772,10 +775,8 @@ class Typechecker:
         return NoneType()
 
     def check(self, link, env: Env) -> T:
-        if isinstance(link, linking.Link):
-            node = self.namespaces.nodes[link.target]
-        else:
-            node = link
+        islink = isinstance(link, linking.Link)
+        node = self.namespaces.nodes[link.target] if islink else link
 
         match node:
             case Integer() | Float():
@@ -784,7 +785,7 @@ class Typechecker:
                 name = type(node).__name__.removesuffix("ing").removesuffix("ean")
 
                 ret = AnyType(name)
-            case Variable() | VariableDeclaration() | Function() | Index():
+            case Variable() | BinOp():
                 name = camel2snake_pattern.sub("_", type(node).__name__).lower() + "_"
                 ret = getattr(self, name)(node, env=env, link=link.target)
             case DimensionDefinition() | UnitDefinition() | FromImport() | Import():
@@ -800,6 +801,9 @@ class Typechecker:
 
         if ret and isinstance(link, linking.Link) and ret.node is None:
             ret = ret.edit(node=link.target)
+
+        if islink and ret:
+            self.namespaces.typed[link.target] = ret.name().lower()
         return ret
 
     def start(self):
@@ -817,16 +821,3 @@ class Typechecker:
 
     def unlink(self, node, attrs=None):
         return linking.unlink(self.namespaces.nodes, node, attrs)
-
-    def _typelink(
-        self,
-        link: int,
-        address: Optional[str] = None,
-        typ: Optional[T] = None,
-    ):
-        if address is None:
-            if typ is None:
-                raise ValueError("Type must be provided if address is not")
-            address = f"$typelink-{uuid.uuid4()}"
-            self.namespaces.names[address] = typ
-        self.namespaces.typed[link] = address
