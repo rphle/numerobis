@@ -314,9 +314,10 @@ class Typechecker:
 
         return return_type
 
-    def compare_(self, node: Compare, env: Env):
+    def compare_(self, node: Compare, env: Env, link: int):
         node = self.unlink(node, attrs=["comparators", "ops"])
         comparators = [node.left] + node.comparators
+        self.namespaces.nodes[link].meta["functions"] = []
         for i in range(len(comparators) - 1):
             op, sides = node.ops[i], (comparators[i], comparators[i + 1])
 
@@ -329,12 +330,22 @@ class Typechecker:
                 elif isinstance(field, Overload):
                     return any(func.check_args(left, right) for func in field.functions)
 
-            for field in (
-                typetable[left.name()][f"__{op.name}__"],
-                typetable[right.name()][f"__r{op.name}__"],
-                typetable[right.name()][f"__{op.name}__"],
+            methods = [
+                (left, f"__{op.name}__"),
+                (right, f"__r{op.name}__"),
+                (right, f"__{op.name}__"),
+            ]
+            for i, field in enumerate(
+                [typetable[operand.name()][method] for operand, method in methods]
             ):
                 if _check_field(field):
+                    self.namespaces.nodes[link].meta["functions"].append(
+                        (
+                            "left" if i == 0 else "right",
+                            f"{left.name().lower() if i == 0 else right.name().lower()}{methods[i][1]}",
+                            (left.name().lower(), right.name().lower()),
+                        )
+                    )
                     break
             else:
                 ops = {
@@ -709,21 +720,22 @@ class Typechecker:
 
     def variable_(self, node: Variable, env: Env, link: int):
         value = self.check(node.value, env=env)
+        name = self.unlink(node.name)
 
         address = None
-        if node.name.name in env.names:
+        if name.name in env.names:
             if node.type:
-                self.errors.throw(604, name=node.name.name, loc=node.loc)
-            if not (mismatch := nomismatch(env.get("names")(node.name.name), value)):
+                self.errors.throw(604, name=name.name, loc=node.loc)
+            if not (mismatch := nomismatch(env.get("names")(name.name), value)):
                 self.errors.throw(
                     535,
-                    name=node.name.name,
+                    name=name.name,
                     kind=mismatch.kind,
                     value=mismatch.right,
                     declared=mismatch.left,
                     loc=node.loc,
                 )
-            address = env.names[node.name.name]
+            address = env.names[name.name]
 
         if node.type:
             annotation = self.type_(node.type, env=env)
@@ -751,17 +763,18 @@ class Typechecker:
 
         if not isinstance(value, FunctionType):
             value = value.edit(node=link)
-        address = env.set("names")(name=node.name.name, value=value, address=address)
+        address = env.set("names")(name=name.name, value=value, address=address)
         node.meta["address"] = address
         return NoneType()
 
     def variable_declaration_(self, node: VariableDeclaration, env: Env):
-        if node.name.name in env.names:
-            self.errors.throw(604, name=node.name.name, loc=node.loc)
+        name = self.unlink(node.name)
+        if name.name in env.names:
+            self.errors.throw(604, name=name.name, loc=node.loc)
 
         annotation = self.type_(node.type, env=env)
 
-        address = env.set("names")(name=node.name.name, value=annotation)
+        address = env.set("names")(name=name.name, value=annotation)
         node.meta["address"] = address
         return NoneType()
 
@@ -785,7 +798,7 @@ class Typechecker:
                 name = type(node).__name__.removesuffix("ing").removesuffix("ean")
 
                 ret = AnyType(name)
-            case Variable() | BinOp():
+            case Variable() | BinOp() | Compare():
                 name = camel2snake_pattern.sub("_", type(node).__name__).lower() + "_"
                 ret = getattr(self, name)(node, env=env, link=link.target)
             case DimensionDefinition() | UnitDefinition() | FromImport() | Import():

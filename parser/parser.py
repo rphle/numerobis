@@ -661,7 +661,7 @@ class Parser(ParserTemplate):
                     num = dataclasses.replace(num, unit=unit, loc=nodeloc(num, unit))
                 return num
             case "TRUE" | "FALSE":
-                return Boolean(value=tok.value == "TRUE", loc=tok.loc)
+                return Boolean(value=tok.value == "true", loc=tok.loc)
             case "ID":
                 return self._make_id(tok)
             case "STRING":

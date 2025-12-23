@@ -3,9 +3,9 @@ from typing import Optional
 
 
 class tstr:
-    def __init__(self, value: str, content: dict[str, str] = {}):
+    def __init__(self, value: str, content: Optional[dict[str, str]] = None):
         self.value: str = value
-        self.content: dict[str, str] = content
+        self.content: dict[str, str] = dict(content) if content else {}
 
     def remove(self, *keys: str):
         if not keys:

@@ -1,5 +1,6 @@
 #include "../constants.h"
 #include <glib.h>
+#include <stdbool.h>
 #include <stddef.h>
 
 static size_t gstring_len(GString *self) {
@@ -104,4 +105,21 @@ GString *str__mul__(GString *self, ssize_t n) {
   for (ssize_t i = 0; i < n; i++)
     g_string_append_len(result, self->str, self->len);
   return result;
+}
+
+bool str__lt__(GString *self, GString *other) {
+  return gstring_len(self) < gstring_len(other);
+}
+bool str__le__(GString *self, GString *other) {
+  return gstring_len(self) <= gstring_len(other);
+}
+bool str__gt__(GString *self, GString *other) {
+  return gstring_len(self) > gstring_len(other);
+}
+bool str__ge__(GString *self, GString *other) {
+  return gstring_len(self) >= gstring_len(other);
+}
+
+bool str__eq__(const GString *a, const GString *b) {
+  return a == b || (a && b && g_str_equal(a->str, b->str));
 }

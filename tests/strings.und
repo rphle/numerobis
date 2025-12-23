@@ -223,7 +223,7 @@ s[1 kilogram]
 # E532
 "world"[::true]
 
-# ---
+# E514
 "hello" < 5
 
 # ---
@@ -232,7 +232,7 @@ s[1 kilogram]
 # ---
 true != "hello"
 
-# ---
+# E514
 "abc" <= 5 kilogram
 
 # E514

@@ -333,9 +333,8 @@ def dimcheck(a: T, b: T) -> Literal[True] | Mismatch:
 
 
 class Overload:
-    functions: list[FunctionType] = []
-
     def __init__(self, *functions: "FunctionType|Overload"):
+        self.functions: list[FunctionType] = []
         for func in functions:
             self.functions.extend(
                 [func] if isinstance(func, FunctionType) else func.functions

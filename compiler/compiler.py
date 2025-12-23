@@ -88,14 +88,19 @@ class Compiler:
 
     def boolean_(self, node: Boolean, link: int) -> str:
         self.include.add("stdbool")
+        self.include.add("unidad/types/bool")
         return ["false", "true"][node.value]
 
     def bool_op_(self, node: BoolOp, link: int) -> str:
-        out = tstr("$left $op $right")
+        out = tstr("$lfunc($left) $op $rfunc($right)")
+        self.include.add("unidad/types/bool")
 
         out["left"] = self.compile(node.left)
         out["right"] = self.compile(node.right)
         out["op"] = {"and": "&&", "or": "||", "xor": "^"}[node.op.name]
+
+        out["lfunc"] = f"{self._link2type(node.left)}__bool__"
+        out["rfunc"] = f"{self._link2type(node.right)}__bool__"
 
         return str(out)
 
@@ -111,21 +116,30 @@ class Compiler:
         return str(out)
 
     def compare_(self, node: Compare, link: int) -> str:
-        op_map = {
-            "lt": "<",
-            "le": "<=",
-            "gt": ">",
-            "ge": ">=",
-            "eq": "==",
-            "ne": "!=",
-        }
+        comparators = [node.left, *node.comparators]
+        values = [self.compile(c) for c in comparators]
 
-        values = [self.compile(node.left)] + [self.compile(c) for c in node.comparators]
+        comparisons = []
+        for i, op in enumerate(node.ops):
+            opname = self.unlink(op).name  # type: ignore
+            if (
+                opname in ["eq", "ne"]
+                and node.meta["functions"][i][2][0] != node.meta["functions"][i][2][1]
+            ):
+                return "false" if opname == "eq" else "true"
 
-        comparisons = [
-            f"({values[i]} {op_map[self.unlink(op).name]} {values[i + 1]})"  # type: ignore
-            for i, op in enumerate(node.ops)
-        ]
+            out = tstr("$func($left, $right)")
+            reverse = node.meta["functions"][i][0] == "right"
+            operands = [values[i], values[i + 1]]
+
+            out["left"], out["right"] = operands if not reverse else operands[::-1]
+            out["func"] = (
+                node.meta["functions"][i][1]
+                if opname != "ne"
+                else f"!{node.meta['functions'][i][1].replace('__ne', '__eq')}"  # auto-delegate !=
+            )
+
+            comparisons.append(str(out))
 
         return "(" + " && ".join(comparisons) + ")"
 
@@ -167,6 +181,7 @@ class Compiler:
         return str(out)
 
     def number_(self, node: Integer | Float) -> str:
+        self.include.add("unidad/types/number")
         value = node.value
         if not node.exponent:
             return str(value)
@@ -214,8 +229,11 @@ class Compiler:
 
     def unary_op_(self, node: UnaryOp, link: int) -> str:
         out = tstr("$op($value)")
+        self.include.add("unidad/types/bool")
 
-        out["op"] = {"not": "!", "sub": "-"}[node.op.name]
+        out["op"] = {"not": f"!{self._link2type(node.operand)}__bool__", "sub": "-"}[
+            node.op.name
+        ]
         out["value"] = self.compile(node.operand)
 
         return str(out)
