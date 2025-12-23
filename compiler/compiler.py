@@ -176,7 +176,7 @@ class Compiler:
     def slice_(self, node: Index, link: int) -> str:
         index = self.unlink(node.index)
         assert isinstance(index, Slice)
-        out = tstr("$func($this, $start, $stop)")
+        out = tstr("$func($this, $start, $stop, $step)")
 
         out["func"] = f"{self._link2type(link)}__getslice__"
         out["this"] = self.compile(node.iterable)
@@ -184,6 +184,7 @@ class Compiler:
             self.compile(index.start) if index.start is not None else SLICE_NONE
         )
         out["stop"] = self.compile(index.stop) if index.stop is not None else SLICE_NONE
+        out["step"] = self.compile(index.step) if index.step is not None else SLICE_NONE
 
         self.include.add(f"unidad/types/{self._link2type(link)}")
 
