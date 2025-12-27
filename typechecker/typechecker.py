@@ -461,13 +461,15 @@ class Typechecker:
             self.type_(node.return_type, env=env) if node.return_type else NeverType()
         )
         arity = (sum(1 for p in node.params if p.default is None), len(params))
-        param_addrs = [f"{param.name.name}-{uuid.uuid4()}" for param in node.params]
+        param_addrs = [
+            f"{self.unlink(param.name).name}-{uuid.uuid4()}" for param in node.params
+        ]
 
         signature = FunctionType(
             _name=name,
             _loc=node.loc.span("start", "assign"),
             params=params,
-            param_names=[param.name.name for param in node.params],
+            param_names=[self.unlink(param.name).name for param in node.params],
             param_addrs=param_addrs,
             param_defaults=defaults,
             return_type=return_type,
@@ -483,7 +485,7 @@ class Typechecker:
         new_env = env.copy()
         for i, param in enumerate(params):
             new_env.set("names")(
-                node.params[i].name.name, param, address=param_addrs[i]
+                self.unlink(node.params[i].name).name, param, address=param_addrs[i]
             )
         new_env.meta["#function"] = signature
 
@@ -798,7 +800,7 @@ class Typechecker:
                 name = type(node).__name__.removesuffix("ing").removesuffix("ean")
 
                 ret = AnyType(name)
-            case Variable() | BinOp() | Compare():
+            case Variable() | BinOp() | Compare() | Function():
                 name = camel2snake_pattern.sub("_", type(node).__name__).lower() + "_"
                 ret = getattr(self, name)(node, env=env, link=link.target)
             case DimensionDefinition() | UnitDefinition() | FromImport() | Import():

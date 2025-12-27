@@ -1,29 +1,98 @@
 #ifndef ECHO_H
 #define ECHO_H
 
+#include "wrappers.h"
 #include <glib.h>
 #include <stdbool.h>
 #include <stdio.h>
 
-static inline void echo_double(double x) { printf("%g\n", x); }
-static inline void echo_float(float x) { printf("%g\n", x); }
-static inline void echo_long(long x) { printf("%ld\n", x); }
-static inline void echo_int(int x) { printf("%d\n", x); }
-static inline void echo_cstr(const char *x) { puts(x); }
-static inline void echo_string(GString *x) { puts(x->str); }
-static inline void echo_bool(bool x) { printf("%s\n", x ? "true" : "false"); }
-static inline void echo_ptr(const void *x) { printf("[unsupported: %p]\n", x); }
+static __thread bool _echo_in_list = false;
+
+#define echo_dispatch(x)                                                       \
+  _Generic((x),                                                                \
+      gint64: echo_int64,                                                      \
+      gdouble: echo_double,                                                    \
+      Number *: echo_number,                                                   \
+      GString *: echo_string,                                                  \
+      GArray *: echo_garray,                                                   \
+      bool: echo_bool,                                                         \
+      default: echo_value)(x)
 
 #define echo(x)                                                                \
-  _Generic((x),                                                                \
-      double: echo_double,                                                     \
-      float: echo_float,                                                       \
-      long: echo_long,                                                         \
-      int: echo_int,                                                           \
-      char *: echo_cstr,                                                       \
-      const char *: echo_cstr,                                                 \
-      GString *: echo_string,                                                  \
-      bool: echo_bool,                                                         \
-      default: echo_ptr)(x)
+  do {                                                                         \
+    echo_dispatch(x);                                                          \
+    g_print("\n");                                                             \
+  } while (0)
+
+/* ---------- declarations ---------- */
+static inline void echo_value(gpointer v);
+static inline void echo_number(Number *n);
+static inline void echo_garray(GArray *arr);
+
+/* ------------------------------------------ */
+static inline void echo_int64(gint64 x) { g_print("%d", x); }
+static inline void echo_double(double x) { g_print("%g", x); }
+static inline void echo_string(GString *x) {
+  if (_echo_in_list)
+    g_print("\"%s\"", x->str);
+  else
+    g_print("%s", x->str);
+}
+static inline void echo_bool(bool x) { g_print("%s", x ? "true" : "false"); }
+static inline void echo_ptr(const void *x) { g_print("[unsupported: %p]", x); }
+
+static inline void echo_value(gpointer v) {
+  if (!v) {
+    g_print("null");
+    return;
+  }
+  Value *val = (Value *)v;
+  switch (val->type) {
+  case VALUE_NUMBER:
+    echo_number(val->number);
+    return;
+  case VALUE_STRING:
+    echo_string(val->string);
+    return;
+  case VALUE_BOOL:
+    echo_bool(val->boolean);
+    return;
+  case VALUE_LIST:
+    echo_garray(val->list);
+    return;
+  }
+  echo_ptr(v);
+}
+
+static inline void echo_number(Number *n) {
+  switch (n->kind) {
+  case NUM_INT64:
+    echo_int64(n->i64);
+    break;
+  case NUM_DOUBLE:
+    echo_double(n->f64);
+    break;
+  }
+}
+
+static inline void echo_garray(GArray *arr) {
+  if (!arr) {
+    g_print("[]");
+    return;
+  }
+  bool was_in_list = _echo_in_list;
+  _echo_in_list = true;
+
+  g_print("[");
+  for (size_t i = 0; i < arr->len; i++) {
+    if (i > 0)
+      g_print(", ");
+    gpointer elem = g_array_index(arr, gpointer, i);
+    echo_dispatch(elem);
+  }
+  g_print("]");
+
+  _echo_in_list = was_in_list;
+}
 
 #endif

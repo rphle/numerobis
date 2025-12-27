@@ -1,0 +1,26 @@
+# ---
+greeting: Str = "Hello"
+echo(greeting[-2::-1])
+
+# ---
+not (true and false)
+
+# ---
+echo("hello" == "hello")
+echo(42)
+echo(3.14)
+echo(1.0)
+
+# ---
+echo([])
+echo([1,2, 3])
+echo([true, false])
+echo(["world"])
+
+# ---
+a = [[1], [2, 3], [4, 5, 6]]
+echo(a)
+
+# ---
+lst: List[Int] = [1, 2, 3, 4, 5]
+echo(lst[-1])

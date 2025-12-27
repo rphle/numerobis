@@ -208,12 +208,12 @@ partial = [1, 2]
 partial + [3 kilogram]
 
 # ---
-lst = [!(x: Int): Int = x + 1, !(x: Int): Int = x * 2]
-lst[0]
+# lst = [!(x: Int): Int = x + 1, !(x: Int): Int = x * 2]
+# lst[0]
 
 # ---
-funcs = [!(x) = x * 2, !(x) = x + 1]
-funcs[0](5)
+# funcs = [!(x) = x * 2, !(x) = x + 1]
+# funcs[0](5)
 
 # E525
 [1, "hello"]

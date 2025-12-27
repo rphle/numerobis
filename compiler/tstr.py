@@ -3,7 +3,7 @@ from typing import Optional
 
 
 class tstr:
-    def __init__(self, value: str, content: Optional[dict[str, str]] = None):
+    def __init__(self, value: str, *, content: Optional[dict[str, str]] = None):
         self.value: str = value
         self.content: dict[str, str] = dict(content) if content else {}
 
@@ -38,9 +38,9 @@ class tstr:
 
     def __add__(self, other) -> "tstr":
         if isinstance(other, tstr):
-            return tstr(self.value + other.value, self.content | other.content)
+            return tstr(self.value + other.value, content=self.content | other.content)
         elif isinstance(other, str):
-            return tstr(self.value + other, self.content)
+            return tstr(self.value + other, content=self.content)
         else:
             raise TypeError(
                 f"unsupported operand type(s) for +: 'tstr' and {type(other).__name__}"

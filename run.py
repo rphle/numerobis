@@ -57,6 +57,7 @@ for file in files:
     tests[str(path)] = (chunks[0], chunks[1:])
 
 with tqdm(total=sum(len(file[1]) for _, file in tests.items()), leave=False) as pbar:
+    errors = 0
     for file in tests:
         pbar.desc = file
         pbar.refresh()
@@ -71,6 +72,8 @@ with tqdm(total=sum(len(file[1]) for _, file in tests.items()), leave=False) as 
             t0 = time.perf_counter()
             try:
                 with redirect_stdout(output):
+                    print(mod.meta.source.strip())
+                    print()
                     mod.process()
                     mod.compile()
 
@@ -85,13 +88,18 @@ with tqdm(total=sum(len(file[1]) for _, file in tests.items()), leave=False) as 
                         emoji=False,
                     )
                     raise e
+
             tests[file][1][i].time = time.perf_counter() - t0
 
             error = re.search(r"\[(E\d{3})\]", output.getvalue())
-
             test.thrown = error.group(1) if error else None
             test.output = output.getvalue()
+
+            if test.throws != test.thrown and test.throws != "///":
+                errors += 1
+
             pbar.update(1)
+            pbar.set_postfix(errors=errors)
 
 
 cumulative = 0
@@ -149,3 +157,5 @@ console.print(
     f"Total time: [bold cyan]{cumulative:.3f}s[/bold cyan] "
     f"[dim]([bold cyan]{cumulative / t if t > 0 else 0:.3f}s[/bold cyan] average)[/dim]"
 )
+
+# python3 run.py arithmetic calculations comparisons compile conditionals logic strings lists test --verbose

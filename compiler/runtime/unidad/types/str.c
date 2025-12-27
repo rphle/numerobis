@@ -1,89 +1,69 @@
-#include "../constants.h"
+#include "../utils/utils.h"
 #include <glib.h>
 #include <stdbool.h>
 #include <stddef.h>
 
-static size_t gstring_len(GString *self) {
-  return g_utf8_strlen(self->str, self->len);
+static inline size_t gstring_len(const GString *self) {
+  return self ? g_utf8_strlen(self->str, self->len) : 0;
+}
+
+static const char **build_char_positions(const GString *self, size_t len) {
+  const char **positions = g_malloc((len + 1) * sizeof(char *));
+  const char *p = self->str;
+  const char *end = self->str + self->len;
+
+  for (size_t i = 0; i < len && p < end; i++) {
+    positions[i] = p;
+    p = g_utf8_next_char(p);
+  }
+  positions[len] = end;
+
+  return positions;
 }
 
 GString *str__getitem__(GString *self, ssize_t index) {
-  size_t len = gstring_len(self);
-  // Handle negative index like Python
-  if (index < 0)
-    index += len;
-  if (index < 0 || (size_t)index >= len)
-    return g_string_new(""); // out of bounds
+  if (!self)
+    return g_string_new("");
+
+  ssize_t len = (ssize_t)gstring_len(self);
+  ssize_t nidx = normalize_index(index, len);
+
+  if (nidx < 0 || nidx >= len)
+    return g_string_new("");
+
   const char *p = self->str;
-  for (size_t i = 0; i < (size_t)index; i++)
+  for (ssize_t i = 0; i < nidx; i++)
     p = g_utf8_next_char(p);
+
   gunichar ch = g_utf8_get_char(p);
   gchar buf[8];
-  gint len_utf8 = g_unichar_to_utf8(ch, buf);
-  buf[len_utf8] = '\0';
+  gint utf8_len = g_unichar_to_utf8(ch, buf);
+  buf[utf8_len] = '\0';
+
   return g_string_new(buf);
 }
 
 GString *str__getslice__(GString *self, ssize_t start, ssize_t end,
                          ssize_t step) {
-  ssize_t len = (ssize_t)gstring_len(self);
-
-  // Handle default step
-  if (step == SLICE_NONE)
-    step = 1;
-
-  if (step == 0)
+  if (!self)
     return g_string_new("");
 
-  // Set defaults based on step direction
-  if (step > 0) {
-    if (start == SLICE_NONE)
-      start = 0;
-    if (end == SLICE_NONE)
-      end = len;
-  } else {
-    if (start == SLICE_NONE)
-      start = len - 1;
-    if (end == SLICE_NONE)
-      end = -(len + 1);
-  }
+  ssize_t len = (ssize_t)gstring_len(self);
+  if (len == 0 || step == 0)
+    return g_string_new("");
 
-  // Handle negative indices
-  if (start < 0)
-    start += len;
-  if (end < 0)
-    end += len;
+  normalize_slice(len, &start, &end, &step);
 
-  // Build array of character positions
-  const char *str_end = self->str + self->len;
-  const char **positions = g_malloc((len + 1) * sizeof(char *));
-  const char *p = self->str;
-  size_t pos_idx = 0;
+  if ((step > 0 && start >= end) || (step < 0 && start <= end))
+    return g_string_new("");
 
-  while (p < str_end) {
-    positions[pos_idx++] = p;
-    p = g_utf8_next_char(p);
-  }
-  positions[pos_idx] = str_end;
-
+  const char **positions = build_char_positions(self, len);
   GString *result = g_string_new("");
 
-  // Iterate based on step direction
-  if (step > 0) {
-    for (ssize_t i = start; i < end; i += step) {
-      if (i >= 0 && i < len) {
-        const char *char_start = positions[i];
-        const char *char_end = positions[i + 1];
-        g_string_append_len(result, char_start, char_end - char_start);
-      }
-    }
-  } else {
-    for (ssize_t i = start; i > end; i += step) {
-      if (i >= 0 && i < len) {
-        const char *char_start = positions[i];
-        const char *char_end = positions[i + 1];
-        g_string_append_len(result, char_start, char_end - char_start);
-      }
+  for (ssize_t i = start; step > 0 ? i < end : i > end; i += step) {
+    if (i >= 0 && i < len) {
+      g_string_append_len(result, positions[i],
+                          positions[i + 1] - positions[i]);
     }
   }
 
@@ -92,6 +72,9 @@ GString *str__getslice__(GString *self, ssize_t start, ssize_t end,
 }
 
 GString *str__add__(GString *self, GString *other) {
+  if (!self || !other)
+    return g_string_new("");
+
   GString *result = g_string_sized_new(self->len + other->len);
   g_string_append_len(result, self->str, self->len);
   g_string_append_len(result, other->str, other->len);
@@ -99,27 +82,49 @@ GString *str__add__(GString *self, GString *other) {
 }
 
 GString *str__mul__(GString *self, ssize_t n) {
-  if (n <= 0)
+  if (!self || n <= 0)
     return g_string_new("");
-  GString *result = g_string_sized_new(self->len * n);
+
+  /* Guard overflow */
+  unsigned long long total =
+      (unsigned long long)self->len * (unsigned long long)n;
+  size_t capacity = (total > G_MAXUINT) ? G_MAXUINT : (size_t)total;
+
+  GString *result = g_string_sized_new(capacity);
   for (ssize_t i = 0; i < n; i++)
     g_string_append_len(result, self->str, self->len);
+
   return result;
 }
 
-bool str__lt__(GString *self, GString *other) {
-  return gstring_len(self) < gstring_len(other);
-}
-bool str__le__(GString *self, GString *other) {
-  return gstring_len(self) <= gstring_len(other);
-}
-bool str__gt__(GString *self, GString *other) {
-  return gstring_len(self) > gstring_len(other);
-}
-bool str__ge__(GString *self, GString *other) {
-  return gstring_len(self) >= gstring_len(other);
+bool str__eq__(const GString *a, const GString *b) {
+  if (a == b)
+    return true;
+  if (!a || !b)
+    return false;
+  return g_string_equal(a, b);
 }
 
-bool str__eq__(const GString *a, const GString *b) {
-  return a == b || (a && b && g_str_equal(a->str, b->str));
+bool str__lt__(GString *self, GString *other) {
+  if (!self || !other)
+    return false;
+  return strcmp(self->str, other->str) < 0;
+}
+
+bool str__le__(GString *self, GString *other) {
+  if (!self || !other)
+    return false;
+  return strcmp(self->str, other->str) <= 0;
+}
+
+bool str__gt__(GString *self, GString *other) {
+  if (!self || !other)
+    return false;
+  return strcmp(self->str, other->str) > 0;
+}
+
+bool str__ge__(GString *self, GString *other) {
+  if (!self || !other)
+    return false;
+  return strcmp(self->str, other->str) >= 0;
 }

@@ -17,6 +17,7 @@ from nodes.ast import (
     If,
     Index,
     Integer,
+    List,
     Slice,
     String,
     UnaryOp,
@@ -24,7 +25,7 @@ from nodes.ast import (
 )
 from nodes.core import Identifier
 from typechecker.linking import Link
-from typechecker.types import BoolType, NumberType, StrType, T
+from typechecker.types import BoolType, ListType, NumberType, StrType, T
 from utils import camel2snake_pattern
 
 from . import gcc as gnucc
@@ -44,7 +45,14 @@ class Compiler:
         self.errors = Exceptions(module=module)
         self.env = namespaces
 
-        self.include = set({"unidad/runtime", "unidad/constants"})
+        self.include = set(
+            {
+                "unidad/runtime",
+                "unidad/constants",
+                "unidad/utils/utils",
+                "unidad/wrappers",
+            }
+        )
         self._defined_addrs = set()
 
     def bin_op_(self, node: BinOp, link: int) -> str:
@@ -172,18 +180,20 @@ class Compiler:
 
         out = tstr("$func($this, $index)")
 
-        out["func"] = f"{self._link2type(link)}__getitem__"
+        out["func"] = f"{self._link2type(node.iterable)}__getitem__"
         out["this"] = self.compile(node.iterable)
         out["index"] = self.compile(node.index)
 
-        self.include.add(f"unidad/types/{self._link2type(link)}")
+        self.include.add(f"unidad/types/{self._link2type(node.iterable)}")
 
         return str(out)
 
     def number_(self, node: Integer | Float) -> str:
         self.include.add("unidad/types/number")
         value = node.value
-        if not node.exponent:
+        if "." not in str(value):
+            return f"G_GINT64_CONSTANT({value})"
+        elif not node.exponent:
             return str(value)
         else:
             return f"{value}E{node.exponent}"
@@ -209,6 +219,16 @@ class Compiler:
         self.include.add("unidad/types/str")
         return f"g_string_new({node.value})"
 
+    def list_(self, node: List, link: int) -> str:
+        self.include.add("unidad/types/list")
+        out = tstr("list_of($items)")
+
+        out["items"] = ", ".join(
+            [f"BOX({self.compile(item)})" for item in node.items] + ["NULL"]
+        )
+
+        return str(out)
+
     def variable_(self, node: Variable, link: int) -> str:
         out = tstr("$type $name = $value")
         addr = node.meta["address"]
@@ -222,7 +242,8 @@ class Compiler:
             out.strip()
         else:
             self._defined_addrs.add(addr)
-            if out["type"] == "GString":
+            # Pointer types (GString, GArray) should be declared as pointers
+            if out["type"] in ("GString", "GArray"):
                 out["name"] = f"*{out['name']}"
 
         return str(out)
@@ -251,9 +272,11 @@ class Compiler:
     def type_(self, node: T | Any) -> str:
         match node:
             case NumberType():
-                return "long" if node.typ == "Int" else "double"
+                return "gint64" if node.typ == "Int" else "gdouble"
             case StrType():
                 return "GString"
+            case ListType():
+                return "GArray"
             case BoolType():
                 self.include.add("stdbool")
                 return "bool"
