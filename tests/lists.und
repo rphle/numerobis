@@ -312,7 +312,7 @@ lst[0:2.5]
 x = 5
 for i in x do i
 
-# E516
+# ---
 s = "hello"
 for c in s do c
 

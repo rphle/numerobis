@@ -5,6 +5,8 @@
 #include <stdbool.h>
 #include <stddef.h>
 
+size_t str_len(const GString *self);
+
 GString *str__getitem__(GString *self, size_t index);
 GString *str__getslice__(GString *self, ssize_t start, ssize_t end,
                          ssize_t step);

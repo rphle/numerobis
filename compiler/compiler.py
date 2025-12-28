@@ -3,7 +3,6 @@ from typing import Any
 
 import typechecker.declare as declare
 from classes import ModuleMeta
-from compiler.utils import ensuresuffix
 from environment import Namespaces
 from exceptions.exceptions import Exceptions
 from nodes.ast import (
@@ -14,10 +13,12 @@ from nodes.ast import (
     Call,
     Compare,
     Float,
+    ForLoop,
     If,
     Index,
     Integer,
     List,
+    Range,
     Slice,
     String,
     UnaryOp,
@@ -25,12 +26,13 @@ from nodes.ast import (
 )
 from nodes.core import Identifier
 from typechecker.linking import Link
-from typechecker.types import BoolType, ListType, NumberType, StrType, T
+from typechecker.types import BoolType, ListType, NumberType, RangeType, StrType, T
 from utils import camel2snake_pattern
 
 from . import gcc as gnucc
 from .constants import SLICE_NONE
 from .tstr import tstr
+from .utils import _getitem_, ensuresuffix, star
 
 
 class Compiler:
@@ -55,7 +57,7 @@ class Compiler:
         )
         self._defined_addrs = set()
 
-    def bin_op_(self, node: BinOp, link: int) -> str:
+    def bin_op_(self, node: BinOp, link: int) -> tstr:
         operands = [self.compile(node.left), self.compile(node.right)]
         if "function" not in node.meta:
             # two numbers
@@ -65,10 +67,10 @@ class Compiler:
             match node.op.name:
                 case "pow":
                     self.include.add("math")
-                    return f"pow({out['left']}, {out['right']})"
+                    return tstr(f"pow({out['left']}, {out['right']})")
                 case "mod":
                     self.include.add("math")
-                    return f"fmod({out['left']}, {out['right']})"
+                    return tstr(f"fmod({out['left']}, {out['right']})")
                 case _:
                     out["op"] = {
                         "add": "+",
@@ -84,22 +86,22 @@ class Compiler:
             out["left"], out["right"] = operands if not reverse else operands[::-1]
             out["func"] = node.meta["function"][1]
 
-        return str(out)
+        return out
 
-    def block_(self, node: Block, link: int) -> str:
+    def block_(self, node: Block, link: int) -> tstr:
         out = []
 
         for stmt in node.body:
-            out.append(self.compile(stmt) + ";")
+            out.append(str(self.compile(stmt)) + ";")
 
-        return "\n".join(out)
+        return tstr("\n".join(out))
 
-    def boolean_(self, node: Boolean, link: int) -> str:
+    def boolean_(self, node: Boolean, link: int) -> tstr:
         self.include.add("stdbool")
         self.include.add("unidad/types/bool")
-        return ["false", "true"][node.value]
+        return tstr(["false", "true"][node.value])
 
-    def bool_op_(self, node: BoolOp, link: int) -> str:
+    def bool_op_(self, node: BoolOp, link: int) -> tstr:
         out = tstr("$lfunc($left) $op $rfunc($right)")
         self.include.add("unidad/types/bool")
 
@@ -110,20 +112,20 @@ class Compiler:
         out["lfunc"] = f"{self._link2type(node.left)}__bool__"
         out["rfunc"] = f"{self._link2type(node.right)}__bool__"
 
-        return str(out)
+        return out
 
-    def call_(self, node: Call, link: int) -> str:
+    def call_(self, node: Call, link: int) -> tstr:
         out = tstr("$callee($args)")
 
         out["callee"] = self.compile(node.callee)
         out["args"] = ", ".join(
-            self.compile(self.unlink(arg).value)  # type: ignore
+            str(self.compile(self.unlink(arg).value))  # type: ignore
             for arg in node.args
         )
 
-        return str(out)
+        return out
 
-    def compare_(self, node: Compare, link: int) -> str:
+    def compare_(self, node: Compare, link: int) -> tstr:
         comparators = [node.left, *node.comparators]
         values = [self.compile(c) for c in comparators]
 
@@ -134,7 +136,7 @@ class Compiler:
                 opname in ["eq", "ne"]
                 and node.meta["functions"][i][2][0] != node.meta["functions"][i][2][1]
             ):
-                return "false" if opname == "eq" else "true"
+                return tstr("false" if opname == "eq" else "true")
 
             out = tstr("$func($left, $right)")
             reverse = node.meta["functions"][i][0] == "right"
@@ -149,14 +151,104 @@ class Compiler:
 
             comparisons.append(str(out))
 
-        return "(" + " && ".join(comparisons) + ")"
+        return tstr("(" + " && ".join(comparisons) + ")")
 
-    def identifier_(self, node: Identifier, link: int) -> str:
+    def for_loop_(self, node: ForLoop, link: int) -> tstr:
+        if self._link2type(node.iterable) == "range":
+            return self.for_loop_range_(node, link)
+
+        if "value" not in node.meta:
+            return tstr("// empty loop")
+
+        loop = tstr("""for (size_t $iterator = 0; $iterator < $iterable_type_len($iterable); $iterator++) {
+            $iterator_defs
+            $body
+        }""")
+
+        body = self.compile(node.body)
+        loop["body"] = (
+            str(body).lstrip("{").rstrip("}")
+            if isinstance(node.body, Block)
+            else ensuresuffix(str(body), ";")
+        )
+
+        iterable_type = self._link2type(node.iterable)
+        iterator_type = str(self.type_(node.meta["value"]))
+        iterator_name = f"__iterator_{abs(link)}"
+        iterable_name = f"__iterable_{abs(link)}"
+        loop["iterator"], loop["iterable"] = iterator_name, iterable_name
+        loop["iterable_type"] = iterable_type
+
+        iterators = [self.unlink(iterator) for iterator in node.iterators]
+
+        if len(node.iterators) == 1:
+            iterator = iterators[0]
+            loop["iterator_defs"] = (
+                f"{iterator_type} {star(iterator_type)}{iterator.name} = "  # type: ignore
+                + _getitem_("$iterator", "$iterable", iterator_type, iterable_type)
+                + ";"
+            )
+        else:
+            # if there are >1 iterators, it is guaranteed that the iterable is a list of lists
+            iterrow_name = f"__iterrow_{abs(link)}"
+            iterator_defs = (
+                f"GArray *{iterrow_name} = UNBOX(GArray *, list__getitem__($iterable, $iterator));"
+                + "\n".join(
+                    f"{iterator_type} {star(iterator_type)}{iterator.name} = "  # type: ignore
+                    + _getitem_(str(i), iterrow_name, iterator_type, iterable_type)
+                    + ";"
+                    for i, iterator in enumerate(iterators)
+                )
+            )
+            loop["iterator_defs"] = iterator_defs
+
+        iterable = self.compile(node.iterable)
+        if "reference" not in iterable.meta:
+            out = tstr("{\n$iterable_def;\n$loop}")
+            out["iterable_def"] = (
+                f"{self.type_(loop['iterable_type'])} {star(str(loop['iterable_type']))}{iterable_name} = {iterable}"
+            )
+            out["loop"] = loop
+            return out
+        else:
+            loop["iterable"] = iterable
+
+        return loop
+
+    def for_loop_range_(self, node: ForLoop, link: int) -> tstr:
+        loop = tstr("""for (gint64 $i = $range.start;
+                           ($range.step > 0) ? ($i < $range.stop) : ($i > $range.stop);
+                           $i += $range.step)
+                       {$body}""")
+
+        body = self.compile(node.body)
+        loop["body"] = (
+            str(body).lstrip("{").rstrip("}")
+            if isinstance(node.body, Block)
+            else ensuresuffix(str(body), ";")
+        )
+        loop["i"] = self.compile(node.iterators[0])
+
+        range_ = self.compile(node.iterable)
+
+        if "reference" not in range_.meta:
+            out = tstr("{\n$range_def;\n$loop}")
+            name = f"__range_{abs(link)}"
+            out["range_def"] = f"Range {name} = {range_}"
+            loop["range"] = name
+            out["loop"] = loop
+            return out
+
+        loop["range"] = range_
+
+        return loop
+
+    def identifier_(self, node: Identifier, link: int) -> tstr:
         if node.name in declare.names:
             self.include.add("unidad/" + node.name)  # e.g. echo or input
-        return node.name
+        return tstr(node.name, meta={"reference": True})
 
-    def if_(self, node: If, link: int) -> str:
+    def if_(self, node: If, link: int) -> tstr:
         if node.expression:
             out = tstr("(($condition) ? ($then) : ($else))")
         else:
@@ -169,36 +261,46 @@ class Compiler:
         out["else"] = self.compile(node.else_branch) if node.else_branch else ""
 
         if not node.expression:
-            out["then"] = ensuresuffix(out["then"], ";")  # type: ignore
-            out["else"] = ensuresuffix(out["else"], ";")  # type: ignore
+            out["then"] = ensuresuffix(str(out["then"]), ";")  # type: ignore
+            out["else"] = ensuresuffix(str(out["else"]), ";")  # type: ignore
 
-        return str(out)
+        return out
 
-    def index_(self, node: Index, link: int) -> str:
+    def index_(self, node: Index, link: int) -> tstr:
         if self._link2type(node.index) == "slice":
             return self.slice_(node, link)
 
-        out = tstr("$func($this, $index)")
-
-        out["func"] = f"{self._link2type(node.iterable)}__getitem__"
-        out["this"] = self.compile(node.iterable)
-        out["index"] = self.compile(node.index)
-
         self.include.add(f"unidad/types/{self._link2type(node.iterable)}")
 
-        return str(out)
+        return tstr(
+            _getitem_(
+                index=str(self.compile(node.index)),
+                iterable=str(self.compile(node.iterable)),
+                item_c_type=str(self.type_(self._link2type(link))),
+                iterable_type=self._link2type(node.iterable),
+            )
+        )
 
-    def number_(self, node: Integer | Float) -> str:
+    def number_(self, node: Integer | Float) -> tstr:
         self.include.add("unidad/types/number")
         value = node.value
         if "." not in str(value):
-            return f"G_GINT64_CONSTANT({value})"
+            return tstr(f"G_GINT64_CONSTANT({value})")
         elif not node.exponent:
-            return str(value)
+            return tstr(str(value))
         else:
-            return f"{value}E{node.exponent}"
+            return tstr(f"{value}E{node.exponent}")
 
-    def slice_(self, node: Index, link: int) -> str:
+    def range_(self, node: Range, link: int) -> tstr:
+        self.include.add("unidad/types/range")
+        start, stop, step = (
+            self.compile(node.start),
+            self.compile(node.end),
+            self.compile(node.step) if node.step else "1",
+        )
+        return tstr(f"{{ .start = {start}, .stop = {stop}, .step = {step} }}")
+
+    def slice_(self, node: Index, link: int) -> tstr:
         index = self.unlink(node.index)
         assert isinstance(index, Slice)
         out = tstr("$func($this, $start, $stop, $step)")
@@ -213,13 +315,13 @@ class Compiler:
 
         self.include.add(f"unidad/types/{self._link2type(link)}")
 
-        return str(out)
+        return out
 
-    def string_(self, node: String, link: int) -> str:
+    def string_(self, node: String, link: int) -> tstr:
         self.include.add("unidad/types/str")
-        return f"g_string_new({node.value})"
+        return tstr(f"g_string_new({node.value})")
 
-    def list_(self, node: List, link: int) -> str:
+    def list_(self, node: List, link: int) -> tstr:
         self.include.add("unidad/types/list")
         out = tstr("list_of($items)")
 
@@ -227,14 +329,14 @@ class Compiler:
             [f"BOX({self.compile(item)})" for item in node.items] + ["NULL"]
         )
 
-        return str(out)
+        return out
 
-    def variable_(self, node: Variable, link: int) -> str:
+    def variable_(self, node: Variable, link: int) -> tstr:
         out = tstr("$type $name = $value")
         addr = node.meta["address"]
 
         out["name"] = self.compile(node.name)
-        out["type"] = self.type_(self._node2type(node))
+        out["type"] = str(self.type_(self._node2type(node)))
         out["value"] = self.compile(node.value)
 
         if addr in self._defined_addrs:
@@ -246,9 +348,9 @@ class Compiler:
             if out["type"] in ("GString", "GArray"):
                 out["name"] = f"*{out['name']}"
 
-        return str(out)
+        return out
 
-    def unary_op_(self, node: UnaryOp, link: int) -> str:
+    def unary_op_(self, node: UnaryOp, link: int) -> tstr:
         out = tstr("$op($value)")
         self.include.add("unidad/types/bool")
 
@@ -257,9 +359,9 @@ class Compiler:
         ]
         out["value"] = self.compile(node.operand)
 
-        return str(out)
+        return out
 
-    def variable_declaration_(self, node: Variable, link: int) -> str:
+    def variable_declaration_(self, node: Variable, link: int) -> tstr:
         out = tstr("$type $name")
 
         out["name"] = self.compile(node.name)
@@ -267,19 +369,24 @@ class Compiler:
 
         self._defined_addrs.add(node.meta["address"])
 
-        return str(out)
+        return out
 
-    def type_(self, node: T | Any) -> str:
+    def type_(self, node: T | Any) -> tstr:
         match node:
-            case NumberType():
-                return "gint64" if node.typ == "Int" else "gdouble"
-            case StrType():
-                return "GString"
-            case ListType():
-                return "GArray"
-            case BoolType():
+            case NumberType() | "number":
+                return tstr("gint64" if node.typ == "Int" else "gdouble")
+            case StrType() | "str":
+                return tstr("GString")
+            case ListType() | "list":
+                return tstr("GArray")
+            case BoolType() | "bool":
                 self.include.add("stdbool")
-                return "bool"
+                return tstr("bool")
+            case RangeType() | "range":
+                self.include.add("unidad/types/range")
+                return tstr("Range")
+            case "int" | "float":
+                return tstr("gint64" if node == "int" else "gdouble")
 
         raise ValueError(f"Unknown type {node}")
 
@@ -289,7 +396,7 @@ class Compiler:
             return self.env.nodes[target]
         return link
 
-    def compile(self, link: Link | Any) -> str:
+    def compile(self, link: Link | Any) -> tstr:
         node = self.unlink(link) if isinstance(link, Link) else link
 
         match node:
@@ -311,7 +418,7 @@ class Compiler:
         output = []
 
         for link in self.program:
-            output.append(self.compile(link) + ";")
+            output.append(str(self.compile(link)) + ";")
 
         code = tstr("""$include
 

@@ -21,8 +21,11 @@ void normalize_slice(ssize_t len, ssize_t *start, ssize_t *stop,
   if (e == SLICE_NONE)
     e = (st > 0) ? len : -len - 1;
 
-  s = normalize_index(s, len);
-  e = normalize_index(e, len);
+  // negative indices
+  if (s < 0)
+    s += len;
+  if (e < 0)
+    e += len;
 
   /* Clamp to valid range */
   if (st > 0) {

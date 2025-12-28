@@ -6,7 +6,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-static inline size_t list_len(const GArray *self) {
+size_t list_len(const GArray *self) {
   return self ? self->len : 0;
 }
 

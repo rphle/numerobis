@@ -3,7 +3,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 
-static inline size_t gstring_len(const GString *self) {
+size_t str_len(const GString *self) {
   return self ? g_utf8_strlen(self->str, self->len) : 0;
 }
 
@@ -25,7 +25,7 @@ GString *str__getitem__(GString *self, ssize_t index) {
   if (!self)
     return g_string_new("");
 
-  ssize_t len = (ssize_t)gstring_len(self);
+  ssize_t len = (ssize_t)str_len(self);
   ssize_t nidx = normalize_index(index, len);
 
   if (nidx < 0 || nidx >= len)
@@ -48,7 +48,7 @@ GString *str__getslice__(GString *self, ssize_t start, ssize_t end,
   if (!self)
     return g_string_new("");
 
-  ssize_t len = (ssize_t)gstring_len(self);
+  ssize_t len = (ssize_t)str_len(self);
   if (len == 0 || step == 0)
     return g_string_new("");
 

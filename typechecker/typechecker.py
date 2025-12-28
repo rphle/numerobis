@@ -54,6 +54,7 @@ from .types import (
     Overload,
     RangeType,
     SliceType,
+    StrType,
     T,
     UndefinedType,
     dimcheck,
@@ -401,15 +402,19 @@ class Typechecker:
             loc=node.loc,
         )
 
-    def for_loop_(self, node: ForLoop, env: Env):
+    def for_loop_(self, node: ForLoop, env: Env, link: int):
         iterable = self.check(node.iterable, env=env)
-        if not iterable.name("List", "Range"):
+        if not iterable.name("List", "Range", "Str"):
             self.errors.throw(516, type=iterable, loc=node.iterable.loc)
         if isinstance(iterable, ListType) and iterable.content.name("Never"):
             return NoneType()
 
-        assert isinstance(iterable, (RangeType, ListType))
-        value = iterable.value if isinstance(iterable, RangeType) else iterable.content
+        assert isinstance(iterable, (RangeType, ListType, StrType))
+        value = (
+            iterable.value
+            if isinstance(iterable, RangeType)
+            else (iterable if isinstance(iterable, StrType) else iterable.content)
+        )
 
         if len(node.iterators) > 1:
             if not isinstance(value, ListType):
@@ -425,6 +430,9 @@ class Typechecker:
         for iterator in node.iterators:
             new_env.set("names")(self.unlink(iterator, attrs=["name"]).name, value)
         self.check(node.body, env=new_env)
+
+        self.namespaces.nodes[link].meta["value"] = value
+
         return NoneType()
 
     def function_(self, node: Function, env: Env, link: int):
@@ -800,7 +808,7 @@ class Typechecker:
                 name = type(node).__name__.removesuffix("ing").removesuffix("ean")
 
                 ret = AnyType(name)
-            case Variable() | BinOp() | Compare() | Function():
+            case Variable() | BinOp() | Compare() | Function() | ForLoop():
                 name = camel2snake_pattern.sub("_", type(node).__name__).lower() + "_"
                 ret = getattr(self, name)(node, env=env, link=link.target)
             case DimensionDefinition() | UnitDefinition() | FromImport() | Import():

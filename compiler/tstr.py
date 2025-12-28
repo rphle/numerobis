@@ -1,11 +1,18 @@
 import re
-from typing import Optional
+from typing import Any, Optional
 
 
 class tstr:
-    def __init__(self, value: str, *, content: Optional[dict[str, str]] = None):
+    def __init__(
+        self,
+        value: str,
+        *,
+        content: dict[str, "str|tstr"] = {},
+        meta: dict[str, Any] = {},
+    ):
         self.value: str = value
-        self.content: dict[str, str] = dict(content) if content else {}
+        self.content: dict[str, "str|tstr"] = dict(content)
+        self.meta: dict[str, Any] = dict(meta)
 
     def remove(self, *keys: str):
         if not keys:
@@ -21,16 +28,16 @@ class tstr:
     def strip(self):
         self.value = self.value.strip()
 
-    def __setitem__(self, key: str, value: str):
+    def __setitem__(self, key: str, value: "str|tstr"):
         self.content[key] = value
 
-    def __getitem__(self, key: str) -> Optional[str]:
+    def __getitem__(self, key: str) -> Optional["str|tstr"]:
         return self.content.get(key)
 
     def __str__(self) -> str:
         filled = self.value
-        for key, value in self.content.items():
-            filled = filled.replace(f"${key}", value)
+        for key in sorted(self.content, key=len, reverse=True):
+            filled = filled.replace(f"${key}", str(self.content[key]))
         return filled
 
     def __repr__(self) -> str:

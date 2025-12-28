@@ -23,4 +23,31 @@ echo(a)
 
 # ---
 lst: List[Int] = [1, 2, 3, 4, 5]
-echo(lst[-1])
+echo(lst[2:-1])
+
+# ---
+for a, b in [["hello", "world"], ["good", "morning"], ["see", "you"]] do
+    echo(a + " " + b + "!")
+
+# ---
+s = "hello"
+for c in s do echo(c)
+
+# ---
+sum = 0
+for m in [1, 2, 3] do {
+    sum = sum + m
+}
+echo(sum)
+
+# ---
+nested = [[1,2,3], [4,5], [6]]
+echo(nested[0][1])
+echo(nested[1][0:2])
+
+# ---
+r = 1..4
+for i in r do echo(i)
+for i in 1..4 do echo(i)
+for x in [] do echo(x)
+for x in [42] do echo(x)

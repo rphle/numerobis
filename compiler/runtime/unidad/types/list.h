@@ -7,6 +7,8 @@
 
 GArray *list_of(gpointer first, ...) ;
 
+size_t list_len(const GArray *self);
+
 gpointer list__getitem__(GArray *self, ssize_t index);
 GArray *list__getslice__(GArray *self, ssize_t start, ssize_t end,
                          ssize_t step);
