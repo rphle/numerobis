@@ -281,6 +281,16 @@ class Compiler:
             )
         )
 
+    def list_(self, node: List, link: int) -> tstr:
+        self.include.add("unidad/types/list")
+        out = tstr("list_of($items)")
+
+        out["items"] = ", ".join(
+            [f"BOX({self.compile(item)})" for item in node.items] + ["NULL"]
+        )
+
+        return out
+
     def number_(self, node: Integer | Float) -> tstr:
         self.include.add("unidad/types/number")
         value = node.value
@@ -321,13 +331,33 @@ class Compiler:
         self.include.add("unidad/types/str")
         return tstr(f"g_string_new({node.value})")
 
-    def list_(self, node: List, link: int) -> tstr:
-        self.include.add("unidad/types/list")
-        out = tstr("list_of($items)")
+    def type_(self, node: T | Any) -> tstr:
+        match node:
+            case NumberType() | "number":
+                return tstr("gint64" if node.typ == "Int" else "gdouble")
+            case StrType() | "str":
+                return tstr("GString")
+            case ListType() | "list":
+                return tstr("GArray")
+            case BoolType() | "bool":
+                self.include.add("stdbool")
+                return tstr("bool")
+            case RangeType() | "range":
+                self.include.add("unidad/types/range")
+                return tstr("Range")
+            case "int" | "float":
+                return tstr("gint64" if node == "int" else "gdouble")
 
-        out["items"] = ", ".join(
-            [f"BOX({self.compile(item)})" for item in node.items] + ["NULL"]
-        )
+        raise ValueError(f"Unknown type {node}")
+
+    def unary_op_(self, node: UnaryOp, link: int) -> tstr:
+        out = tstr("$op($value)")
+        self.include.add("unidad/types/bool")
+
+        out["op"] = {"not": f"!{self._link2type(node.operand)}__bool__", "sub": "-"}[
+            node.op.name
+        ]
+        out["value"] = self.compile(node.operand)
 
         return out
 
@@ -350,17 +380,6 @@ class Compiler:
 
         return out
 
-    def unary_op_(self, node: UnaryOp, link: int) -> tstr:
-        out = tstr("$op($value)")
-        self.include.add("unidad/types/bool")
-
-        out["op"] = {"not": f"!{self._link2type(node.operand)}__bool__", "sub": "-"}[
-            node.op.name
-        ]
-        out["value"] = self.compile(node.operand)
-
-        return out
-
     def variable_declaration_(self, node: Variable, link: int) -> tstr:
         out = tstr("$type $name")
 
@@ -370,25 +389,6 @@ class Compiler:
         self._defined_addrs.add(node.meta["address"])
 
         return out
-
-    def type_(self, node: T | Any) -> tstr:
-        match node:
-            case NumberType() | "number":
-                return tstr("gint64" if node.typ == "Int" else "gdouble")
-            case StrType() | "str":
-                return tstr("GString")
-            case ListType() | "list":
-                return tstr("GArray")
-            case BoolType() | "bool":
-                self.include.add("stdbool")
-                return tstr("bool")
-            case RangeType() | "range":
-                self.include.add("unidad/types/range")
-                return tstr("Range")
-            case "int" | "float":
-                return tstr("gint64" if node == "int" else "gdouble")
-
-        raise ValueError(f"Unknown type {node}")
 
     def unlink(self, link: int | Link | Any):
         if isinstance(link, (int, Link)):
