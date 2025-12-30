@@ -5,24 +5,15 @@
 #include <stdbool.h>
 #include <stddef.h>
 
-GArray *list_of(gpointer first, ...) ;
+#include "../values.h"
 
-size_t list_len(const GArray *self);
+Value *list__init__(GArray *x);
 
-gpointer list__getitem__(GArray *self, ssize_t index);
-GArray *list__getslice__(GArray *self, ssize_t start, ssize_t end,
-                         ssize_t step);
+Value *list_of(Value *first, ...);
 
-GArray *list__add__(GArray *self, GArray *other);
-GArray *list__mul__(GArray *self, ssize_t n);
-
-bool list__bool__(GArray *self);
-
-bool list__lt__(GArray *self, GArray *other);
-bool list__le__(GArray *self, GArray *other);
-bool list__gt__(GArray *self, GArray *other);
-bool list__ge__(GArray *self, GArray *other);
-
-bool list__eq__(const GArray *a, const GArray *b);
+Value *list_append(Value *self, Value *val);
+Value *list_extend(Value *self, Value *other);
+Value *list_insert(Value *self, Value *index, Value *val);
+Value *list_pop(Value *self, Value *index);
 
 #endif

@@ -43,7 +43,7 @@ static Value *str__bool__(Value *self) {
   return bool__init__(self->str->len > 0);
 }
 
-Value *str__getitem__(Value *_self, Value *_index) {
+static Value *str__getitem__(Value *_self, Value *_index) {
   GString *self = _self->str;
   g_assert(_index->type == VALUE_NUMBER && _index->number->kind == NUM_INT64);
   gint64 index = _index->number->i64;
@@ -69,7 +69,7 @@ Value *str__getitem__(Value *_self, Value *_index) {
   return str__init__(g_string_new(buf));
 }
 
-Value *str__getslice__(Value *_self, Value *_start, Value *_stop,
+static Value *str__getslice__(Value *_self, Value *_start, Value *_stop,
                        Value *_step) {
   GString *self = _self->str;
   if (!self)
@@ -106,7 +106,7 @@ Value *str__getslice__(Value *_self, Value *_start, Value *_stop,
   return str__init__(result);
 }
 
-Value *str__add__(Value *_self, Value *_other) {
+static Value *str__add__(Value *_self, Value *_other) {
   GString *self = _self->str;
   GString *other = _other->str;
 
@@ -120,7 +120,7 @@ Value *str__add__(Value *_self, Value *_other) {
   return str__init__(result);
 }
 
-Value *str__mul__(Value *_self, Value *_n) {
+static Value *str__mul__(Value *_self, Value *_n) {
   GString *self = _self->str;
   gint64 n = _n->number->i64;
 

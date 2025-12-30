@@ -53,6 +53,7 @@ class Compiler:
                 "unidad/constants",
                 "unidad/utils/utils",
                 "unidad/values",
+                "unidad/types/bool",
             }
         )
         self._defined_addrs = set()
@@ -97,12 +98,10 @@ class Compiler:
 
     def boolean_(self, node: Boolean, link: int) -> tstr:
         self.include.add("stdbool")
-        self.include.add("unidad/types/bool")
         return tstr(f"bool__init__({['false', 'true'][node.value]})")
 
     def bool_op_(self, node: BoolOp, link: int) -> tstr:
         out = tstr("$lfunc($left) $op $rfunc($right)")
-        self.include.add("unidad/types/bool")
 
         out["left"] = self.compile(node.left)
         out["right"] = self.compile(node.right)
@@ -125,8 +124,6 @@ class Compiler:
         return out
 
     def compare_(self, node: Compare, link: int) -> tstr:
-        self.include.add("unidad/types/bool")
-
         comparators = [node.left, *node.comparators]
         values = [self.compile(c) for c in comparators]
 
@@ -283,7 +280,7 @@ class Compiler:
         out = tstr("list_of($items)")
 
         out["items"] = ", ".join(
-            [f"BOX({self.compile(item)})" for item in node.items] + ["NULL"]
+            [str(self.compile(item)) for item in node.items] + ["NULL"]
         )
 
         return out
