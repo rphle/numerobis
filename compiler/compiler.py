@@ -31,7 +31,6 @@ from typechecker.types import BoolType, ListType, NumberType, RangeType, StrType
 from utils import camel2snake_pattern
 
 from . import gcc as gnucc
-from .constants import SLICE_NONE
 from .tstr import tstr
 from .utils import _getitem_, ensuresuffix, star
 
@@ -53,14 +52,14 @@ class Compiler:
                 "unidad/runtime",
                 "unidad/constants",
                 "unidad/utils/utils",
-                "unidad/wrappers",
+                "unidad/values",
             }
         )
         self._defined_addrs = set()
 
     def bin_op_(self, node: BinOp, link: int) -> tstr:
         operands = [self.compile(node.left), self.compile(node.right)]
-        if "function" not in node.meta:
+        if "side" not in node.meta:
             # two numbers
             out = tstr("$left $op $right")
             out["left"], out["right"] = operands
@@ -82,10 +81,9 @@ class Compiler:
                         "intdiv": "//",
                     }[node.op.name]
         else:
-            out = tstr("$func($left, $right)")
-            reverse = node.meta["function"][0] == "right"
-            out["left"], out["right"] = operands if not reverse else operands[::-1]
-            out["func"] = node.meta["function"][1]
+            out = tstr("__$func__($left, $right)")
+            out["left"], out["right"] = operands[:: node.meta["side"]]
+            out["func"] = node.op.name
 
         return out
 
@@ -100,7 +98,7 @@ class Compiler:
     def boolean_(self, node: Boolean, link: int) -> tstr:
         self.include.add("stdbool")
         self.include.add("unidad/types/bool")
-        return tstr(["false", "true"][node.value])
+        return tstr(f"bool__init__({['false', 'true'][node.value]})")
 
     def bool_op_(self, node: BoolOp, link: int) -> tstr:
         out = tstr("$lfunc($left) $op $rfunc($right)")
@@ -137,22 +135,21 @@ class Compiler:
             opname = self.unlink(op).name  # type: ignore
             if (
                 opname in ["eq", "ne"]
-                and node.meta["functions"][i][2][0] != node.meta["functions"][i][2][1]
+                and node.meta["types"][i][0] != node.meta["types"][i][1]
             ):
-                return tstr("false" if opname == "eq" else "true")
+                return tstr("VFALSE" if opname == "eq" else "VTRUE")
 
-            out = tstr("$func($left, $right)")
-            reverse = node.meta["functions"][i][0] == "right"
+            out = tstr("__$op__($left, $right)")
             operands = [values[i], values[i + 1]]
 
-            out["left"], out["right"] = operands if not reverse else operands[::-1]
-            out["func"] = (
-                node.meta["functions"][i][1]
-                if opname != "ne"
-                else f"!{node.meta['functions'][i][1].replace('__ne', '__eq')}"  # auto-delegate !=
-            )
+            out["left"], out["right"] = operands[:: node.meta["side"][i]]
+            out["op"] = opname
 
-            comparisons.append(str(out))
+            if opname == "ne":
+                out["op"] = "eq"
+                comparisons.append("!" + str(out))
+            else:
+                comparisons.append(str(out))
 
         return tstr("(" + " && ".join(comparisons) + ")")
 
@@ -275,14 +272,11 @@ class Compiler:
 
         self.include.add(f"unidad/types/{self._link2type(node.iterable)}")
 
-        return tstr(
-            _getitem_(
-                index=str(self.compile(node.index)),
-                iterable=str(self.compile(node.iterable)),
-                item_c_type=str(self.type_(self._link2type(link))),
-                iterable_type=self._link2type(node.iterable),
-            )
-        )
+        out = tstr("__getitem__($iterable, $index)")
+        out["index"] = str(self.compile(node.index))
+        out["iterable"] = str(self.compile(node.iterable))
+
+        return out
 
     def list_(self, node: List, link: int) -> tstr:
         self.include.add("unidad/types/list")
@@ -296,13 +290,22 @@ class Compiler:
 
     def number_(self, node: Integer | Float) -> tstr:
         self.include.add("unidad/types/number")
+        out = tstr("$type__init__($value)")
+
         value = node.value
-        if "." not in str(value):
-            return tstr(f"G_GINT64_CONSTANT({value})")
+        typ = "float"
+        if "." not in str(value) and "." not in str(node.exponent):
+            out["value"] = (
+                f"G_GINT64_CONSTANT({value}{f'E{node.exponent}' if node.exponent else ''})"
+            )
+            typ = "int"
         elif not node.exponent:
-            return tstr(str(value))
+            out["value"] = str(value)
         else:
-            return tstr(f"{value}E{node.exponent}")
+            out["value"] = f"{value}E{node.exponent}"
+
+        out["type"] = typ
+        return out
 
     def range_(self, node: Range, link: int) -> tstr:
         self.include.add("unidad/types/range")
@@ -316,15 +319,12 @@ class Compiler:
     def slice_(self, node: Index, link: int) -> tstr:
         index = self.unlink(node.index)
         assert isinstance(index, Slice)
-        out = tstr("$func($this, $start, $stop, $step)")
+        out = tstr("__getslice__($this, $start, $stop, $step)")
 
-        out["func"] = f"{self._link2type(link)}__getslice__"
         out["this"] = self.compile(node.iterable)
-        out["start"] = (
-            self.compile(index.start) if index.start is not None else SLICE_NONE
-        )
-        out["stop"] = self.compile(index.stop) if index.stop is not None else SLICE_NONE
-        out["step"] = self.compile(index.step) if index.step is not None else SLICE_NONE
+        out["start"] = self.compile(index.start) if index.start is not None else "NONE"
+        out["stop"] = self.compile(index.stop) if index.stop is not None else "NONE"
+        out["step"] = self.compile(index.step) if index.step is not None else "NONE"
 
         self.include.add(f"unidad/types/{self._link2type(link)}")
 
@@ -332,7 +332,7 @@ class Compiler:
 
     def string_(self, node: String, link: int) -> tstr:
         self.include.add("unidad/types/str")
-        return tstr(f"g_string_new({node.value})")
+        return tstr(f"str__init__(g_string_new({node.value}))")
 
     def type_(self, node: T | Any) -> tstr:
         match node:
@@ -357,29 +357,25 @@ class Compiler:
         out = tstr("$op($value)")
         self.include.add("unidad/types/bool")
 
-        out["op"] = {"not": f"!{self._link2type(node.operand)}__bool__", "sub": "-"}[
-            node.op.name
-        ]
+        out["op"] = {
+            "not": f"!{self._link2type(node.operand)}__bool__",
+            "sub": "__neg__",
+        }[node.op.name]
         out["value"] = self.compile(node.operand)
 
         return out
 
     def variable_(self, node: Variable, link: int) -> tstr:
-        out = tstr("$type $name = $value")
+        out = tstr("*$name = $value")
         addr = node.meta["address"]
 
         out["name"] = self.compile(node.name)
         out["type"] = str(self.type_(self._node2type(node)))
         out["value"] = self.compile(node.value)
 
-        if addr in self._defined_addrs:
-            out.remove("type")
-            out.strip()
-        else:
+        if addr not in self._defined_addrs:
             self._defined_addrs.add(addr)
-            # Pointer types (GString, GArray) should be declared as pointers
-            if out["type"] in ("GString", "GArray"):
-                out["name"] = f"*{out['name']}"
+            out = tstr("Value ") + out
 
         return out
 

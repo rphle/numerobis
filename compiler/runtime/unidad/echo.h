@@ -1,7 +1,7 @@
 #ifndef ECHO_H
 #define ECHO_H
 
-#include "wrappers.h"
+#include "values.h"
 #include <glib.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -51,14 +51,17 @@ static inline void echo_value(gpointer v) {
   case VALUE_NUMBER:
     echo_number(val->number);
     return;
-  case VALUE_STRING:
-    echo_string(val->string);
+  case VALUE_STR:
+    echo_string(val->str);
     return;
   case VALUE_BOOL:
     echo_bool(val->boolean);
     return;
   case VALUE_LIST:
     echo_garray(val->list);
+    return;
+  case VALUE_NONE:
+    g_print("None");
     return;
   }
   echo_ptr(v);

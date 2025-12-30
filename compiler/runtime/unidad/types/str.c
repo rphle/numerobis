@@ -1,10 +1,28 @@
+#include "../constants.h"
 #include "../utils/utils.h"
+#include "../values.h"
+#include "bool.h"
+#include "number.h"
 #include <glib.h>
 #include <stdbool.h>
 #include <stddef.h>
 
-size_t str_len(const GString *self) {
+static const ValueMethods _str_methods;
+
+Value *str__init__(GString *x) {
+  Value *v = g_new(Value, 1);
+  v->type = VALUE_STR;
+  v->str = x;
+  v->methods = &_str_methods;
+  return v;
+}
+
+static inline size_t _str_len(const GString *self) {
   return self ? g_utf8_strlen(self->str, self->len) : 0;
+}
+
+static inline Value *str_len(Value *self) {
+  return int__init__(self ? _str_len(self->str) : 0);
 }
 
 static const char **build_char_positions(const GString *self, size_t len) {
@@ -21,17 +39,23 @@ static const char **build_char_positions(const GString *self, size_t len) {
   return positions;
 }
 
-bool str__bool__(GString *self) { return self->len > 0; };
+static Value *str__bool__(Value *self) {
+  return bool__init__(self->str->len > 0);
+}
 
-GString *str__getitem__(GString *self, ssize_t index) {
+Value *str__getitem__(Value *_self, Value *_index) {
+  GString *self = _self->str;
+  g_assert(_index->type == VALUE_NUMBER && _index->number->kind == NUM_INT64);
+  gint64 index = _index->number->i64;
+
   if (!self)
-    return g_string_new("");
+    return str__init__(g_string_new(""));
 
-  ssize_t len = (ssize_t)str_len(self);
+  ssize_t len = (ssize_t)_str_len(self);
   ssize_t nidx = normalize_index(index, len);
 
   if (nidx < 0 || nidx >= len)
-    return g_string_new("");
+    return str__init__(g_string_new(""));
 
   const char *p = self->str;
   for (ssize_t i = 0; i < nidx; i++)
@@ -42,22 +66,31 @@ GString *str__getitem__(GString *self, ssize_t index) {
   gint utf8_len = g_unichar_to_utf8(ch, buf);
   buf[utf8_len] = '\0';
 
-  return g_string_new(buf);
+  return str__init__(g_string_new(buf));
 }
 
-GString *str__getslice__(GString *self, ssize_t start, ssize_t end,
-                         ssize_t step) {
+Value *str__getslice__(Value *_self, Value *_start, Value *_stop,
+                       Value *_step) {
+  GString *self = _self->str;
   if (!self)
-    return g_string_new("");
+    return str__init__(g_string_new(""));
 
-  ssize_t len = (ssize_t)str_len(self);
+  ssize_t len = (ssize_t)_str_len(self);
+
+  ssize_t start = (_start->type == VALUE_NUMBER) ? (ssize_t)_start->number->i64
+                                                 : SLICE_NONE;
+  ssize_t end =
+      (_stop->type == VALUE_NUMBER) ? (ssize_t)_stop->number->i64 : SLICE_NONE;
+  ssize_t step =
+      (_step->type == VALUE_NUMBER) ? (ssize_t)_step->number->i64 : SLICE_NONE;
+
   if (len == 0 || step == 0)
-    return g_string_new("");
+    return str__init__(g_string_new(""));
 
   normalize_slice(len, &start, &end, &step);
 
   if ((step > 0 && start >= end) || (step < 0 && start <= end))
-    return g_string_new("");
+    return str__init__(g_string_new(""));
 
   const char **positions = build_char_positions(self, len);
   GString *result = g_string_new("");
@@ -70,22 +103,29 @@ GString *str__getslice__(GString *self, ssize_t start, ssize_t end,
   }
 
   g_free(positions);
-  return result;
+  return str__init__(result);
 }
 
-GString *str__add__(GString *self, GString *other) {
+Value *str__add__(Value *_self, Value *_other) {
+  GString *self = _self->str;
+  GString *other = _other->str;
+
   if (!self || !other)
-    return g_string_new("");
+    return str__init__(g_string_new(""));
 
   GString *result = g_string_sized_new(self->len + other->len);
   g_string_append_len(result, self->str, self->len);
   g_string_append_len(result, other->str, other->len);
-  return result;
+
+  return str__init__(result);
 }
 
-GString *str__mul__(GString *self, ssize_t n) {
+Value *str__mul__(Value *_self, Value *_n) {
+  GString *self = _self->str;
+  gint64 n = _n->number->i64;
+
   if (!self || n <= 0)
-    return g_string_new("");
+    return str__init__(g_string_new(""));
 
   /* Guard overflow */
   unsigned long long total =
@@ -96,37 +136,51 @@ GString *str__mul__(GString *self, ssize_t n) {
   for (ssize_t i = 0; i < n; i++)
     g_string_append_len(result, self->str, self->len);
 
-  return result;
+  return str__init__(result);
 }
 
-bool str__eq__(const GString *a, const GString *b) {
+static Value *str__eq__(Value *a, Value *b) {
   if (a == b)
-    return true;
+    return VTRUE;
   if (!a || !b)
-    return false;
-  return g_string_equal(a, b);
+    return VFALSE;
+  return bool__init__(g_string_equal(a->str, b->str));
 }
 
-bool str__lt__(GString *self, GString *other) {
+static Value *str__lt__(Value *self, Value *other) {
   if (!self || !other)
-    return false;
-  return strcmp(self->str, other->str) < 0;
+    return VFALSE;
+  return bool__init__(_str_len(self->str) < _str_len(other->str));
 }
 
-bool str__le__(GString *self, GString *other) {
+static Value *str__le__(Value *self, Value *other) {
   if (!self || !other)
-    return false;
-  return strcmp(self->str, other->str) <= 0;
+    return VFALSE;
+  return bool__init__(_str_len(self->str) <= _str_len(other->str));
 }
 
-bool str__gt__(GString *self, GString *other) {
+static Value *str__gt__(Value *self, Value *other) {
   if (!self || !other)
-    return false;
-  return strcmp(self->str, other->str) > 0;
+    return VFALSE;
+  return bool__init__(_str_len(self->str) > _str_len(other->str));
 }
 
-bool str__ge__(GString *self, GString *other) {
+static Value *str__ge__(Value *self, Value *other) {
   if (!self || !other)
-    return false;
-  return strcmp(self->str, other->str) >= 0;
+    return VFALSE;
+  return bool__init__(_str_len(self->str) >= _str_len(other->str));
 }
+
+static const ValueMethods _str_methods = {
+    .__bool__ = str__bool__,
+    .__lt__ = str__lt__,
+    .__le__ = str__le__,
+    .__gt__ = str__gt__,
+    .__ge__ = str__ge__,
+    .__eq__ = str__eq__,
+    .len = str_len,
+    .__getitem__ = str__getitem__,
+    .__getslice__ = str__getslice__,
+    .__add__ = str__add__,
+    .__mul__ = str__mul__,
+};

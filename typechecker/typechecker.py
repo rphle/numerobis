@@ -99,10 +99,8 @@ class Typechecker:
                         field, *([left, right] if i < 2 else [right, left])
                     ):
                         definition = checked
-                        self.namespaces.nodes[link].meta["function"] = (
-                            "left" if i == 0 else "right",
-                            f"{left.name().lower() if i == 0 else right.name().lower()}{methods[i][1]}",
-                        )
+                        self.namespaces.nodes[link].meta["side"] = 1 if i == 0 else -1
+
                         break
                 except ValueError:
                     pass
@@ -318,7 +316,8 @@ class Typechecker:
     def compare_(self, node: Compare, env: Env, link: int):
         node = self.unlink(node, attrs=["comparators", "ops"])
         comparators = [node.left] + node.comparators
-        self.namespaces.nodes[link].meta["functions"] = []
+        self.namespaces.nodes[link].meta["side"] = []
+        self.namespaces.nodes[link].meta["types"] = []
         for i in range(len(comparators) - 1):
             op, sides = node.ops[i], (comparators[i], comparators[i + 1])
 
@@ -340,12 +339,11 @@ class Typechecker:
                 [typetable[operand.name()][method] for operand, method in methods]
             ):
                 if _check_field(field):
-                    self.namespaces.nodes[link].meta["functions"].append(
-                        (
-                            "left" if i == 0 else "right",
-                            f"{left.name().lower() if i == 0 else right.name().lower()}{methods[i][1]}",
-                            (left.name().lower(), right.name().lower()),
-                        )
+                    self.namespaces.nodes[link].meta["side"].append(
+                        1 if i == 0 else -1,
+                    )
+                    self.namespaces.nodes[link].meta["types"].append(
+                        (left.name().lower(), right.name().lower())
                     )
                     break
             else:

@@ -1,11 +1,17 @@
 #ifndef UNIDAD_BOOL_H
 #define UNIDAD_BOOL_H
 
+#include "../values.h"
 #include <glib.h>
 #include <stdbool.h>
 
-bool bool__bool__(bool self);
+#define VTRUE bool__init__(true)
+#define VFALSE bool__init__(false)
 
-bool bool__eq__(bool self, bool other);
+Value *bool__init__(bool x);
+
+Value *bool__bool__(bool self);
+
+Value *bool__eq__(bool self, bool other);
 
 #endif

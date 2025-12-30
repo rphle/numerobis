@@ -1,6 +1,8 @@
 # ---
 greeting: Str = "Hello"
 echo(greeting[-2::-1])
+echo(greeting[-2])
+echo((greeting + "! ") * 3)
 
 # ---
 not (true and false)
@@ -18,7 +20,7 @@ echo([true, false])
 echo(["world"])
 
 # ---
-a = [[1], [2, 3], [4, 5, 6]]
+a = [[1], [2, 3]] + [[4, 5, 6]*2]
 echo(a)
 
 # ---
@@ -51,3 +53,10 @@ for i in r do echo(i)
 for i in 1..4 do echo(i)
 for x in [] do echo(x)
 for x in [42] do echo(x)
+
+# ---
+s = "hello"
+while s do {
+    echo(s)
+    s = s[1:]
+}
