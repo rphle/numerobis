@@ -23,6 +23,7 @@ from nodes.ast import (
     String,
     UnaryOp,
     Variable,
+    WhileLoop,
 )
 from nodes.core import Identifier
 from typechecker.linking import Link
@@ -126,6 +127,8 @@ class Compiler:
         return out
 
     def compare_(self, node: Compare, link: int) -> tstr:
+        self.include.add("unidad/types/bool")
+
         comparators = [node.left, *node.comparators]
         values = [self.compile(c) for c in comparators]
 
@@ -387,6 +390,20 @@ class Compiler:
         out["type"] = self.type_(self._node2type(node))
 
         self._defined_addrs.add(node.meta["address"])
+
+        return out
+
+    def while_loop_(self, node: WhileLoop, link: int) -> tstr:
+        out = tstr("while ($condition_type__bool__($condition)) { $body }")
+
+        out["condition_type"] = str(self._link2type(node.condition))
+        out["condition"] = self.compile(node.condition)
+        body = self.compile(node.body)
+        out["body"] = (
+            str(body).lstrip("{").rstrip("}")
+            if isinstance(node.body, Block)
+            else ensuresuffix(str(body), ";")
+        )
 
         return out
 

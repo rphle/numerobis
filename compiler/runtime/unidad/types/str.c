@@ -21,6 +21,8 @@ static const char **build_char_positions(const GString *self, size_t len) {
   return positions;
 }
 
+bool str__bool__(GString *self) { return self->len > 0; };
+
 GString *str__getitem__(GString *self, ssize_t index) {
   if (!self)
     return g_string_new("");

@@ -7,6 +7,8 @@
 
 size_t str_len(const GString *self);
 
+bool str__bool__(GString *self);
+
 GString *str__getitem__(GString *self, size_t index);
 GString *str__getslice__(GString *self, ssize_t start, ssize_t end,
                          ssize_t step);

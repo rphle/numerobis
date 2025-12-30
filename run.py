@@ -99,7 +99,7 @@ with tqdm(total=sum(len(file[1]) for _, file in tests.items()), leave=False) as 
                 errors += 1
 
             pbar.update(1)
-            pbar.set_postfix(errors=errors)
+            pbar.set_postfix(errors=errors, line=test.line)
 
 
 cumulative = 0
@@ -158,4 +158,4 @@ console.print(
     f"[dim]([bold cyan]{cumulative / t if t > 0 else 0:.3f}s[/bold cyan] average)[/dim]"
 )
 
-# python3 run.py arithmetic calculations comparisons compile conditionals logic strings lists test --verbose
+# python3 run.py arithmetic calculations comparisons compile conditionals logic strings lists loops test --verbose

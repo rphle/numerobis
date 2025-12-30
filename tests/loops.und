@@ -119,10 +119,16 @@ for i in 0..10..1 do i
 sum = 0
 for n in 0..100..5 do {
     sum = sum + n
+    echo(n)
 }
+echo(sum)
 
 # ---
-while true do 5
+i = 0
+while i < 5 do {
+    i = i + 1
+}
+echo(i)
 
 # ---
 while false do 10
@@ -143,13 +149,6 @@ while x > 0 do {
 flag = true
 while flag do {
     flag = false
-}
-
-# ---
-while true do {
-    while true do {
-        5
-    }
 }
 
 # ---
@@ -230,13 +229,11 @@ for n in 1.2..20.8 do n
 r: Range = 0.5..10.5
 
 # ---
-while 5 do 10
-
-# ---
-while "hello" do 5
-
-# ---
-while 5 kilogram do 1
+s = "hello"
+while s do {
+    echo(s)
+    s = s[1:]
+}
 
 # ---
 x = 10
