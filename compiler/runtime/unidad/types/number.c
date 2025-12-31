@@ -13,6 +13,7 @@ static inline Value *_create_value(Number *n) {
   v->type = VALUE_NUMBER;
   v->number = n;
   v->methods = &_number_methods;
+  return v;
 }
 
 Value *int__init__(gint64 x) {
@@ -52,11 +53,7 @@ Value *number__neg__(Value *self) {
     n->f64 = -(self->number->f64);
   }
 
-  Value *v = g_new(Value, 1);
-  v->type = VALUE_NUMBER;
-  v->number = n;
-  v->methods = self->methods;
-  return v;
+  return _create_value(n);
 }
 
 // Comparisons

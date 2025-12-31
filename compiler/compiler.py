@@ -32,7 +32,7 @@ from utils import camel2snake_pattern
 
 from . import gcc as gnucc
 from .tstr import tstr
-from .utils import ensuresuffix
+from .utils import ensuresuffix, mthd
 
 
 class Compiler:
@@ -137,7 +137,7 @@ class Compiler:
         if "value" not in node.meta:
             return tstr("// empty loop")
 
-        loop = tstr("""for (size_t $iterator = 0; $iterator < len($iterable)->number->i64; $iterator++) {
+        loop = tstr("""for (size_t $iterator = 0; $iterator < $iterable->methods->len($iterable)->number->i64; $iterator++) {
             $iterator_defs
             $body
         }""")
@@ -161,15 +161,17 @@ class Compiler:
             iterator = iterators[0]
             loop["iterator_defs"] = (
                 f"Value *{iterator.name} = "  # type: ignore
-                + "__getitem__($iterable, int__init__($iterator));"
+                + mthd("__getitem__", "$iterable", "int__init__($iterator)")
+                + ";"
             )
         else:
             # if there are >1 iterators, it is guaranteed that the iterable is a list of lists
             iterrow_name = f"__iterrow_{abs(link)}"
-            iterator_defs = f"Value *{iterrow_name} = __getitem__($iterable, int__init__($iterator));"
+            iterator_defs = f"Value *{iterrow_name} = {mthd('__getitem__', '$iterable', 'int__init__($iterator)')};"
             iterator_defs += "\n".join(
                 f"Value *{iterator.name} = "  # type: ignore
-                + f"__getitem__({iterrow_name}, int__init__({i}));"
+                + mthd("__getitem__", iterrow_name, f"int__init__({i})")
+                + ";"
                 for i, iterator in enumerate(iterators)
             )
             loop["iterator_defs"] = iterator_defs
@@ -213,8 +215,30 @@ class Compiler:
             f"$iv->number->{ {'Int': 'i64', 'Float': 'f64'}[node.meta['value'].name()] } = $i;"
         )
 
-        loop["range_def"] = self.compile(node.iterable)
-        loop["range"] = f"__range_{abs(link)}"
+        r = self.unlink(node.iterable)
+        if not isinstance(r, Range):
+            loop["range_def"] = self.compile(node.iterable)
+            loop["range"] = f"__range_{abs(link)}"
+            return loop
+
+        # inline range
+        assert isinstance(r, Range)
+        loop = tstr(
+            """{
+            Value *$iv = $vtype__init__($start);
+            for ($type $i = $start;
+                (($step > 0) ? ($i < $stop) : ($i > $stop));
+                $i += $step)
+            {
+                $update
+                $body
+            }}""",
+            content=loop.content,
+        )
+
+        for key, value in [("start", r.start), ("stop", r.end), ("step", r.step)]:
+            value = self.unlink(value)
+            loop[key] = self.number_(value, init=False) if value else 1  # type: ignore
 
         return loop
 
@@ -263,9 +287,9 @@ class Compiler:
 
         return out
 
-    def number_(self, node: Integer | Float) -> tstr:
+    def number_(self, node: Integer | Float, *, init: bool = True) -> tstr:
         self.include.add("unidad/types/number")
-        out = tstr("$type__init__($value)")
+        out = tstr("$type__init__($value)") if init else tstr("$value")
 
         value = node.value
         typ = "float"
