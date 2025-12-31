@@ -1,3 +1,4 @@
+import dataclasses
 import subprocess
 from typing import Any
 
@@ -77,17 +78,16 @@ class Compiler:
 
     def boolean_(self, node: Boolean, link: int) -> tstr:
         self.include.add("stdbool")
-        return tstr(f"bool__init__({['false', 'true'][node.value]})")
+        return tstr(["VFALSE", "VTRUE"][node.value])
 
     def bool_op_(self, node: BoolOp, link: int) -> tstr:
-        out = tstr("$lfunc($left) $op $rfunc($right)")
+        out = tstr(
+            "bool__init__((__bool__($left)->boolean) $op (__bool__($right)->boolean))"
+        )
 
         out["left"] = self.compile(node.left)
         out["right"] = self.compile(node.right)
         out["op"] = {"and": "&&", "or": "||", "xor": "^"}[node.op.name]
-
-        out["lfunc"] = f"{self._link2type(node.left)}__bool__"
-        out["rfunc"] = f"{self._link2type(node.right)}__bool__"
 
         return out
 
@@ -123,11 +123,13 @@ class Compiler:
 
             if opname == "ne":
                 out["op"] = "eq"
-                comparisons.append("!" + str(out))
+                comparisons.append(
+                    f"(__bool__({out})->boolean) ? VFALSE : VTRUE"
+                )  # unary !
             else:
-                comparisons.append(str(out))
+                comparisons.append(f"(__bool__({out})->boolean)")
 
-        return tstr("(" + " && ".join(comparisons) + ")")
+        return tstr(f"bool__init__({' && '.join(comparisons)})")
 
     def for_loop_(self, node: ForLoop, link: int) -> tstr:
         self.include.add("unidad/types/number")  # indices
@@ -238,6 +240,11 @@ class Compiler:
 
         for key, value in [("start", r.start), ("stop", r.end), ("step", r.step)]:
             value = self.unlink(value)
+            if value and isinstance(value, UnaryOp):
+                # negative
+                value = self.unlink(value.operand)
+                value = dataclasses.replace(value, value=f"-{value.value}")  # type: ignore
+
             loop[key] = self.number_(value, init=False) if value else 1  # type: ignore
 
         return loop
@@ -279,6 +286,7 @@ class Compiler:
 
     def list_(self, node: List, link: int) -> tstr:
         self.include.add("unidad/types/list")
+        self.include.add("unidad/types/number")  # list.c includes number.h
         out = tstr("list_of($items)")
 
         out["items"] = ", ".join(
@@ -340,6 +348,7 @@ class Compiler:
 
     def string_(self, node: String, link: int) -> tstr:
         self.include.add("unidad/types/str")
+        self.include.add("unidad/types/number")  # str.c includes number.h
         return tstr(f"str__init__(g_string_new({node.value}))")
 
     def type_(self, node: T | Any) -> tstr:
@@ -362,16 +371,16 @@ class Compiler:
         raise ValueError(f"Unknown type {node}")
 
     def unary_op_(self, node: UnaryOp, link: int) -> tstr:
-        out = tstr("$op($value)")
         self.include.add("unidad/types/bool")
 
-        out["op"] = {
-            "not": f"!{self._link2type(node.operand)}__bool__",
-            "sub": "__neg__",
-        }[node.op.name]
-        out["value"] = self.compile(node.operand)
-
-        return out
+        if node.op.name == "sub":
+            return tstr(f"__neg__({self.compile(node.operand)})")
+        elif node.op.name == "not":
+            return tstr(
+                f"(__bool__({self.compile(node.operand)})->boolean) ? VFALSE : VTRUE"
+            )
+        else:
+            raise ValueError(f"Unknown unary operator {node.op.name}")
 
     def variable_(self, node: Variable, link: int) -> tstr:
         out = tstr("$name = $value")
