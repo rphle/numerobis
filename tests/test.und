@@ -51,6 +51,7 @@ echo(nested[1][0:2])
 r = 1..4
 for i in r do echo(i)
 for i in 1..4 do echo(i)
+for i in 1..4..0.5 do echo(i)
 for x in [] do echo(x)
 for x in [42] do echo(x)
 

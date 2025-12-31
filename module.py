@@ -1,5 +1,4 @@
 from functools import lru_cache
-from parser.parser import Parser
 from pathlib import Path
 from typing import Optional
 
@@ -11,6 +10,7 @@ from environment import Namespaces
 from exceptions.exceptions import Exceptions
 from lexer.lexer import lex
 from nodes.ast import Import
+from parser.parser import Parser
 from typechecker.linking import Link
 from typechecker.typechecker import Typechecker
 

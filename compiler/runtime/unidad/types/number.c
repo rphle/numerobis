@@ -3,6 +3,9 @@
 #include <glib.h>
 #include <math.h>
 
+typedef gint64 (*binop_i64)(gint64, gint64);
+typedef gdouble (*binop_f64)(gdouble, gdouble);
+
 static const ValueMethods _number_methods;
 
 static inline Value *_create_value(Number *n) {
@@ -56,6 +59,8 @@ Value *number__neg__(Value *self) {
   return v;
 }
 
+// Comparisons
+
 static int number_cmp(const Number *a, const Number *b) {
   // same type
   if (a->kind == b->kind) {
@@ -79,24 +84,85 @@ static int number_cmp(const Number *a, const Number *b) {
   return 0;
 }
 
-static Value *number__lt__(Value *a, Value *b) {
+static inline Value *number__lt__(Value *a, Value *b) {
   return bool__init__(number_cmp(a->number, b->number) < 0);
 }
-static Value *number__le__(Value *a, Value *b) {
+static inline Value *number__le__(Value *a, Value *b) {
   return bool__init__(number_cmp(a->number, b->number) <= 0);
 }
-static Value *number__gt__(Value *a, Value *b) {
+static inline Value *number__gt__(Value *a, Value *b) {
   return bool__init__(number_cmp(a->number, b->number) > 0);
 }
-static Value *number__ge__(Value *a, Value *b) {
+static inline Value *number__ge__(Value *a, Value *b) {
   return bool__init__(number_cmp(a->number, b->number) >= 0);
 }
-static Value *number__eq__(Value *a, Value *b) {
+static inline Value *number__eq__(Value *a, Value *b) {
   return bool__init__(number_cmp(a->number, b->number) == 0);
+}
+
+// Binary operators
+static inline bool number_is_double(const Number *n) {
+  return n->kind == NUM_DOUBLE;
+}
+
+static inline gdouble number_as_double(const Number *n) {
+  return n->kind == NUM_DOUBLE ? n->f64 : (gdouble)n->i64;
+}
+
+static Value *number_binop(Value *a, Value *b, binop_i64 iop, binop_f64 fop) {
+  Number *na = a->number;
+  Number *nb = b->number;
+
+  if (na->kind == NUM_DOUBLE || nb->kind == NUM_DOUBLE) {
+    gdouble x = (na->kind == NUM_DOUBLE) ? na->f64 : (gdouble)na->i64;
+    gdouble y = (nb->kind == NUM_DOUBLE) ? nb->f64 : (gdouble)nb->i64;
+    return float__init__(fop(x, y));
+  }
+
+  return int__init__(iop(na->i64, nb->i64));
+}
+
+static inline gint64 i_add(gint64 a, gint64 b) { return a + b; }
+static inline gint64 i_sub(gint64 a, gint64 b) { return a - b; }
+static inline gint64 i_mul(gint64 a, gint64 b) { return a * b; }
+static inline gint64 i_div(gint64 a, gint64 b) { return a / b; }
+static inline gint64 i_pow(gint64 a, gint64 b) { return pow(a, b); }
+static inline gint64 i_mod(gint64 a, gint64 b) { return fmod(a, b); }
+
+static inline gdouble f_add(gdouble a, gdouble b) { return a + b; }
+static inline gdouble f_sub(gdouble a, gdouble b) { return a - b; }
+static inline gdouble f_mul(gdouble a, gdouble b) { return a * b; }
+static inline gdouble f_div(gdouble a, gdouble b) { return a / b; }
+static inline gdouble f_pow(gdouble a, gdouble b) { return pow(a, b); }
+static inline gdouble f_mod(gdouble a, gdouble b) { return fmod(a, b); }
+
+static inline Value *number__add__(Value *a, Value *b) {
+  return number_binop(a, b, i_add, f_add);
+}
+static inline Value *number__sub__(Value *a, Value *b) {
+  return number_binop(a, b, i_sub, f_sub);
+}
+static inline Value *number__mul__(Value *a, Value *b) {
+  return number_binop(a, b, i_mul, f_mul);
+}
+static inline Value *number__div__(Value *a, Value *b) {
+  return number_binop(a, b, i_div, f_div);
+}
+static inline Value *number__pow__(Value *a, Value *b) {
+  return number_binop(a, b, i_pow, f_pow);
+}
+static inline Value *number__mod__(Value *a, Value *b) {
+  return number_binop(a, b, i_mod, f_mod);
 }
 
 static const ValueMethods _number_methods = {
     .__bool__ = number__bool__,
+    .__add__ = number__add__,
+    .__sub__ = number__sub__,
+    .__mul__ = number__mul__,
+    .__div__ = number__div__,
+    .__pow__ = number__pow__,
+    .__mod__ = number__mod__,
     .__lt__ = number__lt__,
     .__le__ = number__le__,
     .__gt__ = number__gt__,

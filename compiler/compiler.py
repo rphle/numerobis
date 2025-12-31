@@ -32,7 +32,7 @@ from utils import camel2snake_pattern
 
 from . import gcc as gnucc
 from .tstr import tstr
-from .utils import _getitem_, ensuresuffix, star
+from .utils import ensuresuffix
 
 
 class Compiler:
@@ -60,31 +60,10 @@ class Compiler:
 
     def bin_op_(self, node: BinOp, link: int) -> tstr:
         operands = [self.compile(node.left), self.compile(node.right)]
-        if "side" not in node.meta:
-            # two numbers
-            out = tstr("$left $op $right")
-            out["left"], out["right"] = operands
 
-            match node.op.name:
-                case "pow":
-                    self.include.add("math")
-                    return tstr(f"pow({out['left']}, {out['right']})")
-                case "mod":
-                    self.include.add("math")
-                    return tstr(f"fmod({out['left']}, {out['right']})")
-                case _:
-                    out["op"] = {
-                        "add": "+",
-                        "sub": "-",
-                        "mul": "*",
-                        "div": "/",
-                        "pow": "^",
-                        "intdiv": "//",
-                    }[node.op.name]
-        else:
-            out = tstr("__$func__($left, $right)")
-            out["left"], out["right"] = operands[:: node.meta["side"]]
-            out["func"] = node.op.name
+        out = tstr("__$func__($left, $right)")
+        out["left"], out["right"] = operands[:: node.meta.get("side", 1)]
+        out["func"] = node.op.name
 
         return out
 
@@ -151,13 +130,14 @@ class Compiler:
         return tstr("(" + " && ".join(comparisons) + ")")
 
     def for_loop_(self, node: ForLoop, link: int) -> tstr:
+        self.include.add("unidad/types/number")  # indices
         if self._link2type(node.iterable) == "range":
             return self.for_loop_range_(node, link)
 
         if "value" not in node.meta:
             return tstr("// empty loop")
 
-        loop = tstr("""for (size_t $iterator = 0; $iterator < $iterable_type_len($iterable); $iterator++) {
+        loop = tstr("""for (size_t $iterator = 0; $iterator < len($iterable)->number->i64; $iterator++) {
             $iterator_defs
             $body
         }""")
@@ -170,7 +150,6 @@ class Compiler:
         )
 
         iterable_type = self._link2type(node.iterable)
-        iterator_type = str(self.type_(node.meta["value"]))
         iterator_name = f"__iterator_{abs(link)}"
         iterable_name = f"__iterable_{abs(link)}"
         loop["iterator"], loop["iterable"] = iterator_name, iterable_name
@@ -181,30 +160,24 @@ class Compiler:
         if len(node.iterators) == 1:
             iterator = iterators[0]
             loop["iterator_defs"] = (
-                f"{iterator_type} {star(iterator_type)}{iterator.name} = "  # type: ignore
-                + _getitem_("$iterator", "$iterable", iterator_type, iterable_type)
-                + ";"
+                f"Value *{iterator.name} = "  # type: ignore
+                + "__getitem__($iterable, int__init__($iterator));"
             )
         else:
             # if there are >1 iterators, it is guaranteed that the iterable is a list of lists
             iterrow_name = f"__iterrow_{abs(link)}"
-            iterator_defs = (
-                f"GArray *{iterrow_name} = UNBOX(GArray *, list__getitem__($iterable, $iterator));"
-                + "\n".join(
-                    f"{iterator_type} {star(iterator_type)}{iterator.name} = "  # type: ignore
-                    + _getitem_(str(i), iterrow_name, iterator_type, iterable_type)
-                    + ";"
-                    for i, iterator in enumerate(iterators)
-                )
+            iterator_defs = f"Value *{iterrow_name} = __getitem__($iterable, int__init__($iterator));"
+            iterator_defs += "\n".join(
+                f"Value *{iterator.name} = "  # type: ignore
+                + f"__getitem__({iterrow_name}, int__init__({i}));"
+                for i, iterator in enumerate(iterators)
             )
             loop["iterator_defs"] = iterator_defs
 
         iterable = self.compile(node.iterable)
         if "reference" not in iterable.meta:
             out = tstr("{\n$iterable_def;\n$loop}")
-            out["iterable_def"] = (
-                f"{self.type_(loop['iterable_type'])} {star(str(loop['iterable_type']))}{iterable_name} = {iterable}"
-            )
+            out["iterable_def"] = f"Value *{iterable_name} = {iterable}"
             out["loop"] = loop
             return out
         else:
@@ -213,10 +186,16 @@ class Compiler:
         return loop
 
     def for_loop_range_(self, node: ForLoop, link: int) -> tstr:
-        loop = tstr("""for (gint64 $i = $range.start;
-                           ($range.step > 0) ? ($i < $range.stop) : ($i > $range.stop);
-                           $i += $range.step)
-                       {$body}""")
+        loop = tstr("""{
+            Range *$range = $range_def->range;
+            Value *$iv = $vtype__init__($range->start);
+            for ($type $i = $range->start;
+                (($range->step > 0) ? ($i < $range->stop) : ($i > $range->stop));
+                $i += $range->step)
+            {
+                $update
+                $body
+            }}""")
 
         body = self.compile(node.body)
         loop["body"] = (
@@ -224,19 +203,18 @@ class Compiler:
             if isinstance(node.body, Block)
             else ensuresuffix(str(body), ";")
         )
-        loop["i"] = self.compile(node.iterators[0])
+        loop["i"] = f"__iterator_{abs(link)}"
+        loop["iv"] = self.compile(node.iterators[0])
 
-        range_ = self.compile(node.iterable)
+        loop["vtype"] = node.meta["value"].name().lower()  # 'int' or 'float'
+        loop["type"] = {"Int": "gint64", "Float": "gdouble"}[node.meta["value"].name()]
 
-        if "reference" not in range_.meta:
-            out = tstr("{\n$range_def;\n$loop}")
-            name = f"__range_{abs(link)}"
-            out["range_def"] = f"Range {name} = {range_}"
-            loop["range"] = name
-            out["loop"] = loop
-            return out
+        loop["update"] = (
+            f"$iv->number->{ {'Int': 'i64', 'Float': 'f64'}[node.meta['value'].name()] } = $i;"
+        )
 
-        loop["range"] = range_
+        loop["range_def"] = self.compile(node.iterable)
+        loop["range"] = f"__range_{abs(link)}"
 
         return loop
 
@@ -311,7 +289,16 @@ class Compiler:
             self.compile(node.end),
             self.compile(node.step) if node.step else "1",
         )
-        return tstr(f"{{ .start = {start}, .stop = {stop}, .step = {step} }}")
+        start, stop, step = [
+            str(x)
+            .removeprefix("int__init__(")
+            .removeprefix("float__init__(")
+            .removesuffix(")")
+            for x in [start, stop, step]
+        ]
+        return tstr(
+            f"range__init__((Range){{ .start = {start}, .stop = {stop}, .step = {step} }})"
+        )
 
     def slice_(self, node: Index, link: int) -> tstr:
         index = self.unlink(node.index)
@@ -363,7 +350,7 @@ class Compiler:
         return out
 
     def variable_(self, node: Variable, link: int) -> tstr:
-        out = tstr("*$name = $value")
+        out = tstr("$name = $value")
         addr = node.meta["address"]
 
         out["name"] = self.compile(node.name)
@@ -372,7 +359,7 @@ class Compiler:
 
         if addr not in self._defined_addrs:
             self._defined_addrs.add(addr)
-            out = tstr("Value ") + out
+            out = tstr("Value *") + out
 
         return out
 
@@ -387,7 +374,7 @@ class Compiler:
         return out
 
     def while_loop_(self, node: WhileLoop, link: int) -> tstr:
-        out = tstr("while ($condition_type__bool__($condition)) { $body }")
+        out = tstr("while (__bool__($condition)->boolean) { $body }")
 
         out["condition_type"] = str(self._link2type(node.condition))
         out["condition"] = self.compile(node.condition)

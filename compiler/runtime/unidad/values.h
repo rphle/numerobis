@@ -8,6 +8,7 @@ typedef enum {
   VALUE_BOOL,
   VALUE_STR,
   VALUE_LIST,
+  VALUE_RANGE,
   VALUE_NONE
 } ValueType;
 typedef enum { NUM_INT64, NUM_DOUBLE } NumberKind;
@@ -21,12 +22,17 @@ typedef struct {
 } Number;
 
 struct Value;
+typedef struct Range Range;
 typedef struct Value Value;
 
 typedef struct {
   Value *(*__bool__)(struct Value *self);
   Value *(*__add__)(struct Value *self, struct Value *other);
+  Value *(*__sub__)(struct Value *self, struct Value *other);
   Value *(*__mul__)(struct Value *self, struct Value *other);
+  Value *(*__div__)(struct Value *self, struct Value *other);
+  Value *(*__pow__)(struct Value *self, struct Value *other);
+  Value *(*__mod__)(struct Value *self, struct Value *other);
   Value *(*__lt__)(struct Value *self, struct Value *other);
   Value *(*__le__)(struct Value *self, struct Value *other);
   Value *(*__gt__)(struct Value *self, struct Value *other);
@@ -47,6 +53,7 @@ typedef struct Value {
     bool boolean;
     GString *str;
     GArray *list;
+    Range *range;
     void *none;
   };
 } Value;
@@ -55,8 +62,20 @@ static inline Value *__bool__(Value *a) { return a->methods->__bool__(a); }
 static inline Value *__add__(Value *self, Value *other) {
   return self->methods->__add__(self, other);
 }
+static inline Value *__sub__(Value *self, Value *other) {
+  return self->methods->__sub__(self, other);
+}
 static inline Value *__mul__(Value *self, Value *other) {
   return self->methods->__mul__(self, other);
+}
+static inline Value *__div__(Value *self, Value *other) {
+  return self->methods->__div__(self, other);
+}
+static inline Value *__mod__(Value *self, Value *other) {
+  return self->methods->__mod__(self, other);
+}
+static inline Value *__pow__(Value *self, Value *other) {
+  return self->methods->__pow__(self, other);
 }
 static inline Value *__lt__(Value *a, Value *b) {
   return a->methods->__lt__(a, b);
@@ -81,52 +100,6 @@ static inline Value *__getitem__(Value *self, Value *index) {
 static inline Value *__getslice__(Value *_self, struct Value *_start,
                                   struct Value *_stop, struct Value *_step) {
   return _self->methods->__getslice__(_self, _start, _stop, _step);
-}
-
-static inline Value *box_bool(bool x) {
-  Value *v = g_new(Value, 1);
-  v->type = VALUE_BOOL;
-  v->boolean = x;
-  return v;
-}
-
-static inline Value *box_string(GString *x) {
-  Value *v = g_new(Value, 1);
-  v->type = VALUE_STR;
-  v->str = x;
-  return v;
-}
-
-static inline Value *box_list(GArray *x) {
-  Value *v = g_new(Value, 1);
-  v->type = VALUE_LIST;
-  v->list = x;
-  return v;
-}
-
-static inline gint64 unbox_int64(Value *v) {
-  g_assert(v->type == VALUE_NUMBER && v->number->kind == NUM_INT64);
-  return v->number->i64;
-}
-
-static inline gdouble unbox_double(Value *v) {
-  g_assert(v->type == VALUE_NUMBER && v->number->kind == NUM_DOUBLE);
-  return v->number->f64;
-}
-
-static inline bool unbox_bool(Value *v) {
-  g_assert(v->type == VALUE_BOOL);
-  return v->boolean;
-}
-
-static inline GString *unbox_string(Value *v) {
-  g_assert(v->type == VALUE_STR);
-  return v->str;
-}
-
-static inline GArray *unbox_list(Value *v) {
-  g_assert(v->type == VALUE_LIST);
-  return v->list;
 }
 
 #endif
