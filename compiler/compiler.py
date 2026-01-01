@@ -466,7 +466,6 @@ class Compiler:
     def gcc(self, output_path: str = "output/output"):
         try:
             gnucc.compile(self.code, output=output_path, include=list(self.include))
-            print(gnucc.run(path=output_path).stdout)
         except subprocess.CalledProcessError as e:
             self.errors.throw(901, command=" ".join(map(str, e.cmd)), help=e.stderr)
 

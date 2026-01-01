@@ -1,8 +1,10 @@
+import dataclasses
 import itertools
 import os
 import re
 import sys
 import time
+from collections import defaultdict
 from contextlib import redirect_stdout
 from dataclasses import dataclass
 from io import StringIO
@@ -26,14 +28,19 @@ class Test:
     source: str
     throws: Optional[str] = None
     thrown: Optional[str] = None
-    time: float = -1
+    time: dict[str, float] = dataclasses.field(default_factory=dict)
     output: str = ""
 
     def module(self):
         return Module(path=self.file, source=self.source)
 
 
-times_per_test = {}
+def timeit(func):
+    t0 = time.perf_counter()
+    func()
+    return time.perf_counter() - t0
+
+
 tests_dir = Path("tests")
 files = sorted(os.listdir(tests_dir))
 verbose = "--verbose" in sys.argv
@@ -62,20 +69,24 @@ with tqdm(total=sum(len(file[1]) for _, file in tests.items()), leave=False) as 
         pbar.desc = file
         pbar.refresh()
         header = tests[file][0].module()
-        header.process()
+        header.parse()
+        header.typecheck()
 
         for i, test in enumerate(tests[file][1]):
             mod = test.module()
             mod.namespaces.update(header.namespaces)
 
             output = StringIO()
-            t0 = time.perf_counter()
+            times = {}
             try:
                 with redirect_stdout(output):
                     print(mod.meta.source.strip())
                     print()
-                    mod.process()
-                    mod.compile()
+                    times["Parsing"] = timeit(mod.parse)
+                    times["Typechecking"] = timeit(mod.typecheck)
+                    times["Compilation"] = timeit(mod.compile)
+                    times["GCC"] = timeit(mod.gcc)
+                    times["Execution"] = timeit(mod.run)
 
             except SystemExit:
                 pass
@@ -89,7 +100,7 @@ with tqdm(total=sum(len(file[1]) for _, file in tests.items()), leave=False) as 
                     )
                     raise e
 
-            tests[file][1][i].time = time.perf_counter() - t0
+            tests[file][1][i].time = times
 
             error = re.search(r"\[(E\d{3})\]", output.getvalue())
             test.thrown = error.group(1) if error else None
@@ -102,7 +113,7 @@ with tqdm(total=sum(len(file[1]) for _, file in tests.items()), leave=False) as 
             pbar.set_postfix(errors=errors, line=test.line)
 
 
-cumulative = 0
+cumulative = defaultdict(float)
 ratio = [0, 0]
 for test in itertools.chain.from_iterable(file[1] for _, file in tests.items()):
     if test.throws != test.thrown and test.throws != "///":
@@ -142,7 +153,8 @@ for test in itertools.chain.from_iterable(file[1] for _, file in tests.items()):
             )
         ratio[0] += 1
 
-    cumulative += test.time
+    for key, value in test.time.items():
+        cumulative[key] += value
     ratio[1] += 1
 
 console.print("[bold][SUMMARY][/bold]")
@@ -153,9 +165,16 @@ console.print(
     f"[bold {color}]{p}/{t}[reset] tests passed "
     f"[dim]([bold {color}]{ratio:.2%}[/bold {color}])[/dim]"
 )
+
+total = sum(cumulative.values())
 console.print(
-    f"Total time: [bold cyan]{cumulative:.3f}s[/bold cyan] "
-    f"[dim]([bold cyan]{cumulative / t if t > 0 else 0:.3f}s[/bold cyan] average)[/dim]"
+    f"[bold]Total time[/bold]: [bold cyan]{total:.3f}s[/bold cyan] "
+    f"[dim]([bold cyan]{total / t if t > 0 else 0:.4f}s[/bold cyan] average)[/dim]"
 )
+for key, value in cumulative.items():
+    console.print(
+        f"{key}: [bold cyan]{value:.3f}s[/bold cyan] "
+        f"[dim]([bold cyan]{value / t if t > 0 else 0:.4f}s[/bold cyan] average)[/dim]"
+    )
 
 # python3 run.py arithmetic calculations comparisons compile conditionals logic strings lists loops test --verbose

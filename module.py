@@ -1,3 +1,4 @@
+import subprocess
 from functools import lru_cache
 from pathlib import Path
 from typing import Optional
@@ -5,6 +6,7 @@ from typing import Optional
 import typechecker.declare as declare
 from analysis.dimchecker import Dimchecker
 from classes import Header, ModuleMeta
+from compiler import gcc as gnucc
 from compiler.compiler import Compiler
 from environment import Namespaces
 from exceptions.exceptions import Exceptions
@@ -35,18 +37,14 @@ class Module:
         self.header: Header = Header()
         self.program: list[Link] = []
 
-    def process(self):
-        self.parse()
-        self.resolve_imports()
-        self.dimcheck()
-        self.typecheck()
-
     def parse(self):
         lexed = lex(self.meta.source, module=self.meta)
         parser = Parser(lexed, module=self.meta)
         self.ast = parser.start()
         self.header = parser.header
         del parser
+
+        self.resolve_imports()
 
     def resolve_imports(self):
         if len(self.ast) == 0:
@@ -62,7 +60,8 @@ class Module:
 
         modules = [Module(path) for path in paths]
         for module, node in zip(modules, self.header.imports):
-            module.process()
+            module.parse()
+            module.typecheck()
             if isinstance(node, Import):
                 self.namespaces.write("imports", node.module.name, module.namespaces)
             else:
@@ -119,14 +118,25 @@ class Module:
         self.namespaces = dc.env
 
     def typecheck(self):
+        self.dimcheck()
         ts = Typechecker(self.ast, module=self.meta, namespaces=self.namespaces)
         ts.start()
         self.program = ts.program
 
     def compile(self):
-        compiler = Compiler(self.program, module=self.meta, namespaces=self.namespaces)
-        compiler.start()
-        compiler.gcc()
+        self.compiler = Compiler(
+            self.program, module=self.meta, namespaces=self.namespaces
+        )
+        self.compiler.start()
+
+    def gcc(self):
+        self.compiler.gcc()
+
+    def run(self, path: str = "output/output"):
+        try:
+            print(gnucc.run(path=path).stdout)
+        except subprocess.CalledProcessError as e:
+            self.errors.throw(901, command=" ".join(map(str, e.cmd)), help=e.stderr)
 
 
 class ModuleResolver:
