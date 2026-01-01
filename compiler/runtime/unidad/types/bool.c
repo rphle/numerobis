@@ -12,6 +12,7 @@ Value *bool__init__(bool x) {
 }
 
 Value *bool__bool__(Value *self) { return self; }
+bool bool__cbool__(Value *self) { return self->boolean; }
 
 Value *bool__eq__(Value *self, Value *other) {
   return bool__init__(self->boolean == other->boolean);
@@ -19,5 +20,6 @@ Value *bool__eq__(Value *self, Value *other) {
 
 static const ValueMethods _bool_methods = {
     .__bool__ = bool__bool__,
+    .__cbool__ = bool__cbool__,
     .__eq__ = bool__eq__,
 };

@@ -10,8 +10,4 @@
 
 Value *bool__init__(bool x);
 
-Value *bool__bool__(bool self);
-
-Value *bool__eq__(bool self, bool other);
-
 #endif

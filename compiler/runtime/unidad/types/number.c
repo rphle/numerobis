@@ -2,6 +2,7 @@
 #include "bool.h"
 #include <glib.h>
 #include <math.h>
+#include <stdbool.h>
 
 typedef gint64 (*binop_i64)(gint64, gint64);
 typedef gdouble (*binop_f64)(gdouble, gdouble);
@@ -41,6 +42,17 @@ static Value *number__bool__(Value *self) {
     break;
   }
   return bool__init__(result);
+}
+
+static bool number__cbool__(Value *self) {
+  switch (self->number->kind) {
+  case NUM_INT64:
+    return self->number->i64 != 0;
+    break;
+  case NUM_DOUBLE:
+    return self->number->f64 != 0.0;
+    break;
+  }
 }
 
 Value *number__neg__(Value *self) {
@@ -154,6 +166,7 @@ static inline Value *number__mod__(Value *a, Value *b) {
 
 static const ValueMethods _number_methods = {
     .__bool__ = number__bool__,
+    .__cbool__ = number__cbool__,
     .__add__ = number__add__,
     .__sub__ = number__sub__,
     .__mul__ = number__mul__,

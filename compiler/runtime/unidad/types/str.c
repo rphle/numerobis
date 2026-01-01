@@ -42,6 +42,9 @@ static const char **build_char_positions(const GString *self, size_t len) {
 static Value *str__bool__(Value *self) {
   return bool__init__(self->str->len > 0);
 }
+static bool str__cbool__(Value *self) {
+  return self->str->len > 0;
+}
 
 static Value *str__getitem__(Value *_self, Value *_index) {
   GString *self = _self->str;
@@ -173,6 +176,7 @@ static Value *str__ge__(Value *self, Value *other) {
 
 static const ValueMethods _str_methods = {
     .__bool__ = str__bool__,
+    .__cbool__ = str__cbool__,
     .__lt__ = str__lt__,
     .__le__ = str__le__,
     .__gt__ = str__gt__,

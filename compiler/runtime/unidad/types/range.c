@@ -19,6 +19,7 @@ Value *range__init__(Range x) {
 }
 
 Value *range__bool__(Value *self) { return VTRUE; }
+bool range__cbool__(Value *self) { return true; }
 
 Value *range__eq__(Value *_self, Value *_other) {
   Range self = *_self->range;
@@ -29,5 +30,6 @@ Value *range__eq__(Value *_self, Value *_other) {
 
 static const ValueMethods _range_methods = {
     .__bool__ = range__bool__,
+    .__cbool__ = range__cbool__,
     .__eq__ = range__eq__,
 };

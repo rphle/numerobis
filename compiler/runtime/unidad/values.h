@@ -27,6 +27,7 @@ typedef struct Value Value;
 
 typedef struct {
   Value *(*__bool__)(struct Value *self);
+  bool (*__cbool__)(struct Value *self);
   Value *(*__add__)(struct Value *self, struct Value *other);
   Value *(*__sub__)(struct Value *self, struct Value *other);
   Value *(*__mul__)(struct Value *self, struct Value *other);
@@ -59,6 +60,7 @@ typedef struct Value {
 } Value;
 
 static inline Value *__bool__(Value *a) { return a->methods->__bool__(a); }
+static inline bool __cbool__(Value *a) { return a->methods->__cbool__(a); }
 static inline Value *__add__(Value *self, Value *other) {
   return self->methods->__add__(self, other);
 }

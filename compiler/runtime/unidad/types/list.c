@@ -50,6 +50,9 @@ Value *list_of(Value *first, ...) {
 static Value *list__bool__(Value *self) {
   return bool__init__(_list_len(self->list) > 0);
 }
+static bool list__cbool__(Value *self) {
+  return _list_len(self->list) > 0;
+}
 
 static Value *list__getitem__(Value *_self, Value *_index) {
   GArray *self = _self->list;
@@ -283,6 +286,7 @@ static Value *list__ge__(Value *self, Value *other) {
 
 static const ValueMethods _list_methods = {
     .__bool__ = list__bool__,
+    .__cbool__ = list__cbool__,
     .__lt__ = list__lt__,
     .__le__ = list__le__,
     .__gt__ = list__gt__,

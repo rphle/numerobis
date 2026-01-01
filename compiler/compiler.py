@@ -81,9 +81,7 @@ class Compiler:
         return tstr(["VFALSE", "VTRUE"][node.value])
 
     def bool_op_(self, node: BoolOp, link: int) -> tstr:
-        out = tstr(
-            "bool__init__((__bool__($left)->boolean) $op (__bool__($right)->boolean))"
-        )
+        out = tstr("bool__init__(__cbool__($left) $op __cbool__($right))")
 
         out["left"] = self.compile(node.left)
         out["right"] = self.compile(node.right)
@@ -123,11 +121,9 @@ class Compiler:
 
             if opname == "ne":
                 out["op"] = "eq"
-                comparisons.append(
-                    f"(__bool__({out})->boolean) ? VFALSE : VTRUE"
-                )  # unary !
+                comparisons.append(f"(__cbool__({out}) ? VFALSE : VTRUE)")  # unary !
             else:
-                comparisons.append(f"(__bool__({out})->boolean)")
+                comparisons.append(f"__cbool__({out})")
 
         return tstr(f"bool__init__({' && '.join(comparisons)})")
 
@@ -376,9 +372,7 @@ class Compiler:
         if node.op.name == "sub":
             return tstr(f"__neg__({self.compile(node.operand)})")
         elif node.op.name == "not":
-            return tstr(
-                f"(__bool__({self.compile(node.operand)})->boolean) ? VFALSE : VTRUE"
-            )
+            return tstr(f"(__cbool__({self.compile(node.operand)}) ? VFALSE : VTRUE)")
         else:
             raise ValueError(f"Unknown unary operator {node.op.name}")
 
@@ -407,7 +401,7 @@ class Compiler:
         return out
 
     def while_loop_(self, node: WhileLoop, link: int) -> tstr:
-        out = tstr("while (__bool__($condition)->boolean) { $body }")
+        out = tstr("while (__cbool__($condition)) { $body }")
 
         out["condition_type"] = str(self._link2type(node.condition))
         out["condition"] = self.compile(node.condition)
@@ -469,10 +463,10 @@ class Compiler:
         self.code = code
         return code
 
-    def gcc(self):
+    def gcc(self, output_path: str = "output/output"):
         try:
-            gnucc.compile(self.code, include=list(self.include))
-            print(gnucc.run().stdout)
+            gnucc.compile(self.code, output=output_path, include=list(self.include))
+            print(gnucc.run(path=output_path).stdout)
         except subprocess.CalledProcessError as e:
             self.errors.throw(901, command=" ".join(map(str, e.cmd)), help=e.stderr)
 
