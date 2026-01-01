@@ -469,7 +469,7 @@ class Compiler:
         try:
             gnucc.compile(self.code, output=output_path)
         except subprocess.CalledProcessError as e:
-            self.errors.throw(901, command=" ".join(map(str, e.cmd)), help=e.stderr)
+            self.errors.throw(201, command=" ".join(map(str, e.cmd)), help=e.stderr)
 
     def _node2type(self, node) -> T:
         return self.env.names[node.meta["address"]]

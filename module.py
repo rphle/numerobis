@@ -136,7 +136,7 @@ class Module:
         try:
             print(gnucc.run(path=path).stdout)
         except subprocess.CalledProcessError as e:
-            self.errors.throw(901, command=" ".join(map(str, e.cmd)), help=e.stderr)
+            self.errors.throw(201, command=" ".join(map(str, e.cmd)), help=e.stderr)
 
 
 class ModuleResolver:

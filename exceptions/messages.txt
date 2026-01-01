@@ -52,6 +52,11 @@ Exponent must be a dimensionless scalar, not {value}
 
 
 
+[E201 / CompilerError]
+Command failed: {command}
+
+
+
 [E502 / TypeError]
 Unsupported operand type(s) for '{operation}': {left} and {right}
 
@@ -205,8 +210,3 @@ failed to resolve import: unit or dimension '{name}' does not exist
 
 [E804 / ImportError]
 failed to resolve import: name '{name}' does not exist"
-
-
-
-[E901 / CompilerError]
-Command failed: {command}
