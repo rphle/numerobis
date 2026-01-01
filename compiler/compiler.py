@@ -158,7 +158,7 @@ class Compiler:
         if len(node.iterators) == 1:
             iterator = iterators[0]
             loop["iterator_defs"] = (
-                f"Value *{iterator.name} = "  # type: ignore
+                f"Value *und_{iterator.name} = "  # type: ignore
                 + mthd("__getitem__", "$iterable", "int__init__($iterator)")
                 + ";"
             )
@@ -167,7 +167,7 @@ class Compiler:
             iterrow_name = f"__iterrow_{abs(link)}"
             iterator_defs = f"Value *{iterrow_name} = {mthd('__getitem__', '$iterable', 'int__init__($iterator)')};"
             iterator_defs += "\n".join(
-                f"Value *{iterator.name} = "  # type: ignore
+                f"Value *und_{iterator.name} = "  # type: ignore
                 + mthd("__getitem__", iterrow_name, f"int__init__({i})")
                 + ";"
                 for i, iterator in enumerate(iterators)
@@ -248,7 +248,8 @@ class Compiler:
     def identifier_(self, node: Identifier, link: int) -> tstr:
         if node.name in declare.names:
             self.include.add("unidad/" + node.name)  # e.g. echo or input
-        return tstr(node.name, meta={"reference": True})
+            return tstr(node.name, meta={"reference": True})
+        return tstr("und_" + node.name, meta={"reference": True})
 
     def if_(self, node: If, link: int) -> tstr:
         if node.expression:
