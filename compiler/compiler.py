@@ -438,7 +438,7 @@ class Compiler:
                         f"AST node {type(node).__name__} not implemented"
                     )
 
-    def start(self):
+    def start(self, format: bool = False):
         output = []
 
         for link in self.program:
@@ -455,9 +455,10 @@ class Compiler:
         code["output"] = "\n".join(output)
         code = str(code).strip()
 
-        code = subprocess.run(
-            ["clang-format"], input=code, text=True, capture_output=True
-        ).stdout
+        if format:
+            code = subprocess.run(
+                ["clang-format"], input=code, text=True, capture_output=True
+            ).stdout
 
         print(code)
         self.code = code
@@ -465,7 +466,7 @@ class Compiler:
 
     def gcc(self, output_path: str = "output/output"):
         try:
-            gnucc.compile(self.code, output=output_path, include=list(self.include))
+            gnucc.compile(self.code, output=output_path)
         except subprocess.CalledProcessError as e:
             self.errors.throw(901, command=" ".join(map(str, e.cmd)), help=e.stderr)
 

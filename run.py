@@ -16,6 +16,7 @@ import rich.padding
 from rich.console import Console
 from tqdm import tqdm
 
+from compiler.build_lib import build_lib
 from module import Module
 
 console = Console()
@@ -39,6 +40,9 @@ def timeit(func):
     t0 = time.perf_counter()
     func()
     return time.perf_counter() - t0
+
+
+build_lib()
 
 
 tests_dir = Path("tests")

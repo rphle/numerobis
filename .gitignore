@@ -6,6 +6,9 @@ build
 wheels
 dist
 output
+*.o
+*.so
+*.a
 
 notes/
 test.py

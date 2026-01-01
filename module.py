@@ -127,7 +127,7 @@ class Module:
         self.compiler = Compiler(
             self.program, module=self.meta, namespaces=self.namespaces
         )
-        self.compiler.start()
+        self.compiler.start(format=False)
 
     def gcc(self):
         self.compiler.gcc()
