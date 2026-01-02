@@ -28,7 +28,7 @@ from nodes.ast import (
 )
 from nodes.core import Identifier
 from typechecker.linking import Link
-from typechecker.types import BoolType, ListType, NumberType, RangeType, StrType, T
+from typechecker.types import T
 from utils import camel2snake_pattern
 
 from . import gcc as gnucc
@@ -274,13 +274,14 @@ class Compiler:
         if self._link2type(node.index) == "slice":
             return self.slice_(node, link)
 
-        self.include.add(f"unidad/types/{self._link2type(node.iterable)}")
+        if (iterable_type := self._link2type(node.iterable)) != "any":
+            self.include.add(f"unidad/types/{iterable_type}")
 
         out = tstr("__getitem__($iterable, $index, $loc)")
         out["index"] = str(self.compile(node.index))
         out["iterable"] = str(self.compile(node.iterable))
 
-        loc = node.loc
+        loc = self.unlink(node.index).loc
         out["loc"] = f"LOC({loc.line}, {loc.col}, {loc.end_line}, {loc.end_col})"
 
         return out
@@ -343,7 +344,8 @@ class Compiler:
         out["stop"] = self.compile(index.stop) if index.stop is not None else "NONE"
         out["step"] = self.compile(index.step) if index.step is not None else "NONE"
 
-        self.include.add(f"unidad/types/{self._link2type(link)}")
+        if (iterable_type := self._link2type(node.iterable)) != "any":
+            self.include.add(f"unidad/types/{iterable_type}")
 
         return out
 
@@ -351,25 +353,6 @@ class Compiler:
         self.include.add("unidad/types/str")
         self.include.add("unidad/types/number")  # str.c includes number.h
         return tstr(f"str__init__(g_string_new({node.value}))")
-
-    def type_(self, node: T | Any) -> tstr:
-        match node:
-            case NumberType() | "number":
-                return tstr("gint64" if node.typ == "Int" else "gdouble")
-            case StrType() | "str":
-                return tstr("GString")
-            case ListType() | "list":
-                return tstr("GArray")
-            case BoolType() | "bool":
-                self.include.add("stdbool")
-                return tstr("bool")
-            case RangeType() | "range":
-                self.include.add("unidad/types/range")
-                return tstr("Range")
-            case "int" | "float":
-                return tstr("gint64" if node == "int" else "gdouble")
-
-        raise ValueError(f"Unknown type {node}")
 
     def unary_op_(self, node: UnaryOp, link: int) -> tstr:
         self.include.add("unidad/types/bool")
@@ -386,7 +369,6 @@ class Compiler:
         addr = node.meta["address"]
 
         out["name"] = self.compile(node.name)
-        out["type"] = str(self.type_(self._node2type(node)))
         out["value"] = self.compile(node.value)
 
         if addr not in self._defined_addrs:
@@ -396,10 +378,9 @@ class Compiler:
         return out
 
     def variable_declaration_(self, node: Variable, link: int) -> tstr:
-        out = tstr("$type $name")
+        out = tstr("Value *$name")
 
         out["name"] = self.compile(node.name)
-        out["type"] = self.type_(self._node2type(node))
 
         self._defined_addrs.add(node.meta["address"])
 

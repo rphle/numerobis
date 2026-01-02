@@ -237,3 +237,10 @@ true != "hello"
 
 # E514
 5 kilogram >= "test"
+
+# E902
+"hello"[7]
+
+# E902
+s = "beep"
+s[4]

@@ -319,3 +319,10 @@ for c in s do c
 # E516
 m = 5 kilogram
 for x in m do x
+
+# E901
+[1,2,3][4]
+
+# E901
+lst = []
+lst[4]

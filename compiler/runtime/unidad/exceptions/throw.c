@@ -55,7 +55,7 @@ static void print_preview(const Location *span) {
 
     // clamp to valid range
     int col_start = MAX(1, MIN(line->col, (int)src_len + 1));
-    int col_end = MAX(col_start, MIN(end_col, (int)src_len + 1));
+    int col_end = MAX(col_start, MIN(end_col, (int)src_len + 1))+1;
 
     gchar *src_ptr = (gchar *)src;
     gchar *col_start_ptr = g_utf8_offset_to_pointer(src_ptr, col_start - 1);
@@ -117,7 +117,8 @@ void u_throw(const int code, const Location *span) {
 
   setlocale(LC_ALL, ""); // set locale for utf-8 output
 
-  g_printerr(ANSI_RESET "" ANSI_RED_BOLD "%s" ANSI_RESET " " ANSI_DIM "at %s:%d:%d\n",
+  g_printerr(ANSI_RESET "" ANSI_RED_BOLD "%s" ANSI_RESET " " ANSI_DIM
+                        "at %s:%d:%d\n",
              msg->type, UNIDAD_PROGRAM.path, span->line, span->col);
   g_printerr("  [E%d] " ANSI_RESET "%s\n", code, msg->message);
 
