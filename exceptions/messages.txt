@@ -210,3 +210,11 @@ failed to resolve import: unit or dimension '{name}' does not exist
 
 [E804 / ImportError]
 failed to resolve import: name '{name}' does not exist"
+
+
+
+[E901 / IndexError]
+list index out of range
+
+[E902 / IndexError]
+string index out of range

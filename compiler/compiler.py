@@ -1,4 +1,5 @@
 import dataclasses
+import re
 import subprocess
 from typing import Any
 
@@ -33,7 +34,7 @@ from utils import camel2snake_pattern
 
 from . import gcc as gnucc
 from .tstr import tstr
-from .utils import ensuresuffix, mthd
+from .utils import ensuresuffix, mthd, repr_double
 
 
 class Compiler:
@@ -55,6 +56,7 @@ class Compiler:
                 "unidad/utils/utils",
                 "unidad/values",
                 "unidad/types/bool",
+                "unidad/exceptions/throw",
             }
         )
         self._defined_addrs = set()
@@ -275,9 +277,12 @@ class Compiler:
 
         self.include.add(f"unidad/types/{self._link2type(node.iterable)}")
 
-        out = tstr("__getitem__($iterable, $index)")
+        out = tstr("__getitem__($iterable, $index, $loc)")
         out["index"] = str(self.compile(node.index))
         out["iterable"] = str(self.compile(node.iterable))
+
+        loc = node.loc
+        out["loc"] = f"LOC({loc.line}, {loc.col}, {loc.end_line}, {loc.end_col})"
 
         return out
 
@@ -466,6 +471,7 @@ class Compiler:
         return code
 
     def gcc(self, output_path: str = "output/output"):
+        self._source_h()
         try:
             gnucc.compile(self.code, output=output_path)
         except subprocess.CalledProcessError as e:
@@ -479,3 +485,17 @@ class Compiler:
         if not isinstance(link, int):
             raise TypeError(f"Expected int, got {type(link).__name__}")
         return self.env.typed[link]
+
+    def _source_h(self, target="compiler/runtime/unidad/exceptions/source.c"):
+        content = open(target, "r", encoding="utf-8").read()
+        content = re.sub(
+            r"<CONTENT>.*</CONTENT>",
+            (
+                f"<CONTENT> */\n{repr_double(str(self.module.path))},\n"
+                f"{len(self.module.source.split('\n'))},\n"
+                f"{{ {repr_double(self.module.source).replace('\\n', '", "')} }}\n/* </CONTENT>"
+            ),
+            content,
+            flags=re.MULTILINE | re.DOTALL,
+        )
+        open(target, "w", encoding="utf-8").write(content)

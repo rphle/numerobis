@@ -35,7 +35,10 @@ def compile(code: str, output: str | Path = "output/output"):
         + ["-Icompiler/runtime"]
         + glib_cflags
         + gc_cflags
-        + ["compiler/runtime/libruntime.a"]
+        + [
+            "compiler/runtime/libruntime.a",
+            "compiler/runtime/unidad/exceptions/source.c",
+        ]
         + glib_libs
         + gc_libs
         + ["-lm"]

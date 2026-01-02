@@ -1,4 +1,5 @@
 import subprocess
+import sys
 from functools import lru_cache
 from pathlib import Path
 from typing import Optional
@@ -134,7 +135,11 @@ class Module:
 
     def run(self, path: str = "output/output"):
         try:
-            print(gnucc.run(path=path).stdout)
+            proc = gnucc.run(path=path)
+            print(proc.stdout)
+            if proc.returncode != 0:
+                print(proc.stderr, file=sys.stderr)
+                sys.exit(proc.returncode)
         except subprocess.CalledProcessError as e:
             self.errors.throw(201, command=" ".join(map(str, e.cmd)), help=e.stderr)
 

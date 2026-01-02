@@ -52,13 +52,13 @@ static Value *str__getitem__(Value *_self, Value *_index) {
   gint64 index = _index->number->i64;
 
   if (!self)
-    return str__init__(g_string_new(""));
+    return NULL;
 
   ssize_t len = (ssize_t)_str_len(self);
   ssize_t nidx = normalize_index(index, len);
 
   if (nidx < 0 || nidx >= len)
-    return str__init__(g_string_new(""));
+    return NULL;
 
   const char *p = self->str;
   for (ssize_t i = 0; i < nidx; i++)

@@ -5,7 +5,7 @@ import re
 import sys
 import time
 from collections import defaultdict
-from contextlib import redirect_stdout
+from contextlib import redirect_stderr, redirect_stdout
 from dataclasses import dataclass
 from io import StringIO
 from pathlib import Path
@@ -64,7 +64,7 @@ for file in files:
             throws = match.group(1) if not match.group(1).startswith("-") else None
             chunks.append(Test(path, i + 1, "", throws))
         else:
-            chunks[-1].source += line + "\n"
+            chunks[-1].source += line
     tests[str(path)] = (chunks[0], chunks[1:])
 
 with tqdm(total=sum(len(file[1]) for _, file in tests.items()), leave=False) as pbar:
@@ -83,7 +83,7 @@ with tqdm(total=sum(len(file[1]) for _, file in tests.items()), leave=False) as 
             output = StringIO()
             times = {}
             try:
-                with redirect_stdout(output):
+                with redirect_stdout(output), redirect_stderr(output):
                     print(mod.meta.source.strip())
                     print()
                     times["Parsing"] = timeit(mod.parse)

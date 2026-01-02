@@ -50,9 +50,7 @@ Value *list_of(Value *first, ...) {
 static Value *list__bool__(Value *self) {
   return bool__init__(_list_len(self->list) > 0);
 }
-static bool list__cbool__(Value *self) {
-  return _list_len(self->list) > 0;
-}
+static bool list__cbool__(Value *self) { return _list_len(self->list) > 0; }
 
 static Value *list__getitem__(Value *_self, Value *_index) {
   GArray *self = _self->list;

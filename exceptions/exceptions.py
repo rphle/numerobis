@@ -33,7 +33,7 @@ class uException:
         stack: list[Location] = [],
         exit: bool = True,
     ):
-        console = rich.console.Console()
+        console = rich.console.Console(force_terminal=True, stderr=True)
 
         for previous in stack:
             location = f"{module.path or '<unknown>'}" + (

@@ -1,5 +1,6 @@
 #ifndef VALUES_H
 #define VALUES_H
+#include "exceptions/throw.h"
 #include <glib.h>
 #include <stdbool.h>
 
@@ -96,8 +97,12 @@ static inline Value *__eq__(Value *a, Value *b) {
 }
 static inline Value *__neg__(Value *x) { return x->methods->__neg__(x); }
 static inline Value *len(Value *a) { return a->methods->len(a); }
-static inline Value *__getitem__(Value *self, Value *index) {
-  return self->methods->__getitem__(self, index);
+static inline Value *__getitem__(Value *self, Value *index,
+                                 const Location *loc) {
+  Value *r = self->methods->__getitem__(self, index);
+  if (r == NULL)
+    u_throw(self->type == VALUE_LIST ? 901 : 902, loc);
+  return r;
 }
 static inline Value *__getslice__(Value *_self, struct Value *_start,
                                   struct Value *_stop, struct Value *_step) {

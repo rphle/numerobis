@@ -20,7 +20,7 @@ def build_lib():
     gc_cflags, _ = _pkg("bdw-gc")
 
     runtime_root = Path("compiler/runtime")
-    sources = list(runtime_root.rglob("*.c"))
+    sources = [f for f in runtime_root.rglob("*.c") if f.name != "source.c"]
     object_files = []
 
     for src in sources:
@@ -60,9 +60,9 @@ def generate_messages(
 
     struct = []
     for msg in messages.values():
-        fields = [
+        fields = [msg.code[1:]] + [
             repr_double(v) if v is not None else "NULL"
-            for v in (msg.code, msg.type, msg.message, msg.help)
+            for v in (msg.type, msg.message, msg.help)
         ]
         struct.append(f"{{ {', '.join(fields)} }}")
 
