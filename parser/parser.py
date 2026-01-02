@@ -24,6 +24,7 @@ from nodes.ast import (
     If,
     Import,
     Index,
+    IndexAssignment,
     Integer,
     List,
     Param,
@@ -129,6 +130,7 @@ class Parser(ParserTemplate):
 
             end = self._consume("RBRACE")
             return Block(body=body, loc=nodeloc(start, end))
+
         elif self._peek().type == "RETURN":
             """Return statement"""
             ret = self._consume("RETURN")
@@ -142,7 +144,24 @@ class Parser(ParserTemplate):
             loc = ret.loc.merge(value.loc) if value else ret.loc
             return Return(value=value, loc=loc)
 
-        return self.expression()
+        return self.index_assignment()
+
+    def index_assignment(self):
+        left = self.expression()
+
+        if self._peek().type == "ASSIGN":
+            self._consume("ASSIGN")
+            value = self.expression()
+
+            if not isinstance(left, Index):
+                self.errors.throw(21, loc=left.loc)
+                raise
+
+            return IndexAssignment(
+                target=left, value=value, loc=left.loc.merge(value.loc)
+            )
+
+        return left
 
     def expression(self) -> AstNode:
         first = self._peek()

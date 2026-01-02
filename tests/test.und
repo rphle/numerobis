@@ -61,3 +61,23 @@ while s do {
     echo(s)
     s = s[1:]
 }
+
+# ---
+l = [0] * 10
+for i in 0..10 do {
+    l[i] = i
+}
+echo(l)
+echo(l[5:])
+echo(l[5]+5)
+
+# ---
+a = "h e l l o"
+b = "1234"
+for i in 1..9..2 do {
+    echo((i-1) / 2)
+    a[i] = b[(i-1) / 2]
+}
+echo(a)
+a[0] = "world"
+echo(a)

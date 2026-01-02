@@ -57,6 +57,7 @@ def compile(code: str, module: ModuleMeta, output: str | Path = "output/output")
         + glib_libs
         + gc_libs
         + ["-lm"]
+        + ["-O0", "-g"]
     )
 
     try:

@@ -185,7 +185,7 @@ Value *list_insert(Value *_self, Value *_index, Value *val) {
 
 Value *list__setitem__(Value *_self, Value *_index, Value *val) {
   if (!_self || !_self->list)
-    return NONE;
+    return NULL;
 
   GArray *self = _self->list;
   g_assert(_index->type == VALUE_NUMBER);
@@ -194,7 +194,7 @@ Value *list__setitem__(Value *_self, Value *_index, Value *val) {
 
   ssize_t nidx = normalize_index(index, len);
   if (nidx < 0 || nidx >= len)
-    return NONE; // IndexError
+    return NULL;
 
   g_array_index(self, Value *, (guint)nidx) = val;
   return NONE;
@@ -292,6 +292,7 @@ static const ValueMethods _list_methods = {
     .__eq__ = list__eq__,
     .len = list_len,
     .__getitem__ = list__getitem__,
+    .__setitem__ = list__setitem__,
     .__getslice__ = list__getslice__,
     .__add__ = list__add__,
     .__mul__ = list__mul__,

@@ -185,6 +185,12 @@ class Slice(AstNode):
 
 
 @dataclass(kw_only=True, frozen=True)
+class IndexAssignment(AstNode):
+    target: Index
+    value: AstNode
+
+
+@dataclass(kw_only=True, frozen=True)
 class Break(AstNode):
     pass
 

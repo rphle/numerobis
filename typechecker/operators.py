@@ -7,6 +7,7 @@ from .types import (
     FunctionType,
     IntType,
     ListType,
+    NoneType,
     NumberType,
     Overload,
     SliceType,
@@ -84,6 +85,10 @@ typetable: dict[str, Struct] = {
                     return_type=StrType(),
                 ),
             ),
+            "__setitem__": FunctionType(
+                params=[StrType(), IntType(), StrType()],
+                return_type=NoneType(),
+            ),
             **{
                 f"__{op}__": FunctionType(
                     params=[StrType(), StrType()], return_type=BoolType()
@@ -116,6 +121,10 @@ typetable: dict[str, Struct] = {
                     params=[ListType(content=VarType("T")), SliceType()],
                     return_type=ListType(content=VarType("T")),
                 ),
+            ),
+            "__setitem__": FunctionType(
+                params=[ListType(content=VarType("T")), IntType(), VarType("T")],
+                return_type=NoneType(),
             ),
             **{
                 f"__{op}__": FunctionType(

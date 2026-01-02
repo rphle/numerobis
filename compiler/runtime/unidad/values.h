@@ -43,6 +43,8 @@ typedef struct {
   Value *(*__neg__)(struct Value *self);
   Value *(*len)(struct Value *self);
   Value *(*__getitem__)(struct Value *self, struct Value *index);
+  Value *(*__setitem__)(struct Value *self, struct Value *index,
+                        struct Value *value);
   Value *(*__getslice__)(struct Value *_self, struct Value *_start,
                          struct Value *_stop, struct Value *_step);
 } ValueMethods;
@@ -102,6 +104,13 @@ static inline Value *__getitem__(Value *self, Value *index,
   Value *r = self->methods->__getitem__(self, index);
   if (r == NULL)
     u_throw(self->type == VALUE_LIST ? 901 : 902, loc);
+  return r;
+}
+static inline Value *__setitem__(Value *self, Value *index, Value *value,
+                                 const Location *loc) {
+  Value *r = self->methods->__setitem__(self, index, value);
+  if (r == NULL)
+    u_throw(self->type == VALUE_LIST ? 903 : 904, loc);
   return r;
 }
 static inline Value *__getslice__(Value *_self, struct Value *_start,

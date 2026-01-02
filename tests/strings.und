@@ -244,3 +244,11 @@ true != "hello"
 # E902
 s = "beep"
 s[4]
+
+# E902
+s = "beep"
+s[4]
+
+# E904
+s = "beep"
+s[6] = "o"

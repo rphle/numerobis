@@ -45,6 +45,9 @@ Named functions are not allowed here
 [E020 / SyntaxError]
 {statement} may only appear at top level of a module
 
+[E021 / SyntaxError]
+invalid assignment target
+
 
 
 [E101 / ValueError]
@@ -165,6 +168,11 @@ indices must be dimensionless, not {dimension}
 [E538 / TypeError]
 cannot convert to function
 
+[E539 / TypeError]
+cannot assign an element of type {type} to {target}
+
+[E540 / TypeError]
+{type} does not support item assignment
 
 
 [E601 / NameError]
@@ -218,3 +226,9 @@ list index out of range
 
 [E902 / IndexError]
 string index out of range
+
+[E903 / IndexError]
+list assignment index out of range
+
+[E904 / IndexError]
+string assignment index out of range

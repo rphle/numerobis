@@ -24,6 +24,7 @@ from nodes.ast import (
     If,
     Import,
     Index,
+    IndexAssignment,
     Integer,
     List,
     Range,
@@ -591,6 +592,34 @@ class Typechecker:
             return AnyType()
         else:
             return checked.return_type
+
+    def index_assignment_(self, node: IndexAssignment, env: Env):
+        node = self.unlink(node, ["target"])
+        target = self.check(node.target.iterable, env=env)
+        index = self.check(node.target.index, env=env)
+        value = self.check(node.value, env=env)
+
+        if index.dim:
+            self.errors.throw(
+                537,
+                dimension=value.dim,
+                loc=node.loc,
+            )
+
+        method = typetable[target.name()]["__setitem__"]
+        try:
+            if method is None:
+                raise ValueError()
+            checked = _check_method(method, target, index, value)
+        except ValueError:
+            self.errors.throw(540, type=target, loc=node.loc)
+            raise
+
+        if not checked:
+            self.errors.throw(539, target=target, type=value, loc=node.loc)
+            raise
+
+        return NoneType()
 
     def list_(self, node: List, env: Env, content: T = NeverType()) -> ListType:
         for element in node.items:

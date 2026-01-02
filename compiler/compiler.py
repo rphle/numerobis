@@ -17,6 +17,7 @@ from nodes.ast import (
     ForLoop,
     If,
     Index,
+    IndexAssignment,
     Integer,
     List,
     Range,
@@ -189,12 +190,11 @@ class Compiler:
     def for_loop_range_(self, node: ForLoop, link: int) -> tstr:
         loop = tstr("""{
             Range *$range = $range_def->range;
-            Value *$iv = $vtype__init__($range->start);
             for ($type $i = $range->start;
                 (($range->step > 0) ? ($i < $range->stop) : ($i > $range->stop));
                 $i += $range->step)
             {
-                $update
+                Value *$iv = $vtype__init__($i);
                 $body
             }}""")
 
@@ -210,10 +210,6 @@ class Compiler:
         loop["vtype"] = node.meta["value"].name().lower()  # 'int' or 'float'
         loop["type"] = {"Int": "gint64", "Float": "gdouble"}[node.meta["value"].name()]
 
-        loop["update"] = (
-            f"$iv->number->{ {'Int': 'i64', 'Float': 'f64'}[node.meta['value'].name()] } = $i;"
-        )
-
         r = self.unlink(node.iterable)
         if not isinstance(r, Range):
             loop["range_def"] = self.compile(node.iterable)
@@ -224,12 +220,11 @@ class Compiler:
         assert isinstance(r, Range)
         loop = tstr(
             """{
-            Value *$iv = $vtype__init__($start);
             for ($type $i = $start;
                 (($step > 0) ? ($i < $stop) : ($i > $stop));
                 $i += $step)
             {
-                $update
+                Value *$iv = $vtype__init__($i);
                 $body
             }}""",
             content=loop.content,
@@ -282,6 +277,19 @@ class Compiler:
         out["iterable"] = str(self.compile(node.iterable))
 
         loc = self.unlink(node.index).loc
+        out["loc"] = f"LOC({loc.line}, {loc.col}, {loc.end_line}, {loc.end_col})"
+
+        return out
+
+    def index_assignment_(self, node: IndexAssignment, link: int) -> tstr:
+        out = tstr("__setitem__($target, $index, $value, $loc)")
+        target: Index = self.unlink(node.target)  # type: ignore
+
+        out["target"] = str(self.compile(target.iterable))
+        out["index"] = str(self.compile(target.index))
+        out["value"] = str(self.compile(node.value))
+
+        loc = self.unlink(target.index).loc
         out["loc"] = f"LOC({loc.line}, {loc.col}, {loc.end_line}, {loc.end_col})"
 
         return out

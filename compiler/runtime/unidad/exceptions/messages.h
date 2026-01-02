@@ -14,7 +14,9 @@ typedef struct {
 static const RuntimeMessage UNIDAD_MESSAGES[] = {
     /* <CONTENT> */
     {901, "IndexError", "list index out of range", NULL},
-    {902, "IndexError", "string index out of range", NULL}
+    {902, "IndexError", "string index out of range", NULL},
+    {903, "IndexError", "list assignment index out of range", NULL},
+    {904, "IndexError", "string assignment index out of range", NULL}
     /* </CONTENT> */
 };
 

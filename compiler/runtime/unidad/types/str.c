@@ -42,9 +42,7 @@ static const char **build_char_positions(const GString *self, size_t len) {
 static Value *str__bool__(Value *self) {
   return bool__init__(self->str->len > 0);
 }
-static bool str__cbool__(Value *self) {
-  return self->str->len > 0;
-}
+static bool str__cbool__(Value *self) { return self->str->len > 0; }
 
 static Value *str__getitem__(Value *_self, Value *_index) {
   GString *self = _self->str;
@@ -73,7 +71,7 @@ static Value *str__getitem__(Value *_self, Value *_index) {
 }
 
 static Value *str__getslice__(Value *_self, Value *_start, Value *_stop,
-                       Value *_step) {
+                              Value *_step) {
   GString *self = _self->str;
   if (!self)
     return str__init__(g_string_new(""));
@@ -107,6 +105,43 @@ static Value *str__getslice__(Value *_self, Value *_start, Value *_stop,
 
   g_free(positions);
   return str__init__(result);
+}
+
+static Value *str__setitem__(Value *_self, Value *_index, Value *_value) {
+  GString *self = _self->str;
+  g_assert(_index->type == VALUE_NUMBER && _index->number->kind == NUM_INT64);
+  g_assert(_value->type == VALUE_STR);
+
+  gint64 index = _index->number->i64;
+  GString *value = _value->str;
+
+  if (!self || !value)
+    return NULL;
+
+  ssize_t len = (ssize_t)_str_len(self);
+  ssize_t nidx = normalize_index(index, len);
+
+  if (nidx < 0 || nidx >= len)
+    return NULL;
+
+  const char *p = self->str;
+  for (ssize_t i = 0; i < nidx; i++)
+    p = g_utf8_next_char(p);
+
+  const char *next = g_utf8_next_char(p);
+  gint old_char_len = next - p;
+
+  // get the new char (first character of value str)
+  gunichar new_ch = g_utf8_get_char(value->str);
+  gchar buf[8];
+  gint new_char_len = g_unichar_to_utf8(new_ch, buf);
+
+  gint offset = p - self->str;
+
+  g_string_erase(self, offset, old_char_len);
+  g_string_insert_len(self, offset, buf, new_char_len);
+
+  return _self;
 }
 
 static Value *str__add__(Value *_self, Value *_other) {
@@ -184,6 +219,7 @@ static const ValueMethods _str_methods = {
     .__eq__ = str__eq__,
     .len = str_len,
     .__getitem__ = str__getitem__,
+    .__setitem__ = str__setitem__,
     .__getslice__ = str__getslice__,
     .__add__ = str__add__,
     .__mul__ = str__mul__,
