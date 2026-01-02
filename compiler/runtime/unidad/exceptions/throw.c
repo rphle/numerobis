@@ -117,7 +117,7 @@ void u_throw(const int code, const Location *span) {
 
   setlocale(LC_ALL, ""); // set locale for utf-8 output
 
-  g_printerr(ANSI_RED_BOLD "%s" ANSI_RESET " " ANSI_DIM "at %s:%d:%d\n",
+  g_printerr(ANSI_RESET "" ANSI_RED_BOLD "%s" ANSI_RESET " " ANSI_DIM "at %s:%d:%d\n",
              msg->type, UNIDAD_PROGRAM.path, span->line, span->col);
   g_printerr("  [E%d] " ANSI_RESET "%s\n", code, msg->message);
 
