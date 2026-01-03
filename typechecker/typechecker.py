@@ -190,7 +190,7 @@ class Typechecker:
 
         return BoolType()
 
-    def call_(self, node: Call, env: Env):
+    def call_(self, node: Call, env: Env, link: int):
         callee = self.check(node.callee, env=env)
         if not callee.name("Function"):
             self.errors.throw(506, type=callee, loc=node.loc)
@@ -212,6 +212,7 @@ class Typechecker:
         args: dict[str, tuple[T, T, str]] = {}
         i = 0
         for arg in node.args:
+            arg = self.unlink(arg, attrs=["name"])
             if arg.name:
                 if arg.name.name in args:
                     self.errors.throw(
@@ -269,6 +270,12 @@ class Typechecker:
                 n_args=len(node.args),
                 loc=node.loc,
             )
+
+        # store default values
+        # self.namespaces.nodes[link].meta["defaults"] = [None] * callee.arity[1]
+        # for i, name in enumerate(callee.param_names):
+        #     if name not in args:
+        #         pass
 
         if callee.node is None:
             return callee.return_type
@@ -435,7 +442,7 @@ class Typechecker:
         return NoneType()
 
     def function_(self, node: Function, env: Env, link: int):
-        name = getattr(node.name, "name", None)
+        name = getattr(self.unlink(node.name), "name", None)
         # verify parameter and default types
         params = [
             self.type_(_p.type, env=env)
@@ -835,7 +842,7 @@ class Typechecker:
                 name = type(node).__name__.removesuffix("ing").removesuffix("ean")
 
                 ret = AnyType(name)
-            case Variable() | BinOp() | Compare() | Function() | ForLoop():
+            case Variable() | BinOp() | Compare() | Function() | ForLoop() | Call():
                 name = camel2snake_pattern.sub("_", type(node).__name__).lower() + "_"
                 ret = getattr(self, name)(node, env=env, link=link.target)
             case DimensionDefinition() | UnitDefinition() | FromImport() | Import():

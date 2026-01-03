@@ -272,11 +272,11 @@ class AnyType(UType):
 def unify(a: T, b: T) -> T | Mismatch:
     mismatch = Mismatch("type", a, b)
 
-    if isanyofinstance((a, b), AnyType):
-        return mismatch
-
     if isanyofinstance((a, b), NeverType):
         return [a, b][isinstance(a, NeverType)]
+
+    if isanyofinstance((a, b), AnyType):
+        return mismatch
 
     if isanyofinstance((a, b), DimensionType):
         ab = [a, b]
