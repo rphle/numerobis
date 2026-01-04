@@ -32,8 +32,8 @@ class Test:
     time: dict[str, float] = dataclasses.field(default_factory=dict)
     output: str = ""
 
-    def module(self):
-        return Module(path=self.file, source=self.source)
+    def module(self, builtins: bool = True):
+        return Module(path=self.file, source=self.source, builtins=builtins)
 
 
 def timeit(func):
@@ -77,7 +77,7 @@ with tqdm(total=sum(len(file[1]) for _, file in tests.items()), leave=False) as 
         header.typecheck()
 
         for i, test in enumerate(tests[file][1]):
-            mod = test.module()
+            mod = test.module(builtins=False)
             mod.namespaces.update(header.namespaces)
 
             output = StringIO()

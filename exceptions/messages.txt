@@ -48,6 +48,11 @@ Named functions are not allowed here
 [E021 / SyntaxError]
 invalid assignment target
 
+[E022 / SyntaxError]
+the 'macro' keyword is only valid for extern functions
+help: extern functions must be declared directly
+
+
 
 
 [E101 / ValueError]
@@ -173,6 +178,13 @@ cannot assign an element of type {type} to {target}
 
 [E540 / TypeError]
 {type} does not support item assignment
+
+[E541 / TypeError]
+extern values must be dimensionless
+
+[E542 / TypeError]
+extern functions must be declared directly
+
 
 
 [E601 / NameError]

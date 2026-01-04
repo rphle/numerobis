@@ -2,7 +2,6 @@ import dataclasses
 import subprocess
 from typing import Any
 
-import typechecker.declare as declare
 from classes import ModuleMeta
 from environment import Namespaces
 from exceptions.exceptions import Exceptions
@@ -13,6 +12,7 @@ from nodes.ast import (
     BoolOp,
     Call,
     Compare,
+    ExternDeclaration,
     Float,
     ForLoop,
     If,
@@ -57,6 +57,7 @@ class Compiler:
                 "unidad/values",
                 "unidad/types/bool",
                 "unidad/exceptions/throw",
+                "unidad/builtins/builtins",
             }
         )
         self._defined_addrs = set()
@@ -95,10 +96,25 @@ class Compiler:
         out = tstr("$callee($args)")
 
         out["callee"] = self.compile(node.callee)
-        out["args"] = ", ".join(
-            str(self.compile(self.unlink(arg).value))  # type: ignore
-            for arg in node.args
-        )
+
+        if node.meta.get("extern", None) != "function":
+            # normal functions and extern macros
+            out["args"] = ", ".join(
+                str(self.compile(self.unlink(arg).value))  # type: ignore
+                for arg in node.args
+            )
+        else:
+            if len(node.args) == 0:
+                out["args"] = "NULL"
+            else:
+                out["args"] = (
+                    "(Value*[]){"
+                    + ", ".join(
+                        str(self.compile(self.unlink(arg).value))  # type: ignore
+                        for arg in node.args
+                    )
+                    + "}"
+                )
 
         return out
 
@@ -128,6 +144,13 @@ class Compiler:
                 comparisons.append(f"__cbool__({out})")
 
         return tstr(f"bool__init__({' && '.join(comparisons)})")
+
+    def extern_declaration_(self, node: ExternDeclaration, link: int) -> tstr:
+        # this is not called trough the normal compile function
+        out = tstr("ExternFn und_$name = u_extern_lookup($name);")
+        out["name"] = self.unlink(self.unlink(node.value).name).name  # type: ignore
+
+        return out
 
     def for_loop_(self, node: ForLoop, link: int) -> tstr:
         self.include.add("unidad/types/number")  # indices
@@ -242,10 +265,13 @@ class Compiler:
         return loop
 
     def identifier_(self, node: Identifier, link: int) -> tstr:
-        if node.name in declare.names:
-            self.include.add("unidad/" + node.name)  # e.g. echo or input
-            return tstr(node.name, meta={"reference": True})
-        return tstr("und_" + node.name, meta={"reference": True})
+        prefix = (
+            ""
+            if node.name in self.env.externs
+            and self.env.externs[node.name]["type"] == "macro"
+            else "und_"
+        )
+        return tstr(prefix + node.name, meta={"reference": True})
 
     def if_(self, node: If, link: int) -> tstr:
         if node.expression:
@@ -420,6 +446,8 @@ class Compiler:
         match node:
             case Integer() | Float():
                 return self.number_(node)
+            case ExternDeclaration():
+                return tstr("")
             case _:
                 name = camel2snake_pattern.sub("_", type(node).__name__).lower() + "_"
 
@@ -433,17 +461,37 @@ class Compiler:
                     )
 
     def start(self, format: bool = False):
-        output = []
-
-        for link in self.program:
-            output.append(str(self.compile(link)) + ";")
-
         code = tstr("""$include
 
             int main() {
+                /* externs */
+                $externs
+
+                /* code */
                 $output
                 return 0;
             }""")
+
+        # define extern functions
+        code["externs"] = "\n".join(
+            [
+                str(
+                    self.extern_declaration_(
+                        self.unlink(extern["link"]),  # type: ignore
+                        extern["link"],
+                    )
+                )
+                for name, extern in self.env.externs.items()
+                if extern["type"] == "function"
+            ]
+        )
+
+        # generate code
+        output = []
+
+        for link in self.program:
+            if stmt := str(self.compile(link)):
+                output.append(stmt + ";")
 
         code["include"] = "\n".join([f"#include <{lib}.h>" for lib in self.include])
         code["output"] = "\n".join(output)

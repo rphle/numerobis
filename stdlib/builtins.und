@@ -1,0 +1,3 @@
+extern macro echo!(value, end: Str = "\n"): None;
+extern input!(prompt: Str = ""): Str;
+extern random!(): Float;

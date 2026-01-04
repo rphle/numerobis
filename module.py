@@ -4,7 +4,6 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Optional
 
-import typechecker.declare as declare
 from analysis.dimchecker import Dimchecker
 from classes import Header, ModuleMeta
 from compiler import gcc as gnucc
@@ -24,19 +23,22 @@ class Module:
         path: str | Path,
         source: Optional[str] = None,
         namespaces: Optional[Namespaces] = None,
+        builtins: bool = True,
     ):
         self.meta = ModuleMeta(
             Path(path),
             open(path, "r", encoding="utf-8").read() if source is None else source,
         )
         self.errors = Exceptions(module=self.meta)
+        self.builtins = builtins
 
-        self.namespaces = Namespaces(names=declare.names.copy())
+        self.namespaces = Namespaces()
         if namespaces is not None:
             self.namespaces.update(namespaces)
 
         self.header: Header = Header()
         self.program: list[Link] = []
+        self.imports: list[Module] = []
 
     def parse(self):
         lexed = lex(self.meta.source, module=self.meta)
@@ -48,6 +50,12 @@ class Module:
         self.resolve_imports()
 
     def resolve_imports(self):
+        if self.builtins:
+            builtins_mod = Module("stdlib/builtins.und", builtins=False)
+            builtins_mod.parse()
+            builtins_mod.typecheck()
+            self.namespaces.update(builtins_mod.namespaces)
+
         if len(self.ast) == 0:
             return
 
@@ -59,10 +67,12 @@ class Module:
             except FileNotFoundError:
                 self.errors.throw(802, module=node.module.name, loc=node.loc)
 
-        modules = [Module(path) for path in paths]
-        for module, node in zip(modules, self.header.imports):
+        self.imports = [Module(path) for path in paths]
+        for module, node in zip(self.imports, self.header.imports):
             module.parse()
             module.typecheck()
+            module.compile()
+
             if isinstance(node, Import):
                 self.namespaces.write("imports", node.module.name, module.namespaces)
             else:

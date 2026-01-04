@@ -195,6 +195,7 @@ class FunctionType(UType):
     param_defaults: list[T] = field(default_factory=list)
     arity: tuple[int, int] = (0, 0)
     unresolved: Optional[Literal["recursive", "parameters"]] = None
+    extern: Optional[Literal["macro", "function"]] = None
     _name: Optional[str] = field(default=None, compare=False)
     _loc: Any = field(default=None)
 
@@ -272,11 +273,11 @@ class AnyType(UType):
 def unify(a: T, b: T) -> T | Mismatch:
     mismatch = Mismatch("type", a, b)
 
-    if isanyofinstance((a, b), AnyType):
-        return mismatch
-
     if isanyofinstance((a, b), NeverType):
         return [a, b][isinstance(a, NeverType)]
+
+    if isanyofinstance((a, b), AnyType):
+        return mismatch
 
     if isanyofinstance((a, b), DimensionType):
         ab = [a, b]

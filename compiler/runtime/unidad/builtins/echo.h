@@ -1,7 +1,7 @@
-#ifndef ECHO_H
-#define ECHO_H
+#ifndef UNIDAD_ECHO_H
+#define UNIDAD_ECHO_H
 
-#include "values.h"
+#include "../values.h"
 #include <glib.h>
 #include <stdbool.h>
 #include <stdio.h>

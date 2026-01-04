@@ -15,6 +15,7 @@ from nodes.ast import (
     Continue,
     Conversion,
     DimensionDefinition,
+    ExternDeclaration,
     Float,
     ForLoop,
     FromImport,
@@ -114,6 +115,9 @@ class Parser(ParserTemplate):
         elif first.type == "ID" and self._peek(2).type == "BANG":
             """Function declaration"""
             return self.function()
+        elif first.type == "EXTERN":
+            """Extern declaration"""
+            return self.extern_declaration()
         return self.block()
 
     def block(self) -> AstNode:
@@ -188,14 +192,15 @@ class Parser(ParserTemplate):
 
         return self.range_()
 
-    def variable(self) -> AstNode:
+    def variable(self, declaration: bool = False) -> AstNode:
         name = self._consume("ID")
         type_token = None
-        if self._peek().type == "COLON":
+        if declaration or self._peek().type == "COLON":
             self._consume("COLON")
             type_token = self.type()
 
-        if self._peek().type != "ASSIGN" and type_token is not None:
+        if declaration or (self._peek().type != "ASSIGN" and type_token is not None):
+            assert type_token is not None
             return VariableDeclaration(
                 name=Identifier(name=name.value, loc=name.loc),
                 type=type_token,
@@ -314,8 +319,8 @@ class Parser(ParserTemplate):
         self.header.units.append(node)
         return node
 
-    def function(self, anonymous=False) -> AstNode:
-        name = self._make_id(self._consume("ID")) if not anonymous else None
+    def function(self, anonymous=False, body=True) -> AstNode:
+        name = self._make_id(self._consume("ID")) if not anonymous or not body else None
         return_type = None
 
         _bang = self._consume("BANG")
@@ -347,16 +352,20 @@ class Parser(ParserTemplate):
                 break
             self._consume("COMMA")
 
-        self._consume("RPAREN")
-        _assign = self._consume("COLON", "ASSIGN")
+        _rparen = self._consume("RPAREN")
+        _assign = self._consume("COLON", "ASSIGN" if body else "/")
         if self.tok.type == "COLON":
             return_type = self.type()
-            _assign = self._consume("ASSIGN")
+            if body:
+                _assign = self._consume("ASSIGN")
 
-        body = self.block()
+        body = self.block() if body else None
 
         loc = dataclasses.replace(
-            nodeloc(name if name is not None else _bang, body),
+            nodeloc(
+                name if name is not None else _bang,
+                body if body else (return_type if return_type else _rparen),
+            ),
             checkpoints={"assign": _assign.loc},
         )
         node = Function(
@@ -788,6 +797,24 @@ class Parser(ParserTemplate):
         )
         self.header.imports.append(node)
         return node
+
+    def extern_declaration(self) -> ExternDeclaration:
+        _start = self._consume("EXTERN")
+        _macro = bool(
+            self._consume("ID")
+            if self._peek().type == "ID" and self._peek().value == "macro"
+            else None
+        )
+
+        if self._peek(2).type == "BANG":
+            value = self.function(body=False)
+        else:
+            if _macro:
+                self.errors.throw(22, loc=self.tok.loc)
+            value = self.variable(declaration=True)
+
+        assert isinstance(value, (Function, VariableDeclaration))
+        return ExternDeclaration(value=value, macro=_macro, loc=nodeloc(_start, value))
 
     def type(self) -> Type | FunctionAnnotation | Expression | One:
         if self._peek().type == "BANG":

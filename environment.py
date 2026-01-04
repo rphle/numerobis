@@ -18,6 +18,7 @@ class Namespaces:
         imports: dict[str, "Namespaces"] | None = None,
         nodes: dict[int, AstNode] | None = None,
         typed: dict[int, str] | None = None,
+        externs: dict[str, dict] | None = None,
     ):
         self.names = names or {}
         self.dimensions = dimensions or {}
@@ -25,6 +26,7 @@ class Namespaces:
         self.imports = imports or {}
         self.nodes = nodes or {}
         self.typed = typed or {}
+        self.externs = externs or {}
 
     def copy(self):
         return Namespaces(
@@ -34,6 +36,7 @@ class Namespaces:
             self.imports.copy(),
             self.nodes.copy(),
             self.typed.copy(),
+            self.externs.copy(),
         )
 
     def update(self, other: "Namespaces"):
@@ -42,6 +45,7 @@ class Namespaces:
         self.units.update(other.units)
         self.nodes.update(other.nodes)
         self.typed.update(other.typed)
+        self.externs.update(other.externs)
 
     def __call__(self, name: namespace_names) -> dict[str, Any]:
         return getattr(self, name)

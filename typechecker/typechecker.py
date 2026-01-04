@@ -1,4 +1,5 @@
 import uuid
+from typing import Literal, Optional
 
 from analysis.dimchecker import Dimchecker
 from analysis.simplifier import simplify
@@ -15,6 +16,7 @@ from nodes.ast import (
     Compare,
     Conversion,
     DimensionDefinition,
+    ExternDeclaration,
     Float,
     ForLoop,
     FromImport,
@@ -190,7 +192,7 @@ class Typechecker:
 
         return BoolType()
 
-    def call_(self, node: Call, env: Env):
+    def call_(self, node: Call, env: Env, link: int):
         callee = self.check(node.callee, env=env)
         if not callee.name("Function"):
             self.errors.throw(506, type=callee, loc=node.loc)
@@ -270,7 +272,9 @@ class Typechecker:
                 loc=node.loc,
             )
 
-        if callee.node is None:
+        if callee.extern:
+            self.namespaces.nodes[link].meta["extern"] = callee.extern
+        if callee.node is None or callee.extern:
             return callee.return_type
 
         # Check if constraints can be updated and the function body re-checked for better inference
@@ -401,6 +405,29 @@ class Typechecker:
             loc=node.loc,
         )
 
+    def extern_declaration_(self, node: ExternDeclaration, env: Env, link: int):
+        value = self.unlink(node.value)
+        if isinstance(value, Function):
+            link = node.value.target  # type: ignore
+            self.function_(
+                value, env=env, link=link, extern="macro" if node.macro else "function"
+            )
+
+            self.namespaces.externs[self.unlink(value.name).name] = {
+                "type": "macro" if node.macro else "function",
+                "link": link,
+            }
+        else:
+            assert isinstance(value, VariableDeclaration)
+            typ = self.variable_declaration_(value, env=env)
+
+            if typ.dim:
+                self.errors.throw(541, loc=node.loc)
+            elif isinstance(typ, FunctionType):
+                self.errors.throw(542, loc=node.loc)
+
+        return NoneType()
+
     def for_loop_(self, node: ForLoop, env: Env, link: int):
         iterable = self.check(node.iterable, env=env)
         if not iterable.name("List", "Range", "Str"):
@@ -434,8 +461,18 @@ class Typechecker:
 
         return NoneType()
 
-    def function_(self, node: Function, env: Env, link: int):
-        name = getattr(node.name, "name", None)
+    def function_(
+        self,
+        node: Function,
+        env: Env,
+        link: int,
+        extern: Optional[Literal["macro", "function"]] = None,
+    ):
+        name = getattr(self.unlink(node.name), "name", None)
+
+        if name and name in env.names:
+            self.errors.throw(604, name=name, loc=node.loc)
+
         # verify parameter and default types
         params = [
             self.type_(_p.type, env=env)
@@ -480,14 +517,17 @@ class Typechecker:
             param_addrs=param_addrs,
             param_defaults=defaults,
             return_type=return_type,
-            unresolved=None if node.return_type else "recursive",
+            unresolved=None if node.return_type or extern else "recursive",
             node=link,
             arity=arity,
+            extern=extern,
         )
         signature.meta("#curried", env.names)
 
         if name is not None:
             env.set("names")(name, signature)
+        if extern:
+            return signature
 
         new_env = env.copy()
         for i, param in enumerate(params):
@@ -594,7 +634,7 @@ class Typechecker:
             return checked.return_type
 
     def index_assignment_(self, node: IndexAssignment, env: Env):
-        node = self.unlink(node, ["target"])
+        node = self.unlink(node, ["target"])  # type: ignore
         target = self.check(node.target.iterable, env=env)
         index = self.check(node.target.index, env=env)
         value = self.check(node.value, env=env)
@@ -634,6 +674,9 @@ class Typechecker:
 
             content = unify(content, element_type)  # type: ignore
         return ListType(content=content)
+
+    def none_type_(self, node: NoneType, env: Env) -> NoneType:
+        return NoneType()
 
     def number_(self, node: Integer | Float, env: Env) -> NumberType:
         dimension = simplify(self.dimchecker.dimensionize(node.unit, mode="unit"))
@@ -758,6 +801,7 @@ class Typechecker:
     def variable_(self, node: Variable, env: Env, link: int):
         value = self.check(node.value, env=env)
         name = self.unlink(node.name)
+        assert isinstance(name, Identifier)
 
         address = None
         if name.name in env.names:
@@ -813,7 +857,7 @@ class Typechecker:
 
         address = env.set("names")(name=name.name, value=annotation)
         node.meta["address"] = address
-        return NoneType()
+        return annotation
 
     def while_loop_(self, node: WhileLoop, env: Env):
         cond = self.check(node.condition, env=env.copy())
@@ -833,9 +877,16 @@ class Typechecker:
                 ret = self.number_(node, env=env.copy())
             case String() | Boolean():
                 name = type(node).__name__.removesuffix("ing").removesuffix("ean")
-
                 ret = AnyType(name)
-            case Variable() | BinOp() | Compare() | Function() | ForLoop():
+            case (
+                Variable()
+                | ExternDeclaration()
+                | BinOp()
+                | Compare()
+                | Function()
+                | ForLoop()
+                | Call()
+            ):
                 name = camel2snake_pattern.sub("_", type(node).__name__).lower() + "_"
                 ret = getattr(self, name)(node, env=env, link=link.target)
             case DimensionDefinition() | UnitDefinition() | FromImport() | Import():

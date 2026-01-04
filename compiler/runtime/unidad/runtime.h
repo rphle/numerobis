@@ -10,7 +10,6 @@
 
 #include <glib.h>
 
-/* runtime init */
-static inline void unidad_init(void) { GC_INIT(); }
+void unidad_runtime_init(void);
 
 #endif

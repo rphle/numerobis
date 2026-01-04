@@ -138,4 +138,5 @@ typetable: dict[str, Struct] = {
     "Range": Struct({**_eq}),
     "Function": Struct({**_eq}),
     "Dimension": Struct({}),
+    "None": Struct({**_eq}),
 }

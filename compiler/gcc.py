@@ -35,7 +35,11 @@ def compile(code: str, module: ModuleMeta, output: str | Path = "output/output")
     } UnidadProgram;
     """
 
-    source = f"const UnidadProgram UNIDAD_PROGRAM = {{ {repr_double(str(module.path))}, {len(module.source.split('\n'))}, {repr_double(module.source).replace('\\n', '", "')} }};"
+    source = (
+        f"const UnidadProgram UNIDAD_PROGRAM = {{ "
+        f"{repr_double(str(module.path))}, {len(module.source.split('\n'))}, "
+        f"{', '.join([repr_double(line) for line in module.source.split('\n')])} }};"
+    )
 
     tmp_source = tempfile.NamedTemporaryFile(delete=False, suffix=".c")
     tmp_source.write((struct + source).encode("utf-8"))

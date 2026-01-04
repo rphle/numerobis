@@ -156,7 +156,7 @@ class Function(AstNode):
     name: Identifier | None
     params: list[Param]
     return_type: Optional["Type | FunctionAnnotation | Expression | One"]
-    body: AstNode
+    body: Optional[AstNode]
 
 
 @dataclass(kw_only=True, frozen=True)
@@ -230,3 +230,9 @@ class FunctionAnnotation(AstNode):
     param_names: list[Identifier]
     return_type: Optional["Type | FunctionAnnotation | Expression | One"]
     arity: tuple[int, int]
+
+
+@dataclass(kw_only=True, frozen=True)
+class ExternDeclaration(AstNode):
+    value: VariableDeclaration | Function
+    macro: bool = False
