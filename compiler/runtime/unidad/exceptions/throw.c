@@ -7,6 +7,9 @@
 #include <locale.h>
 #include <stdlib.h>
 
+GHashTable *UNIDAD_MODULE_REGISTRY = NULL;
+extern char *UNIDAD__FILE__;
+
 static size_t _strlen(const gchar *s) { return g_utf8_strlen(s, -1); }
 
 static Location *_location_split(const Location *self, size_t *out_len) {
@@ -41,21 +44,22 @@ static Location *_location_split(const Location *self, size_t *out_len) {
 }
 
 static void print_preview(const Location *span) {
+  UnidadProgram *program =
+      g_hash_table_lookup(UNIDAD_MODULE_REGISTRY, UNIDAD__FILE__);
   size_t n = 0;
   Location *lines = _location_split(span, &n);
   g_printerr("\n");
   for (size_t i = 0; i < n; i++) {
     const Location *line = &lines[i];
-    const gchar *src = UNIDAD_PROGRAM.source[line->line - 1];
+    const gchar *src = program->source[line->line - 1];
     size_t src_len = _strlen(src);
 
-    int end_line =
-        (line->end_line > 0) ? (line->end_line) : UNIDAD_PROGRAM.n_lines;
+    int end_line = (line->end_line > 0) ? (line->end_line) : program->n_lines;
     int end_col = (line->end_col > 0) ? (line->end_col) : (int)src_len + 1;
 
     // clamp to valid range
     int col_start = MAX(1, MIN(line->col, (int)src_len + 1));
-    int col_end = MAX(col_start, MIN(end_col, (int)src_len + 1))+1;
+    int col_end = MAX(col_start, MIN(end_col, (int)src_len + 1)) + 1;
 
     gchar *src_ptr = (gchar *)src;
     gchar *col_start_ptr = g_utf8_offset_to_pointer(src_ptr, col_start - 1);
@@ -119,7 +123,7 @@ void u_throw(const int code, const Location *span) {
 
   g_printerr(ANSI_RESET "" ANSI_RED_BOLD "%s" ANSI_RESET " " ANSI_DIM
                         "at %s:%d:%d\n",
-             msg->type, UNIDAD_PROGRAM.path, span->line, span->col);
+             msg->type, UNIDAD__FILE__, span->line, span->col);
   g_printerr("  [E%d] " ANSI_RESET "%s\n", code, msg->message);
 
   print_preview(span);

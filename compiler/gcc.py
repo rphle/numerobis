@@ -23,26 +23,54 @@ def _pkg(name: str):
     return cflags, libs
 
 
-def compile(code: str, module: ModuleMeta, output: str | Path = "output/output"):
+def _prepare_source_c(modules: list[ModuleMeta]):
+    arrays, structs, entries = [], [], []
+
+    for i, mod in enumerate(modules):
+        src_lines = mod.source.splitlines()
+        c_lines = ", ".join(repr_double(line) for line in src_lines)
+        path_str = repr_double(str(mod.path))
+
+        arrays.append(f"static const char *lines_{i}[] = {{ {c_lines} }};")
+        structs.append(
+            f"static UnidadProgram mod_{i} = {{ {path_str}, {len(src_lines)}, lines_{i} }};"
+        )
+        entries.append(
+            f"g_hash_table_insert(UNIDAD_MODULE_REGISTRY, (gpointer){path_str}, &mod_{i});"
+        )
+
+    source = f"""#include <glibheader.h>
+
+    typedef struct {{
+        const gchar *path;
+        const int n_lines;
+        const gchar **source;
+    }} UnidadProgram;
+
+    extern GHashTable *UNIDAD_MODULE_REGISTRY;
+
+    {chr(10).join(arrays)}
+    {chr(10).join(structs)}
+
+    __attribute__((constructor))
+    void u_init_module_registry() {{
+        if (UNIDAD_MODULE_REGISTRY == NULL) {{
+            UNIDAD_MODULE_REGISTRY = g_hash_table_new(g_str_hash, g_str_equal);
+        }}
+        {chr(10).join(entries)}
+    }}
+    """
+    return source
+
+
+def compile(code: str, modules: list[ModuleMeta], output: str | Path = "output/output"):
     glib_cflags, glib_libs = _pkg("glib-2.0")
     gc_cflags, gc_libs = _pkg("bdw-gc")
 
-    struct = """
-    typedef struct {
-        const char *filename;
-        int count;
-        const char *lines[];
-    } UnidadProgram;
-    """
-
-    source = (
-        f"const UnidadProgram UNIDAD_PROGRAM = {{ "
-        f"{repr_double(str(module.path))}, {len(module.source.split('\n'))}, "
-        f"{', '.join([repr_double(line) for line in module.source.split('\n')])} }};"
-    )
+    source = _prepare_source_c(modules)
 
     tmp_source = tempfile.NamedTemporaryFile(delete=False, suffix=".c")
-    tmp_source.write((struct + source).encode("utf-8"))
+    tmp_source.write(source.encode("utf-8"))
     tmp_source.close()
 
     tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".c")
@@ -50,14 +78,19 @@ def compile(code: str, module: ModuleMeta, output: str | Path = "output/output")
     tmp.close()
 
     cmd = (
-        ["gcc"]
+        ["mold"]
+        + ["-run", "gcc"]
         + ["-pipe"]
         + [tmp.name, tmp_source.name]
         + ["-o", str(output)]
         + ["-Icompiler/runtime"]
         + glib_cflags
         + gc_cflags
-        + ["compiler/runtime/libruntime.a"]
+        + [
+            "-Wl,--whole-archive",
+            "compiler/runtime/libruntime.a",
+            "-Wl,--no-whole-archive",
+        ]
         + glib_libs
         + gc_libs
         + ["-lm"]

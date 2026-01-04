@@ -9,6 +9,8 @@ output
 *.o
 *.so
 *.a
+*.gch
+
 
 notes/
 test.py

@@ -5,9 +5,10 @@ from pathlib import Path
 from typing import Optional
 
 from analysis.dimchecker import Dimchecker
-from classes import Header, ModuleMeta
+from classes import CompiledModule, Header, ModuleMeta
 from compiler import gcc as gnucc
 from compiler.compiler import Compiler
+from compiler.linker import Linker
 from environment import Namespaces
 from exceptions.exceptions import Exceptions
 from lexer.lexer import lex
@@ -15,6 +16,9 @@ from nodes.ast import Import
 from parser.parser import Parser
 from typechecker.linking import Link
 from typechecker.typechecker import Typechecker
+
+# pre-compiled modules
+MODULECACHE: dict[str, CompiledModule] = {}
 
 
 class Module:
@@ -38,7 +42,21 @@ class Module:
 
         self.header: Header = Header()
         self.program: list[Link] = []
-        self.imports: list[Module] = []
+        self.imports: list[str] = []
+
+        self.linker: Optional[Linker] = None
+        self.compiled: CompiledModule
+
+    def load(self) -> CompiledModule:
+        path = str(self.meta.path)
+        if path in MODULECACHE:
+            if MODULECACHE[path].namespaces is not None:
+                self.namespaces.update(MODULECACHE[path].namespaces)  # type: ignore
+            return MODULECACHE[path]
+        self.parse()
+        self.typecheck()
+        self.compile()
+        return self.compiled
 
     def parse(self):
         lexed = lex(self.meta.source, module=self.meta)
@@ -52,26 +70,24 @@ class Module:
     def resolve_imports(self):
         if self.builtins:
             builtins_mod = Module("stdlib/builtins.und", builtins=False)
-            builtins_mod.parse()
-            builtins_mod.typecheck()
+            builtins_mod.load()
             self.namespaces.update(builtins_mod.namespaces)
 
         if len(self.ast) == 0:
             return
 
         resolver = ModuleResolver(search_paths=[self.meta.path.parent.resolve()])
-        paths = []
         for i, node in enumerate(self.header.imports):
             try:
-                paths.append(resolver.resolve(node.module.name.removeprefix("@")))
+                self.imports.append(
+                    str(resolver.resolve(node.module.name.removeprefix("@")))
+                )
             except FileNotFoundError:
                 self.errors.throw(802, module=node.module.name, loc=node.loc)
 
-        self.imports = [Module(path) for path in paths]
-        for module, node in zip(self.imports, self.header.imports):
-            module.parse()
-            module.typecheck()
-            module.compile()
+        modules = [Module(path) for path in self.imports]
+        for module, node in zip(modules, self.header.imports):
+            module.load()
 
             if isinstance(node, Import):
                 self.namespaces.write("imports", node.module.name, module.namespaces)
@@ -121,6 +137,9 @@ class Module:
                         "imports", node.module.name, module.namespaces
                     )
 
+        if self.builtins:
+            self.imports.append("stdlib/builtins.und")
+
     def dimcheck(self):
         dc = Dimchecker(
             module=self.meta, namespaces=self.namespaces, header=self.header
@@ -135,13 +154,26 @@ class Module:
         self.program = ts.program
 
     def compile(self):
-        self.compiler = Compiler(
-            self.program, module=self.meta, namespaces=self.namespaces
+        compiler = Compiler(
+            self.program,
+            module=self.meta,
+            namespaces=self.namespaces,
+            header=self.header,
+            imports=self.imports,
         )
-        self.compiler.start(format=False)
+        self.compiled = compiler.start()
+
+        MODULECACHE[str(self.meta.path)] = self.compiled
+        MODULECACHE[str(self.meta.path)].namespaces = self.namespaces
+
+    def link(self, format: bool = False):
+        self.linker = Linker(MODULECACHE, main=self.meta.path)
+        self.linker.link(format=format)
 
     def gcc(self):
-        self.compiler.gcc()
+        if self.linker is None:
+            raise ValueError("Module not linked")
+        self.linker.gcc()
 
     def run(self, path: str = "output/output"):
         try:

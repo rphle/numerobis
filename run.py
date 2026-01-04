@@ -77,7 +77,7 @@ with tqdm(total=sum(len(file[1]) for _, file in tests.items()), leave=False) as 
         header.typecheck()
 
         for i, test in enumerate(tests[file][1]):
-            mod = test.module(builtins=False)
+            mod = test.module()
             mod.namespaces.update(header.namespaces)
 
             output = StringIO()
@@ -89,6 +89,7 @@ with tqdm(total=sum(len(file[1]) for _, file in tests.items()), leave=False) as 
                     times["Parsing"] = timeit(mod.parse)
                     times["Typechecking"] = timeit(mod.typecheck)
                     times["Compilation"] = timeit(mod.compile)
+                    times["Linking"] = timeit(mod.link)
                     times["GCC"] = timeit(mod.gcc)
                     times["Execution"] = timeit(mod.run)
 

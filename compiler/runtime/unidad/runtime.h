@@ -10,6 +10,8 @@
 
 #include <glib.h>
 
+extern char *UNIDAD__FILE__;
+
 void unidad_runtime_init(void);
 
 #endif

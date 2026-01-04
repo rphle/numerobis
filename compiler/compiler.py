@@ -1,8 +1,8 @@
 import dataclasses
-import subprocess
+from hashlib import md5
 from typing import Any
 
-from classes import ModuleMeta
+from classes import CompiledModule, Header, ModuleMeta
 from environment import Namespaces
 from exceptions.exceptions import Exceptions
 from nodes.ast import (
@@ -12,10 +12,13 @@ from nodes.ast import (
     BoolOp,
     Call,
     Compare,
+    DimensionDefinition,
     ExternDeclaration,
     Float,
     ForLoop,
+    FromImport,
     If,
+    Import,
     Index,
     IndexAssignment,
     Integer,
@@ -24,6 +27,7 @@ from nodes.ast import (
     Slice,
     String,
     UnaryOp,
+    UnitDefinition,
     Variable,
     WhileLoop,
 )
@@ -32,7 +36,6 @@ from typechecker.linking import Link
 from typechecker.types import T
 from utils import camel2snake_pattern
 
-from . import gcc as gnucc
 from .tstr import tstr
 from .utils import ensuresuffix, mthd
 
@@ -43,12 +46,17 @@ class Compiler:
         program: list[Link],
         module: ModuleMeta,
         namespaces: Namespaces = Namespaces(),
+        header: Header = Header(),
+        imports: list[str] = [],
     ):
         self.program = program
         self.module = module
         self.errors = Exceptions(module=module)
         self.env = namespaces
+        self.header = header
+        self.imports = imports
 
+        self.uid = md5(str(module.path).encode()).hexdigest()[:8]
         self.include = set(
             {
                 "unidad/runtime",
@@ -61,6 +69,7 @@ class Compiler:
             }
         )
         self._defined_addrs = set()
+        self._imported_names = {}
 
     def bin_op_(self, node: BinOp, link: int) -> tstr:
         operands = [self.compile(node.left), self.compile(node.right)]
@@ -146,8 +155,13 @@ class Compiler:
         return tstr(f"bool__init__({' && '.join(comparisons)})")
 
     def extern_declaration_(self, node: ExternDeclaration, link: int) -> tstr:
-        # this is not called trough the normal compile function
-        out = tstr("ExternFn und_$name = u_extern_lookup($name);")
+        if node.macro:
+            return tstr("")
+
+        self.include.add("unidad/extern")
+
+        out = tstr('UExternFn und_$uid_$name = u_extern_lookup("$name")')
+        out["uid"] = self.uid
         out["name"] = self.unlink(self.unlink(node.value).name).name  # type: ignore
 
         return out
@@ -183,7 +197,7 @@ class Compiler:
         if len(node.iterators) == 1:
             iterator = iterators[0]
             loop["iterator_defs"] = (
-                f"Value *und_{iterator.name} = "  # type: ignore
+                f"Value *und_{self.uid}_{iterator.name} = "  # type: ignore
                 + mthd("__getitem__", "$iterable", "int__init__($iterator)")
                 + ";"
             )
@@ -192,7 +206,7 @@ class Compiler:
             iterrow_name = f"__iterrow_{abs(link)}"
             iterator_defs = f"Value *{iterrow_name} = {mthd('__getitem__', '$iterable', 'int__init__($iterator)')};"
             iterator_defs += "\n".join(
-                f"Value *und_{iterator.name} = "  # type: ignore
+                f"Value *und_{self.uid}_{iterator.name} = "  # type: ignore
                 + mthd("__getitem__", iterrow_name, f"int__init__({i})")
                 + ";"
                 for i, iterator in enumerate(iterators)
@@ -269,7 +283,7 @@ class Compiler:
             ""
             if node.name in self.env.externs
             and self.env.externs[node.name]["type"] == "macro"
-            else "und_"
+            else self._imported_names.get(node.name, f"und_{self.uid}_")
         )
         return tstr(prefix + node.name, meta={"reference": True})
 
@@ -446,7 +460,7 @@ class Compiler:
         match node:
             case Integer() | Float():
                 return self.number_(node)
-            case ExternDeclaration():
+            case Import() | FromImport() | DimensionDefinition() | UnitDefinition():
                 return tstr("")
             case _:
                 name = camel2snake_pattern.sub("_", type(node).__name__).lower() + "_"
@@ -460,57 +474,42 @@ class Compiler:
                         f"AST node {type(node).__name__} not implemented"
                     )
 
-    def start(self, format: bool = False):
-        code = tstr("""$include
+    def start(self) -> CompiledModule:
+        self.process_header()
+        self._builtins()
 
-            int main() {
-                /* externs */
-                $externs
-
-                /* code */
-                $output
-                return 0;
-            }""")
-
-        # define extern functions
-        code["externs"] = "\n".join(
-            [
-                str(
-                    self.extern_declaration_(
-                        self.unlink(extern["link"]),  # type: ignore
-                        extern["link"],
-                    )
-                )
-                for name, extern in self.env.externs.items()
-                if extern["type"] == "function"
-            ]
-        )
-
-        # generate code
-        output = []
-
+        code = []
         for link in self.program:
             if stmt := str(self.compile(link)):
-                output.append(stmt + ";")
+                code.append(stmt + ";")
 
-        code["include"] = "\n".join([f"#include <{lib}.h>" for lib in self.include])
-        code["output"] = "\n".join(output)
-        code = str(code).strip()
+        code = "\n".join(code).strip()
 
-        if format:
-            code = subprocess.run(
-                ["clang-format"], input=code, text=True, capture_output=True
-            ).stdout
+        return CompiledModule(
+            meta=self.module,
+            imports=self.imports,
+            include=self.include,
+            code=code,
+        )
 
-        print(code)
-        self.code = code
-        return code
+    def process_header(self):
+        for i, node in enumerate(self.header.imports):
+            if isinstance(node, FromImport):
+                uid = md5(self.imports[i].encode()).hexdigest()[:8]
+                if node.names is None:
+                    # import *
+                    names = list(self.env.imports[node.module.name].names.keys())
+                    self._imported_names.update({name: f"und_{uid}_" for name in names})
+                else:
+                    # import a, b, c
+                    self._imported_names.update(
+                        {name.name: f"und_{uid}_" for name in node.names}
+                    )
 
-    def gcc(self, output_path: str = "output/output"):
-        try:
-            gnucc.compile(self.code, module=self.module, output=output_path)
-        except subprocess.CalledProcessError as e:
-            self.errors.throw(201, command=" ".join(map(str, e.cmd)), help=e.stderr)
+    def _builtins(self):
+        uid = md5("stdlib/builtins.und".encode()).hexdigest()[:8]
+        names = ["echo", "input", "random"]
+        self._imported_names.update({name: f"und_{uid}_" for name in names})
 
     def _node2type(self, node) -> T:
         return self.env.names[node.meta["address"]]

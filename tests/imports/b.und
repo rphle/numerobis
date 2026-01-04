@@ -1,0 +1,3 @@
+from a import a, l
+
+b = 3 + a

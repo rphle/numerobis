@@ -1,0 +1,5 @@
+from a import a
+from b import b
+
+c = 5
+echo(c + a)

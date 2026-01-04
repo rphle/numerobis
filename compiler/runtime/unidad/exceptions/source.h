@@ -4,11 +4,11 @@
 #include <glib.h>
 
 typedef struct {
-  const gchar *path;
-  const int n_lines;
-  const gchar *source[];
+    const gchar *path;
+    const int n_lines;
+    const gchar **source;
 } UnidadProgram;
 
-extern const UnidadProgram UNIDAD_PROGRAM;
+extern GHashTable *UNIDAD_MODULE_REGISTRY;
 
 #endif
