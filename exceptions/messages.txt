@@ -65,6 +65,11 @@ Command failed: {command}
 
 
 
+[E301 / ValueError]
+failed to convert value to integer
+
+
+
 [E502 / TypeError]
 Unsupported operand type(s) for '{operation}': {left} and {right}
 

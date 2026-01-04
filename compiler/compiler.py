@@ -12,6 +12,7 @@ from nodes.ast import (
     BoolOp,
     Call,
     Compare,
+    Conversion,
     DimensionDefinition,
     ExternDeclaration,
     Float,
@@ -26,6 +27,7 @@ from nodes.ast import (
     Range,
     Slice,
     String,
+    Type,
     UnaryOp,
     UnitDefinition,
     Variable,
@@ -153,6 +155,21 @@ class Compiler:
                 comparisons.append(f"__cbool__({out})")
 
         return tstr(f"bool__init__({' && '.join(comparisons)})")
+
+    def conversion_(self, node: Conversion, link: int) -> tstr:
+        self.include.add("unidad/conversions/conversions")
+
+        out = tstr("__$func__($value, $loc)")
+        out["value"] = self.compile(node.value)
+        out["loc"] = (
+            f"LOC({node.loc.line}, {node.loc.col}, {node.loc.end_line}, {node.loc.end_col})"
+        )
+
+        if isinstance(node.target, Type):
+            out["func"] = f"to_{node.target.name.name.lower()}"
+        else:
+            raise NotImplementedError("Unit conversions are not supported yet.")
+        return out
 
     def extern_declaration_(self, node: ExternDeclaration, link: int) -> tstr:
         if node.macro:
@@ -289,9 +306,9 @@ class Compiler:
 
     def if_(self, node: If, link: int) -> tstr:
         if node.expression:
-            out = tstr("(($condition) ? ($then) : ($else))")
+            out = tstr("(__cbool__($condition) ? ($then) : ($else))")
         else:
-            out = tstr("if ($condition) { $then }") + (
+            out = tstr("if (__cbool__($condition)) { $then }") + (
                 tstr("else { $else }") if node.else_branch else ""
             )
 
@@ -508,7 +525,7 @@ class Compiler:
 
     def _builtins(self):
         uid = md5("stdlib/builtins.und".encode()).hexdigest()[:8]
-        names = ["echo", "input", "random"]
+        names = ["echo", "input", "random", "floor"]
         self._imported_names.update({name: f"und_{uid}_" for name in names})
 
     def _node2type(self, node) -> T:

@@ -67,7 +67,7 @@ typetable: dict[str, Struct] = {
     "Bool": Struct({**_conv("Bool", "Bool", "Str"), **_eq}),
     "Str": Struct(
         {
-            **_conv("Str", "Bool"),
+            **_conv("Str", "Bool", "Int"),
             "__add__": FunctionType(
                 params=[StrType(), StrType()], return_type=StrType()
             ),

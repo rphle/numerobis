@@ -382,7 +382,8 @@ class Typechecker:
                 and typ != value.name()
             ):
                 self.errors.throw(515, left=value, right=typ, loc=node.loc)
-            if typ in {"Int", "Float"}:  # don't erase dimension
+            if typ in {"Int", "Float"} and isinstance(value, NumberType):
+                # don't erase dimension
                 return value.edit(typ=typ)
             return AnyType(typ)
 

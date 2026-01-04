@@ -1,0 +1,24 @@
+# Number guessing game
+
+echo("Try to guess the number between 0 and 100!")
+x = floor(random()*101)
+i = 10
+
+win = false
+while not win and i > 0 do {
+    guess = input("Guess the number: ") -> Int
+    if guess == x then {
+        echo("\nCongratulations! You guessed the number!")
+        win = true
+    } else { if guess < x then
+        echo("Too low!")
+      else
+        echo("Too high!")
+    }
+    i = i - 1
+}
+
+if not win then {
+    echo("\nYou ran out of guesses!")
+    echo("The number was " + (x -> Str))
+}
