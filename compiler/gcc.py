@@ -78,7 +78,7 @@ def compile(code: str, modules: list[ModuleMeta], output: str | Path = "output/o
     tmp.close()
 
     cmd = (
-        ["mold"]
+        ["ccache", "mold"]
         + ["-run", "gcc"]
         + ["-pipe"]
         + [tmp.name, tmp_source.name]
