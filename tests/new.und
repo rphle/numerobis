@@ -1,0 +1,3 @@
+# ---
+greet!(name: Str, greeting: Str = "Hello", punct: Str = "!"): Str = greeting + " " + name + punct
+greet("World", punct=".")

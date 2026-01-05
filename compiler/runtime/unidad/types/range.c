@@ -18,17 +18,19 @@ Value *range__init__(Range x) {
   return v;
 }
 
-Value *range__bool__(Value *self) { return VTRUE; }
-bool range__cbool__(Value *self) { return true; }
+static inline Value *range__bool__(Value *self) { return VTRUE; }
+static inline bool range__cbool__(Value *self) { return true; }
 
-Value *range__eq__(Value *_self, Value *_other) {
+static Value *range__eq__(Value *_self, Value *_other) {
   Range self = *_self->range;
   Range other = *_other->range;
   return bool__init__(self.start == other.start && self.stop == other.stop &&
                       self.step == other.step);
 }
 
-Value *range__str__(Value *self) { str__init__(g_string_new("[Range]")); }
+static inline Value *range__str__(Value *self) {
+  str__init__(g_string_new("[Range]"));
+}
 
 static const ValueMethods _range_methods = {
     .__bool__ = range__bool__,

@@ -165,7 +165,7 @@ static inline Value *number__mod__(Value *a, Value *b) {
   return number_binop(a, b, i_mod, f_mod);
 }
 
-Value *number__str__(Value *val) {
+static Value *number__str__(Value *val) {
   GString *result = g_string_new("");
 
   Number *n = val->number;
@@ -177,7 +177,7 @@ Value *number__str__(Value *val) {
   return str__init__(result);
 }
 
-Value *number__int__(Value *self) {
+static Value *number__int__(Value *self) {
   Number *n = self->number;
   if (n->kind == NUM_INT64) {
     return int__init__(n->i64);

@@ -13,18 +13,20 @@ Value *bool__init__(bool x) {
   v->methods = &_bool_methods;
 }
 
-Value *bool__bool__(Value *self) { return self; }
-bool bool__cbool__(Value *self) { return self->boolean; }
+static inline Value *bool__bool__(Value *self) { return self; }
+static inline bool bool__cbool__(Value *self) { return self->boolean; }
 
-Value *bool__eq__(Value *self, Value *other) {
+static inline Value *bool__eq__(Value *self, Value *other) {
   return bool__init__(self->boolean == other->boolean);
 }
 
-Value *bool__str__(Value *self) {
+static inline Value *bool__str__(Value *self) {
   str__init__(g_string_new(self->boolean ? "true" : "false"));
 }
 
-Value *bool__int__(Value *self) { return int__init__(self->boolean ? 1 : 0); }
+static inline Value *bool__int__(Value *self) {
+  return int__init__(self->boolean ? 1 : 0);
+}
 
 static const ValueMethods _bool_methods = {
     .__bool__ = bool__bool__,

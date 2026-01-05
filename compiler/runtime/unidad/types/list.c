@@ -284,7 +284,7 @@ static Value *list__ge__(Value *self, Value *other) {
 }
 
 // serialization
-Value *list__str__(Value *self) {
+static Value *list__str__(Value *self) {
   GString *result = g_string_new("");
 
   g_string_append_c(result, '[');

@@ -209,7 +209,7 @@ static Value *str__ge__(Value *self, Value *other) {
   return bool__init__(_str_len(self->str) >= _str_len(other->str));
 }
 
-static Value *str__str__(Value *self) { return self; }
+static inline Value *str__str__(Value *self) { return self; }
 
 static Value *str__int__(Value *self) {
   const gchar *str = self->str->str;
