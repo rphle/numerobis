@@ -1,7 +1,7 @@
 #include "range.h"
 #include "../values.h"
 #include "bool.h"
-
+#include "str.h"
 #include <glib.h>
 #include <stdbool.h>
 
@@ -28,8 +28,11 @@ Value *range__eq__(Value *_self, Value *_other) {
                       self.step == other.step);
 }
 
+Value *range__str__(Value *self) { str__init__(g_string_new("[Range]")); }
+
 static const ValueMethods _range_methods = {
     .__bool__ = range__bool__,
     .__cbool__ = range__cbool__,
     .__eq__ = range__eq__,
+    .__str__ = range__str__,
 };

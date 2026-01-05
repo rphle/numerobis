@@ -4,6 +4,7 @@
 #include "../values.h"
 #include "bool.h"
 #include "number.h"
+#include "str.h"
 #include <glib.h>
 #include <stdarg.h>
 #include <stdbool.h>
@@ -282,6 +283,30 @@ static Value *list__ge__(Value *self, Value *other) {
   return bool__init__(_list_len(self->list) >= _list_len(other->list));
 }
 
+// serialization
+Value *list__str__(Value *self) {
+  GString *result = g_string_new("");
+
+  g_string_append_c(result, '[');
+  GArray *arr = self->list;
+  for (size_t i = 0; i < arr->len; i++) {
+    if (i > 0)
+      g_string_append(result, ", ");
+
+    Value *elem = g_array_index(arr, Value *, i);
+    if (elem && elem->type == VALUE_STR) {
+      g_string_append_printf(result, "\"%s\"", elem->str->str);
+    } else {
+      // recursively convert
+      Value *elem_str = list__str__(elem);
+      g_string_append(result, elem_str->str->str);
+    }
+  }
+  g_string_append_c(result, ']');
+
+  return str__init__(result);
+}
+
 static const ValueMethods _list_methods = {
     .__bool__ = list__bool__,
     .__cbool__ = list__cbool__,
@@ -296,4 +321,5 @@ static const ValueMethods _list_methods = {
     .__getslice__ = list__getslice__,
     .__add__ = list__add__,
     .__mul__ = list__mul__,
+    .__str__ = list__str__,
 };

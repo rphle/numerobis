@@ -157,8 +157,6 @@ class Compiler:
         return tstr(f"bool__init__({' && '.join(comparisons)})")
 
     def conversion_(self, node: Conversion, link: int) -> tstr:
-        self.include.add("unidad/conversions/conversions")
-
         out = tstr("__$func__($value, $loc)")
         out["value"] = self.compile(node.value)
         out["loc"] = (
@@ -166,7 +164,7 @@ class Compiler:
         )
 
         if isinstance(node.target, Type):
-            out["func"] = f"to_{node.target.name.name.lower()}"
+            out["func"] = f"{node.target.name.name.lower()}"
         else:
             raise NotImplementedError("Unit conversions are not supported yet.")
         return out

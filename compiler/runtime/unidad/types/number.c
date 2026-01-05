@@ -1,5 +1,6 @@
 #include "../values.h"
 #include "bool.h"
+#include "str.h"
 #include <glib.h>
 #include <math.h>
 #include <stdbool.h>
@@ -164,6 +165,27 @@ static inline Value *number__mod__(Value *a, Value *b) {
   return number_binop(a, b, i_mod, f_mod);
 }
 
+Value *number__str__(Value *val) {
+  GString *result = g_string_new("");
+
+  Number *n = val->number;
+  if (n->kind == NUM_INT64) {
+    g_string_printf(result, "%ld", n->i64);
+  } else {
+    g_string_printf(result, "%g", n->f64);
+  }
+  return str__init__(result);
+}
+
+Value *number__int__(Value *self) {
+  Number *n = self->number;
+  if (n->kind == NUM_INT64) {
+    return int__init__(n->i64);
+  } else {
+    return int__init__((gint64)n->f64);
+  }
+}
+
 static const ValueMethods _number_methods = {
     .__bool__ = number__bool__,
     .__cbool__ = number__cbool__,
@@ -179,4 +201,6 @@ static const ValueMethods _number_methods = {
     .__ge__ = number__ge__,
     .__eq__ = number__eq__,
     .__neg__ = number__neg__,
+    .__str__ = number__str__,
+    .__int__ = number__int__,
 };

@@ -47,6 +47,8 @@ typedef struct {
                         struct Value *value);
   Value *(*__getslice__)(struct Value *_self, struct Value *_start,
                          struct Value *_stop, struct Value *_step);
+  Value *(*__str__)(struct Value *self);
+  Value *(*__int__)(struct Value *self);
 } ValueMethods;
 
 typedef struct Value {
@@ -64,6 +66,7 @@ typedef struct Value {
 
 static inline Value *__bool__(Value *a) { return a->methods->__bool__(a); }
 static inline bool __cbool__(Value *a) { return a->methods->__cbool__(a); }
+
 static inline Value *__add__(Value *self, Value *other) {
   return self->methods->__add__(self, other);
 }
@@ -82,6 +85,7 @@ static inline Value *__mod__(Value *self, Value *other) {
 static inline Value *__pow__(Value *self, Value *other) {
   return self->methods->__pow__(self, other);
 }
+
 static inline Value *__lt__(Value *a, Value *b) {
   return a->methods->__lt__(a, b);
 }
@@ -97,8 +101,11 @@ static inline Value *__ge__(Value *a, Value *b) {
 static inline Value *__eq__(Value *a, Value *b) {
   return a->methods->__eq__(a, b);
 }
+
 static inline Value *__neg__(Value *x) { return x->methods->__neg__(x); }
+
 static inline Value *len(Value *a) { return a->methods->len(a); }
+
 static inline Value *__getitem__(Value *self, Value *index,
                                  const Location *loc) {
   Value *r = self->methods->__getitem__(self, index);
@@ -116,6 +123,16 @@ static inline Value *__setitem__(Value *self, Value *index, Value *value,
 static inline Value *__getslice__(Value *_self, struct Value *_start,
                                   struct Value *_stop, struct Value *_step) {
   return _self->methods->__getslice__(_self, _start, _stop, _step);
+}
+
+static inline Value *__str__(Value *self, const Location *loc) {
+  return self->methods->__str__(self);
+}
+static inline Value *__int__(Value *self, const Location *loc) {
+  Value *r = self->methods->__int__(self);
+  if (r == NULL)
+    u_throw(301, loc);
+  return r;
 }
 
 #endif

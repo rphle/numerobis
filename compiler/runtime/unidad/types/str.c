@@ -209,6 +209,33 @@ static Value *str__ge__(Value *self, Value *other) {
   return bool__init__(_str_len(self->str) >= _str_len(other->str));
 }
 
+static Value *str__str__(Value *self) { return self; }
+
+static Value *str__int__(Value *self) {
+  const gchar *str = self->str->str;
+  gchar *endptr = NULL;
+
+  while (g_ascii_isspace(*str)) {
+    str++;
+  }
+
+  if (*str == '\0') {
+    return NULL;
+  }
+
+  gint64 result = g_ascii_strtoll(str, &endptr, 10);
+
+  while (g_ascii_isspace(*endptr)) {
+    endptr++;
+  }
+
+  if (*endptr != '\0') {
+    return NULL;
+  }
+
+  return int__init__(result);
+}
+
 static const ValueMethods _str_methods = {
     .__bool__ = str__bool__,
     .__cbool__ = str__cbool__,
@@ -223,4 +250,6 @@ static const ValueMethods _str_methods = {
     .__getslice__ = str__getslice__,
     .__add__ = str__add__,
     .__mul__ = str__mul__,
+    .__str__ = str__str__,
+    .__int__ = str__int__,
 };
