@@ -2,6 +2,9 @@ import subprocess
 from functools import lru_cache
 from pathlib import Path
 
+import rich
+import rich.syntax
+
 from classes import CompiledModule
 from exceptions.exceptions import Exceptions
 
@@ -68,7 +71,18 @@ class Linker:
                 ["clang-format"], input=code, text=True, capture_output=True
             ).stdout
 
-        print(code)
+        if not format:
+            print(code)
+        else:
+            rich.print(
+                rich.syntax.Syntax(
+                    code,
+                    "C",
+                    theme="monokai",
+                    line_numbers=True,
+                    background_color="#000000",
+                )
+            )
         self.linked = code
         return code
 

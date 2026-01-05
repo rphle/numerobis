@@ -11,6 +11,7 @@ from nodes.ast import (
     Boolean,
     BoolOp,
     Call,
+    CallArg,
     Compare,
     Conversion,
     DimensionDefinition,
@@ -18,6 +19,7 @@ from nodes.ast import (
     Float,
     ForLoop,
     FromImport,
+    Function,
     If,
     Import,
     Index,
@@ -25,6 +27,7 @@ from nodes.ast import (
     Integer,
     List,
     Range,
+    Return,
     Slice,
     String,
     Type,
@@ -39,7 +42,7 @@ from typechecker.types import T
 from utils import camel2snake_pattern
 
 from .tstr import tstr
-from .utils import ensuresuffix, mthd
+from .utils import ensuresuffix, mthd, strip_parens
 
 
 class Compiler:
@@ -110,11 +113,48 @@ class Compiler:
 
         if node.meta.get("extern", None) != "function":
             # normal functions and extern macros
-            out["args"] = ", ".join(
-                str(self.compile(self.unlink(arg).value))  # type: ignore
-                for arg in node.args
-            )
+            unlinked_args: list[CallArg] = [self.unlink(arg) for arg in node.args]  # type: ignore
+            args = []
+
+            # positional args
+            i = 0
+            for arg in unlinked_args:
+                if arg.name:
+                    break
+                args.append(arg.value)
+                i += 1
+
+            if callee_node := node.meta["callee.node"]:
+                # positional arguments (with default values)
+                func = self.unlink(callee_node)
+                assert isinstance(func, Function)
+
+                params = {
+                    self.unlink(p.name).name: p.default  # type: ignore
+                    for param in func.params[i:]
+                    if (p := self.unlink(param))
+                }
+                arg_names = {
+                    self.unlink(arg.name).name: arg  # type: ignore
+                    for arg in unlinked_args[i:]
+                }
+
+                for name, param in params.items():
+                    if name in arg_names:
+                        args.append(
+                            next(a.value for n, a in arg_names.items() if n == name)
+                        )
+                    else:
+                        args.append(param)  # type: ignore
+            else:
+                # positional arguments (fallback)
+                for arg in unlinked_args[i:]:
+                    args.append(arg.value)
+
+            out["args"] = ", ".join(str(self.compile(arg)) for arg in args)
+
         else:
+            # extern functions
             if len(node.args) == 0:
                 out["args"] = "NULL"
             else:
@@ -196,8 +236,8 @@ class Compiler:
 
         body = self.compile(node.body)
         loop["body"] = (
-            str(body).lstrip("{").rstrip("}")
-            if isinstance(node.body, Block)
+            strip_parens(str(body), "{")
+            if isinstance(self.unlink(node.body), Block)
             else ensuresuffix(str(body), ";")
         )
 
@@ -252,8 +292,8 @@ class Compiler:
 
         body = self.compile(node.body)
         loop["body"] = (
-            str(body).lstrip("{").rstrip("}")
-            if isinstance(node.body, Block)
+            strip_parens(str(body), "{")
+            if isinstance(self.unlink(node.body), Block)
             else ensuresuffix(str(body), ";")
         )
         loop["i"] = f"__iterator_{abs(link)}"
@@ -292,6 +332,22 @@ class Compiler:
             loop[key] = self.number_(value, init=False) if value else 1  # type: ignore
 
         return loop
+
+    def function_(self, node: Function, link: int) -> tstr:
+        out = tstr("Value *$name($args) {\n$body\n}")
+
+        body = self.compile(node.body)
+        out["body"] = (
+            strip_parens(str(body), "{")
+            if isinstance(self.unlink(node.body), Block)
+            else "return " + ensuresuffix(str(body), ";")
+        )
+        out["name"] = self.compile(node.name)
+        out["args"] = ", ".join(
+            f"Value *{self.compile(self.unlink(arg).name)}"  # type: ignore
+            for arg in node.params
+        )
+        return out
 
     def identifier_(self, node: Identifier, link: int) -> tstr:
         prefix = (
@@ -397,6 +453,9 @@ class Compiler:
             f"range__init__((Range){{ .start = {start}, .stop = {stop}, .step = {step} }})"
         )
 
+    def return_(self, node: Return, link: int) -> tstr:
+        return tstr(f"return {self.compile(node.value)}")
+
     def slice_(self, node: Index, link: int) -> tstr:
         index = self.unlink(node.index)
         assert isinstance(index, Slice)
@@ -456,8 +515,8 @@ class Compiler:
         out["condition"] = self.compile(node.condition)
         body = self.compile(node.body)
         out["body"] = (
-            str(body).lstrip("{").rstrip("}")
-            if isinstance(node.body, Block)
+            strip_parens(str(body), "{")
+            if isinstance(self.unlink(node.body), Block)
             else ensuresuffix(str(body), ";")
         )
 

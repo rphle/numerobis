@@ -18,10 +18,10 @@ static __thread bool _echo_in_list = false;
       bool: echo_bool,                                                         \
       default: echo_value)(x)
 
-#define echo(x)                                                                \
+#define echo(x, end)                                                           \
   do {                                                                         \
     echo_dispatch(x);                                                          \
-    g_print("\n");                                                             \
+    echo_dispatch(end);                                                        \
   } while (0)
 
 /* ---------- declarations ---------- */

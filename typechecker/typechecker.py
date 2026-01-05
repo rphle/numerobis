@@ -214,6 +214,7 @@ class Typechecker:
         args: dict[str, tuple[T, T, str]] = {}
         i = 0
         for arg in node.args:
+            arg = self.unlink(arg, attrs=["name"])
             if arg.name:
                 if arg.name.name in args:
                     self.errors.throw(
@@ -272,6 +273,7 @@ class Typechecker:
                 loc=node.loc,
             )
 
+        self.namespaces.nodes[link].meta["callee.node"] = callee.node
         if callee.extern:
             self.namespaces.nodes[link].meta["extern"] = callee.extern
         if callee.node is None or callee.extern:
@@ -909,7 +911,8 @@ class Typechecker:
         return ret
 
     def start(self):
-        self.program, self.namespaces.nodes = linking.link(self.ast)
+        self.program, nodes = linking.link(self.ast)
+        self.namespaces.nodes.update(nodes)
         env = Env(
             glob=self.namespaces,
             level=0,

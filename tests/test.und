@@ -81,3 +81,33 @@ for i in 1..9..2 do {
 echo(a)
 a[0] = "world"
 echo(a)
+
+# ---
+greet!(name: Str, greeting: Str = "Hello", punct: Str = "!"): Str = greeting + " " + name + punct
+echo(greet("World", punct="."))
+
+# ---
+factorial!(n: Int): Int = if n <= 1 then 1 else n * factorial(n - 1)
+echo(factorial(5))
+
+# ---
+fib!(n: Int): Int = if n <= 1 then n else fib(n - 1) + fib(n - 2)
+echo(fib(10))
+
+# ---
+sum_list!(lst: List[Int]): Int = if lst == [] then 0 else lst[0] + sum_list(lst[1:])
+echo(sum_list([1, 2, 3, 4, 5]))
+
+# ---
+f!(x) = x * 2
+g!(y) = y + 3
+h!(z) = g(f(z))
+echo(h(5))
+
+# ---
+return_early!(x: Int): Int = {
+    if x < 0 then return 0
+    return x * 2
+}
+echo(return_early(5))
+echo(return_early(-5))
