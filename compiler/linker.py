@@ -44,7 +44,11 @@ class Linker:
 
         code = tstr("""$include
 
+                    $typedefs
+
                     extern void u_init_module_registry(void);
+
+                    $functions
 
                     int main() {
                         u_init_module_registry();
@@ -56,14 +60,22 @@ class Linker:
         code["include"] = "\n".join([f"#include <{lib}.h>" for lib in self.include])
 
         output = []
-        for module in self.order:
-            self.modules[module].meta.path = Path(self._path(module))
+        functions = []
+        typedefs = []
+        for file in self.order:
+            module = self.modules[file]
+            module.meta.path = Path(self._path(file))
             output.append(
-                f'/* {self._path(module)} */\nUNIDAD__FILE__ = "{self._path(module)}";\n{self.modules[module].code}\n'
+                f'/* {self._path(file)} */\nUNIDAD__FILE__ = "{self._path(file)}";\n{module.code}\n'
             )
-        self.order = [self._path(module) for module in self.order]
+            functions.extend(module.functions)
+            typedefs.extend(module.typedefs)
+
+        self.order = [self._path(file) for file in self.order]
 
         code["output"] = "\n\n".join(output)
+        code["functions"] = "\n\n".join(functions)
+        code["typedefs"] = "\n\n".join(typedefs)
 
         code = str(code).strip()
         if format:
@@ -79,7 +91,7 @@ class Linker:
                     code,
                     "C",
                     theme="monokai",
-                    line_numbers=True,
+                    line_numbers=False,
                     background_color="#000000",
                 )
             )

@@ -1,8 +1,9 @@
 import dataclasses
 from hashlib import md5
-from typing import Any
+from typing import Any, TypeVar
 
 from classes import CompiledModule, Header, ModuleMeta
+from compiler.scoping import get_free_vars
 from environment import Namespaces
 from exceptions.exceptions import Exceptions
 from nodes.ast import (
@@ -36,13 +37,15 @@ from nodes.ast import (
     Variable,
     WhileLoop,
 )
-from nodes.core import Identifier
+from nodes.core import AstNode, Identifier
 from typechecker.linking import Link
-from typechecker.types import T
+from typechecker.types import FunctionType, T
 from utils import camel2snake_pattern
 
 from .tstr import tstr
-from .utils import ensuresuffix, mthd, strip_parens
+from .utils import BUILTINS, ensuresuffix, mthd, strip_parens
+
+SameType = TypeVar("SameType")
 
 
 class Compiler:
@@ -73,6 +76,8 @@ class Compiler:
                 "unidad/builtins/builtins",
             }
         )
+        self.functions: list[str] = []
+        self.typedefs: list[str] = []
         self._defined_addrs = set()
         self._imported_names = {}
 
@@ -91,7 +96,7 @@ class Compiler:
         for stmt in node.body:
             out.append(str(self.compile(stmt)) + ";")
 
-        return tstr("\n".join(out))
+        return tstr("{\n" + "\n".join(out) + "\n}")
 
     def boolean_(self, node: Boolean, link: int) -> tstr:
         self.include.add("stdbool")
@@ -109,63 +114,47 @@ class Compiler:
     def call_(self, node: Call, link: int) -> tstr:
         out = tstr("$callee($args)")
 
-        out["callee"] = self.compile(node.callee)
+        callee = self.compile(node.callee)
+        out["callee"] = callee
 
-        if node.meta.get("extern", None) != "function":
-            # normal functions and extern macros
-            unlinked_args: list[CallArg] = [self.unlink(arg) for arg in node.args]  # type: ignore
-            args = []
+        unlinked_args: list[CallArg] = [self.unlink(arg) for arg in node.args]  # type: ignore
+        args = []
 
-            # positional args
-            i = 0
-            for arg in unlinked_args:
-                if arg.name:
-                    break
-                args.append(arg.value)
-                i += 1
+        # positional args
+        i = 0
+        for arg in unlinked_args:
+            if arg.name:
+                break
+            args.append(arg.value)
+            i += 1
 
-            if callee_node := node.meta["callee.node"]:
-                # positional arguments (with default values)
-                func = self.unlink(callee_node)
-                assert isinstance(func, Function)
+        # order arguments
+        signature: FunctionType = node.meta["callee"]
 
-                params = {
-                    self.unlink(p.name).name: p.default  # type: ignore
-                    for param in func.params[i:]
-                    if (p := self.unlink(param))
-                }
-                arg_names = {
-                    self.unlink(arg.name).name: arg  # type: ignore
-                    for arg in unlinked_args[i:]
-                }
+        arg_names = {
+            self.unlink(arg.name).name: arg  # type: ignore
+            for arg in unlinked_args[i:]
+        }
 
-                for name, param in params.items():
-                    if name in arg_names:
-                        args.append(
-                            next(a.value for n, a in arg_names.items() if n == name)
-                        )
-                    else:
-                        args.append(param)  # type: ignore
-            else:
-                # positional arguments (fallback)
-                for arg in unlinked_args[i:]:
-                    args.append(arg.value)
+        for name in signature.param_names[i:]:
+            args.append(arg_names[name].value if name in arg_names else None)
 
-            out["args"] = ", ".join(str(self.compile(arg)) for arg in args)
+        args = [str(self.compile(arg)) if arg else "NULL" for arg in args]
 
+        # generate output
+        if node.meta.get("extern", None) == "macro":
+            # extern macros
+            out["args"] = ", ".join(args)
         else:
-            # extern functions
-            if len(node.args) == 0:
-                out["args"] = "NULL"
+            # functions
+            if node.meta.get("extern", None) == "function":
+                # extern function
+                str_args = f"(Value*[]){{{', '.join(args)}}}"
+                out["args"] = str_args
             else:
-                out["args"] = (
-                    "(Value*[]){"
-                    + ", ".join(
-                        str(self.compile(self.unlink(arg).value))  # type: ignore
-                        for arg in node.args
-                    )
-                    + "}"
-                )
+                # not an extern function or macro
+                str_args = f"(Value*[]){{{callee}, {', '.join(args)}}}"
+                out = tstr(f"closure__call__({callee}, {str_args})")
 
         return out
 
@@ -234,12 +223,8 @@ class Compiler:
             $body
         }""")
 
-        body = self.compile(node.body)
-        loop["body"] = (
-            strip_parens(str(body), "{")
-            if isinstance(self.unlink(node.body), Block)
-            else ensuresuffix(str(body), ";")
-        )
+        body = self.compile(self._make_block(node.body))
+        loop["body"] = strip_parens(str(body), "{")
 
         iterable_type = self._link2type(node.iterable)
         iterator_name = f"__iterator_{abs(link)}"
@@ -290,12 +275,8 @@ class Compiler:
                 $body
             }}""")
 
-        body = self.compile(node.body)
-        loop["body"] = (
-            strip_parens(str(body), "{")
-            if isinstance(self.unlink(node.body), Block)
-            else ensuresuffix(str(body), ";")
-        )
+        body = self.compile(self._make_block(node.body))
+        loop["body"] = strip_parens(str(body), "{")
         loop["i"] = f"__iterator_{abs(link)}"
         loop["iv"] = self.compile(node.iterators[0])
 
@@ -334,22 +315,62 @@ class Compiler:
         return loop
 
     def function_(self, node: Function, link: int) -> tstr:
-        out = tstr("Value *$name($args) {\n$body\n}")
+        self.include.add("unidad/closures")
 
-        body = self.compile(node.body)
-        out["body"] = (
-            strip_parens(str(body), "{")
-            if isinstance(self.unlink(node.body), Block)
-            else "return " + ensuresuffix(str(body), ";")
+        definition = tstr("""Value *$name(void *__env, Value **__args) {
+                                U_UNPACK_ENV($env)
+                                $shadow_vars
+                                Value *self = __args[0];
+                                $args
+
+                                $body
+                            }""")
+        assert node.body is not None
+
+        body = self.compile(self._make_block(node.body, rtrn=True))
+
+        _unlinked_params = [self.unlink(param) for param in node.params]
+
+        params = [str(self.compile(param.name)) for param in _unlinked_params]
+        free_vars = [
+            f"und_{self.uid}_{var}"
+            for var in get_free_vars(self.env.nodes, node, link=link)
+        ]
+        env_type = f"__Env_{self.uid}_{abs(link)}"
+
+        definition["body"] = strip_parens(str(body), "{")
+        definition["name"] = f"__impl_{self.uid}_{abs(link)}"
+        definition["env"] = env_type
+
+        definition["shadow_vars"] = "\n".join(
+            f"U_SHADOW_VAR({var})" for var in free_vars
         )
-        out["name"] = self.compile(node.name)
-        out["args"] = ", ".join(
-            f"Value *{self.compile(self.unlink(arg).name)}"  # type: ignore
-            for arg in node.params
+        definition["args"] = "\n".join(
+            f"U_UNPACK_ARG({param}, {i + 1})"
+            if not _unlinked_params[i].default
+            else f"U_UNPACK_OPT_ARG({param}, {i + 1}, {self.compile(_unlinked_params[i].default)})"
+            for i, param in enumerate(params)
         )
-        return out
+
+        self.functions.append(str(definition))
+
+        out = f"U_NEW_CLOSURE({definition['name']}, {env_type}, {', '.join([] + free_vars) if free_vars else 'NULL'})"
+        if node.name is not None:
+            out = f"Value *{self.compile(node.name)} = {out}"
+
+        self.typedefs.append(
+            "typedef struct { "
+            + "".join(f"Value *{v}; " for v in free_vars)
+            + f"}} {env_type};"
+        )
+
+        return tstr(out)
 
     def identifier_(self, node: Identifier, link: int) -> tstr:
+        if "link" in node.meta:
+            # function name in its own body
+            return tstr("self", meta={"reference": True})
+
         prefix = (
             ""
             if node.name in self.env.externs
@@ -509,23 +530,18 @@ class Compiler:
         return out
 
     def while_loop_(self, node: WhileLoop, link: int) -> tstr:
-        out = tstr("while (__cbool__($condition)) { $body }")
+        out = tstr("while (__cbool__($condition)) $body")
 
         out["condition_type"] = str(self._link2type(node.condition))
         out["condition"] = self.compile(node.condition)
-        body = self.compile(node.body)
-        out["body"] = (
-            strip_parens(str(body), "{")
-            if isinstance(self.unlink(node.body), Block)
-            else ensuresuffix(str(body), ";")
-        )
+        out["body"] = self.compile(self._make_block(node.body))
 
         return out
 
-    def unlink(self, link: int | Link | Any):
+    def unlink(self, link: SameType) -> SameType:
         if isinstance(link, (int, Link)):
             target = link if isinstance(link, int) else link.target
-            return self.env.nodes[target]
+            return self.env.nodes[target]  # type: ignore
         return link
 
     def compile(self, link: Link | Any) -> tstr:
@@ -564,6 +580,8 @@ class Compiler:
             imports=self.imports,
             include=self.include,
             code=code,
+            functions=self.functions,
+            typedefs=self.typedefs,
         )
 
     def process_header(self):
@@ -582,8 +600,7 @@ class Compiler:
 
     def _builtins(self):
         uid = md5("stdlib/builtins.und".encode()).hexdigest()[:8]
-        names = ["echo", "input", "random", "floor"]
-        self._imported_names.update({name: f"und_{uid}_" for name in names})
+        self._imported_names.update({name: f"und_{uid}_" for name in BUILTINS})
 
     def _node2type(self, node) -> T:
         return self.env.names[node.meta["address"]]
@@ -593,3 +610,8 @@ class Compiler:
         if not isinstance(link, int):
             raise TypeError(f"Expected int, got {type(link).__name__}")
         return self.env.typed[link]
+
+    def _make_block(self, node: AstNode, rtrn: bool = False) -> Block:
+        if isinstance(self.unlink(node), Block):
+            return node  # type: ignore
+        return Block(body=[Return(value=node)]) if rtrn else Block(body=[node])

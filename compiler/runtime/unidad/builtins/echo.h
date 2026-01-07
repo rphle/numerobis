@@ -1,6 +1,7 @@
 #ifndef UNIDAD_ECHO_H
 #define UNIDAD_ECHO_H
 
+#include "../constants.h"
 #include "../values.h"
 #include <glib.h>
 #include <stdbool.h>
@@ -18,11 +19,7 @@ static __thread bool _echo_in_list = false;
       bool: echo_bool,                                                         \
       default: echo_value)(x)
 
-#define echo(x, end)                                                           \
-  do {                                                                         \
-    echo_dispatch(x);                                                          \
-    echo_dispatch(end);                                                        \
-  } while (0)
+#define echo(x, end) (echo_dispatch(x), echo_dispatch(end ? end : g_string_new("\n")), (Value *)NONE)
 
 /* ---------- declarations ---------- */
 static inline void echo_value(gpointer v);

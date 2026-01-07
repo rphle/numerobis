@@ -24,4 +24,6 @@ class CompiledModule:
     imports: list[str]
     include: set[str]
     code: str
+    functions: list[str]
+    typedefs: list[str]
     namespaces: Optional["Namespaces"] = None  # type: ignore # noqa

@@ -273,7 +273,7 @@ class Typechecker:
                 loc=node.loc,
             )
 
-        self.namespaces.nodes[link].meta["callee.node"] = callee.node
+        self.namespaces.nodes[link].meta["callee"] = callee
         if callee.extern:
             self.namespaces.nodes[link].meta["extern"] = callee.extern
         if callee.node is None or callee.extern:
@@ -567,7 +567,7 @@ class Typechecker:
 
         return signature
 
-    def identifier_(self, node: Identifier, env: Env):
+    def identifier_(self, node: Identifier, env: Env, link: int):
         try:
             item = env.get("names")(node.name)
         except KeyError:
@@ -575,6 +575,10 @@ class Typechecker:
             return
 
         if "#function" in env.meta:
+            # contains link if function is recursive
+            if env.meta["#function"].node == item.node:
+                # if the identifier describes the function it is within
+                self.namespaces.nodes[link].meta["link"] = item.node
             if isinstance(item, AnyType) and item.unresolved:
                 raise UnresolvedAnyParam(item.unresolved)
 
@@ -889,9 +893,14 @@ class Typechecker:
                 | Function()
                 | ForLoop()
                 | Call()
+                | Identifier()
             ):
                 name = camel2snake_pattern.sub("_", type(node).__name__).lower() + "_"
-                ret = getattr(self, name)(node, env=env, link=link.target)
+                ret = getattr(self, name)(
+                    node,
+                    env=env,
+                    link=link.target if isinstance(link, linking.Link) else None,
+                )
             case DimensionDefinition() | UnitDefinition() | FromImport() | Import():
                 return  # type: ignore
             case _:

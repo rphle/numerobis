@@ -111,3 +111,16 @@ return_early!(x: Int): Int = {
 }
 echo(return_early(5))
 echo(return_early(-5))
+
+# ---
+x = 10
+outer!(greeting: Str) = {
+    y = 20
+    inner!() = {
+        echo(greeting)
+        return x + y
+    }
+    echo(inner())
+}
+x = 20
+outer("Hello")

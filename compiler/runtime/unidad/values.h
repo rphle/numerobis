@@ -10,9 +10,14 @@ typedef enum {
   VALUE_STR,
   VALUE_LIST,
   VALUE_RANGE,
+  VALUE_CLOSURE,
   VALUE_NONE
 } ValueType;
 typedef enum { NUM_INT64, NUM_DOUBLE } NumberKind;
+
+struct Value;
+typedef struct Range Range;
+typedef struct Value Value;
 
 typedef struct {
   NumberKind kind;
@@ -22,9 +27,10 @@ typedef struct {
   };
 } Number;
 
-struct Value;
-typedef struct Range Range;
-typedef struct Value Value;
+typedef struct {
+  Value *(*func)(void *env, Value **args);
+  void *env;
+} Closure;
 
 typedef struct {
   Value *(*__bool__)(struct Value *self);
@@ -60,6 +66,7 @@ typedef struct Value {
     GString *str;
     GArray *list;
     Range *range;
+    Closure *closure;
     void *none;
   };
 } Value;
