@@ -141,20 +141,8 @@ class Compiler:
 
         args = [str(self.compile(arg)) if arg else "NULL" for arg in args]
 
-        # generate output
-        if node.meta.get("extern", None) == "macro":
-            # extern macros
-            out["args"] = ", ".join(args)
-        else:
-            # functions
-            if node.meta.get("extern", None) == "function":
-                # extern function
-                str_args = f"(Value*[]){{{', '.join(args)}}}"
-                out["args"] = str_args
-            else:
-                # not an extern function or macro
-                str_args = f"(Value*[]){{{callee}, {', '.join(args)}}}"
-                out = tstr(f"closure__call__({callee}, {str_args})")
+        str_args = f"(Value*[]){{{callee}, {', '.join(args)}}}"
+        out = tstr(f"__call__({callee}, {str_args})")
 
         return out
 
@@ -199,12 +187,9 @@ class Compiler:
         return out
 
     def extern_declaration_(self, node: ExternDeclaration, link: int) -> tstr:
-        if node.macro:
-            return tstr("")
-
         self.include.add("unidad/extern")
 
-        out = tstr('UExternFn und_$uid_$name = u_extern_lookup("$name")')
+        out = tstr('Value *und_$uid_$name = u_extern_lookup("$name")')
         out["uid"] = self.uid
         out["name"] = self.unlink(self.unlink(node.value).name).name  # type: ignore
 
@@ -333,7 +318,7 @@ class Compiler:
 
         params = [str(self.compile(param.name)) for param in _unlinked_params]
         free_vars = [
-            f"und_{self.uid}_{var}"
+            self._imported_names.get(var, f"und_{self.uid}_") + var
             for var in get_free_vars(self.env.nodes, node, link=link)
         ]
         env_type = f"__Env_{self.uid}_{abs(link)}"
@@ -371,12 +356,7 @@ class Compiler:
             # function name in its own body
             return tstr("self", meta={"reference": True})
 
-        prefix = (
-            ""
-            if node.name in self.env.externs
-            and self.env.externs[node.name]["type"] == "macro"
-            else self._imported_names.get(node.name, f"und_{self.uid}_")
-        )
+        prefix = self._imported_names.get(node.name, f"und_{self.uid}_")
         return tstr(prefix + node.name, meta={"reference": True})
 
     def if_(self, node: If, link: int) -> tstr:

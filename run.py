@@ -182,4 +182,4 @@ for key, value in cumulative.items():
         f"[dim]([bold cyan]{value / t if t > 0 else 0:.4f}s[/bold cyan] average)[/dim]"
     )
 
-# python3 run.py arithmetic calculations comparisons compile conditionals logic strings lists loops test --verbose
+# python3 run.py arithmetic calculations comparisons compile conditionals logic strings lists loops echo --verbose

@@ -20,8 +20,8 @@ static Value *unidad_builtin_random(Value **args) {
 }
 
 static Value *unidad_builtin_input(Value **args) {
-  if (args[0]) {
-    echo_dispatch(args[0]);
+  if (args[1]) {
+    echo((Value *[]){NULL, args[1], EMPTY_STR});
     fflush(stdout);
   }
 
@@ -41,7 +41,7 @@ static Value *unidad_builtin_input(Value **args) {
 
 static Value *unidad_builtin_floor(Value **args) {
 
-  Value *val = args[0];
+  Value *val = args[1];
 
   Number *n = val->number;
   gint64 result;
@@ -56,6 +56,7 @@ static Value *unidad_builtin_floor(Value **args) {
 }
 
 void u_register_builtin_externs(void) {
+  u_extern_register("echo", echo);
   u_extern_register("random", unidad_builtin_random);
   u_extern_register("input", unidad_builtin_input);
   u_extern_register("floor", unidad_builtin_floor);

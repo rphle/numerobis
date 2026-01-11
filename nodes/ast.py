@@ -235,4 +235,3 @@ class FunctionAnnotation(AstNode):
 @dataclass(kw_only=True, frozen=True)
 class ExternDeclaration(AstNode):
     value: VariableDeclaration | Function
-    macro: bool = False

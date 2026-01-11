@@ -113,6 +113,12 @@ echo(return_early(5))
 echo(return_early(-5))
 
 # ---
+curry!(f, a) = !(b) = f(a, b)
+add!(x, y) = x + y
+add_five = curry(add, 5)
+echo(add_five(10))
+
+# ---
 x = 10
 outer!(greeting: Str) = {
     y = 20
@@ -124,3 +130,25 @@ outer!(greeting: Str) = {
 }
 x = 20
 outer("Hello")
+
+# ---
+map_func!(f, lst: List): List[Int] = {
+    r = []
+    for item in lst do {
+        r = r + [f(item)]
+    }
+    return r
+}
+
+double!(x) = x * 2
+mapped = map_func(double, [1, 2, 3])
+
+echo(mapped)
+echo(map_func(floor, [1.2, 2.7, 3.4]))
+
+echo_emoji!(v) = echo(v, end=" " + [":)", ":D", ":(", ":|"][floor(random()*4)] + " ")
+map_func(echo_emoji, [1.2, 2.7, 3.4])
+
+echo("")
+greet!(name: Str, greeting: Str = "Hello") = {echo(greeting + ", " + name + "!")}
+greet("Alice")

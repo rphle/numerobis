@@ -800,21 +800,14 @@ class Parser(ParserTemplate):
 
     def extern_declaration(self) -> ExternDeclaration:
         _start = self._consume("EXTERN")
-        _macro = bool(
-            self._consume("ID")
-            if self._peek().type == "ID" and self._peek().value == "macro"
-            else None
-        )
 
         if self._peek(2).type == "BANG":
             value = self.function(body=False)
         else:
-            if _macro:
-                self.errors.throw(22, loc=self.tok.loc)
             value = self.variable(declaration=True)
 
         assert isinstance(value, (Function, VariableDeclaration))
-        return ExternDeclaration(value=value, macro=_macro, loc=nodeloc(_start, value))
+        return ExternDeclaration(value=value, loc=nodeloc(_start, value))
 
     def type(self) -> Type | FunctionAnnotation | Expression | One:
         if self._peek().type == "BANG":

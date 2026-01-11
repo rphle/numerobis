@@ -11,6 +11,7 @@ typedef enum {
   VALUE_LIST,
   VALUE_RANGE,
   VALUE_CLOSURE,
+  VALUE_EXTERN_FN,
   VALUE_NONE
 } ValueType;
 typedef enum { NUM_INT64, NUM_DOUBLE } NumberKind;
@@ -31,6 +32,8 @@ typedef struct {
   Value *(*func)(void *env, Value **args);
   void *env;
 } Closure;
+
+extern Value *closure__call__(Value *callee, Value **args);
 
 typedef struct {
   Value *(*__bool__)(struct Value *self);
@@ -67,6 +70,7 @@ typedef struct Value {
     GArray *list;
     Range *range;
     Closure *closure;
+    Value *(*extern_fn)(Value **args);
     void *none;
   };
 } Value;
@@ -140,6 +144,15 @@ static inline Value *__int__(Value *self, const Location *loc) {
   if (r == NULL)
     u_throw(301, loc);
   return r;
+}
+
+static inline Value *__call__(Value *self, Value **args) {
+  switch (self->type) {
+  case VALUE_EXTERN_FN:
+    return self->extern_fn(args);
+  default:
+    return closure__call__(self, args);
+  }
 }
 
 #endif

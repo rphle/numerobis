@@ -195,7 +195,7 @@ class FunctionType(UType):
     param_defaults: list[T] = field(default_factory=list)
     arity: tuple[int, int] = (0, 0)
     unresolved: Optional[Literal["recursive", "parameters"]] = None
-    extern: Optional[Literal["macro", "function"]] = None
+    extern: bool = False
     _name: Optional[str] = field(default=None, compare=False)
     _loc: Any = field(default=None)
 

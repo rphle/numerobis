@@ -1,5 +1,4 @@
 import uuid
-from typing import Literal, Optional
 
 from analysis.dimchecker import Dimchecker
 from analysis.simplifier import simplify
@@ -411,15 +410,10 @@ class Typechecker:
     def extern_declaration_(self, node: ExternDeclaration, env: Env, link: int):
         value = self.unlink(node.value)
         if isinstance(value, Function):
-            link = node.value.target  # type: ignore
-            self.function_(
-                value, env=env, link=link, extern="macro" if node.macro else "function"
-            )
+            v_link = node.value.target  # type: ignore
+            self.function_(value, env=env, link=v_link, extern=True)
 
-            self.namespaces.externs[self.unlink(value.name).name] = {
-                "type": "macro" if node.macro else "function",
-                "link": link,
-            }
+            self.namespaces.externs[self.unlink(value.name).name] = v_link
         else:
             assert isinstance(value, VariableDeclaration)
             typ = self.variable_declaration_(value, env=env)
@@ -469,7 +463,7 @@ class Typechecker:
         node: Function,
         env: Env,
         link: int,
-        extern: Optional[Literal["macro", "function"]] = None,
+        extern: bool = False,
     ):
         name = getattr(self.unlink(node.name), "name", None)
 
