@@ -190,6 +190,9 @@ extern values must be dimensionless
 [E542 / TypeError]
 extern functions must be declared directly
 
+[E543 / TypeError]
+addends must either be of the same dimension or dimensionless
+
 
 
 [E601 / NameError]

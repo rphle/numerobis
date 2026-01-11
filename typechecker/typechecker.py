@@ -1,7 +1,7 @@
 import uuid
 
 from analysis.dimchecker import Dimchecker
-from analysis.simplifier import simplify
+from analysis.simplifier import Simplifier
 from classes import ModuleMeta
 from environment import Env, Namespaces
 from exceptions.exceptions import Exceptions, Mismatch
@@ -78,6 +78,8 @@ class Typechecker:
         self.namespaces = namespaces
 
         self.dimchecker = Dimchecker(module=module, namespaces=namespaces)
+        self.simplifier = Simplifier(module=module)
+        self.simplify = self.simplifier.simplify
 
     def bin_op_(self, node: BinOp, env: Env, link: int) -> T:
         """Check dimensional consistency in mathematical operations"""
@@ -129,7 +131,7 @@ class Typechecker:
                 if node.op.name == "div":
                     r = Power(base=right.dim, exponent=Scalar(-1))
 
-                dimension = simplify(Product([left.dim, r]))
+                dimension = self.simplify(Product([left.dim, r]))
 
                 return left.edit(dim=dimension if dimension else None)
             case "pow":
@@ -144,7 +146,7 @@ class Typechecker:
 
                 assert isinstance(right, NumberType)
                 dimension = Power(base=left.dim, exponent=Scalar(right.value))
-                dimension = simplify(dimension)
+                dimension = self.simplify(dimension)
                 assert dimension is not None
                 return (
                     NumberType(typ="Float", dim=Expression(dimension))
@@ -392,7 +394,7 @@ class Typechecker:
 
         # unit conversion
         target = self.dimchecker.dimensionize(node.target, mode="unit")
-        target = simplify(target)
+        target = self.simplify(target)
 
         if isinstance(value, NumberType) and (value.dim == target or not value.dim):
             return value.edit(dim=target)
@@ -491,7 +493,7 @@ class Typechecker:
                 if not (mismatch := nomismatch(params[i], default)):
                     self.errors.throw(
                         518,
-                        param=param.name.name,
+                        param=self.unlink(param.name).name,
                         kind=mismatch.kind,
                         expected=mismatch.left,
                         actual=mismatch.right,
@@ -680,7 +682,7 @@ class Typechecker:
         return NoneType()
 
     def number_(self, node: Integer | Float, env: Env) -> NumberType:
-        dimension = simplify(self.dimchecker.dimensionize(node.unit, mode="unit"))
+        dimension = self.simplify(self.dimchecker.dimensionize(node.unit, mode="unit"))
         assert dimension is None or isinstance(dimension, (Expression, One)), node
         return NumberType(
             typ=type(node).__name__.removesuffix("eger"),  # type: ignore ; 'Integer' to 'Int'
@@ -773,7 +775,7 @@ class Typechecker:
                         raise
 
             case Expression():
-                dim = simplify(self.dimchecker.dimensionize(node))
+                dim = self.simplify(self.dimchecker.dimensionize(node))
                 assert isinstance(dim, Expression)
                 return DimensionType(dim)
 
@@ -833,7 +835,7 @@ class Typechecker:
             if not (mismatch := nomismatch(annotation, value)):
                 self.errors.throw(
                     536,
-                    name=node.name.name,
+                    name=self.unlink(node.name).name,
                     declared=mismatch.left,
                     kind=mismatch.kind,
                     value=mismatch.right,
@@ -907,7 +909,9 @@ class Typechecker:
                     )
 
         if ret and isinstance(link, linking.Link) and ret.node is None:
-            ret = ret.edit(node=link.target)
+            # do not associate Identifier nodes as the definition node for FunctionTypes
+            if not (isinstance(node, Identifier) and isinstance(ret, FunctionType)):
+                ret = ret.edit(node=link.target)
 
         if islink and ret:
             self.namespaces.typed[link.target] = ret.name().lower()

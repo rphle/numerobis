@@ -43,6 +43,10 @@ Value *echo(Value **args) {
   Value *val = args[1];
   Value *end = args[2];
 
+  if (!val) {
+    val = EMPTY_STR;
+  }
+
   switch (val->type) {
   case VALUE_NUMBER:
     echo_number(val->number);

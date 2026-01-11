@@ -18,3 +18,6 @@ unit dB: 1 = 10 * 10^(_ W / W)
 unit C: ThermodynamicTemperature = _ + 273K
 
 3C + 5C
+
+# E543
+unit t = 5 W + 3 W + 2 K

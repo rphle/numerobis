@@ -1,5 +1,5 @@
 from si import @(Length, Mass, Time, Force, Energy, Power)
-from si import @(metre, kilogram, second, newton, joule, watt)
+from si import @(metre, kilogram, second, newton, joule, watt, K)
 
 # ---
 dimension TestDim
@@ -225,11 +225,14 @@ dimension Test = Length + Mass
 # E016
 dimension Bad = Length - Time
 
-# ---
+# E543
 unit add = 5 metre + 3 kilogram
 
-# ---
+# E543
 unit sub = 5 metre - 3 kilogram
+
+# ---
+unit C = 0K + 273.15
 
 # E001
 dimension @BadName

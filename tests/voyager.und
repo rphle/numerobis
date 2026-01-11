@@ -47,6 +47,6 @@ echo("A {d_receiver} dish on Earth will receive {P_received -> aW} of power.")
 photon_rate_receiver = P_received / energy_per_photon -> photon/s
 photons_per_bit = photon_rate_receiver / datarate -> photon/bit
 
-echo()
+echo("")
 echo("This corresponds to {photon_rate_receiver}.")
 echo("Which means {photons_per_bit}.")

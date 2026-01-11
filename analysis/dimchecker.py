@@ -20,7 +20,7 @@ from nodes.unit import (
 from typechecker.operators import typetable
 from utils import camel2snake_pattern
 
-from .simplifier import simplify
+from .simplifier import Simplifier
 
 modes = Literal["dimension", "unit"]
 
@@ -34,6 +34,8 @@ class Dimchecker:
     ):
         self.module = module
         self.errors = Exceptions(module=module)
+        self.simplifier = Simplifier(module=module)
+        self.simplify = self.simplifier.simplify
 
         self.env = namespaces
         self.header = header
@@ -55,7 +57,7 @@ class Dimchecker:
         else:
             dimension = Expression(value=node.name)
 
-        dimension = simplify(dimension)
+        dimension = self.simplify(dimension)
         self.env.dimensions[node.name.name] = dimension  # type: ignore
 
     def _process_unit(self, node: UnitDefinition):
@@ -82,7 +84,7 @@ class Dimchecker:
         value = None
         if node.value:
             value = self.dimensionize(node.value, mode="unit")
-            value = simplify(value)
+            value = self.simplify(value)
 
             if node.dimension and value != dimension:
                 self.errors.throw(
@@ -146,9 +148,8 @@ class Dimchecker:
             )
 
         resolved = self.env(mode + "s")[node.name]
-        if isinstance(resolved, Expression):
-            return resolved.value
-        return resolved
+        resolved = resolved.value if isinstance(resolved, Expression) else resolved
+        return replace(resolved, loc=node.loc)
 
     def neg_(self, node: Neg, mode: modes = "dimension") -> UnitNode:
         value = self.dimensionize(node.value, mode=mode)
@@ -159,7 +160,7 @@ class Dimchecker:
     def power_(self, node: Power, mode: modes = "dimension") -> UnitNode:
         base = self.dimensionize(node.base, mode=mode)
         exponent = self.dimensionize(node.exponent, mode=mode)
-        exponent = simplify(exponent, do_cancel=False)
+        exponent = self.simplify(exponent, do_cancel=False)
 
         if isinstance(exponent, Expression):
             exponent = exponent.value

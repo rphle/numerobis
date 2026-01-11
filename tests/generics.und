@@ -140,23 +140,16 @@ const!(x, y) = x
 const(5 kilogram, 10 metre)
 
 either!(flag, a, b) = if flag then a else b
+
 either(true, 5, 10)
-
-either!(flag, a, b) = if flag then a else b
 either(false, "yes", "no")
-
-either!(flag, a, b) = if flag then a else b
 either(true, 5 kilogram, 10 kilogram)
-
 
 # ---
 empty_to_default!(lst, default) = if lst == [] then [default] else lst
+
 empty_to_default([], 5)
-
-empty_to_default!(lst, default) = if lst == [] then [default] else lst
 empty_to_default([1, 2], 10)
-
-empty_to_default!(lst, default) = if lst == [] then [default] else lst
 empty_to_default([], 5 kilogram)
 
 # ---

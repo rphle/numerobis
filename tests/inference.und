@@ -81,7 +81,6 @@ mass_result = poly(5 kilogram)
 either!(flag, a, b) = if flag then a else b
 result = either(true, 5, 10)
 
-either!(flag, a, b) = if flag then a else b
 mass = either(false, 5 kilogram, 10 kilogram)
 
 # ---
