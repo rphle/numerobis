@@ -3,7 +3,6 @@ from dataclasses import dataclass
 from math import prod
 from typing import Optional
 
-
 from .core import Identifier, UnitNode
 
 
@@ -117,7 +116,9 @@ class Scalar(UnitNode):
     unit: Optional[Expression] = None
 
     def __str__(self):
-        value = str(self.value).rstrip("0").rstrip(".")
+        value = str(self.value)
+        if "." in value:
+            value = value.rstrip("0").rstrip(".")
         if self.unit is None:
             return value
         return f"{value} {self.unit}"
@@ -188,11 +189,20 @@ class CallArg(UnitNode):
     name: Identifier | None
     value: UnitNode
 
+    def __str__(self):
+        return f"{self.name.name + '=' if self.name else ''}{self.value}"
+
 
 @dataclass(frozen=True)
 class Call(UnitNode):
     callee: UnitNode
     args: list[CallArg]
+
+    def __str__(self):
+        return f"{self.callee}({', '.join(str(a) for a in self.args)})"
+
+    def __hash__(self):
+        return hash(tuple(self.args))
 
 
 @dataclass(frozen=True)

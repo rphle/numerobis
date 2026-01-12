@@ -16,6 +16,7 @@ class UnitParserConfig:
     unitful_numbers: bool = False
     constants: bool = False
     addition: bool = False
+    scalars: bool = False
 
 
 class UnitParser(ParserTemplate):
@@ -128,7 +129,6 @@ class UnitParser(ParserTemplate):
         match tok.type:
             case "NUMBER":
                 num = self._parse_number(tok)
-
                 return num
             case "ID":
                 if tok.value == "_":

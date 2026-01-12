@@ -175,7 +175,7 @@ complex: Mass * Length^2 / Time^(-3) = 100 (kilogram * metre^2 / second^(-3))
 100 newton + 50 joule
 
 # E101
-10 watt - 5 newton^(2*joule)
+10 watt - 5 newton^(joule)
 
 # E703
 distance = 100 metre

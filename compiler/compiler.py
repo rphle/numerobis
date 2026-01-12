@@ -2,6 +2,7 @@ import dataclasses
 from hashlib import md5
 from typing import Any, TypeVar
 
+from analysis.preprocessor import Preprocessor
 from classes import CompiledModule, Header, ModuleMeta
 from compiler.scoping import get_free_vars
 from environment import Namespaces
@@ -38,6 +39,7 @@ from nodes.ast import (
     WhileLoop,
 )
 from nodes.core import AstNode, Identifier
+from nodes.unit import Expression
 from typechecker.linking import Link
 from typechecker.types import FunctionType, T
 from utils import camel2snake_pattern
@@ -74,6 +76,7 @@ class Compiler:
                 "unidad/types/bool",
                 "unidad/exceptions/throw",
                 "unidad/builtins/builtins",
+                "unidad/units",
             }
         )
         self.functions: list[str] = []
@@ -487,6 +490,13 @@ class Compiler:
         else:
             raise ValueError(f"Unknown unary operator {node.op.name}")
 
+    def unit_(self, node: Expression, name: str) -> None:
+        out = tstr("UNIT($name, $body)")
+        out["name"] = f"_{self.uid}_{name}"
+        out["body"] = str(node.value)
+
+        self.functions.append(str(out))
+
     def variable_(self, node: Variable, link: int) -> tstr:
         out = tstr("$name = $value")
         addr = node.meta["address"]
@@ -524,6 +534,15 @@ class Compiler:
             return self.env.nodes[target]  # type: ignore
         return link
 
+    def preprocess(self):
+        self.preprocessor = Preprocessor(
+            self.program,
+            module=self.module,
+            namespaces=self.env,
+            header=self.header,
+        )
+        self.preprocessor.start()
+
     def compile(self, link: Link | Any) -> tstr:
         node = self.unlink(link) if isinstance(link, Link) else link
 
@@ -545,6 +564,7 @@ class Compiler:
                     )
 
     def start(self) -> CompiledModule:
+        # self.preprocess()
         self.process_header()
         self._builtins()
 
@@ -554,6 +574,9 @@ class Compiler:
                 code.append(stmt + ";")
 
         code = "\n".join(code).strip()
+
+        # for name, unit in self.preprocessor.conversions.items():
+        #     self.unit_(unit, name)
 
         return CompiledModule(
             meta=self.module,

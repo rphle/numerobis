@@ -5,7 +5,7 @@ from typing import Literal
 from classes import ModuleMeta
 from exceptions.exceptions import Exceptions
 from nodes.core import Identifier
-from nodes.unit import Expression, Neg, One, Power, Product, Scalar, Sum, UnitNode
+from nodes.unit import Call, Expression, Neg, One, Power, Product, Scalar, Sum, UnitNode
 from utils import camel2snake_pattern
 
 modes = Literal["dimension", "unit"]
@@ -73,6 +73,10 @@ class Simplifier:
                 f"Unit type {type(node).__name__} not implemented"
             )
 
+    def call_(self, node: Call):
+        args = [replace(a, value=self._simplify(a.value)) for a in node.args]
+        return replace(node, args=args)
+
     def expression_(self, node: Expression):
         return self._simplify(node.value)
 
@@ -127,7 +131,6 @@ class Simplifier:
         return node
 
     def scalar_(self, node: Scalar):
-        assert node.unit is None, node.unit
         return node
 
     def _operation(self, node: Product | Sum):

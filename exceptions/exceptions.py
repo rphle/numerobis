@@ -121,7 +121,7 @@ class Exceptions:
         self.codes = msgparser.parse("exceptions/messages.txt")
 
     def unexpectedToken(self, tok: Token, help: str | None = None):
-        self.throw(1, token=tok.value, loc=tok.loc)
+        self.throw(1, token=tok.value, loc=tok.loc, help=help)
 
     def unexpectedEOF(self, loc: Location | None = None):
         self.throw(2, loc=loc)

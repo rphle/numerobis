@@ -228,7 +228,7 @@ class Parser(ParserTemplate):
         if self._peek().type == "ASSIGN":
             self._consume("ASSIGN")
             self._clear()
-            value = self.unit(standalone=True, constants=True)
+            value = self.unit(standalone=True, constants=True, scalars=True)
 
         node = DimensionDefinition(
             name=self._make_id(name),
@@ -307,6 +307,7 @@ class Parser(ParserTemplate):
                 unitful_numbers=True,
                 constants=True,
                 addition=True,
+                scalars=True,
             )
 
         node = UnitDefinition(
@@ -661,6 +662,7 @@ class Parser(ParserTemplate):
         unitful_numbers: bool = False,
         constants: bool = False,
         addition: bool = False,
+        scalars: bool = False,
     ) -> Expression | One:
         config = UnitParserConfig(
             standalone=standalone,
@@ -668,6 +670,7 @@ class Parser(ParserTemplate):
             unitful_numbers=unitful_numbers,
             constants=constants,
             addition=addition,
+            scalars=scalars,
         )
         parser = UnitParser(tokens=self.tokens, module=self.module, config=config)
         unit = parser.start()

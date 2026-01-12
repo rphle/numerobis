@@ -57,6 +57,8 @@ if len(sys.argv) - verbose - full > 1:
 tests: dict[str, tuple[Test, list[Test]]] = {}
 for file in files:
     path = tests_dir / file
+    if path.is_dir():
+        continue
     lines = open(path, "r", encoding="utf-8").readlines()
     chunks = [Test(path, 1, "")]
     for i, line in enumerate(lines):
@@ -88,10 +90,25 @@ with tqdm(total=sum(len(file[1]) for _, file in tests.items()), leave=False) as 
                     print()
                     times["Parsing"] = timeit(mod.parse)
                     times["Typechecking"] = timeit(mod.typecheck)
-                    times["Compilation"] = timeit(mod.compile)
-                    times["Linking"] = timeit(mod.link)
-                    times["GCC"] = timeit(mod.gcc)
-                    times["Execution"] = timeit(mod.run)
+                    if any(
+                        x in file
+                        for x in (
+                            "arithmetic",
+                            "calculations",
+                            "comparisons",
+                            "compile",
+                            "conditionals",
+                            "logic",
+                            "strings",
+                            "lists",
+                            "loops",
+                            "echo",
+                        )
+                    ):
+                        times["Compilation"] = timeit(mod.compile)
+                        times["Linking"] = timeit(mod.link)
+                        times["GCC"] = timeit(mod.gcc)
+                        times["Execution"] = timeit(mod.run)
 
             except SystemExit:
                 pass
