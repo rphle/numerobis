@@ -316,6 +316,9 @@ class Compiler:
         assert node.body is not None
 
         body = self.compile(self._make_block(node.body, rtrn=True))
+        body_node = self.unlink(node.body)
+        if isinstance(body_node, Block) and not isinstance(body_node.body[-1], Return):
+            body = str(body)[:-1] + "\nreturn NONE;\n}"
 
         _unlinked_params = [self.unlink(param) for param in node.params]
 
@@ -342,7 +345,7 @@ class Compiler:
 
         self.functions.append(str(definition))
 
-        out = f"U_NEW_CLOSURE({definition['name']}, {env_type}, {', '.join([] + free_vars) if free_vars else 'NULL'})"
+        out = f"U_NEW_CLOSURE({definition['name']}, {env_type} {', ' + ', '.join([] + free_vars) if free_vars else ''})"
         if node.name is not None:
             out = f"Value *{self.compile(node.name)} = {out}"
 
