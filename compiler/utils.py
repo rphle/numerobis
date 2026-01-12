@@ -1,6 +1,6 @@
 from typing import Literal
 
-BUILTINS = ["echo", "input", "random", "floor"]
+BUILTINS = ["echo", "input", "random", "floor", "indexof", "split"]
 
 
 def ensuresuffix(s: str, ch: str) -> str:

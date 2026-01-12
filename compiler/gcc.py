@@ -79,7 +79,7 @@ def compile(code: str, modules: list[ModuleMeta], output: str | Path = "output/o
 
     cmd = (
         ["ccache", "mold"]
-        + ["-run", "gcc"]
+        + ["-run", "tcc"]
         + ["-pipe"]
         + [tmp.name, tmp_source.name]
         + ["-o", str(output)]

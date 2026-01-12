@@ -1,0 +1,10 @@
+alphabet = split("ABCDEFGHIJKLMNOPQRSTUVWXYZ" * 2, sep="")
+
+word = input("Enter a word: ")
+key = input("Enter a key: ") -> Int
+
+for char in word do {
+    i = indexof(alphabet, char) + key
+    echo(alphabet[i], end="")
+}
+echo("")
