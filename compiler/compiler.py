@@ -45,7 +45,7 @@ from typechecker.types import FunctionType, T
 from utils import camel2snake_pattern
 
 from .tstr import tstr
-from .utils import BUILTINS, ensuresuffix, mthd, strip_parens
+from .utils import BUILTINS, compile_math, ensuresuffix, mthd, strip_parens
 
 SameType = TypeVar("SameType")
 
@@ -83,6 +83,7 @@ class Compiler:
         self.typedefs: list[str] = []
         self._defined_addrs = set()
         self._imported_names = {}
+        self._imported_units = {}
 
     def bin_op_(self, node: BinOp, link: int) -> tstr:
         operands = [self.compile(node.left), self.compile(node.right)]
@@ -496,7 +497,7 @@ class Compiler:
     def unit_(self, node: Expression, name: str) -> None:
         out = tstr("UNIT($name, $body)")
         out["name"] = f"_{self.uid}_{name}"
-        out["body"] = str(node.value)
+        out["body"] = compile_math(node.value)
 
         self.functions.append(str(out))
 
@@ -543,6 +544,7 @@ class Compiler:
             module=self.module,
             namespaces=self.env,
             header=self.header,
+            units=self._imported_units,
         )
         self.preprocessor.start()
 
@@ -567,8 +569,8 @@ class Compiler:
                     )
 
     def start(self) -> CompiledModule:
-        # self.preprocess()
         self.process_header()
+        self.preprocess()
         self._builtins()
 
         code = []
@@ -578,8 +580,8 @@ class Compiler:
 
         code = "\n".join(code).strip()
 
-        # for name, unit in self.preprocessor.conversions.items():
-        #     self.unit_(unit, name)
+        for name, unit in self.preprocessor.conversions.items():
+            self.unit_(unit, name)
 
         return CompiledModule(
             meta=self.module,
@@ -594,15 +596,24 @@ class Compiler:
         for i, node in enumerate(self.header.imports):
             if isinstance(node, FromImport):
                 uid = md5(self.imports[i].encode()).hexdigest()[:8]
+                ns = self.env.imports[node.module.name]
                 if node.names is None:
                     # import *
-                    names = list(self.env.imports[node.module.name].names.keys())
-                    self._imported_names.update({name: f"und_{uid}_" for name in names})
+                    names = list(ns.names.keys())
                 else:
                     # import a, b, c
-                    self._imported_names.update(
-                        {name.name: f"und_{uid}_" for name in node.names}
-                    )
+                    names = [name.name for name in node.names]
+
+                self._imported_names.update(
+                    {name: f"und_{uid}_" for name in names if not name.startswith("@")}
+                )
+                self._imported_units.update(
+                    {
+                        name.lstrip("@"): ns.units[name.lstrip("@")]
+                        for name in names
+                        if name.startswith("@") and name.lstrip("@") in ns.units
+                    }
+                )
 
     def _builtins(self):
         uid = md5("stdlib/builtins.und".encode()).hexdigest()[:8]

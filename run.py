@@ -81,6 +81,7 @@ with tqdm(total=sum(len(file[1]) for _, file in tests.items()), leave=False) as 
         for i, test in enumerate(tests[file][1]):
             mod = test.module()
             mod.namespaces.update(header.namespaces)
+            mod.namespaces.imports.update(header.namespaces.imports)
 
             output = StringIO()
             times = {}
@@ -105,6 +106,8 @@ with tqdm(total=sum(len(file[1]) for _, file in tests.items()), leave=False) as 
                             "echo",
                         )
                     ):
+                        mod.header = header.header
+                        mod.imports.extend(header.imports)
                         times["Compilation"] = timeit(mod.compile)
                         times["Linking"] = timeit(mod.link)
                         times["GCC"] = timeit(mod.gcc)

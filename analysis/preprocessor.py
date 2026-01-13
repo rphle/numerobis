@@ -17,7 +17,7 @@ SameType = TypeVar("SameType")
 
 def resolve(
     units: dict[str, Expression], node: UnitNode, n: Optional[Scalar] = None
-) -> UnitNode:
+) -> Expression:
     resolved = resolve_(units, node, n or Identifier("_"))
     if not isinstance(resolved, Expression):
         return Expression(resolved)
@@ -78,6 +78,7 @@ class Preprocessor:
         module: ModuleMeta,
         namespaces: Namespaces = Namespaces(),
         header: Header = Header(),
+        units: dict[str, Expression] = {},
     ):
         self.program = program
         self.module = module
@@ -88,7 +89,7 @@ class Preprocessor:
         self.simplifier = Simplifier(module)
         self.simplify = self.simplifier.simplify
 
-        self.units: dict[str, Expression] = {}
+        self.units: dict[str, Expression] = dict(units)
         self.conversions: dict[str, Expression] = {}
 
     def number_(self, node: Integer | Float, link: int):
@@ -115,6 +116,8 @@ class Preprocessor:
                     val = Product([Identifier("_"), expr])
                 expr = Expression(val)
 
+        expr = resolve(self.units, expr)
+
         name = unit.name.name
         inverted = self.simplify(invert(expr), do_cancel=False)
         if isinstance(inverted, One):
@@ -122,6 +125,7 @@ class Preprocessor:
 
         self.units[name] = expr
         self.conversions[name] = inverted
+        self.env.units[name] = expr
 
     def unlink(self, link: SameType) -> SameType:
         if isinstance(link, (int, Link)):

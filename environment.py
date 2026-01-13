@@ -7,7 +7,7 @@ from nodes.unit import Expression, One
 from typechecker.types import T
 
 namespace_names = Literal[
-    "names", "dimensions", "dimensionized", "imports", "nodes", "typed"
+    "names", "dimensions", "dimensionized", "units", "imports", "nodes", "typed"
 ]
 
 
@@ -17,6 +17,7 @@ class Namespaces:
         names: dict[str, T] | None = None,
         dimensions: dict[str, Expression | One | None] | None = None,
         dimensionized: dict[str, Expression | One | None] | None = None,
+        units: dict[str, Expression] | None = None,
         imports: dict[str, "Namespaces"] | None = None,
         nodes: dict[int, AstNode] | None = None,
         typed: dict[int, str] | None = None,
@@ -25,6 +26,7 @@ class Namespaces:
         self.names = names or {}
         self.dimensions = dimensions or {}
         self.dimensionized = dimensionized or {}
+        self.units = units or {}
         self.imports = imports or {}
         self.nodes = nodes or {}
         self.typed = typed or {}
@@ -35,6 +37,7 @@ class Namespaces:
             self.names.copy(),
             self.dimensions.copy(),
             self.dimensionized.copy(),
+            self.units.copy(),
             self.imports.copy(),
             self.nodes.copy(),
             self.typed.copy(),
@@ -45,6 +48,7 @@ class Namespaces:
         self.names.update(other.names)
         self.dimensions.update(other.dimensions)
         self.dimensionized.update(other.dimensionized)
+        self.units.update(other.units)
         self.nodes.update(other.nodes)
         self.typed.update(other.typed)
         self.externs.update(other.externs)

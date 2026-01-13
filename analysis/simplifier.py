@@ -123,6 +123,8 @@ class Simplifier:
                     )
                 )
             case Scalar():
+                if str(base.value) == "0":
+                    return base
                 return replace(base, value=base.value**exponent.value)
 
         return replace(node, base=base, exponent=exponent)
