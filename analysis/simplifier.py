@@ -94,7 +94,10 @@ class Simplifier:
     def power_(self, node: Power):
         base = self._simplify(node.base)
         exponent = self._simplify(node.exponent)
-        assert isinstance(exponent, Scalar)
+
+        if not isinstance(exponent, Scalar):
+            return node
+
         if exponent.value == 0:
             return Scalar(1)
         elif exponent.value == 1:

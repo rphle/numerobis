@@ -15,48 +15,6 @@ from .simplifier import Simplifier
 SameType = TypeVar("SameType")
 
 
-def resolve(
-    units: dict[str, Expression], node: UnitNode, n: Optional[Scalar] = None
-) -> Expression:
-    resolved = resolve_(units, node, n or Identifier("_"))
-    if not isinstance(resolved, Expression):
-        return Expression(resolved)
-    return resolved
-
-
-def resolve_(
-    units: dict[str, Expression], node: UnitNode, n: Scalar | Identifier
-) -> UnitNode:
-    match node:
-        case Neg():
-            return replace(node, value=resolve_(units, node.value, n))
-        case Expression():
-            return resolve_(units, node.value, n)
-        case Product() | Sum():
-            values = [resolve_(units, value, n) for value in node.values]
-            return replace(node, values=values)
-        case Power():
-            base = resolve_(units, node.base, n)
-            exp = resolve_(units, node.exponent, n)
-            return replace(node, base=base, exponent=exp)
-        case Scalar():
-            unit = node.unit
-            if unit:
-                if not isinstance(unit.value, Identifier):
-                    unit = Expression(Product([Identifier("_"), unit]))
-
-                return resolve_(units, unit, Scalar(node.value))
-            return node
-        case Identifier():
-            if node.name == "_":
-                return n
-            val = units[node.name]
-            res = resolve_(units, val, n)
-            return res.value if isinstance(res, Expression) else res
-
-    return node
-
-
 def linear(node: UnitNode) -> bool:
     match node:
         case Expression() | Neg():
@@ -97,7 +55,7 @@ class Preprocessor:
             return
         value = int(node.value) if isinstance(node, Integer) else float(node.value)
         exp = int(node.exponent) if node.exponent else 1
-        res = resolve(self.units, Scalar(value=value * exp, unit=node.unit))
+        res = self.resolve(self.units, Scalar(value=value * exp, unit=node.unit))
 
         num = self.simplify(res, do_cancel=False)
         assert isinstance(num, Expression) and isinstance(num.value, Scalar)
@@ -116,7 +74,7 @@ class Preprocessor:
                     val = Product([Identifier("_"), expr])
                 expr = Expression(val)
 
-        expr = resolve(self.units, expr)
+        expr = self.resolve(self.units, expr)
 
         name = unit.name.name
         inverted = self.simplify(invert(expr), do_cancel=False)
@@ -143,3 +101,47 @@ class Preprocessor:
             self.unit_def_(unit)
         for link, node in self.env.nodes.items():
             self.process(node, link)
+
+    def resolve(
+        self, units: dict[str, Expression], node: UnitNode, n: Optional[Scalar] = None
+    ) -> Expression:
+        resolved = self.resolve_(units, node, n or Identifier("_"))
+        if not isinstance(resolved, Expression):
+            return Expression(resolved)
+        return resolved
+
+    def resolve_(
+        self, units: dict[str, Expression], node: UnitNode, n: Scalar | Identifier
+    ) -> UnitNode:
+        match node:
+            case Neg():
+                return replace(node, value=self.resolve_(units, node.value, n))
+            case Expression():
+                return self.resolve_(units, node.value, n)
+            case Product() | Sum():
+                values = [self.resolve_(units, value, n) for value in node.values]
+                return replace(node, values=values)
+            case Power():
+                base = self.resolve_(units, node.base, n)
+                exp = self.resolve_(units, node.exponent, n)
+                return replace(node, base=base, exponent=exp)
+            case Scalar():
+                unit = node.unit
+                if unit:
+                    res = self.resolve_(units, unit, Identifier("_"))
+                    res = self.simplify(res, do_cancel=False)
+
+                    if linear(res):
+                        res = Product([Identifier("_"), res])
+                    res = self.resolve_(units, res, Scalar(node.value))
+
+                    return res
+                return node
+            case Identifier():
+                if node.name == "_":
+                    return n
+                val = units[node.name]
+                res = self.resolve_(units, val, n)
+                return res.value if isinstance(res, Expression) else res
+
+        return node
