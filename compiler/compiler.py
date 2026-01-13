@@ -38,8 +38,8 @@ from nodes.ast import (
     Variable,
     WhileLoop,
 )
-from nodes.core import AstNode, Identifier
-from nodes.unit import Expression
+from nodes.core import AstNode, Identifier, UnitNode
+from nodes.unit import Expression, Neg, Power, Product, Scalar, Sum
 from typechecker.linking import Link
 from typechecker.types import FunctionType, T
 from utils import camel2snake_pattern
@@ -76,7 +76,7 @@ class Compiler:
                 "unidad/types/bool",
                 "unidad/exceptions/throw",
                 "unidad/builtins/builtins",
-                "unidad/units",
+                "unidad/units/units",
             }
         )
         self.functions: list[str] = []
@@ -426,7 +426,7 @@ class Compiler:
 
     def number_(self, node: Integer | Float, *, init: bool = True) -> tstr:
         self.include.add("unidad/types/number")
-        out = tstr("$type__init__($value)") if init else tstr("$value")
+        out = tstr("$type__init__($value, $unit)") if init else tstr("$value")
 
         value = node.value
         typ = "float"
@@ -440,7 +440,11 @@ class Compiler:
         else:
             out["value"] = f"{value}E{node.exponent}"
 
-        out["type"] = typ
+        if init:
+            out["type"] = typ
+            unit = self.unit_(node.unit)
+            out["unit"] = unit if unit else "U_ONE"
+
         return out
 
     def range_(self, node: Range, link: int) -> tstr:
@@ -494,7 +498,28 @@ class Compiler:
         else:
             raise ValueError(f"Unknown unary operator {node.op.name}")
 
-    def unit_(self, node: Expression, name: str) -> None:
+    def unit_(self, node: UnitNode) -> str:
+        match node:
+            case Expression():
+                return self.unit_(node.value)
+            case Sum() | Product():
+                op = "U_SUM" if isinstance(node, Sum) else "U_PROD"
+                values = ",".join(self.unit_(v) for v in node.values)
+                if not values:
+                    return ""
+                return f"{op}({values})"
+            case Power():
+                return f"U_PWR({self.unit_(node.base)}, {self.unit_(node.exponent)})"
+            case Scalar():
+                return f"U_NUM({node.value})"
+            case Identifier():
+                return f'U_ID("{node.name}")'
+            case Neg():
+                return f"U_NEG({self.unit_(node.value)})"
+            case _:
+                raise NotImplementedError(f"Unit node cannot be compiled: {type(node)}")
+
+    def unit_def(self, node: Expression, name: str) -> None:
         out = tstr("UNIT($name, $body)")
         out["name"] = f"_{self.uid}_{name}"
         out["body"] = compile_math(node.value)
@@ -581,7 +606,7 @@ class Compiler:
         code = "\n".join(code).strip()
 
         for name, unit in self.preprocessor.conversions.items():
-            self.unit_(unit, name)
+            self.unit_def(unit, name)
 
         return CompiledModule(
             meta=self.module,

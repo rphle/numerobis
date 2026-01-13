@@ -1,7 +1,7 @@
 from typing import Literal
 
 from nodes.core import Identifier, UnitNode
-from nodes.unit import Call, Expression, Power, Product, Scalar, Sum
+from nodes.unit import Call, Expression, Neg, Power, Product, Scalar, Sum
 
 BUILTINS = ["echo", "input", "random", "floor", "indexof", "split"]
 
@@ -42,5 +42,7 @@ def compile_math(node: UnitNode) -> str:
             return f"{compile_math(node.callee)}({','.join(compile_math(a.value) for a in node.args)})"
         case Identifier():
             return node.name
+        case Neg():
+            return "-(" + compile_math(node.value) + ")"
         case _:
-            raise NotImplementedError(f"Unid node cannot be compiled: {type(node)}")
+            raise NotImplementedError(f"Unit node cannot be compiled: {type(node)}")

@@ -25,7 +25,7 @@ static inline Value *bool__str__(Value *self) {
 }
 
 static inline Value *bool__int__(Value *self) {
-  return int__init__(self->boolean ? 1 : 0);
+  return int__init__(self->boolean ? 1 : 0, U_ONE);
 }
 
 static const ValueMethods _bool_methods = {

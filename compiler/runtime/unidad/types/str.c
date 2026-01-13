@@ -22,7 +22,7 @@ static inline size_t _str_len(const GString *self) {
 }
 
 static inline Value *str_len(Value *self) {
-  return int__init__(self ? _str_len(self->str) : 0);
+  return int__init__(self ? _str_len(self->str) : 0, U_ONE);
 }
 
 static const char **build_char_positions(const GString *self, size_t len) {
@@ -233,7 +233,7 @@ static Value *str__int__(Value *self) {
     return NULL;
   }
 
-  return int__init__(result);
+  return int__init__(result, U_ONE);
 }
 
 static const ValueMethods _str_methods = {

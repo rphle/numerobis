@@ -26,7 +26,7 @@ static inline size_t _list_len(const GArray *self) {
 }
 
 static Value *list_len(Value *self) {
-  return int__init__((gint64)_list_len(self->list));
+  return int__init__((gint64)_list_len(self->list), U_ONE);
 }
 
 Value *list_of(Value *first, ...) {

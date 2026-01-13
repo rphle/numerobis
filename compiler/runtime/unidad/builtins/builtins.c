@@ -17,7 +17,7 @@ static Value *unidad_builtin_random(Value **args) {
 
   double x = g_rand_double(rng);
 
-  return float__init__(x);
+  return float__init__(x, U_ONE);
 }
 
 static Value *unidad_builtin_input(Value **args) {
@@ -53,7 +53,7 @@ static Value *unidad_builtin_floor(Value **args) {
     result = (gint64)floor(n->f64);
   }
 
-  return int__init__(result);
+  return int__init__(result, n->unit);
 }
 
 static Value *unidad_builtin_indexof(Value **args) {
@@ -65,11 +65,11 @@ static Value *unidad_builtin_indexof(Value **args) {
     Value *eq_result = __eq__(item, target);
 
     if (eq_result->boolean) {
-      return int__init__((gint64)i);
+      return int__init__((gint64)i, U_ONE);
     }
   }
 
-  return int__init__(G_GINT64_CONSTANT(-1));
+  return int__init__(G_GINT64_CONSTANT(-1), U_ONE);
 }
 
 static Value *unidad_builtin_split(Value **args) {

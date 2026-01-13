@@ -1,3 +1,4 @@
+#include "number.h"
 #include "../values.h"
 #include "bool.h"
 #include "str.h"
@@ -18,17 +19,19 @@ static inline Value *_create_value(Number *n) {
   return v;
 }
 
-Value *int__init__(gint64 x) {
+Value *int__init__(gint64 x, UnitNode *unit) {
   Number *n = g_new(Number, 1);
   n->kind = NUM_INT64;
   n->i64 = x;
+  n->unit = unit;
   return _create_value(n);
 }
 
-Value *float__init__(gdouble x) {
+Value *float__init__(gdouble x, UnitNode *unit) {
   Number *n = g_new(Number, 1);
   n->kind = NUM_DOUBLE;
   n->f64 = x;
+  n->unit = unit;
   return _create_value(n);
 }
 
@@ -119,17 +122,41 @@ static inline gdouble number_as_double(const Number *n) {
   return n->kind == NUM_DOUBLE ? n->f64 : (gdouble)n->i64;
 }
 
-static Value *number_binop(Value *a, Value *b, binop_i64 iop, binop_f64 fop) {
+static Value *number_binop(Value *a, Value *b, binop_i64 iop, binop_f64 fop,
+                           OpKind kind) {
   Number *na = a->number;
   Number *nb = b->number;
+
+  UnitNode *ua = na->unit;
+  UnitNode *ub = nb->unit;
+  UnitNode *unit = NULL;
+
+  switch (kind) {
+  case OP_ADD:
+  case OP_SUB:
+    unit = ua;
+    break;
+  case OP_MUL:
+    unit = U_PROD(ua, ub);
+    break;
+  case OP_DIV:
+    unit = U_PROD(ua, U_PWR(ub, U_NUM(-1)));
+    break;
+  case OP_POW:
+    unit = U_PWR(ua, ub);
+    break;
+  default:
+    unit = NULL;
+    break;
+  }
 
   if (na->kind == NUM_DOUBLE || nb->kind == NUM_DOUBLE) {
     gdouble x = (na->kind == NUM_DOUBLE) ? na->f64 : (gdouble)na->i64;
     gdouble y = (nb->kind == NUM_DOUBLE) ? nb->f64 : (gdouble)nb->i64;
-    return float__init__(fop(x, y));
+    return float__init__(fop(x, y), unit);
   }
 
-  return int__init__(iop(na->i64, nb->i64));
+  return int__init__(iop(na->i64, nb->i64), unit);
 }
 
 static inline gint64 i_add(gint64 a, gint64 b) { return a + b; }
@@ -147,22 +174,22 @@ static inline gdouble f_pow(gdouble a, gdouble b) { return pow(a, b); }
 static inline gdouble f_mod(gdouble a, gdouble b) { return fmod(a, b); }
 
 static inline Value *number__add__(Value *a, Value *b) {
-  return number_binop(a, b, i_add, f_add);
+  return number_binop(a, b, i_add, f_add, OP_ADD);
 }
 static inline Value *number__sub__(Value *a, Value *b) {
-  return number_binop(a, b, i_sub, f_sub);
+  return number_binop(a, b, i_sub, f_sub, OP_SUB);
 }
 static inline Value *number__mul__(Value *a, Value *b) {
-  return number_binop(a, b, i_mul, f_mul);
+  return number_binop(a, b, i_mul, f_mul, OP_MUL);
 }
 static inline Value *number__div__(Value *a, Value *b) {
-  return number_binop(a, b, i_div, f_div);
+  return number_binop(a, b, i_div, f_div, OP_DIV);
 }
 static inline Value *number__pow__(Value *a, Value *b) {
-  return number_binop(a, b, i_pow, f_pow);
+  return number_binop(a, b, i_pow, f_pow, OP_POW);
 }
 static inline Value *number__mod__(Value *a, Value *b) {
-  return number_binop(a, b, i_mod, f_mod);
+  return number_binop(a, b, i_mod, f_mod, OP_MOD);
 }
 
 static Value *number__str__(Value *val) {
@@ -180,9 +207,9 @@ static Value *number__str__(Value *val) {
 static Value *number__int__(Value *self) {
   Number *n = self->number;
   if (n->kind == NUM_INT64) {
-    return int__init__(n->i64);
+    return self;
   } else {
-    return int__init__((gint64)n->f64);
+    return int__init__((gint64)n->f64, n->unit);
   }
 }
 
