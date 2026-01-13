@@ -103,7 +103,7 @@ class Module:
                             typ = (
                                 "dimensions"
                                 if n in module.namespaces("dimensions")
-                                else "units"
+                                else "dimensionized"
                             )
                             try:
                                 self.namespaces.write(typ, n, module.namespaces(typ)[n])
@@ -122,7 +122,7 @@ class Module:
                             except KeyError:
                                 help = [
                                     ns
-                                    for ns in ("units", "dimensions")
+                                    for ns in ("dimensionized", "dimensions")
                                     if name.name in module.namespaces(ns)
                                 ]
                                 self.errors.throw(

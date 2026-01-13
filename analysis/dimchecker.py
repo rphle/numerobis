@@ -49,7 +49,10 @@ class Dimchecker:
             self._process_unit(node)
 
     def _process_dimension(self, node: DimensionDefinition):
-        if node.name.name in self.env.units or node.name.name in self.env.dimensions:
+        if (
+            node.name.name in self.env.dimensionized
+            or node.name.name in self.env.dimensions
+        ):
             self.errors.throw(603, name=node.name.name, loc=node.name.loc)
 
         if node.value:
@@ -61,7 +64,10 @@ class Dimchecker:
         self.env.dimensions[node.name.name] = dimension  # type: ignore
 
     def _process_unit(self, node: UnitDefinition):
-        if node.name.name in self.env.units or node.name.name in self.env.dimensions:
+        if (
+            node.name.name in self.env.dimensionized
+            or node.name.name in self.env.dimensions
+        ):
             self.errors.throw(603, name=node.name.name, loc=node.name.loc)
 
         dimension = None
@@ -104,7 +110,7 @@ class Dimchecker:
             titled = node.name.name.title()
             dimension = Expression(value=Identifier(name=titled, loc=node.name.loc))
             if (
-                titled in self.env.units
+                titled in self.env.dimensionized
                 or titled == node.name.name
                 or not re.match(r"[a-zA-Z]", node.name.name[0])
             ):
@@ -113,7 +119,7 @@ class Dimchecker:
             if titled not in self.env.dimensions:
                 self.env.dimensions[titled] = dimension
 
-        self.env.units[node.name.name] = dimension
+        self.env.dimensionized[node.name.name] = dimension
 
     def dimensionize(self, node: UnitNode, mode: modes = "dimension") -> UnitNode:
         name = camel2snake_pattern.sub("_", type(node).__name__).lower() + "_"
@@ -136,8 +142,10 @@ class Dimchecker:
         if node.name == "_":
             return One()
 
-        if node.name not in self.env(mode + "s"):
-            suggestion = self.env.suggest(mode + "s", node.name)
+        _mode = "dimensions" if mode == "dimension" else "dimensionized"
+
+        if node.name not in self.env(_mode):
+            suggestion = self.env.suggest(_mode, node.name)
 
             self.errors.throw(
                 602,
@@ -147,7 +155,7 @@ class Dimchecker:
                 loc=node.loc,
             )
 
-        resolved = self.env(mode + "s")[node.name]
+        resolved = self.env(_mode)[node.name]
         resolved = resolved.value if isinstance(resolved, Expression) else resolved
         return replace(resolved, loc=node.loc)
 

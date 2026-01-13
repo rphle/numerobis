@@ -925,7 +925,7 @@ class Typechecker:
             level=0,
             **{
                 n: {k: k for k in list(self.namespaces(n).keys())}
-                for n in ("names", "units", "dimensions")
+                for n in ("names", "dimensionized", "dimensions")
             },
         )
         for link in self.program:

@@ -6,7 +6,9 @@ from nodes.core import AstNode
 from nodes.unit import Expression, One
 from typechecker.types import T
 
-namespace_names = Literal["names", "dimensions", "units", "imports", "nodes", "typed"]
+namespace_names = Literal[
+    "names", "dimensions", "dimensionized", "imports", "nodes", "typed"
+]
 
 
 class Namespaces:
@@ -14,7 +16,7 @@ class Namespaces:
         self,
         names: dict[str, T] | None = None,
         dimensions: dict[str, Expression | One | None] | None = None,
-        units: dict[str, Expression | One | None] | None = None,
+        dimensionized: dict[str, Expression | One | None] | None = None,
         imports: dict[str, "Namespaces"] | None = None,
         nodes: dict[int, AstNode] | None = None,
         typed: dict[int, str] | None = None,
@@ -22,7 +24,7 @@ class Namespaces:
     ):
         self.names = names or {}
         self.dimensions = dimensions or {}
-        self.units = units or {}
+        self.dimensionized = dimensionized or {}
         self.imports = imports or {}
         self.nodes = nodes or {}
         self.typed = typed or {}
@@ -32,7 +34,7 @@ class Namespaces:
         return Namespaces(
             self.names.copy(),
             self.dimensions.copy(),
-            self.units.copy(),
+            self.dimensionized.copy(),
             self.imports.copy(),
             self.nodes.copy(),
             self.typed.copy(),
@@ -42,7 +44,7 @@ class Namespaces:
     def update(self, other: "Namespaces"):
         self.names.update(other.names)
         self.dimensions.update(other.dimensions)
-        self.units.update(other.units)
+        self.dimensionized.update(other.dimensionized)
         self.nodes.update(other.nodes)
         self.typed.update(other.typed)
         self.externs.update(other.externs)
@@ -67,7 +69,7 @@ class Env:
         glob: Namespaces,
         names: dict = {},
         dimensions: dict = {},
-        units: dict = {},
+        dimensionized: dict = {},
         meta: dict = {},
         level: int = -1,
     ):
@@ -75,7 +77,7 @@ class Env:
 
         self.names: dict[str, str] = names
         self.dimensions: dict[str, str] = dimensions
-        self.units: dict[str, str] = units
+        self.dimensionized: dict[str, str] = dimensionized
         self.meta: dict[str, Any] = meta
 
         self.level = level
@@ -85,7 +87,7 @@ class Env:
             self.glob,
             self.names.copy(),
             self.dimensions.copy(),
-            self.units.copy(),
+            self.dimensionized.copy(),
             self.meta.copy(),
             level=self.level + 1,
         )
@@ -105,7 +107,7 @@ class Env:
     def get(self, namespace: Literal["names"]) -> Callable[[str], T]: ...
     @overload
     def get(
-        self, namespace: Literal["dimensions", "units"]
+        self, namespace: Literal["dimensions", "dimensionized"]
     ) -> Callable[[str], Expression | None]: ...
     def get(self, namespace: namespace_names) -> Callable[[str], T | Expression | None]:
         def _get(name: str) -> T | Expression | None:
@@ -135,5 +137,5 @@ class Env:
     def __repr__(self):
         return "\n".join(
             f"{name} = {self(name)}"  # type: ignore
-            for name in {"names", "dimensions", "units"}
+            for name in {"names", "dimensions", "dimensionized"}
         )
