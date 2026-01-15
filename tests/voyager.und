@@ -27,14 +27,14 @@ energy_per_photon = ℏ * ω
 
 photon_rate = P_transmit / energy_per_photon -> photon/s
 
-echo("Voyager sends data at a rate of {datarate} with {P_transmit}.")
-echo("At a frequency of {f}, this amounts to {photon_rate}.")
+echo("Voyager sends data at a rate of " + (datarate->Str) + " with " + (P_transmit->Str))
+echo("At a frequency of " + (f->Str) + ", this amounts to " + (photon_rate->Str) + ".")
 
 # Voyager dish antenna:
 d_voyager = 3.7 m
 
 # Voyagers distance to Earth:
-R = 25.4e9 km  # as of 2025
+R = 25400000000 km  # as of 2025
 
 # Diameter of receiver dish:
 d_receiver = 70 m
@@ -42,11 +42,11 @@ d_receiver = 70 m
 irradiance = P_transmit / (4π * R^2)
 P_received: Power = irradiance * (π * d_voyager / λ)^2 * (π * d_receiver^2 / 4)
 
-echo("A {d_receiver} dish on Earth will receive {P_received -> aW} of power.")
+echo("A " + (d_receiver->Str) + " dish on Earth will receive " + (P_received -> Str) + " of power.")
 
 photon_rate_receiver = P_received / energy_per_photon -> photon/s
 photons_per_bit = photon_rate_receiver / datarate -> photon/bit
 
 echo("")
-echo("This corresponds to {photon_rate_receiver}.")
-echo("Which means {photons_per_bit}.")
+echo("This corresponds to " + (photon_rate_receiver->Str) + ".")
+echo("Which means " + (photons_per_bit->Str) + ".")

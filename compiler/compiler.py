@@ -178,16 +178,17 @@ class Compiler:
         return tstr(f"bool__init__({' && '.join(comparisons)})")
 
     def conversion_(self, node: Conversion, link: int) -> tstr:
+        if not isinstance(node.target, Type):
+            # unit conversion
+            return self.compile(node.value)
+
         out = tstr("__$func__($value, $loc)")
         out["value"] = self.compile(node.value)
         out["loc"] = (
             f"LOC({node.loc.line}, {node.loc.col}, {node.loc.end_line}, {node.loc.end_col})"
         )
 
-        if isinstance(node.target, Type):
-            out["func"] = f"{node.target.name.name.lower()}"
-        else:
-            raise NotImplementedError("Unit conversions are not supported yet.")
+        out["func"] = f"{node.target.name.name.lower()}"
         return out
 
     def extern_declaration_(self, node: ExternDeclaration, link: int) -> tstr:
@@ -227,16 +228,16 @@ class Compiler:
             iterator = iterators[0]
             loop["iterator_defs"] = (
                 f"Value *und_{self.uid}_{iterator.name} = "  # type: ignore
-                + mthd("__getitem__", "$iterable", "int__init__($iterator)")
+                + mthd("__getitem__", "$iterable", "int__init__($iterator, U_ONE)")
                 + ";"
             )
         else:
             # if there are >1 iterators, it is guaranteed that the iterable is a list of lists
             iterrow_name = f"__iterrow_{abs(link)}"
-            iterator_defs = f"Value *{iterrow_name} = {mthd('__getitem__', '$iterable', 'int__init__($iterator)')};"
+            iterator_defs = f"Value *{iterrow_name} = {mthd('__getitem__', '$iterable', 'int__init__($iterator, U_ONE)')};"
             iterator_defs += "\n".join(
                 f"Value *und_{self.uid}_{iterator.name} = "  # type: ignore
-                + mthd("__getitem__", iterrow_name, f"int__init__({i})")
+                + mthd("__getitem__", iterrow_name, f"int__init__({i}, U_ONE)")
                 + ";"
                 for i, iterator in enumerate(iterators)
             )
@@ -260,7 +261,7 @@ class Compiler:
                 (($range->step > 0) ? ($i < $range->stop) : ($i > $range->stop));
                 $i += $range->step)
             {
-                Value *$iv = $vtype__init__($i);
+                Value *$iv = $vtype__init__($i, U_ONE);
                 $body
             }}""")
 
@@ -286,7 +287,7 @@ class Compiler:
                 (($step > 0) ? ($i < $stop) : ($i > $stop));
                 $i += $step)
             {
-                Value *$iv = $vtype__init__($i);
+                Value *$iv = $vtype__init__($i, U_ONE);
                 $body
             }}""",
             content=loop.content,
@@ -459,6 +460,8 @@ class Compiler:
             .removeprefix("int__init__(")
             .removeprefix("float__init__(")
             .removesuffix(")")
+            .replace(", U_ONE", "")
+            .strip()
             for x in [start, stop, step]
         ]
         return tstr(

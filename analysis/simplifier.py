@@ -95,23 +95,17 @@ class Simplifier:
         base = self._simplify(node.base)
         exponent = self._simplify(node.exponent)
 
-        if not isinstance(exponent, Scalar):
-            return node
-
-        if exponent.value == 0:
-            return Scalar(1)
-        elif exponent.value == 1:
-            return base
+        if isinstance(exponent, Scalar):
+            if exponent.value == 0:
+                return Scalar(1)
+            elif exponent.value == 1:
+                return base
 
         match base:
             case Power():
-                assert isinstance(base.exponent, Scalar)
-                return replace(
-                    base,
-                    exponent=Scalar(
-                        base.exponent.value * exponent.value, loc=base.exponent.loc
-                    ),
-                )
+                exponent = Product([exponent, base.exponent])
+                exponent = self._simplify(exponent)
+                return replace(base, exponent=exponent)
             case Product():
                 return self._simplify(
                     Product(
@@ -125,10 +119,16 @@ class Simplifier:
                         ]
                     )
                 )
+            case One():
+                return Scalar(1)
             case Scalar():
                 if str(base.value) == "0":
+                    return Scalar(1)
+                elif str(base.value) == "1":
                     return base
-                return replace(base, value=base.value**exponent.value)
+                if isinstance(exponent, Scalar):
+                    return replace(base, value=base.value**exponent.value)
+                return node
 
         return replace(node, base=base, exponent=exponent)
 
@@ -155,7 +155,7 @@ class Simplifier:
         del flat_values
 
         scalars = identity
-        groups: dict[UnitNode, float] = defaultdict(lambda: 0.0)
+        groups: dict[UnitNode, Sum] = defaultdict(lambda: Sum([]))
         for value in values:
             if op is Sum and (not isinstance(value, Scalar) or value.unit):
                 v = (
@@ -169,27 +169,35 @@ class Simplifier:
                     self.errors.throw(543, loc=value.loc)
 
             if isinstance(value, Power):
-                assert isinstance(value.exponent, Scalar)
-                groups[value.base] += value.exponent.value
+                groups[value.base].add(value.exponent)
             elif isinstance(value, Scalar):
                 if op is Sum:
                     scalars += value.value
                 else:
                     scalars *= value.value
             else:
-                groups[value] += 1
+                groups[value].add(Scalar(1))
 
-        values = [
-            (
-                Power(base=value, exponent=Scalar(count), loc=value.loc)
-                if op is Product
-                else Product([Scalar(count), value])
-            )
-            if count != 1
-            else value
-            for value, count in groups.items()
-            if count != 0
-        ]
+        simplified_values = []
+        for value, count in groups.items():
+            count = self._operation(count)
+            str_count = None
+            if isinstance(count, Scalar):
+                str_count = str(count.value)
+
+            if str_count == "1":
+                simplified_values.append(value)
+            elif str_count == "0":
+                continue
+            else:
+                simplified_values.append(
+                    (
+                        Power(base=value, exponent=count, loc=value.loc)
+                        if op is Product
+                        else Product([count, value])
+                    )
+                )
+        values = simplified_values
 
         if scalars != identity:
             values.append(Scalar(scalars))

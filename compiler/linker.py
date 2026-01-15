@@ -84,7 +84,7 @@ class Linker:
             ).stdout
 
         if not format:
-            print(code)
+            rich.print(code)
         else:
             rich.print(
                 rich.syntax.Syntax(

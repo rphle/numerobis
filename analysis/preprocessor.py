@@ -5,12 +5,12 @@ from analysis.invert import invert
 from classes import Header, ModuleMeta
 from environment import Namespaces
 from exceptions.exceptions import Exceptions
-from nodes.ast import Float, Integer, UnitDefinition  #
+from nodes.ast import Float, Integer, UnitDefinition
 from nodes.core import Identifier
 from nodes.unit import Expression, Neg, One, Power, Product, Scalar, Sum, UnitNode
 from typechecker.linking import Link
 
-from .simplifier import Simplifier
+from .simplifier import Simplifier, cancel_
 
 SameType = TypeVar("SameType")
 
@@ -54,12 +54,13 @@ class Preprocessor:
         if not node.unit:
             return
         value = int(node.value) if isinstance(node, Integer) else float(node.value)
-        exp = int(node.exponent) if node.exponent else 1
-        res = self.resolve(self.units, Scalar(value=value * exp, unit=node.unit))
+        res = self.resolve(Scalar(value=value, unit=node.unit))
 
         num = self.simplify(res, do_cancel=False)
-        assert isinstance(num, Expression) and isinstance(num.value, Scalar)
-        self.env.nodes[link] = replace(node, value=str(num.value))
+        assert isinstance(num, Expression) and isinstance(num.value, Scalar), repr(num)
+        val = replace(node, value=str(num.value.value))
+
+        self.env.nodes[link] = val
 
     def unit_def_(self, unit: UnitDefinition):
         if unit.value is None or isinstance(unit.value, One):
@@ -74,7 +75,7 @@ class Preprocessor:
                     val = Product([Identifier("_"), expr])
                 expr = Expression(val)
 
-        expr = self.resolve(self.units, expr)
+        expr = self.resolve(expr)
 
         name = unit.name.name
         inverted = self.simplify(invert(expr), do_cancel=False)
@@ -102,46 +103,74 @@ class Preprocessor:
         for link, node in self.env.nodes.items():
             self.process(node, link)
 
-    def resolve(
-        self, units: dict[str, Expression], node: UnitNode, n: Optional[Scalar] = None
-    ) -> Expression:
-        resolved = self.resolve_(units, node, n or Identifier("_"))
+    def resolve(self, node: UnitNode, n: Optional[Scalar] = None) -> Expression:
+        resolved = self.resolve_(node, n or Identifier("_"))
         if not isinstance(resolved, Expression):
             return Expression(resolved)
         return resolved
 
-    def resolve_(
-        self, units: dict[str, Expression], node: UnitNode, n: Scalar | Identifier
-    ) -> UnitNode:
+    def resolve_(self, node: UnitNode, n: Scalar | Identifier) -> UnitNode:
         match node:
             case Neg():
-                return replace(node, value=self.resolve_(units, node.value, n))
+                return replace(node, value=self.resolve_(node.value, n))
             case Expression():
-                return self.resolve_(units, node.value, n)
+                return self.resolve_(node.value, n)
             case Product() | Sum():
-                values = [self.resolve_(units, value, n) for value in node.values]
+                values = [self.resolve_(value, n) for value in node.values]
                 return replace(node, values=values)
             case Power():
-                base = self.resolve_(units, node.base, n)
-                exp = self.resolve_(units, node.exponent, n)
+                base = self.resolve_(node.base, n)
+                exp = self.resolve_(node.exponent, n)
                 return replace(node, base=base, exponent=exp)
             case Scalar():
                 unit = node.unit
                 if unit:
-                    res = self.resolve_(units, unit, Identifier("_"))
+                    base = cancel_(self.to_base(unit, ""))
+                    if not base:
+                        base = Scalar(1)
+                    res = self.resolve_(
+                        Product([unit, Power(base, Scalar(-1))]),
+                        Identifier("_"),
+                    )
                     res = self.simplify(res, do_cancel=False)
 
                     if linear(res):
                         res = Product([Identifier("_"), res])
-                    res = self.resolve_(units, res, Scalar(node.value))
+                    res = self.resolve_(res, Scalar(node.value))
 
                     return res
                 return node
             case Identifier():
                 if node.name == "_":
                     return n
-                val = units[node.name]
-                res = self.resolve_(units, val, n)
+                val = self.units[node.name]
+                res = self.resolve_(val, n)
                 return res.value if isinstance(res, Expression) else res
+
+        return node
+
+    def to_base(self, node: UnitNode, parent: str) -> UnitNode:
+        match node:
+            case Expression() | Neg():
+                return replace(node, value=self.to_base(node.value, parent=parent))
+            case Product() | Sum():
+                values = [self.to_base(value, parent=parent) for value in node.values]
+                values = [value for value in values if not isinstance(value, Scalar)]
+                return replace(node, values=values)
+            case Power():
+                base = self.to_base(node.base, parent=parent)
+                exp = self.to_base(node.exponent, parent=parent)
+                return replace(node, base=base, exponent=exp)
+            case Identifier():
+                value = self.units.get(node.name)
+                if value is None:
+                    return node
+                if isinstance(value.value, Identifier) and value.value.name == "_":
+                    if self.env.dimensionized[node.name]:
+                        return Identifier("_")
+                    else:
+                        return Scalar(1)
+
+                return self.to_base(value, parent=node.name)
 
         return node
