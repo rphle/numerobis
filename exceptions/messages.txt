@@ -68,6 +68,9 @@ Command failed: {command}
 [E301 / ValueError]
 failed to convert value to integer
 
+[E302 / ValueError]
+failed to convert value to float
+
 
 
 [E502 / TypeError]

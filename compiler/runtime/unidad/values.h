@@ -60,6 +60,7 @@ typedef struct {
                          struct Value *_stop, struct Value *_step);
   Value *(*__str__)(struct Value *self);
   Value *(*__int__)(struct Value *self);
+  Value *(*__float__)(struct Value *self);
 } ValueMethods;
 
 typedef struct Value {
@@ -145,6 +146,12 @@ static inline Value *__int__(Value *self, const Location *loc) {
   Value *r = self->methods->__int__(self);
   if (r == NULL)
     u_throw(301, loc);
+  return r;
+}
+static inline Value *__float__(Value *self, const Location *loc) {
+  Value *r = self->methods->__float__(self);
+  if (r == NULL)
+    u_throw(302, loc);
   return r;
 }
 

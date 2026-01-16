@@ -236,6 +236,34 @@ static Value *str__int__(Value *self) {
   return int__init__(result, U_ONE);
 }
 
+static Value *str__float__(Value *self) {
+  if (!self || !self->str)
+    return NULL;
+
+  const gchar *str = self->str->str;
+  gchar *endptr = NULL;
+
+  while (g_ascii_isspace(*str)) {
+    str++;
+  }
+
+  if (*str == '\0') {
+    return NULL;
+  }
+
+  gdouble result = g_ascii_strtod(str, &endptr);
+
+  while (g_ascii_isspace(*endptr)) {
+    endptr++;
+  }
+
+  if (*endptr != '\0') {
+    return NULL;
+  }
+
+  return float__init__(result, U_ONE);
+}
+
 static const ValueMethods _str_methods = {
     .__bool__ = str__bool__,
     .__cbool__ = str__cbool__,
@@ -252,4 +280,5 @@ static const ValueMethods _str_methods = {
     .__mul__ = str__mul__,
     .__str__ = str__str__,
     .__int__ = str__int__,
+    .__float__ = str__float__,
 };

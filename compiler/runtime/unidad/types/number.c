@@ -213,6 +213,15 @@ static Value *number__int__(Value *self) {
   }
 }
 
+static Value *number__float__(Value *self) {
+  Number *n = self->number;
+  if (n->kind == NUM_DOUBLE) {
+    return self;
+  } else {
+    return float__init__((gdouble)n->i64, n->unit);
+  }
+}
+
 static const ValueMethods _number_methods = {
     .__bool__ = number__bool__,
     .__cbool__ = number__cbool__,
@@ -230,4 +239,5 @@ static const ValueMethods _number_methods = {
     .__neg__ = number__neg__,
     .__str__ = number__str__,
     .__int__ = number__int__,
+    .__float__ = number__float__,
 };
