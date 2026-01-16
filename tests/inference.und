@@ -57,7 +57,7 @@ add!(a, b) = a + b
 sum = add(5, 10)
 
 # ---
-process!(x) = x + 5 kilogram
+process!(x) = x + (5 kilogram)
 result = process(10 kilogram)
 
 # ---
@@ -131,7 +131,7 @@ for x in [1, 2, 3] do {
 }
 
 # ---
-masses: List[Int] = []
+masses: List[Int] = [0]
 for i in [1, 2, 3] do {
     masses = masses + [i]
     masses[i] -> kilogram

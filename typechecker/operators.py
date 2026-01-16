@@ -7,6 +7,7 @@ from .types import (
     FunctionType,
     IntType,
     ListType,
+    NeverType,
     NoneType,
     NumberType,
     Overload,
@@ -139,4 +140,30 @@ typetable: dict[str, Struct] = {
     "Function": Struct({**_eq}),
     "Dimension": Struct({}),
     "None": Struct({**_eq}),
+    "Never": Struct(
+        {
+            **_conv("Float", "Bool", "Str", "Int", "Any", "Str", "List"),
+            **{f"__{op}__": _numberoverload for op in _ops},
+            **{f"__{op}__": _boolnumberoverload for op in _boolops},
+            **_eq,
+            "__add__": FunctionType(
+                params=[NeverType(), NeverType()], return_type=NeverType()
+            ),
+            "__mul__": FunctionType(
+                params=[NeverType(), NeverType()], return_type=NeverType()
+            ),
+            "__getitem__": FunctionType(
+                params=[NeverType(), NeverType()], return_type=NeverType()
+            ),
+            "__setitem__": FunctionType(
+                params=[NeverType(), NeverType(), NeverType()], return_type=NeverType()
+            ),
+            **{
+                f"__{op}__": FunctionType(
+                    params=[NeverType(), NeverType()], return_type=NeverType()
+                )
+                for op in _boolops
+            },
+        },
+    ),
 }

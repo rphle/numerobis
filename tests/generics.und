@@ -97,7 +97,7 @@ map(double, [1, 2, 3])
 
 # ---
 map!(f: ![[x: Mass], Mass], lst: List[Mass]): List[Mass] = if lst == [] then [] else [f(lst[0])] + map(f, lst[1:])
-add_unit!(x) = x + 1 kilogram
+add_unit!(x) = x + (1 kilogram)
 map(add_unit, [1 kilogram, 2 kilogram, 3 kilogram])
 
 # ---

@@ -17,6 +17,13 @@ class Header:
     units: list[UnitDefinition] = field(default_factory=list)
     dimensions: list[DimensionDefinition] = field(default_factory=list)
 
+    def merge(self, other: "Header") -> "Header":
+        return Header(
+            imports=self.imports + other.imports,
+            units=self.units + other.units,
+            dimensions=self.dimensions + other.dimensions,
+        )
+
 
 @dataclass
 class CompiledModule:

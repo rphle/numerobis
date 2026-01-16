@@ -91,27 +91,13 @@ with tqdm(total=sum(len(file[1]) for _, file in tests.items()), leave=False) as 
                     print()
                     times["Parsing"] = timeit(mod.parse)
                     times["Typechecking"] = timeit(mod.typecheck)
-                    if any(
-                        x in file
-                        for x in (
-                            "arithmetic",
-                            "calculations",
-                            "comparisons",
-                            "compile",
-                            "conditionals",
-                            "logic",
-                            "strings",
-                            "lists",
-                            "loops",
-                            "echo",
-                        )
-                    ):
-                        mod.header = header.header
-                        mod.imports.extend(header.imports)
-                        times["Compilation"] = timeit(mod.compile)
-                        times["Linking"] = timeit(mod.link)
-                        times["GCC"] = timeit(mod.gcc)
-                        times["Execution"] = timeit(mod.run)
+
+                    mod.header = mod.header.merge(header.header)
+                    mod.imports.extend(header.imports)
+                    times["Compilation"] = timeit(mod.compile)
+                    times["Linking"] = timeit(mod.link)
+                    times["GCC"] = timeit(mod.gcc)
+                    times["Execution"] = timeit(mod.run)
 
             except SystemExit:
                 pass

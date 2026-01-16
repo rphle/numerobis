@@ -81,7 +81,7 @@ class Compiler:
         )
         self.functions: list[str] = []
         self.typedefs: list[str] = []
-        self._defined_addrs = set()
+        self._defined_addrs: dict[str, str] = {}
         self._imported_names = {}
         self._imported_units = {}
 
@@ -133,15 +133,17 @@ class Compiler:
             i += 1
 
         # order arguments
-        signature: FunctionType = node.meta["callee"]
-
         arg_names = {
             self.unlink(arg.name).name: arg  # type: ignore
             for arg in unlinked_args[i:]
         }
+        if "callee" in node.meta:
+            signature: FunctionType = node.meta["callee"]
 
-        for name in signature.param_names[i:]:
-            args.append(arg_names[name].value if name in arg_names else None)
+            for name in signature.param_names[i:]:
+                args.append(arg_names[name].value if name in arg_names else None)
+        else:
+            args = [arg.value for arg in arg_names.values()]
 
         args = [str(self.compile(arg)) if arg else "NULL" for arg in args]
 
@@ -317,6 +319,8 @@ class Compiler:
                             }""")
         assert node.body is not None
 
+        self._defined_addrs.update(self.env.nodes[link].meta["addrs"])
+
         body = self.compile(self._make_block(node.body, rtrn=True))
         body_node = self.unlink(node.body)
         if isinstance(body_node, Block) and not isinstance(body_node.body[-1], Return):
@@ -389,7 +393,7 @@ class Compiler:
         if self._link2type(node.index) == "slice":
             return self.slice_(node, link)
 
-        if (iterable_type := self._link2type(node.iterable)) != "any":
+        if (iterable_type := self._link2type(node.iterable)) not in ("any", "never"):
             self.include.add(f"unidad/types/{iterable_type}")
 
         out = tstr("__getitem__($iterable, $index, $loc)")
@@ -536,8 +540,10 @@ class Compiler:
         out["name"] = self.compile(node.name)
         out["value"] = self.compile(node.value)
 
-        if addr not in self._defined_addrs:
-            self._defined_addrs.add(addr)
+        name = self.unlink(node.name).name
+
+        if name not in self._defined_addrs:
+            self._defined_addrs[name] = addr
             out = tstr("Value *") + out
 
         return out
@@ -547,7 +553,8 @@ class Compiler:
 
         out["name"] = self.compile(node.name)
 
-        self._defined_addrs.add(node.meta["address"])
+        name = self.unlink(node.name).name
+        self._defined_addrs[name] = node.meta["address"]
 
         return out
 
@@ -628,6 +635,7 @@ class Compiler:
                 if node.names is None:
                     # import *
                     names = list(ns.names.keys())
+                    names += ["@" + unit for unit in ns.units.keys()]
                 else:
                     # import a, b, c
                     names = [name.name for name in node.names]

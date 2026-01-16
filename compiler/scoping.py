@@ -46,7 +46,7 @@ def get_free_vars(table: dict[int, AstNode], node: Function, link: int) -> list[
                     current_defined.add(unlink(iterator).name)
 
         for field in fields:
-            if field.name in ("name", "annotation"):
+            if field.name in ("name", "annotation", "unit"):
                 continue
 
             val = getattr(n, field.name)

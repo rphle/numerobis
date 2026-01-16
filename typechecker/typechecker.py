@@ -81,6 +81,8 @@ class Typechecker:
         self.simplifier = Simplifier(module=module)
         self.simplify = self.simplifier.simplify
 
+        self.unresolved_funcs: list[FunctionType] = []
+
     def bin_op_(self, node: BinOp, env: Env, link: int) -> T:
         """Check dimensional consistency in mathematical operations"""
         left, right = [self.check(side, env=env) for side in (node.left, node.right)]
@@ -193,8 +195,20 @@ class Typechecker:
 
         return BoolType()
 
-    def call_(self, node: Call, env: Env, link: int):
-        callee = self.check(node.callee, env=env)
+    def call_(self, node: Call, env: Env, link: int, dummy: bool = False):
+        try:
+            if not dummy:
+                callee = self.check(node.callee, env=env)
+            else:
+                callee: T = node.callee  # type: ignore
+        except UnresolvedAnyParam as e:
+            self.namespaces.nodes[link].meta["callee"] = env.meta["#function"]
+            raise e
+
+        if callee.name("Never"):
+            for arg in node.args:
+                self.check(self.unlink(arg).value, env=env)
+            return NeverType()
         if not callee.name("Function"):
             self.errors.throw(506, type=callee, loc=node.loc)
 
@@ -212,70 +226,74 @@ class Typechecker:
             )
 
         node = self.unlink(node, attrs=["args"])
-        args: dict[str, tuple[T, T, str]] = {}
-        i = 0
-        for arg in node.args:
-            arg = self.unlink(arg, attrs=["name"])
-            if arg.name:
-                if arg.name.name in args:
+        if not dummy:
+            args: dict[str, tuple[T, T, str]] = {}
+            i = 0
+            for arg in node.args:
+                arg = self.unlink(arg, attrs=["name"])
+                if arg.name:
+                    if arg.name.name in args:
+                        self.errors.throw(
+                            509, name=callee._name, arg=arg.name.name, loc=arg.loc
+                        )
+                    if arg.name.name not in callee.param_names:
+                        self.errors.throw(
+                            510, name=callee._name, arg=arg.name.name, loc=arg.loc
+                        )
+
+                    name = arg.name.name
+                    i = -1
+                else:
+                    if i < 0:
+                        self.errors.throw(511, loc=arg.loc)
+                    if i >= len(callee.param_names):
+                        self.errors.throw(
+                            512,
+                            name=callee._name,
+                            n_params=len(callee.param_names),
+                            plural="s" if len(callee.param_names) != 1 else "",
+                            n_args=len(node.args),
+                            loc=node.loc,
+                        )
+                    name = callee.param_names[i]
+                    i += 1
+
+                typ = self.check(arg.value, env=env)
+                param = callee.params[callee.param_names.index(name)]
+                adress = callee.param_addrs[callee.param_names.index(name)]
+
+                if param.name("Any"):
+                    param = typ
+
+                if not (mismatch := nomismatch(typ, param)):
                     self.errors.throw(
-                        509, name=callee._name, arg=arg.name.name, loc=arg.loc
+                        513,
+                        kind=mismatch.kind,
+                        expected=mismatch.right,
+                        name=name,
+                        actual=mismatch.left,
+                        loc=arg.loc,
                     )
-                if arg.name.name not in callee.param_names:
-                    self.errors.throw(
-                        510, name=callee._name, arg=arg.name.name, loc=arg.loc
-                    )
 
-                name = arg.name.name
-                i = -1
-            else:
-                if i < 0:
-                    self.errors.throw(511, loc=arg.loc)
-                if i >= len(callee.param_names):
-                    self.errors.throw(
-                        512,
-                        name=callee._name,
-                        n_params=len(callee.param_names),
-                        plural="s" if len(callee.param_names) != 1 else "",
-                        n_args=len(node.args),
-                        loc=node.loc,
-                    )
-                name = callee.param_names[i]
-                i += 1
+                args[name] = (param, unify(param, typ), adress)  # type: ignore
+                # enable lexical scoping
+                env.glob.names[adress] = args[name][1]
 
-            typ = self.check(arg.value, env=env)
-            param = callee.params[callee.param_names.index(name)]
-            adress = callee.param_addrs[callee.param_names.index(name)]
-
-            if param.name("Any"):
-                param = typ
-
-            if not (mismatch := nomismatch(typ, param)):
+            if len(args) < callee.arity[0]:
                 self.errors.throw(
-                    513,
-                    kind=mismatch.kind,
-                    expected=mismatch.right,
-                    name=name,
-                    actual=mismatch.left,
-                    loc=arg.loc,
+                    512,
+                    name=callee._name,
+                    n_params=len(callee.param_names),
+                    plural="s" if len(callee.param_names) != 1 else "",
+                    n_args=len(node.args),
+                    loc=node.loc,
                 )
+        else:
+            args = {name: (NeverType(), NeverType(), "") for name in callee.param_names}
 
-            args[name] = (param, unify(param, typ), adress)  # type: ignore
-            # enable lexical scoping
-            env.glob.names[adress] = args[name][1]
-
-        if len(args) < callee.arity[0]:
-            self.errors.throw(
-                512,
-                name=callee._name,
-                n_params=len(callee.param_names),
-                plural="s" if len(callee.param_names) != 1 else "",
-                n_args=len(node.args),
-                loc=node.loc,
-            )
-
-        self.namespaces.nodes[link].meta["callee"] = callee
-        if callee.extern:
+        if not dummy:
+            self.namespaces.nodes[link].meta["callee"] = callee
+        if callee.extern and not dummy:
             self.namespaces.nodes[link].meta["extern"] = callee.extern
         if callee.node is None or callee.extern:
             return callee.return_type
@@ -286,7 +304,10 @@ class Typechecker:
         )
         if recheck:
             # Prevent re-entering the same function body being currently typechecked.
-            if "#function" in env.meta and env.meta["#function"].node == callee.node:
+            visited = env.meta.get("#visited", set())
+            if (
+                "#function" in env.meta and env.meta["#function"].node == callee.node
+            ) or (callee.node is not None and callee.node in visited):
                 if callee.unresolved:
                     _name = f"{callee._name}() " if callee._name else ""
                     self.errors.throw(
@@ -297,6 +318,9 @@ class Typechecker:
                 return callee.return_type
 
             new_env = env.copy()
+            if callee.node is not None:
+                new_env.meta["#visited"] = visited | {callee.node}
+
             for name, arg in args.items():
                 new_env.set("names")(name, arg[1], address=arg[2])
             for i, default in enumerate(callee.param_defaults):
@@ -307,8 +331,9 @@ class Typechecker:
             new_env.meta["#function"] = callee
 
             if callee.meta("#curried"):
-                callee._meta["#curried"].update(new_env.names)
-                new_env.names = callee._meta["#curried"]
+                keep = set(callee._meta["#curried"].keys()) | set(callee.param_names)
+                new_env.names = {k: v for k, v in new_env.names.items() if k in keep}
+                new_env.names.update(callee._meta["#curried"])
 
             self.errors.stack.append(node.loc)
             return_type = self.check(
@@ -504,9 +529,13 @@ class Typechecker:
             self.type_(node.return_type, env=env) if node.return_type else NeverType()
         )
         arity = (sum(1 for p in node.params if p.default is None), len(params))
-        param_addrs = [
-            f"{self.unlink(param.name).name}-{uuid.uuid4()}" for param in node.params
-        ]
+        param_names = [self.unlink(param.name).name for param in node.params]
+        param_addrs = [f"{param}-{uuid.uuid4()}" for param in param_names]
+        self.namespaces.nodes[link].meta["addrs"] = {
+            name: addr for name, addr in zip(param_names, param_addrs)
+        }
+
+        unresolved = None if node.return_type or extern else "recursive"
 
         signature = FunctionType(
             _name=name,
@@ -516,13 +545,15 @@ class Typechecker:
             param_addrs=param_addrs,
             param_defaults=defaults,
             return_type=return_type,
-            unresolved=None if node.return_type or extern else "recursive",
+            unresolved=unresolved,
             node=link,
             arity=arity,
             extern=extern,
         )
         signature.meta("#curried", env.names)
 
+        if unresolved and not extern:
+            self.unresolved_funcs.append(signature)
         if name is not None:
             env.set("names")(name, signature)
         if extern:
@@ -539,7 +570,9 @@ class Typechecker:
             body = self.check(node.body, env=new_env)
         except UnresolvedAnyParam as e:
             if str(e) == str(link):
-                signature = signature.edit(unresolved="parameters")
+                unresolved = "parameters"
+                signature = signature.edit(unresolved=unresolved)
+                self.unresolved_funcs.append(signature)
                 if name is not None:
                     env.set("names")(name, signature)
                 return signature
@@ -930,6 +963,17 @@ class Typechecker:
         )
         for link in self.program:
             self.check(link, env=env)
+
+        for func in self.unresolved_funcs:
+            self.call_(
+                Call(
+                    callee=func,  # type: ignore
+                    args=None,  # type: ignore
+                ),
+                env=env,
+                link=-1,
+                dummy=True,
+            )
 
     def unlink(self, node, attrs=None):
         return linking.unlink(self.namespaces.nodes, node, attrs)
