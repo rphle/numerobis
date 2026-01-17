@@ -26,6 +26,8 @@ def linear(node: UnitNode) -> bool:
         case Identifier():
             if node.name == "_":
                 return False
+        case Scalar():
+            return not node.placeholder
     return True
 
 
@@ -136,7 +138,9 @@ class Preprocessor:
 
                     if linear(res):
                         res = Product([Identifier("_"), res])
-                    res = self.resolve_(res, Scalar(node.value))
+
+                    value = Scalar(node.value) if not node.placeholder else n
+                    res = self.resolve_(res, value)
 
                     return res
                 return node

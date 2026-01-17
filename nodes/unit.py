@@ -1,5 +1,5 @@
 from collections import Counter
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from math import prod
 from typing import Optional
 
@@ -114,6 +114,7 @@ class Expression(UnitNode):
 class Scalar(UnitNode):
     value: int | float
     unit: Optional[Expression] = None
+    placeholder: bool = field(default=False, repr=False)
 
     def __str__(self):
         value = str(self.value)

@@ -182,5 +182,7 @@ class UnitParser(ParserTemplate):
             unit = _unitparser.start()
             self.tokens = _unitparser.tokens
             if unit is not None:
-                return Scalar(value=1, unit=unit, loc=token.loc.merge(unit.loc))
+                return Scalar(
+                    value=1, unit=unit, loc=token.loc.merge(unit.loc), placeholder=True
+                )
         return Identifier(name=token.value, loc=token.loc)

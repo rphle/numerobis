@@ -1,0 +1,27 @@
+from si import @(W, J)
+# ---
+dimension Length
+dimension Time
+dimension Volume = Length^3
+
+unit m: Length
+unit cm: Length = 0.01 m
+unit km: Length = 1000 m
+
+unit L: Volume = (0.1m)^3
+unit mL: Volume = 0.001 L
+
+unit s: Time
+unit h: Time = 3600 s
+
+unit mW = 0.001 W
+
+unit dBm = 10^(_ mW / 10mW)
+
+
+echo(5(2*km))
+echo(100 km/h + 0.05km/s)
+echo(2 * 60dBm)
+echo(5m*s)
+echo(23W)
+echo(1mL == 1 cm^3)
