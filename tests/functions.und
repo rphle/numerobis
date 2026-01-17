@@ -242,7 +242,7 @@ nested_returns!(x: Int): Int = {
 nested_returns(7)
 
 # ---
-recursive_no_type!(n: Int) = if n <= 1 then 1 else n * recursive_no_type(n - 1)
+recursive_no_type!(n: Int): Int = if n <= 1 then 1 else n * recursive_no_type(n - 1)
 
 # E508
 recursive_no_return!(n: Int) = if n <= 1 then 1 else n * recursive_no_return(n - 1)

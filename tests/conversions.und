@@ -138,10 +138,10 @@ mass -> Int
 distance = 100 metre
 distance -> Float
 
-# ///
+# ---
 "hello" -> Int
 
-# E515
+# ---
 true -> Float
 
 # ---

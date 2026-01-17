@@ -9,7 +9,7 @@ unit km: Length = 1000 m
 2km + 40m
 
 # ---
-unit dB: 1 = 10 * 10^(_ W / W)
+unit dB = 10 * 10^(_ W / W)
 
 20dB + 20dB
 

@@ -148,7 +148,7 @@ identity!(x) = x
 identity(identity(identity(5)))
 
 # ---
-self_ref!(x) = if x == 0 then 0 else self_ref(x)
+self_ref!(x: Int): Int = if x == 0 then 0 else self_ref(x)
 
 # ///
 mutual_a!(n) = if n <= 0 then 0 else mutual_b(n - 1)
@@ -183,13 +183,13 @@ repeated = [1, 1, 1, 1, 1]
 # ---
 same_masses = [5 kilogram, 5 kilogram, 5 kilogram]
 
-# ---
+# E901
 [1, 2, 3][10]
 
-# ---
+# E902
 "hello"[100]
 
-# ---
+# E901
 [1, 2, 3][-10]
 
 # ---
