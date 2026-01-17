@@ -93,7 +93,7 @@ with tqdm(total=sum(len(file[1]) for _, file in tests.items()), leave=False) as 
                     times["Typechecking"] = timeit(mod.typecheck)
 
                     mod.header = mod.header.merge(header.header)
-                    mod.imports.extend(header.imports)
+                    mod.imports = header.imports + mod.imports
                     times["Compilation"] = timeit(mod.compile)
                     times["Linking"] = timeit(mod.link)
                     times["GCC"] = timeit(mod.gcc)

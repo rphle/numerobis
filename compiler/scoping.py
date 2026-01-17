@@ -7,7 +7,9 @@ from typechecker.linking import Link
 from typechecker.linking import unlink as _unlink
 
 
-def get_free_vars(table: dict[int, AstNode], node: Function, link: int) -> list[str]:
+def get_free_vars(
+    table: dict[int, AstNode], node: Function, link: int, defined_addrs: dict[str, str]
+) -> list[str]:
     """
     Finds identifiers used in a node that are not defined within that node's scope.
     """
@@ -34,6 +36,9 @@ def get_free_vars(table: dict[int, AstNode], node: Function, link: int) -> list[
                 return
             case Variable() | VariableDeclaration():
                 var_name = unlink(n.name).name
+                if n.meta["address"] in defined_addrs:
+                    used.add(defined_addrs[n.meta["address"]])
+                    return
                 current_defined.add(var_name)
             case Function():
                 if n.name is not None:

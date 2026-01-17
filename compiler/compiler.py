@@ -320,6 +320,7 @@ class Compiler:
         assert node.body is not None
 
         self._defined_addrs.update(self.env.nodes[link].meta["addrs"])
+        defined_addrs = {addr: name for name, addr in self._defined_addrs.items()}
 
         body = self.compile(self._make_block(node.body, rtrn=True))
         body_node = self.unlink(node.body)
@@ -331,7 +332,9 @@ class Compiler:
         params = [str(self.compile(param.name)) for param in _unlinked_params]
         free_vars = [
             self._imported_names.get(var, f"und_{self.uid}_") + var
-            for var in get_free_vars(self.env.nodes, node, link=link)
+            for var in get_free_vars(
+                self.env.nodes, node, link=link, defined_addrs=defined_addrs
+            )
         ]
         env_type = f"__Env_{self.uid}_{abs(link)}"
 
@@ -380,7 +383,9 @@ class Compiler:
             )
 
         out["condition"] = self.compile(node.condition)
+        old_defined_addrs = self._defined_addrs.copy()
         out["then"] = self.compile(node.then_branch)
+        self._defined_addrs = old_defined_addrs
         out["else"] = self.compile(node.else_branch) if node.else_branch else ""
 
         if not node.expression:
