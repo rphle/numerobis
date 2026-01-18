@@ -49,6 +49,8 @@ tests_dir = Path("tests")
 files = sorted(os.listdir(tests_dir))
 verbose = "--verbose" in sys.argv
 full = "--full" in sys.argv
+print_code = "--print" in sys.argv
+format_code = "--format" in sys.argv
 
 
 if len(sys.argv) - verbose - full > 1:
@@ -95,7 +97,9 @@ with tqdm(total=sum(len(file[1]) for _, file in tests.items()), leave=False) as 
                     mod.header = mod.header.merge(header.header)
                     mod.imports = header.imports + mod.imports
                     times["Compilation"] = timeit(mod.compile)
-                    times["Linking"] = timeit(mod.link)
+                    times["Linking"] = timeit(
+                        lambda: mod.link(print_=print_code, format=format_code)
+                    )
                     times["GCC"] = timeit(mod.gcc)
                     times["Execution"] = timeit(mod.run)
 
@@ -187,5 +191,3 @@ for key, value in cumulative.items():
         f"{key}: [bold cyan]{value:.3f}s[/bold cyan] "
         f"[dim]([bold cyan]{value / t if t > 0 else 0:.4f}s[/bold cyan] average)[/dim]"
     )
-
-# python3 run.py arithmetic calculations comparisons compile conditionals logic strings lists loops echo --verbose

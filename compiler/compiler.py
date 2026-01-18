@@ -159,11 +159,6 @@ class Compiler:
         comparisons = []
         for i, op in enumerate(node.ops):
             opname = self.unlink(op).name  # type: ignore
-            if (
-                opname in ["eq", "ne"]
-                and node.meta["types"][i][0] != node.meta["types"][i][1]
-            ):
-                return tstr("VFALSE" if opname == "eq" else "VTRUE")
 
             out = tstr("__$op__($left, $right)")
             operands = [values[i], values[i + 1]]
@@ -184,13 +179,17 @@ class Compiler:
             # unit conversion
             return self.compile(node.value)
 
-        out = tstr("__$func__($value, $loc)")
+        out = tstr("__$func__($value$loc)")
         out["value"] = self.compile(node.value)
-        out["loc"] = (
-            f"LOC({node.loc.line}, {node.loc.col}, {node.loc.end_line}, {node.loc.end_col})"
-        )
-
         out["func"] = f"{node.target.name.name.lower()}"
+
+        if not self.unlink(node.target.name).name == "Bool":
+            out["loc"] = (
+                f", LOC({node.loc.line}, {node.loc.col}, {node.loc.end_line}, {node.loc.end_col})"
+            )
+        else:
+            out["loc"] = ""
+
         return out
 
     def extern_declaration_(self, node: ExternDeclaration, link: int) -> tstr:
@@ -313,6 +312,7 @@ class Compiler:
                                 U_UNPACK_ENV($env)
                                 $shadow_vars
                                 Value *self = __args[0];
+                                $actual_name
                                 $args
 
                                 $body
@@ -337,9 +337,13 @@ class Compiler:
             )
         ]
         env_type = f"__Env_{self.uid}_{abs(link)}"
+        name = self.compile(node.name) if node.name is not None else None
 
         definition["body"] = strip_parens(str(body), "{")
         definition["name"] = f"__impl_{self.uid}_{abs(link)}"
+        definition["actual_name"] = (
+            f"Value *{name} = __args[0];" if name and name else ""
+        )
         definition["env"] = env_type
 
         definition["shadow_vars"] = "\n".join(
@@ -355,8 +359,8 @@ class Compiler:
         self.functions.append(str(definition))
 
         out = f"U_NEW_CLOSURE({definition['name']}, {env_type} {', ' + ', '.join([] + free_vars) if free_vars else ''})"
-        if node.name is not None:
-            out = f"Value *{self.compile(node.name)} = {out}"
+        if name is not None:
+            out = f"Value *{name} = {out}"
 
         self.typedefs.append(
             "typedef struct { "

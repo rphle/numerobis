@@ -166,9 +166,9 @@ class Module:
         MODULECACHE[str(self.meta.path)] = self.compiled
         MODULECACHE[str(self.meta.path)].namespaces = self.namespaces
 
-    def link(self, format: bool = False):
+    def link(self, print_: bool = False, format: bool = False):
         self.linker = Linker(MODULECACHE, main=self.meta.path)
-        self.linker.link(format=format)
+        self.linker.link(print_=print_, format=format)
 
     def gcc(self):
         if self.linker is None:

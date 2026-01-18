@@ -31,7 +31,7 @@ def get_free_vars(
 
         match n:
             case Identifier():
-                if (n.name not in current_defined) or (n.meta.get("link") == link):
+                if n.name not in current_defined:
                     used.add(n.name)
                 return
             case Variable() | VariableDeclaration():

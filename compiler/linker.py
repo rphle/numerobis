@@ -39,7 +39,7 @@ class Linker:
 
         self.order.append(str(module.meta.path))
 
-    def link(self, format: bool = False):
+    def link(self, print_: bool = False, format: bool = False):
         self.process_module(self.modules[str(self.main)])
 
         code = tstr("""$include
@@ -83,18 +83,19 @@ class Linker:
                 ["clang-format"], input=code, text=True, capture_output=True
             ).stdout
 
-        if not format:
-            rich.print(code)
-        else:
-            rich.print(
-                rich.syntax.Syntax(
-                    code,
-                    "C",
-                    theme="monokai",
-                    line_numbers=False,
-                    background_color="#000000",
+        if print_:
+            if not format:
+                rich.print(code)
+            else:
+                rich.print(
+                    rich.syntax.Syntax(
+                        code,
+                        "C",
+                        theme="monokai",
+                        line_numbers=False,
+                        background_color="#000000",
+                    )
                 )
-            )
         self.linked = code
         return code
 
