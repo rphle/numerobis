@@ -1,6 +1,7 @@
 #include "echo.h"
 #include "../constants.h"
 #include "../types/str.h"
+#include "../units/units.h"
 #include "../values.h"
 #include <glib.h>
 #include <stdbool.h>
@@ -50,6 +51,8 @@ Value *echo(Value **args) {
   switch (val->type) {
   case VALUE_NUMBER:
     echo_number(val->number);
+    g_print(" ");
+    g_print("%s", print_unit(val->number->unit)->str);
     break;
   case VALUE_STR:
     if (_echo_in_list)

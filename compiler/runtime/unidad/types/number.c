@@ -201,6 +201,8 @@ static Value *number__str__(Value *val) {
   } else {
     g_string_printf(result, "%g", n->f64);
   }
+  g_string_append(result, " ");
+  g_string_append(result, print_unit(n->unit)->str);
   return str__init__(result);
 }
 

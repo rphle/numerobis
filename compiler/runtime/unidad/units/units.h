@@ -60,6 +60,8 @@ UnitNode *unit_one_new();
 UnitNode *unit_product_of(UnitNode *first, ...);
 UnitNode *unit_sum_of(UnitNode *first, ...);
 
+GString *print_unit(UnitNode *node);
+
 #define U_PROD(...) unit_product_of(__VA_ARGS__, NULL)
 #define U_SUM(...) unit_sum_of(__VA_ARGS__, NULL)
 #define U_NUM(v) unit_scalar_new((v), NULL)

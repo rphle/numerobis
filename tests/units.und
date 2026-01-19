@@ -18,7 +18,7 @@ unit mW = 0.001 W
 
 unit dBm = 10^(_ mW / 10mW)
 
-
+echo(42)
 echo(5(2*km))
 echo(100 km/h + 0.05km/s)
 echo(2 * 60dBm)
