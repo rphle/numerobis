@@ -1,3 +1,6 @@
+from functools import lru_cache
+from hashlib import md5
+from pathlib import Path
 from typing import Literal
 
 from nodes.core import Identifier, UnitNode
@@ -46,3 +49,9 @@ def compile_math(node: UnitNode) -> str:
             return "-(" + compile_math(node.value) + ")"
         case _:
             raise NotImplementedError(f"Unit node cannot be compiled: {type(node)}")
+
+
+@lru_cache(maxsize=None)
+def module_uid(path: str | Path) -> str:
+    uid = md5(str(Path(path).resolve()).encode()).hexdigest()[:8]
+    return str(uid)

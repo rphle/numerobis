@@ -17,7 +17,7 @@ def invert(node: UnitNode) -> UnitNode:
     Inverts f(_) = y into _ = g(y).
     """
     node = node.value if isinstance(node, Expression) else node
-    inverted = invert_(node, Identifier("_"))
+    inverted = invert_(node, Identifier("x"))
 
     return Expression(inverted)
 
@@ -52,7 +52,7 @@ def invert_(node: UnitNode, target: UnitNode) -> UnitNode:
             # y = a ^ _  => _ = log(a, target)
             else:
                 log_call = Call(
-                    callee=Identifier("LOGN"),
+                    callee=Identifier("logn"),
                     args=[CallArg(None, base), CallArg(None, target)],
                 )
                 return invert_(exponent, log_call)

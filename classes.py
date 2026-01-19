@@ -33,4 +33,5 @@ class CompiledModule:
     code: str
     functions: list[str]
     typedefs: list[str]
+    units: dict[str, str]
     namespaces: Optional["Namespaces"] = None  # type: ignore # noqa

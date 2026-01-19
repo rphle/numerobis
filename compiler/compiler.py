@@ -1,5 +1,5 @@
 import dataclasses
-from hashlib import md5
+import hashlib
 from typing import Any, TypeVar
 
 from analysis.preprocessor import Preprocessor
@@ -45,7 +45,7 @@ from typechecker.types import FunctionType, T
 from utils import camel2snake_pattern
 
 from .tstr import tstr
-from .utils import BUILTINS, compile_math, ensuresuffix, mthd, strip_parens
+from .utils import BUILTINS, compile_math, ensuresuffix, module_uid, mthd, strip_parens
 
 SameType = TypeVar("SameType")
 
@@ -66,7 +66,7 @@ class Compiler:
         self.header = header
         self.imports = imports
 
-        self.uid = md5(str(module.path).encode()).hexdigest()[:8]
+        self.uid = module_uid(module.path)
         self.include = set(
             {
                 "unidad/runtime",
@@ -81,6 +81,7 @@ class Compiler:
         )
         self.functions: list[str] = []
         self.typedefs: list[str] = []
+        self.units: dict[str, str] = {}
         self._defined_addrs: dict[str, str] = {}
         self._imported_names = {}
         self._imported_units = {}
@@ -457,6 +458,7 @@ class Compiler:
         if init:
             out["type"] = typ
             unit = self.unit_(node.unit)
+
             out["unit"] = unit if unit else "U_ONE"
 
         return out
@@ -529,18 +531,25 @@ class Compiler:
             case Scalar():
                 return f"U_NUM({node.value})"
             case Identifier():
-                return f'U_ID("{node.name}")'
+                module = self._imported_units.get(node.name, {"module": self.uid})[
+                    "module"
+                ]
+                enum = "U" + (
+                    hashlib.sha1((node.name + "_" + module).encode("utf-8"))
+                    .hexdigest()[:8]
+                    .upper()
+                )
+
+                return f'U_ID("{node.name}", {enum})'
             case Neg():
                 return f"U_NEG({self.unit_(node.value)})"
             case _:
                 raise NotImplementedError(f"Unit node cannot be compiled: {type(node)}")
 
     def unit_def(self, node: Expression, name: str) -> None:
-        out = tstr("UNIT($name, $body)")
-        out["name"] = f"_{self.uid}_{name}"
-        out["body"] = compile_math(node.value)
-
-        self.functions.append(str(out))
+        name = name + "_" + self.uid
+        h = hashlib.sha1(name.encode("utf-8")).hexdigest()[:8].upper()
+        self.units["U" + h] = compile_math(node.value)
 
     def variable_(self, node: Variable, link: int) -> tstr:
         out = tstr("$name = $value")
@@ -588,7 +597,7 @@ class Compiler:
             module=self.module,
             namespaces=self.env,
             header=self.header,
-            units=self._imported_units,
+            units={k: v["expr"] for k, v in self._imported_units.items()},
         )
         self.preprocessor.start()
 
@@ -634,12 +643,13 @@ class Compiler:
             code=code,
             functions=self.functions,
             typedefs=self.typedefs,
+            units=self.units,
         )
 
     def process_header(self):
         for i, node in enumerate(self.header.imports):
             if isinstance(node, FromImport):
-                uid = md5(self.imports[i].encode()).hexdigest()[:8]
+                uid = module_uid(self.imports[i])
                 ns = self.env.imports[node.module.name]
                 if node.names is None:
                     # import *
@@ -654,14 +664,17 @@ class Compiler:
                 )
                 self._imported_units.update(
                     {
-                        name.lstrip("@"): ns.units[name.lstrip("@")]
+                        name.lstrip("@"): {
+                            "module": uid,
+                            "expr": ns.units[name.lstrip("@")],
+                        }
                         for name in names
                         if name.startswith("@") and name.lstrip("@") in ns.units
                     }
                 )
 
     def _builtins(self):
-        uid = md5("stdlib/builtins.und".encode()).hexdigest()[:8]
+        uid = module_uid("stdlib/builtins.und")
         self._imported_names.update({name: f"und_{uid}_" for name in BUILTINS})
 
     def _node2type(self, node) -> T:

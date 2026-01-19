@@ -4,10 +4,7 @@
 #include <glib.h>
 #include <math.h>
 #include <stdbool.h>
-
-#define UNIT(name, def)                                                        \
-  gdouble __unit##name(gdouble _) { return def; };
-#define LOGN(b, x) (log(x) / log(b))
+#include <stdint.h>
 
 typedef enum {
   UNIT_SCALAR,
@@ -39,6 +36,7 @@ struct UnitNode {
 
     struct {
       char *name;
+      uint16_t id;
     } label;
 
     struct {
@@ -49,7 +47,7 @@ struct UnitNode {
 };
 
 UnitNode *unit_scalar_new(double value, UnitNode *unit);
-UnitNode *unit_id_new(const char *name);
+UnitNode *unit_id_new(const char *name, uint16_t id);
 UnitNode *unit_product_new();
 UnitNode *unit_sum_new();
 UnitNode *unit_expression_new(UnitNode *value);
@@ -66,7 +64,7 @@ GString *print_unit(UnitNode *node);
 #define U_SUM(...) unit_sum_of(__VA_ARGS__, NULL)
 #define U_NUM(v) unit_scalar_new((v), NULL)
 #define U_NUM_U(v, u) unit_scalar_new((v), (u))
-#define U_ID(n) unit_id_new(n)
+#define U_ID(n, id) unit_id_new(n, id)
 #define U_EXPR(v) unit_expression_new(v)
 #define U_NEG(v) unit_neg_new(v)
 #define U_PWR(b, e) unit_power_new((b), (e))

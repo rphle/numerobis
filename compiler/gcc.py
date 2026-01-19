@@ -23,7 +23,34 @@ def _pkg(name: str):
     return cflags, libs
 
 
-def _prepare_source_c(modules: list[ModuleMeta]):
+def _prepare_units_h(units: dict[str, str]) -> str:
+    out = f"""#ifndef UNIDAD_UNITS_DEF_H
+    #define UNIDAD_UNITS_DEF_H
+
+    #include <stdint.h>
+    #include <math.h>
+    #include <glibheader.h>
+
+    typedef enum {{
+        {",".join(units.keys())}
+    }} UnitId;
+
+    static inline gdouble logn(gdouble x, gdouble b) {{return log(x) / log(b);}}
+
+    static inline gdouble unit_eval(uint16_t id, gdouble x) {{
+        switch ((UnitId)id) {{
+            {"\n".join(f"case {n}: return {expr};" for n, expr in units.items())}
+            default: return 1;
+        }}
+    }}
+
+    #endif
+    """
+
+    return out
+
+
+def _prepare_source_c(modules: list[ModuleMeta], units_h: str):
     arrays, structs, entries = [], [], []
 
     for i, mod in enumerate(modules):
@@ -40,6 +67,7 @@ def _prepare_source_c(modules: list[ModuleMeta]):
         )
 
     source = f"""#include <glibheader.h>
+    #include "{units_h}"
 
     typedef struct {{
         const gchar *path;
@@ -63,15 +91,28 @@ def _prepare_source_c(modules: list[ModuleMeta]):
     return source
 
 
-def compile(code: str, modules: list[ModuleMeta], output: str | Path = "output/output"):
+def compile(
+    code: str,
+    modules: list[ModuleMeta],
+    units: dict[str, str],
+    output: str | Path = "output/output",
+):
     glib_cflags, glib_libs = _pkg("glib-2.0")
     gc_cflags, gc_libs = _pkg("bdw-gc")
 
-    source = _prepare_source_c(modules)
+    units_h = _prepare_units_h(units)
+
+    tmp_units = tempfile.NamedTemporaryFile(delete=False, suffix=".h")
+    tmp_units.write(units_h.encode("utf-8"))
+    tmp_units.close()
+
+    source = _prepare_source_c(modules, tmp_units.name)
 
     tmp_source = tempfile.NamedTemporaryFile(delete=False, suffix=".c")
     tmp_source.write(source.encode("utf-8"))
     tmp_source.close()
+
+    code = f'#include "{tmp_units.name}"\n{code}'
 
     tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".c")
     tmp.write(code.encode("utf-8"))
@@ -114,6 +155,7 @@ def compile(code: str, modules: list[ModuleMeta], output: str | Path = "output/o
     finally:
         os.unlink(tmp.name)
         os.unlink(tmp_source.name)
+        os.unlink(tmp_units.name)
 
 
 def run(path: str | Path = "output/output"):

@@ -1,6 +1,7 @@
 #include "units.h"
 #include <glib.h>
 #include <stdarg.h>
+#include <stdint.h>
 
 static UnitNode *unit_node_alloc(UnitKind kind) {
   UnitNode *node = g_malloc(sizeof(UnitNode));
@@ -14,9 +15,10 @@ UnitNode *unit_scalar_new(double value, UnitNode *unit) {
   return node;
 }
 
-UnitNode *unit_id_new(const char *name) {
+UnitNode *unit_id_new(const char *name, uint16_t id) {
   UnitNode *node = unit_node_alloc(UNIT_IDENTIFIER);
   node->as.label.name = g_strdup(name);
+  node->as.label.id = id;
   return node;
 }
 

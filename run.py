@@ -95,7 +95,7 @@ with tqdm(total=sum(len(file[1]) for _, file in tests.items()), leave=False) as 
                     times["Typechecking"] = timeit(mod.typecheck)
 
                     mod.header = mod.header.merge(header.header)
-                    mod.imports = header.imports + mod.imports
+                    mod.imports = header.imports[:-1] + mod.imports
                     times["Compilation"] = timeit(mod.compile)
                     times["Linking"] = timeit(
                         lambda: mod.link(print_=print_code, format=format_code)

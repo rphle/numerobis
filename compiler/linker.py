@@ -117,6 +117,7 @@ class Linker:
                     for m in self.modules.values()
                     if str(m.meta.path) in self.order
                 ],
+                units={k: v for m in self.modules.values() for k, v in m.units.items()},
                 output=output_path,
             )
         except subprocess.CalledProcessError as e:
