@@ -34,4 +34,6 @@ class CompiledModule:
     functions: list[str]
     typedefs: list[str]
     units: dict[str, str]
+    bases: dict[str, str]
+    logarithmic: set[str]
     namespaces: Optional["Namespaces"] = None  # type: ignore # noqa

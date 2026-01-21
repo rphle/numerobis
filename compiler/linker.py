@@ -118,6 +118,8 @@ class Linker:
                     if str(m.meta.path) in self.order
                 ],
                 units={k: v for m in self.modules.values() for k, v in m.units.items()},
+                bases={k: v for m in self.modules.values() for k, v in m.bases.items()},
+                logarithmic={n for m in self.modules.values() for n in m.logarithmic},
                 output=output_path,
             )
         except subprocess.CalledProcessError as e:

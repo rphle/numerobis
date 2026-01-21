@@ -1,24 +1,13 @@
 #include "echo.h"
 #include "../constants.h"
 #include "../types/str.h"
-#include "../units/units.h"
+#include "../units/eval.h"
 #include "../values.h"
 #include <glib.h>
 #include <stdbool.h>
 #include <stdio.h>
 
 static __thread bool _echo_in_list = false;
-
-static inline void echo_number(Number *n) {
-  switch (n->kind) {
-  case NUM_INT64:
-    g_print("%d", n->i64);
-    break;
-  case NUM_DOUBLE:
-    g_print("%g", n->f64);
-    break;
-  }
-}
 
 static inline void echo_garray(GArray *arr) {
   if (!arr) {
@@ -50,9 +39,7 @@ Value *echo(Value **args) {
 
   switch (val->type) {
   case VALUE_NUMBER:
-    echo_number(val->number);
-    g_print(" ");
-    g_print("%s", print_unit(val->number->unit)->str);
+    g_print("%s", print_number(val->number)->str);
     break;
   case VALUE_STR:
     if (_echo_in_list)

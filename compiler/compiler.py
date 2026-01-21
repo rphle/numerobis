@@ -39,7 +39,7 @@ from nodes.ast import (
     WhileLoop,
 )
 from nodes.core import AstNode, Identifier, UnitNode
-from nodes.unit import Expression, Neg, Power, Product, Scalar, Sum
+from nodes.unit import Expression, Neg, One, Power, Product, Scalar, Sum
 from typechecker.linking import Link
 from typechecker.types import FunctionType, T
 from utils import camel2snake_pattern
@@ -85,6 +85,9 @@ class Compiler:
         self._defined_addrs: dict[str, str] = {}
         self._imported_names = {}
         self._imported_units = {}
+
+        self.bases: dict[str, str] = {}
+        self.logarithmic: set[str] = set()
 
     def bin_op_(self, node: BinOp, link: int) -> tstr:
         operands = [self.compile(node.left), self.compile(node.right)]
@@ -601,6 +604,26 @@ class Compiler:
         )
         self.preprocessor.start()
 
+        for name, unit in self.preprocessor.conversions.items():
+            self.unit_def(unit, name)
+
+        for n, b in self.preprocessor.bases.items():
+            name = (
+                "U"
+                + hashlib.sha1((n + "_" + self.uid).encode("utf-8"))
+                .hexdigest()[:8]
+                .upper()
+            )
+            self.bases[name] = compile_math(b) if not isinstance(b.value, One) else ""
+
+        for n in self.preprocessor.logarithmic:
+            self.logarithmic.add(
+                "U"
+                + hashlib.sha1((n + "_" + self.uid).encode("utf-8"))
+                .hexdigest()[:8]
+                .upper()
+            )
+
     def compile(self, link: Link | Any) -> tstr:
         node = self.unlink(link) if isinstance(link, Link) else link
 
@@ -633,9 +656,6 @@ class Compiler:
 
         code = "\n".join(code).strip()
 
-        for name, unit in self.preprocessor.conversions.items():
-            self.unit_def(unit, name)
-
         return CompiledModule(
             meta=self.module,
             imports=self.imports,
@@ -644,6 +664,8 @@ class Compiler:
             functions=self.functions,
             typedefs=self.typedefs,
             units=self.units,
+            bases=self.bases,
+            logarithmic=self.logarithmic,
         )
 
     def process_header(self):

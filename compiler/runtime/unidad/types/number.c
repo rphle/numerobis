@@ -1,4 +1,5 @@
 #include "number.h"
+#include "../units/eval.h"
 #include "../values.h"
 #include "bool.h"
 #include "str.h"
@@ -193,17 +194,7 @@ static inline Value *number__mod__(Value *a, Value *b) {
 }
 
 static Value *number__str__(Value *val) {
-  GString *result = g_string_new("");
-
-  Number *n = val->number;
-  if (n->kind == NUM_INT64) {
-    g_string_printf(result, "%ld", n->i64);
-  } else {
-    g_string_printf(result, "%g", n->f64);
-  }
-  g_string_append(result, " ");
-  g_string_append(result, print_unit(n->unit)->str);
-  return str__init__(result);
+  return str__init__(print_number(val->number));
 }
 
 static Value *number__int__(Value *self) {

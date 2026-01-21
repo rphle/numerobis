@@ -1,3 +1,5 @@
+from dataclasses import replace
+
 from nodes.core import Identifier
 from nodes.unit import (
     Call,
@@ -36,6 +38,7 @@ def invert_(node: UnitNode, target: UnitNode) -> UnitNode:
             others = [v for i, v in enumerate(values) if i != var_i]
 
             operand = others[0] if len(others) == 1 else kind(others)
+            operand = _to_x(operand)
 
             if kind is Product:
                 new_target = Product([target, Power(operand, Scalar(-1))])
@@ -63,7 +66,10 @@ def invert_(node: UnitNode, target: UnitNode) -> UnitNode:
         case Expression(value):
             return invert_(value, target)
 
-    raise ValueError(f"Node type {type(node)} not supported for inversion.")
+        case Scalar() | Identifier():
+            return node
+
+    raise ValueError(f"Node type {type(node)} not supported for inversion.", node)
 
 
 def contains_var(node: UnitNode) -> bool:
@@ -76,3 +82,15 @@ def contains_var(node: UnitNode) -> bool:
     if isinstance(node, Power):
         return contains_var(node.base) or contains_var(node.exponent)
     return False
+
+
+def _to_x(node: UnitNode) -> UnitNode:
+    if isinstance(node, Identifier) and node.name == "_":
+        return replace(node, name="x")
+    if hasattr(node, "values"):
+        return replace(node, values=[_to_x(v) for v in node.values])  # type: ignore
+    if hasattr(node, "value"):
+        return replace(node, value=_to_x(node.value))  # type: ignore
+    if isinstance(node, Power):
+        return replace(node, base=_to_x(node.base), exponent=_to_x(node.exponent))
+    return node

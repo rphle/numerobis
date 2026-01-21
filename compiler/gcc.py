@@ -35,14 +35,11 @@ def _prepare_units_h(units: dict[str, str]) -> str:
         {",".join(units.keys())}
     }} UnitId;
 
-    static inline gdouble logn(gdouble x, gdouble b) {{return log(x) / log(b);}}
+    static inline gdouble logn(gdouble x, gdouble b);
 
-    static inline gdouble unit_eval(uint16_t id, gdouble x) {{
-        switch ((UnitId)id) {{
-            {"\n".join(f"case {n}: return {expr};" for n, expr in units.items())}
-            default: return 1;
-        }}
-    }}
+    gdouble unit_id_eval(uint16_t id, gdouble x);
+    gdouble base_unit(uint16_t id, gdouble x);
+    gdouble is_logarithmic(uint16_t id);
 
     #endif
     """
@@ -50,7 +47,13 @@ def _prepare_units_h(units: dict[str, str]) -> str:
     return out
 
 
-def _prepare_source_c(modules: list[ModuleMeta], units_h: str):
+def _prepare_source_c(
+    modules: list[ModuleMeta],
+    units_h: str,
+    units: dict[str, str],
+    bases: dict[str, str],
+    logarithmic: set[str],
+):
     arrays, structs, entries = [], [], []
 
     for i, mod in enumerate(modules):
@@ -67,6 +70,8 @@ def _prepare_source_c(modules: list[ModuleMeta], units_h: str):
         )
 
     source = f"""#include <glibheader.h>
+    #include <math.h>
+    #include <stdbool.h>
     #include "{units_h}"
 
     typedef struct {{
@@ -79,6 +84,29 @@ def _prepare_source_c(modules: list[ModuleMeta], units_h: str):
 
     {chr(10).join(arrays)}
     {chr(10).join(structs)}
+
+    static inline gdouble logn(gdouble b, gdouble x) {{return log(x) / log(b);}}
+
+    gdouble unit_id_eval(uint16_t id, gdouble x) {{
+        switch ((UnitId)id) {{
+            {"\n".join(f"case {n}: return {expr};" for n, expr in units.items())}
+            default: return 1;
+        }}
+    }}
+
+    gdouble base_unit(uint16_t id, gdouble x) {{
+        switch ((UnitId)id) {{
+            {"\n".join(f"case {n}: return {expr};" for n, expr in bases.items() if expr)}
+            default: return 1;
+        }}
+    }}
+
+    gdouble is_logarithmic(uint16_t id) {{
+        switch ((UnitId)id) {{
+            {"\n".join(f"case {n}: return true;" for n in logarithmic)}
+            default: return false;
+        }}
+    }}
 
     __attribute__((constructor))
     void u_init_module_registry() {{
@@ -95,6 +123,8 @@ def compile(
     code: str,
     modules: list[ModuleMeta],
     units: dict[str, str],
+    bases: dict[str, str],
+    logarithmic: set[str],
     output: str | Path = "output/output",
 ):
     glib_cflags, glib_libs = _pkg("glib-2.0")
@@ -106,7 +136,7 @@ def compile(
     tmp_units.write(units_h.encode("utf-8"))
     tmp_units.close()
 
-    source = _prepare_source_c(modules, tmp_units.name)
+    source = _prepare_source_c(modules, tmp_units.name, units, bases, logarithmic)
 
     tmp_source = tempfile.NamedTemporaryFile(delete=False, suffix=".c")
     tmp_source.write(source.encode("utf-8"))

@@ -1,7 +1,7 @@
 from dataclasses import replace
 from typing import Optional, TypeVar
 
-from analysis.invert import invert
+from analysis.invert import _to_x, invert
 from classes import Header, ModuleMeta
 from environment import Namespaces
 from exceptions.exceptions import Exceptions
@@ -10,24 +10,25 @@ from nodes.core import Identifier
 from nodes.unit import Expression, Neg, One, Power, Product, Scalar, Sum, UnitNode
 from typechecker.linking import Link
 
-from .simplifier import Simplifier, cancel_
+from .simplifier import Simplifier, cancel, cancel_
 
 SameType = TypeVar("SameType")
 
 
-def linear(node: UnitNode) -> bool:
+def is_linear(node: UnitNode, active: bool = False) -> bool:
     match node:
         case Expression() | Neg():
-            return linear(node.value)
+            return is_linear(node.value, active)
         case Product() | Sum():
-            return all(linear(value) for value in node.values)
+            return all(is_linear(value, active) for value in node.values)
         case Power():
-            return linear(node.base) and linear(node.exponent)
+            return is_linear(node.base, active) and is_linear(node.exponent, True)
         case Identifier():
             if node.name == "_":
-                return False
+                return not active
         case Scalar():
-            return not node.placeholder
+            if node.placeholder:
+                return not active
     return True
 
 
@@ -51,12 +52,14 @@ class Preprocessor:
 
         self.units: dict[str, Expression] = dict(units)
         self.conversions: dict[str, Expression] = {}
+        self.bases: dict[str, Expression] = {}
+        self.logarithmic: set[str] = set()
 
     def number_(self, node: Integer | Float, link: int):
         if not node.unit:
             return
         value = int(node.value) if isinstance(node, Integer) else float(node.value)
-        res = self.resolve(Scalar(value=value, unit=node.unit))
+        res = self.resolve(Scalar(value=value, unit=cancel(node.unit)))  # type: ignore
 
         num = self.simplify(res, do_cancel=False)
         assert isinstance(num, Expression) and isinstance(num.value, Scalar), repr(num)
@@ -69,7 +72,7 @@ class Preprocessor:
             expr = Expression(Identifier("_"))
         else:
             expr = unit.value
-            if linear(expr.value):
+            if is_linear(expr.value):
                 val = expr.value
                 if isinstance(val, Product):
                     val.values.insert(0, Identifier("_"))
@@ -80,13 +83,26 @@ class Preprocessor:
         expr = self.resolve(expr)
 
         name = unit.name.name
-        inverted = self.simplify(invert(expr), do_cancel=False)
+
+        inverted = invert(self.simplify(expr, do_cancel=False))
+        inverted = self.simplify(inverted, do_cancel=False)
+
         if isinstance(inverted, One):
-            inverted = Expression(Identifier("_"))
+            inverted = Expression(Identifier("x"))
 
         self.units[name] = expr
         self.conversions[name] = inverted
         self.env.units[name] = expr
+
+        base = cancel_(self.to_base(expr))
+        if base is None:
+            base = One()
+        else:
+            base = self.simplify(base)
+            base = invert(base) if base else base
+        self.bases[name] = Expression(_to_x(base))
+        if not is_linear(expr):
+            self.logarithmic.add(name)
 
     def unlink(self, link: SameType) -> SameType:
         if isinstance(link, (int, Link)):
@@ -127,7 +143,7 @@ class Preprocessor:
             case Scalar():
                 unit = node.unit
                 if unit:
-                    base = cancel_(self.to_base(unit, ""))
+                    base = cancel_(self.to_base(unit))
                     if not base:
                         base = Scalar(1)
                     res = self.resolve_(
@@ -136,7 +152,7 @@ class Preprocessor:
                     )
                     res = self.simplify(res, do_cancel=False)
 
-                    if linear(res):
+                    if is_linear(res):
                         res = Product([Identifier("_"), res])
 
                     value = Scalar(node.value) if not node.placeholder else n
@@ -153,17 +169,17 @@ class Preprocessor:
 
         return node
 
-    def to_base(self, node: UnitNode, parent: str) -> UnitNode:
+    def to_base(self, node: UnitNode) -> UnitNode:
         match node:
             case Expression() | Neg():
-                return replace(node, value=self.to_base(node.value, parent=parent))
+                return replace(node, value=self.to_base(node.value))
             case Product() | Sum():
-                values = [self.to_base(value, parent=parent) for value in node.values]
+                values = [self.to_base(value) for value in node.values]
                 values = [value for value in values if not isinstance(value, Scalar)]
                 return replace(node, values=values)
             case Power():
-                base = self.to_base(node.base, parent=parent)
-                exp = self.to_base(node.exponent, parent=parent)
+                base = self.to_base(node.base)
+                exp = self.to_base(node.exponent)
                 return replace(node, base=base, exponent=exp)
             case Identifier():
                 value = self.units.get(node.name)
@@ -175,6 +191,6 @@ class Preprocessor:
                     else:
                         return Scalar(1)
 
-                return self.to_base(value, parent=node.name)
+                return self.to_base(value)
 
         return node
