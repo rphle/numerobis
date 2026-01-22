@@ -8,6 +8,8 @@
 Value *int__init__(gint64 x, UnitNode *unit);
 Value *float__init__(gdouble x, UnitNode *unit);
 
+Value *number__convert__(Value *self, UnitNode *target);
+
 typedef enum {
   OP_ADD,
   OP_SUB,

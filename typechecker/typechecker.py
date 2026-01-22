@@ -421,7 +421,9 @@ class Typechecker:
         target = self.dimchecker.dimensionize(node.target, mode="unit")
         target = self.simplify(target)
 
-        if isinstance(value, NumberType) and (value.dim == target or not value.dim):
+        if (
+            isinstance(value, NumberType) and (value.dim == target or not value.dim)
+        ) or isinstance(target, One):
             return value.edit(dim=target)
         elif value.name("List") and (value.dim == target or not value.dim):
             assert isinstance(value, ListType)

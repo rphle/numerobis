@@ -181,7 +181,16 @@ class Compiler:
     def conversion_(self, node: Conversion, link: int) -> tstr:
         if not isinstance(node.target, Type):
             # unit conversion
-            return self.compile(node.value)
+            value = self.compile(node.value)
+            if self._link2type(node.value.target) in {"int", "float"}:  # type: ignore
+                assert isinstance(node.target, Expression)
+                target = (
+                    self.unit_(node.target)
+                    if not isinstance(node.target.value, Scalar)
+                    else "U_ONE"
+                )
+                return tstr(f"number__convert__({value}, {target})")
+            return value
 
         out = tstr("__$func__($value$loc)")
         out["value"] = self.compile(node.value)

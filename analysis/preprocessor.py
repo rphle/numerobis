@@ -72,7 +72,8 @@ class Preprocessor:
             expr = Expression(Identifier("_"))
         else:
             expr = unit.value
-            if is_linear(expr.value):
+            expr = self.resolve(expr, Identifier("_"))  # type: ignore
+            if is_linear(expr.value, True):
                 val = expr.value
                 if isinstance(val, Product):
                     val.values.insert(0, Identifier("_"))

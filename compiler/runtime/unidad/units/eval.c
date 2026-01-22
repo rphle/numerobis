@@ -46,7 +46,7 @@ gdouble eval_unit(UnitNode *node, gdouble number, bool is_base) {
   }
 }
 
-static bool is_unit_logarithmic(UnitNode *node) {
+bool is_unit_logarithmic(UnitNode *node) {
   if (node == NULL)
     return 1;
 

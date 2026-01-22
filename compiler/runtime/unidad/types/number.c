@@ -215,6 +215,25 @@ static Value *number__float__(Value *self) {
   }
 }
 
+Value *number__convert__(Value *self, UnitNode *target) {
+  Number *n = self->number;
+  gdouble value = n->kind == NUM_INT64 ? (gdouble)(n->i64) : n->f64;
+
+  gdouble res;
+  int target_type = n->kind == NUM_INT64 ? 0 : 1;
+  if (target->kind == UNIT_ONE) {
+    gdouble base = eval_unit(n->unit, value, true);
+    gdouble target = eval_unit(n->unit, value, false);
+
+    res = target / base;
+    value = is_unit_logarithmic(n->unit) ? res : value * res;
+  }
+
+  if (n->kind == NUM_INT64)
+    return int__init__((gint64)value, target);
+  return float__init__(value, target);
+}
+
 static const ValueMethods _number_methods = {
     .__bool__ = number__bool__,
     .__cbool__ = number__cbool__,
