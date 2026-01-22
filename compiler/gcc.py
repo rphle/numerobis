@@ -32,7 +32,7 @@ def _prepare_units_h(units: dict[str, str]) -> str:
     #include <glibheader.h>
 
     typedef enum {{
-        {",".join(units.keys())}
+        {",".join(["DUMMY93CF"] + list(units.keys()))}
     }} UnitId;
 
     static inline gdouble logn(gdouble x, gdouble b);
