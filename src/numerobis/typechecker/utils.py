@@ -1,7 +1,6 @@
 from typing import Literal
 
-from exceptions.exceptions import Mismatch
-
+from ..exceptions.exceptions import Mismatch
 from .types import FunctionType, Overload, T, dimcheck, unify
 
 

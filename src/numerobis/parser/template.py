@@ -1,11 +1,11 @@
 from itertools import islice
 from typing import Optional
 
-from classes import ModuleMeta
-from exceptions.exceptions import Exceptions
-from nodes.ast import Identifier, Operator
-from nodes.core import Location, Token
-from nodes.unit import Expression, Product, Sum, UnitNode
+from ..classes import ModuleMeta
+from ..exceptions.exceptions import Exceptions
+from ..nodes.ast import Identifier, Operator
+from ..nodes.core import Location, Token
+from ..nodes.unit import Expression, Product, Sum, UnitNode
 
 
 class ParserTemplate:

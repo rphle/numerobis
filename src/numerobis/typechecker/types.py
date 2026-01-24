@@ -1,9 +1,9 @@
 from dataclasses import dataclass, field, replace
 from typing import Any, Literal, Optional, Union, overload
 
-from exceptions.exceptions import Mismatch
-from nodes.unit import Expression, One
-from utils import isallofinstance, isanyofinstance
+from ..exceptions.exceptions import Mismatch
+from ..nodes.unit import Expression, One
+from ..utils import isallofinstance, isanyofinstance
 
 
 class VarEnv:

@@ -5,9 +5,8 @@ from pathlib import Path
 import rich
 import rich.syntax
 
-from classes import CompiledModule
-from exceptions.exceptions import Exceptions
-
+from ..classes import CompiledModule
+from ..exceptions.exceptions import Exceptions
 from . import gcc as gnucc
 from .tstr import tstr
 

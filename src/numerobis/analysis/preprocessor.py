@@ -2,16 +2,15 @@ from dataclasses import replace
 from decimal import Decimal
 from typing import Optional, TypeVar
 
-from analysis.invert import _to_x, invert
-from analysis.utils import contains_sum, is_linear
-from classes import Header, ModuleMeta
-from environment import Namespaces
-from exceptions.exceptions import Exceptions
-from nodes.ast import Float, Integer, UnitDefinition
-from nodes.core import Identifier
-from nodes.unit import Expression, Neg, One, Power, Product, Scalar, Sum, UnitNode
-from typechecker.linking import Link
-
+from ..analysis.invert import _to_x, invert
+from ..analysis.utils import contains_sum, is_linear
+from ..classes import Header, ModuleMeta
+from ..environment import Namespaces
+from ..exceptions.exceptions import Exceptions
+from ..nodes.ast import Float, Integer, UnitDefinition
+from ..nodes.core import Identifier
+from ..nodes.unit import Expression, Neg, One, Power, Product, Scalar, Sum, UnitNode
+from ..typechecker.linking import Link
 from .simplifier import Simplifier, cancel, cancel_
 
 SameType = TypeVar("SameType")

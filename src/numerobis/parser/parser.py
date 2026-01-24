@@ -1,8 +1,8 @@
 import dataclasses
 import math
 
-from classes import Header, ModuleMeta
-from nodes.ast import (
+from ..classes import Header, ModuleMeta
+from ..nodes.ast import (
     AstNode,
     BinOp,
     Block,
@@ -42,10 +42,9 @@ from nodes.ast import (
     VariableDeclaration,
     WhileLoop,
 )
-from nodes.core import Location, Token, nodeloc
-from nodes.unit import Expression, One
-from typechecker.operators import typetable
-
+from ..nodes.core import Location, Token, nodeloc
+from ..nodes.unit import Expression, One
+from ..typechecker.operators import typetable
 from .template import ParserTemplate
 from .units.unitparser import UnitParser, UnitParserConfig
 

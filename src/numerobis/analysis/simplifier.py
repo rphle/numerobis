@@ -3,10 +3,20 @@ from dataclasses import replace
 from decimal import Decimal
 from typing import Type
 
-from classes import ModuleMeta
-from exceptions.exceptions import Exceptions
-from nodes.unit import Call, Expression, Neg, One, Power, Product, Scalar, Sum, UnitNode
-from utils import camel2snake_pattern
+from ..classes import ModuleMeta
+from ..exceptions.exceptions import Exceptions
+from ..nodes.unit import (
+    Call,
+    Expression,
+    Neg,
+    One,
+    Power,
+    Product,
+    Scalar,
+    Sum,
+    UnitNode,
+)
+from ..utils import camel2snake_pattern
 
 
 def cancel(node: UnitNode | One) -> UnitNode | One:

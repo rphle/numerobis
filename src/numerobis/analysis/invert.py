@@ -1,8 +1,7 @@
 from decimal import Decimal
 
-from analysis.utils import _to_x, contains_var
-from nodes.core import Identifier
-from nodes.unit import (
+from ..nodes.core import Identifier
+from ..nodes.unit import (
     Call,
     CallArg,
     Expression,
@@ -13,6 +12,7 @@ from nodes.unit import (
     Sum,
     UnitNode,
 )
+from .utils import _to_x, contains_var
 
 
 def invert(node: UnitNode) -> UnitNode:

@@ -1,24 +1,27 @@
 import subprocess
 import sys
 from functools import lru_cache
+from importlib import resources
 from pathlib import Path
 from typing import Optional
 
-from analysis.dimchecker import Dimchecker
-from classes import CompiledModule, Header, ModuleMeta
-from compiler import gcc as gnucc
-from compiler.compiler import Compiler
-from compiler.linker import Linker
-from environment import Namespaces
-from exceptions.exceptions import Exceptions
-from lexer.lexer import lex
-from nodes.ast import Import
-from parser.parser import Parser
-from typechecker.linking import Link
-from typechecker.typechecker import Typechecker
+from .analysis.dimchecker import Dimchecker
+from .classes import CompiledModule, Header, ModuleMeta
+from .compiler import gcc as gnucc
+from .compiler.compiler import Compiler
+from .compiler.linker import Linker
+from .environment import Namespaces
+from .exceptions.exceptions import Exceptions
+from .lexer.lexer import lex
+from .nodes.ast import Import
+from .parser.parser import Parser
+from .typechecker.linking import Link
+from .typechecker.typechecker import Typechecker
 
 # pre-compiled modules
 MODULECACHE: dict[str, CompiledModule] = {}
+
+STDLIB_PATH: Path = Path(next(iter(resources.files("numerobis.stdlib")._paths)))  # type: ignore
 
 
 class Module:
@@ -29,8 +32,14 @@ class Module:
         namespaces: Optional[Namespaces] = None,
         builtins: bool = True,
     ):
+        if isinstance(path, Path) and path.is_relative_to(STDLIB_PATH):
+            # stdlib files
+            _path = f"stdlib/{path.name}"
+        else:
+            _path = path
+
         self.meta = ModuleMeta(
-            Path(path),
+            Path(_path),
             open(path, "r", encoding="utf-8").read() if source is None else source,
         )
         self.errors = Exceptions(module=self.meta)
@@ -69,7 +78,7 @@ class Module:
 
     def resolve_imports(self):
         if self.builtins:
-            builtins_mod = Module("stdlib/builtins.und", builtins=False)
+            builtins_mod = Module(STDLIB_PATH / "builtins.und", builtins=False)
             builtins_mod.load()
             self.namespaces.update(builtins_mod.namespaces)
 
@@ -192,9 +201,7 @@ class ModuleResolver:
         stdlib_path: Optional[str | Path] = None,
         search_paths: list[str | Path] = [],
     ):
-        self.stdlib_path = (
-            Path(stdlib_path) if stdlib_path else Path(__file__).parent / "stdlib"
-        )
+        self.stdlib_path = Path(stdlib_path) if stdlib_path else STDLIB_PATH
         self.search_paths = [Path(p) for p in search_paths]
 
     @lru_cache(maxsize=128)

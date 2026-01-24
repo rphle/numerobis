@@ -16,8 +16,8 @@ import rich.padding
 from rich.console import Console
 from tqdm import tqdm
 
-from compiler.build_lib import build_lib
-from module import Module
+from numerobis.module import Module
+from runtime.build_lib import build_lib
 
 console = Console()
 

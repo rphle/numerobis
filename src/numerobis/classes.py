@@ -2,7 +2,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
 
-from nodes.ast import DimensionDefinition, FromImport, Import, UnitDefinition
+from .nodes.ast import DimensionDefinition, FromImport, Import, UnitDefinition
 
 
 @dataclass

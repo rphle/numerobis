@@ -1,12 +1,12 @@
 import uuid
 from decimal import Decimal
 
-from analysis.dimchecker import Dimchecker
-from analysis.simplifier import Simplifier
-from classes import ModuleMeta
-from environment import Env, Namespaces
-from exceptions.exceptions import Exceptions, Mismatch
-from nodes.ast import (
+from ..analysis.dimchecker import Dimchecker
+from ..analysis.simplifier import Simplifier
+from ..classes import ModuleMeta
+from ..environment import Env, Namespaces
+from ..exceptions.exceptions import Exceptions, Mismatch
+from ..nodes.ast import (
     AstNode,
     BinOp,
     Block,
@@ -40,9 +40,8 @@ from nodes.ast import (
     VariableDeclaration,
     WhileLoop,
 )
-from nodes.unit import Expression, One, Power, Product, Scalar
-from utils import camel2snake_pattern
-
+from ..nodes.unit import Expression, One, Power, Product, Scalar
+from ..utils import camel2snake_pattern
 from . import linking
 from .operators import typetable
 from .types import (

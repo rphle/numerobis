@@ -2,9 +2,9 @@ import uuid
 from difflib import get_close_matches
 from typing import Any, Callable, Literal, Optional, overload
 
-from nodes.core import AstNode
-from nodes.unit import Expression, One
-from typechecker.types import T
+from .nodes.core import AstNode
+from .nodes.unit import Expression, One
+from .typechecker.types import T
 
 namespace_names = Literal[
     "names", "dimensions", "dimensionized", "units", "imports", "nodes", "typed"

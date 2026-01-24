@@ -1,7 +1,7 @@
 from dataclasses import replace
 
-from nodes.core import Identifier
-from nodes.unit import (
+from ..nodes.core import Identifier
+from ..nodes.unit import (
     Expression,
     Neg,
     Power,

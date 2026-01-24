@@ -2,11 +2,19 @@ from dataclasses import dataclass
 from decimal import Decimal
 from typing import Optional
 
-from classes import ModuleMeta
-from nodes.ast import Identifier
-from nodes.core import Token
-from nodes.unit import Constant, Expression, Neg, Power, Product, Scalar, Sum, UnitNode
-
+from ...classes import ModuleMeta
+from ...nodes.ast import Identifier
+from ...nodes.core import Token
+from ...nodes.unit import (
+    Constant,
+    Expression,
+    Neg,
+    Power,
+    Product,
+    Scalar,
+    Sum,
+    UnitNode,
+)
 from ..template import ParserTemplate
 
 

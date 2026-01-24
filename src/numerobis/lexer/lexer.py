@@ -1,7 +1,6 @@
-from classes import ModuleMeta
-from exceptions.exceptions import Exceptions
-from nodes.core import Location, Token
-
+from ..classes import ModuleMeta
+from ..exceptions.exceptions import Exceptions
+from ..nodes.core import Location, Token
 from . import plylex
 
 

@@ -2,15 +2,9 @@ import re
 import subprocess
 from pathlib import Path
 
-from exceptions import msgparser
-
-try:
-    from gcc import _pkg
-
-    from utils import repr_double  # type: ignore
-except ImportError:
-    from .gcc import _pkg
-    from .utils import repr_double
+from numerobis.compiler.gcc import _pkg
+from numerobis.compiler.utils import repr_double
+from numerobis.exceptions import msgparser
 
 
 def build_lib():
@@ -41,9 +35,11 @@ def build_lib():
         )
         object_files.append(str(obj))
 
-    subprocess.run(["ar", "rcs", "runtime/libruntime.a"] + object_files, check=True)
+    subprocess.run(
+        ["ar", "rcs", "src/numerobis/runtime/libruntime.a"] + object_files, check=True
+    )
 
-    print("Static library created at runtime/libruntime.a")
+    print("Static library created at src/numerobis/runtime/libruntime.a")
 
 
 def generate_messages(
@@ -52,7 +48,9 @@ def generate_messages(
     categories = tuple(str(c) for c in categories)
     messages = {
         code: msg
-        for code, msg in msgparser.parse("exceptions/messages.txt").items()
+        for code, msg in msgparser.parse(
+            "src/numerobis/exceptions/messages.txt"
+        ).items()
         if code[1] in categories
     }
 

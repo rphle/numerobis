@@ -1,10 +1,10 @@
 import dataclasses
 from typing import Any
 
-from nodes.ast import ForLoop, Function, Variable, VariableDeclaration
-from nodes.core import AstNode, Identifier
-from typechecker.linking import Link
-from typechecker.linking import unlink as _unlink
+from ..nodes.ast import ForLoop, Function, Variable, VariableDeclaration
+from ..nodes.core import AstNode, Identifier
+from ..typechecker.linking import Link
+from ..typechecker.linking import unlink as _unlink
 
 
 def get_free_vars(

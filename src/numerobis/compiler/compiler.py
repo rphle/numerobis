@@ -2,12 +2,12 @@ import dataclasses
 import hashlib
 from typing import Any, TypeVar
 
-from analysis.preprocessor import Preprocessor
-from classes import CompiledModule, Header, ModuleMeta
-from compiler.scoping import get_free_vars
-from environment import Namespaces
-from exceptions.exceptions import Exceptions
-from nodes.ast import (
+from ..analysis.preprocessor import Preprocessor
+from ..classes import CompiledModule, Header, ModuleMeta
+from ..compiler.scoping import get_free_vars
+from ..environment import Namespaces
+from ..exceptions.exceptions import Exceptions
+from ..nodes.ast import (
     BinOp,
     Block,
     Boolean,
@@ -38,12 +38,11 @@ from nodes.ast import (
     Variable,
     WhileLoop,
 )
-from nodes.core import AstNode, Identifier, UnitNode
-from nodes.unit import Expression, Neg, One, Power, Product, Scalar, Sum
-from typechecker.linking import Link
-from typechecker.types import FunctionType, T
-from utils import camel2snake_pattern
-
+from ..nodes.core import AstNode, Identifier, UnitNode
+from ..nodes.unit import Expression, Neg, One, Power, Product, Scalar, Sum
+from ..typechecker.linking import Link
+from ..typechecker.types import FunctionType, T
+from ..utils import camel2snake_pattern
 from .tstr import tstr
 from .utils import BUILTINS, compile_math, ensuresuffix, module_uid, mthd, strip_parens
 

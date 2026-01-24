@@ -2,10 +2,11 @@ import os
 import subprocess
 import tempfile
 from functools import lru_cache
+from importlib import resources
 from pathlib import Path
 
-from classes import ModuleMeta
-from compiler.utils import repr_double
+from ..classes import ModuleMeta
+from .utils import repr_double
 
 
 @lru_cache(maxsize=None)
@@ -29,7 +30,7 @@ def _prepare_units_h(units: dict[str, str]) -> str:
 
     #include <stdint.h>
     #include <math.h>
-    #include <glibheader.h>
+    #include <glib.h>
 
     typedef enum {{
         {",".join(["DUMMY93CF"] + list(units.keys()))}
@@ -69,7 +70,7 @@ def _prepare_source_c(
             f"g_hash_table_insert(UNIDAD_MODULE_REGISTRY, (gpointer){path_str}, &mod_{i});"
         )
 
-    source = f"""#include <glibheader.h>
+    source = f"""#include <glib.h>
     #include <math.h>
     #include <stdbool.h>
     #include "{units_h}"
@@ -148,25 +149,28 @@ def compile(
     tmp.write(code.encode("utf-8"))
     tmp.close()
 
-    cmd = (
-        ["ccache", "mold"]
-        + ["-run", "tcc"]
-        + ["-pipe"]
-        + [tmp.name, tmp_source.name]
-        + ["-o", str(output)]
-        + ["-Iruntime"]
-        + glib_cflags
-        + gc_cflags
-        + [
-            "-Wl,--whole-archive",
-            "runtime/libruntime.a",
-            "-Wl,--no-whole-archive",
-        ]
-        + glib_libs
-        + gc_libs
-        + ["-lm"]
-        + ["-O0", "-g"]
-    )
+    with resources.as_file(
+        resources.files("numerobis.runtime") / "libruntime.a"
+    ) as runtime_path:
+        cmd = (
+            ["ccache", "mold"]
+            + ["-run", "tcc"]
+            + ["-pipe"]
+            + [tmp.name, tmp_source.name]
+            + ["-o", str(output)]
+            + ["-Iruntime"]
+            + glib_cflags
+            + gc_cflags
+            + [
+                "-Wl,--whole-archive",
+                str(runtime_path),
+                "-Wl,--no-whole-archive",
+            ]
+            + glib_libs
+            + gc_libs
+            + ["-lm"]
+            + ["-O0", "-g"]
+        )
 
     try:
         proc = subprocess.run(

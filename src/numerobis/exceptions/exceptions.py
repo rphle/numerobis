@@ -6,10 +6,9 @@ from typing import Any, Literal
 import rich.console
 import rich.markup
 
-from classes import ModuleMeta
-from nodes.ast import BinOp, BoolOp, Identifier
-from nodes.core import Location, Token
-
+from ..classes import ModuleMeta
+from ..nodes.ast import BinOp, BoolOp, Identifier
+from ..nodes.core import Location, Token
 from . import msgparser
 
 
@@ -118,7 +117,7 @@ class Exceptions:
     def __init__(self, module: ModuleMeta, stack: list[Location] = []):
         self.module = module
         self.stack = stack
-        self.codes = msgparser.parse("exceptions/messages.txt")
+        self.codes = msgparser.parse("src/numerobis/exceptions/messages.txt")
 
     def unexpectedToken(self, tok: Token, help: str | None = None):
         self.throw(1, token=tok.value, loc=tok.loc, help=help)

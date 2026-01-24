@@ -1,7 +1,7 @@
 import dataclasses
 from typing import Optional, TypeVar
 
-from nodes.ast import (
+from ..nodes.ast import (
     DimensionDefinition,
     Expression,
     FromImport,
@@ -11,7 +11,7 @@ from nodes.ast import (
     Type,
     UnitDefinition,
 )
-from nodes.core import AstNode
+from ..nodes.core import AstNode
 
 T = TypeVar("T", bound=AstNode)
 _exclude = (

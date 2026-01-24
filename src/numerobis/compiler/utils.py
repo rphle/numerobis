@@ -3,8 +3,8 @@ from hashlib import md5
 from pathlib import Path
 from typing import Literal
 
-from nodes.core import Identifier, UnitNode
-from nodes.unit import Call, Expression, Neg, Power, Product, Scalar, Sum
+from ..nodes.core import Identifier, UnitNode
+from ..nodes.unit import Call, Expression, Neg, Power, Product, Scalar, Sum
 
 BUILTINS = ["echo", "input", "random", "floor", "indexof", "split"]
 

@@ -2,11 +2,11 @@ import re
 from dataclasses import replace
 from typing import Literal, Optional
 
-from classes import Header
-from environment import Namespaces
-from exceptions.exceptions import Exceptions, ModuleMeta
-from nodes.ast import DimensionDefinition, UnitDefinition
-from nodes.unit import (
+from ..classes import Header
+from ..environment import Namespaces
+from ..exceptions.exceptions import Exceptions, ModuleMeta
+from ..nodes.ast import DimensionDefinition, UnitDefinition
+from ..nodes.unit import (
     Expression,
     Identifier,
     Neg,
@@ -17,9 +17,8 @@ from nodes.unit import (
     Sum,
     UnitNode,
 )
-from typechecker.operators import typetable
-from utils import camel2snake_pattern
-
+from ..typechecker.operators import typetable
+from ..utils import camel2snake_pattern
 from .simplifier import Simplifier
 
 modes = Literal["dimension", "unit"]
