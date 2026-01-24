@@ -1,4 +1,5 @@
 from dataclasses import replace
+from decimal import Decimal
 from typing import Optional, TypeVar
 
 from analysis.invert import _to_x, invert
@@ -42,8 +43,7 @@ class Preprocessor:
     def number_(self, node: Integer | Float, link: int):
         if not node.unit:
             return
-        value = int(node.value) if isinstance(node, Integer) else float(node.value)
-        res = self.resolve(Scalar(value=value, unit=cancel(node.unit)))  # type: ignore
+        res = self.resolve(Scalar(value=Decimal(node.value), unit=cancel(node.unit)))  # type: ignore
 
         num = self.simplify(res, do_cancel=False)
         assert isinstance(num, Expression) and isinstance(num.value, Scalar), repr(num)
@@ -138,17 +138,17 @@ class Preprocessor:
 
                     base = cancel_(self.to_base(unit))
                     if not base:
-                        base = Scalar(1)
+                        base = Scalar(Decimal(1))
 
                     res = self.resolve_(
-                        Product([unit, Power(base, Scalar(-1))]),
+                        Product([unit, Power(base, Scalar(Decimal(-1)))]),
                         Identifier("_"),
                     )
 
                     is_sum = contains_sum(res)
                     if is_sum:
                         res = self.resolve_(
-                            Product([unit, Scalar(1)]),
+                            Product([unit, Scalar(Decimal(1))]),
                             Identifier("_"),
                         )
 
@@ -190,7 +190,7 @@ class Preprocessor:
                     if self.env.dimensionized[node.name]:
                         return Identifier("_")
                     else:
-                        return Scalar(1)
+                        return Scalar(Decimal(1))
 
                 return self.to_base(value)
 

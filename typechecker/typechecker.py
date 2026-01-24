@@ -1,4 +1,5 @@
 import uuid
+from decimal import Decimal
 
 from analysis.dimchecker import Dimchecker
 from analysis.simplifier import Simplifier
@@ -131,7 +132,7 @@ class Typechecker:
 
                 r = right.dim
                 if node.op.name == "div":
-                    r = Power(base=right.dim, exponent=Scalar(-1))
+                    r = Power(base=right.dim, exponent=Scalar(Decimal(-1)))
 
                 dimension = self.simplify(Product([left.dim, r]))
 
@@ -147,7 +148,7 @@ class Typechecker:
                     return left.edit(typ="Float")
 
                 assert isinstance(right, NumberType)
-                dimension = Power(base=left.dim, exponent=Scalar(right.value))
+                dimension = Power(base=left.dim, exponent=Scalar(Decimal(right.value)))
                 dimension = self.simplify(dimension)
                 assert dimension is not None
                 return (

@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from analysis.utils import _to_x, contains_var
 from nodes.core import Identifier
 from nodes.unit import (
@@ -40,7 +42,7 @@ def invert_(node: UnitNode, target: UnitNode) -> UnitNode:
             operand = _to_x(operand)
 
             if kind is Product:
-                new_target = Product([target, Power(operand, Scalar(-1))])
+                new_target = Product([target, Power(operand, Scalar(Decimal(-1)))])
             else:
                 new_target = Sum([target, Neg(operand)])
             return invert_(var_node, new_target)
@@ -48,7 +50,7 @@ def invert_(node: UnitNode, target: UnitNode) -> UnitNode:
         case Power(base, exponent):
             # y = _ ^ a  => _ = y ^ (1/a)
             if contains_var(base):
-                new_target = Power(target, Power(exponent, Scalar(-1)))
+                new_target = Power(target, Power(exponent, Scalar(Decimal(-1))))
                 return invert_(base, new_target)
 
             # y = a ^ _  => _ = log(a, target)

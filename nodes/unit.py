@@ -1,5 +1,6 @@
 from collections import Counter
 from dataclasses import dataclass, field
+from decimal import Decimal
 from math import prod
 from typing import Optional
 
@@ -112,9 +113,13 @@ class Expression(UnitNode):
 
 @dataclass(frozen=True)
 class Scalar(UnitNode):
-    value: int | float
+    value: Decimal
     unit: Optional[Expression] = None
     placeholder: bool = field(default=False, repr=False)
+
+    def __post_init__(self):
+        if not isinstance(self.value, Decimal):
+            raise TypeError(f"Expected Decimal, got {type(self.value)}")
 
     def __str__(self):
         value = str(self.value)

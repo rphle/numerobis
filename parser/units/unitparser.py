@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from decimal import Decimal
 from typing import Optional
 
 from classes import ModuleMeta
@@ -87,7 +88,9 @@ class UnitParser(ParserTemplate):
                 result.add(self.power())
             elif self.tok.type == "DIVIDE":
                 value = self.power()
-                result.add(Power(base=value, exponent=Scalar(-1), loc=value.loc))
+                result.add(
+                    Power(base=value, exponent=Scalar(Decimal(-1)), loc=value.loc)
+                )
 
         if len(result.values) == 1:
             return result.values[0]
@@ -154,7 +157,6 @@ class UnitParser(ParserTemplate):
 
     def _parse_number(self, token: Token) -> Scalar:
         split = token.value.lower().split("e")
-        number = split[0].replace("_", "")
         exponent = split[1] if len(split) > 1 else ""
         if "." in exponent:
             self.errors.throw(7, token=token.value, loc=token.loc)
@@ -168,9 +170,7 @@ class UnitParser(ParserTemplate):
         else:
             unit = None
 
-        exponent = float(exponent) if exponent else 0
-
-        return Scalar(value=float(number) * 10**exponent, unit=unit, loc=token.loc)
+        return Scalar(value=Decimal(token.value), unit=unit, loc=token.loc)
 
     def _parse_placeholder(self, token: Token):
         assert token.value == "_"
@@ -183,6 +183,9 @@ class UnitParser(ParserTemplate):
             self.tokens = _unitparser.tokens
             if unit is not None:
                 return Scalar(
-                    value=1, unit=unit, loc=token.loc.merge(unit.loc), placeholder=True
+                    value=Decimal(1),
+                    unit=unit,
+                    loc=token.loc.merge(unit.loc),
+                    placeholder=True,
                 )
         return Identifier(name=token.value, loc=token.loc)
