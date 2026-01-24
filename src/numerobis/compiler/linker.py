@@ -107,7 +107,7 @@ class Linker:
         except ValueError:
             return str(p)
 
-    def gcc(self, output_path: str = "output/output"):
+    def gcc(self, output_path: str = "output/output", flags: set[str] = set()):
         try:
             gnucc.compile(
                 self.linked,
@@ -120,6 +120,7 @@ class Linker:
                 bases={k: v for m in self.modules.values() for k, v in m.bases.items()},
                 logarithmic={n for m in self.modules.values() for n in m.logarithmic},
                 output=output_path,
+                flags=flags,
             )
         except subprocess.CalledProcessError as e:
             self.errors.throw(201, command=" ".join(map(str, e.cmd)), help=e.stderr)

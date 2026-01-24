@@ -127,6 +127,7 @@ def compile(
     bases: dict[str, str],
     logarithmic: set[str],
     output: str | Path = "output/output",
+    flags: set[str] = set(),
 ):
     glib_cflags, glib_libs = _pkg("glib-2.0")
     gc_cflags, gc_libs = _pkg("bdw-gc")
@@ -149,6 +150,8 @@ def compile(
     tmp.write(code.encode("utf-8"))
     tmp.close()
 
+    flags = {"-O0", "-g"} | flags
+
     with resources.as_file(
         resources.files("numerobis.runtime") / "libruntime.a"
     ) as runtime_path:
@@ -169,7 +172,7 @@ def compile(
             + glib_libs
             + gc_libs
             + ["-lm"]
-            + ["-O0", "-g"]
+            + list(flags)
         )
 
     try:
@@ -192,12 +195,12 @@ def compile(
         os.unlink(tmp_units.name)
 
 
-def run(path: str | Path = "output/output"):
+def run(path: str | Path = "output/output", capture_output=True):
     return subprocess.run(
         [str(path)],
         check=False,
         text=True,
-        capture_output=True,
+        capture_output=capture_output,
         encoding="utf-8",
         errors="replace",
     )

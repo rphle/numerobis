@@ -179,15 +179,15 @@ class Module:
         self.linker = Linker(MODULECACHE, main=self.meta.path)
         self.linker.link(print_=print_, format=format)
 
-    def gcc(self):
+    def gcc(self, output_path: str = "output/output", flags: set[str] = set()):
         if self.linker is None:
             raise ValueError("Module not linked")
-        self.linker.gcc()
+        self.linker.gcc(output_path=output_path, flags=flags)
 
     def run(self, path: str = "output/output"):
         try:
             proc = gnucc.run(path=path)
-            print(proc.stdout)
+            print(proc.stdout.rstrip("\n"))
             if proc.returncode != 0:
                 print(proc.stderr, file=sys.stderr)
                 sys.exit(proc.returncode)

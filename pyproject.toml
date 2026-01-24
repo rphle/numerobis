@@ -39,7 +39,7 @@ Issues = "https://github.com/rphle/numerobis/issues"
 
 
 [project.scripts]
-nbis = "numerobis:cli"
+nbis = "numerobis.cli:cli"
 
 [tool.setuptools.packages.find]
 where = ["src"]
