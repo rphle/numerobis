@@ -19,7 +19,7 @@ def build_lib():
     glib_cflags, _ = _pkg("glib-2.0")
     gc_cflags, _ = _pkg("bdw-gc")
 
-    runtime_root = Path("compiler/runtime")
+    runtime_root = Path("runtime")
     sources = [f for f in runtime_root.rglob("*.c") if f.name != "source.c"]
     object_files = []
 
@@ -32,7 +32,7 @@ def build_lib():
                 str(src),
                 "-o",
                 str(obj),
-                "-Icompiler/runtime",
+                "-Iruntime",
                 *glib_cflags,
                 *gc_cflags,
                 "-fPIC",
@@ -41,15 +41,13 @@ def build_lib():
         )
         object_files.append(str(obj))
 
-    subprocess.run(
-        ["ar", "rcs", "compiler/runtime/libruntime.a"] + object_files, check=True
-    )
+    subprocess.run(["ar", "rcs", "runtime/libruntime.a"] + object_files, check=True)
 
-    print("Static library created at compiler/runtime/libruntime.a")
+    print("Static library created at runtime/libruntime.a")
 
 
 def generate_messages(
-    categories: tuple = (3, 9), target="compiler/runtime/unidad/exceptions/messages.h"
+    categories: tuple = (3, 9), target="runtime/unidad/exceptions/messages.h"
 ):
     categories = tuple(str(c) for c in categories)
     messages = {

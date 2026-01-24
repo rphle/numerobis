@@ -154,12 +154,12 @@ def compile(
         + ["-pipe"]
         + [tmp.name, tmp_source.name]
         + ["-o", str(output)]
-        + ["-Icompiler/runtime"]
+        + ["-Iruntime"]
         + glib_cflags
         + gc_cflags
         + [
             "-Wl,--whole-archive",
-            "compiler/runtime/libruntime.a",
+            "runtime/libruntime.a",
             "-Wl,--no-whole-archive",
         ]
         + glib_libs

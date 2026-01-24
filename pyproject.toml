@@ -46,4 +46,4 @@ nbis = "numerobis:cli"
 where = ["src"]
 
 [tool.setuptools.package-data]
-numerobis = ["compiler/runtime/libruntime.a", "compiler/runtime/glibheader.h.gch"]
+numerobis = ["runtime/libruntime.a", "runtime/glibheader.h.gch"]
