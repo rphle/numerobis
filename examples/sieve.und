@@ -1,0 +1,23 @@
+sieve!(n: Int): Int = {
+    is_prime = [true] * (n + 1)
+    is_prime[0] = false
+    is_prime[1] = false
+
+    for i in 2..floor(n^0.5) + 1 do {
+        if is_prime[i] then {
+            for j in i*i..n + 1..i do {
+                is_prime[j] = false
+            }
+        }
+    }
+
+    count = 0
+    for x in is_prime do {
+        if x then {count = count + 1}
+    }
+    return count
+}
+
+count = sieve(1000)
+
+echo("Primes up to 1000: " + (count -> Str))

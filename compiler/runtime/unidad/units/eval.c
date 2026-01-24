@@ -6,6 +6,7 @@
 #include "units.h"
 #include <math.h>
 #include <stdbool.h>
+#include <stddef.h>
 
 gdouble eval_unit(UnitNode *node, gdouble number, bool is_base) {
   if (node == NULL)
@@ -77,8 +78,7 @@ bool is_unit_logarithmic(UnitNode *node) {
   }
 }
 
-gdouble eval_number(Value *self, UnitNode *_unit) {
-  Number *n = self->number;
+gdouble eval_number(Number *n, UnitNode *_unit) {
   UnitNode *unit = _unit == NULL ? n->unit : _unit;
   gdouble value = n->kind == NUM_INT64 ? (gdouble)(n->i64) : n->f64;
 
@@ -94,27 +94,18 @@ gdouble eval_number(Value *self, UnitNode *_unit) {
 }
 
 GString *print_number(Number *n) {
-  gdouble value;
-  switch (n->kind) {
-  case NUM_INT64:
-    value = (gdouble)(n->i64);
-    break;
-  case NUM_DOUBLE:
-    value = n->f64;
-    break;
-  }
-
-  gdouble base = eval_unit(n->unit, value, true);
-  gdouble target = eval_unit(n->unit, value, false);
-
-  gdouble res = target / base;
-
-  if (!is_unit_logarithmic(n->unit)) {
-    res = value * res;
-  }
+  gdouble value = eval_number(n, NULL);
 
   GString *out = g_string_new("");
-  g_string_printf(out, "%g %s", res, print_unit(n->unit)->str);
+  g_string_printf(out, "%g", value);
+
+  GString *unit = print_unit(n->unit);
+  size_t len = g_utf8_strlen(unit->str, unit->len);
+
+  if (len > 0) {
+    g_string_append(out, " ");
+    g_string_append(out, unit->str);
+  }
 
   return out;
 }

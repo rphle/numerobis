@@ -11,6 +11,6 @@ extern gdouble is_logarithmic(uint16_t id);
 bool is_unit_logarithmic(UnitNode *node);
 gdouble eval_unit(UnitNode *node, gdouble number, bool is_base);
 GString *print_number(Number *n);
-gdouble eval_number(Value *self, UnitNode *_unit);
+gdouble eval_number(Number *n, UnitNode *_unit);
 
 #endif

@@ -307,19 +307,30 @@ class Compiler:
             content=loop.content,
         )
 
-        for key, value in [("start", r.start), ("stop", r.end), ("step", r.step)]:
-            value = self.unlink(value)
-            if value and isinstance(value, UnaryOp):
+        for key, _value in [("start", r.start), ("stop", r.end), ("step", r.step)]:
+            value = self.unlink(_value)
+            if not value:
+                loop[key] = "1"
+            elif isinstance(value, UnaryOp) and isinstance(
+                value.operand, (Integer, Float)
+            ):
                 # negative
                 value = self.unlink(value.operand)
-                value = dataclasses.replace(value, value=f"-{value.value}")  # type: ignore
-
-            loop[key] = self.number_(value, init=False) if value else 1  # type: ignore
+                value = dataclasses.replace(value, value=f"-{value.value}")
+            elif isinstance(value, (Integer, Float)):
+                # constant range
+                loop[key] = self.number_(value, init=False)
+            else:
+                part = self.compile(value)
+                typ = "i64" if self._link2type(_value) == "int" else "f64"
+                loop[key] = f"{part}->number->{typ}"
 
         return loop
 
     def function_(self, node: Function, link: int) -> tstr:
         self.include.add("unidad/closures")
+
+        old_defined_addrs = self._defined_addrs.copy()
 
         definition = tstr("""Value *$name(void *__env, Value **__args) {
                                 U_UNPACK_ENV($env)
@@ -339,6 +350,8 @@ class Compiler:
         body_node = self.unlink(node.body)
         if isinstance(body_node, Block) and not isinstance(body_node.body[-1], Return):
             body = str(body)[:-1] + "\nreturn NONE;\n}"
+
+        self._defined_addrs = old_defined_addrs
 
         _unlinked_params = [self.unlink(param) for param in node.params]
 

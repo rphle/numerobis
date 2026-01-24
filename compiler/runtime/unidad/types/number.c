@@ -131,6 +131,7 @@ static Value *number_binop(Value *a, Value *b, binop_i64 iop, binop_f64 fop,
   UnitNode *ua = na->unit;
   UnitNode *ub = nb->unit;
   UnitNode *unit = NULL;
+  bool dimless = ub->kind == UNIT_ONE && ua->kind == UNIT_ONE;
 
   bool _y_defined = false;
   gdouble y = 0;
@@ -141,17 +142,17 @@ static Value *number_binop(Value *a, Value *b, binop_i64 iop, binop_f64 fop,
     unit = ua;
     break;
   case OP_MUL:
-    unit = U_PROD(ua, ub);
+    unit = !dimless ? U_PROD(ua, ub) : U_ONE;
     break;
   case OP_DIV:
-    unit = U_PROD(ua, U_PWR(ub, U_NUM(-1)));
+    unit = !dimless ? U_PROD(ua, U_PWR(ub, U_NUM(-1))) : U_ONE;
     break;
   case OP_POW:
     unit = U_PWR(ua, ub);
     break;
   case OP_DADD:
   case OP_DSUB:
-    y = eval_number(b, ua);
+    y = eval_number(nb, ua);
     _y_defined = true;
     unit = ua;
     break;
