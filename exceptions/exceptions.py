@@ -132,6 +132,8 @@ class Exceptions:
             operation = {
                 "add": "addition",
                 "sub": "subtraction",
+                "dadd": "addition",
+                "dsub": "subtraction",
                 "mod": "modulo operation",
             }[node.op.name]
 
@@ -147,6 +149,8 @@ class Exceptions:
             operation = {
                 "add": "+",
                 "sub": "-",
+                "dadd": "|+|",
+                "dsub": "|-|",
                 "mul": "*",
                 "div": "/",
                 "pow": "^",

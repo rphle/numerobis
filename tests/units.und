@@ -55,7 +55,8 @@ unit F = (5/9) * (_ K + 459.67);
 echo(5C)
 echo(0C -> K)
 echo(0C -> F)
-echo(1C + 1C)
+echo(0C + 32F) # 0C + 0C
+echo(0C |+| 32F)
 
 # E543
 from si import @K

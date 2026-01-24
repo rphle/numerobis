@@ -523,7 +523,7 @@ class Parser(ParserTemplate):
         return node
 
     def arith(self) -> AstNode:
-        return self._bin_chain(self.term, {"PLUS", "MINUS"})
+        return self._bin_chain(self.term, {"PLUS", "MINUS", "DPLUS", "DMINUS"})
 
     def term(self) -> AstNode:
         return self._bin_chain(self.power, {"TIMES", "DIVIDE", "INTDIVIDE", "MOD"})

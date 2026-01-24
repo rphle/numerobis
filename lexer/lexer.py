@@ -43,6 +43,8 @@ class LexTokens:
         "INTDIVIDE",
         "MOD",
         "POWER",
+        "DPLUS",
+        "DMINUS",
         "LT",
         "LE",
         "GT",
@@ -80,6 +82,8 @@ class LexTokens:
     t_POWER = r"\^"
     t_CONVERSION = r"\(?->"
     t_RANGE = r"\.\."
+    t_DPLUS = r"\|\+\|"
+    t_DMINUS = r"\|\-\|"
 
     # Comparison operators
     t_EQ = r"=="

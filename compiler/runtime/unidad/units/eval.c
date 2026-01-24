@@ -77,6 +77,22 @@ bool is_unit_logarithmic(UnitNode *node) {
   }
 }
 
+gdouble eval_number(Value *self, UnitNode *_unit) {
+  Number *n = self->number;
+  UnitNode *unit = _unit == NULL ? n->unit : _unit;
+  gdouble value = n->kind == NUM_INT64 ? (gdouble)(n->i64) : n->f64;
+
+  if (unit->kind != UNIT_ONE) {
+    gdouble base = eval_unit(unit, value, true);
+    gdouble target = eval_unit(unit, value, false);
+
+    gdouble res = target / base;
+    value = is_unit_logarithmic(unit) ? res : value * res;
+  }
+
+  return value;
+}
+
 GString *print_number(Number *n) {
   gdouble value;
   switch (n->kind) {

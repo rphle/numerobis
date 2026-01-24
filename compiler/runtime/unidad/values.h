@@ -46,6 +46,8 @@ typedef struct {
   Value *(*__div__)(struct Value *self, struct Value *other);
   Value *(*__pow__)(struct Value *self, struct Value *other);
   Value *(*__mod__)(struct Value *self, struct Value *other);
+  Value *(*__dadd__)(struct Value *self, struct Value *other);
+  Value *(*__dsub__)(struct Value *self, struct Value *other);
   Value *(*__lt__)(struct Value *self, struct Value *other);
   Value *(*__le__)(struct Value *self, struct Value *other);
   Value *(*__gt__)(struct Value *self, struct Value *other);
@@ -98,6 +100,12 @@ static inline Value *__mod__(Value *self, Value *other) {
 }
 static inline Value *__pow__(Value *self, Value *other) {
   return self->methods->__pow__(self, other);
+}
+static inline Value *__dadd__(Value *self, Value *other) {
+  return self->methods->__dadd__(self, other);
+}
+static inline Value *__dsub__(Value *self, Value *other) {
+  return self->methods->__dsub__(self, other);
 }
 
 static inline Value *__lt__(Value *a, Value *b) {

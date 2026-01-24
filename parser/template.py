@@ -50,6 +50,8 @@ class ParserTemplate:
         names = {
             "plus": "add",
             "minus": "sub",
+            "dplus": "dadd",
+            "dminus": "dsub",
             "times": "mul",
             "divide": "div",
             "intdivide": "intdiv",

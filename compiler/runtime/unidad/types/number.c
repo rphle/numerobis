@@ -132,6 +132,9 @@ static Value *number_binop(Value *a, Value *b, binop_i64 iop, binop_f64 fop,
   UnitNode *ub = nb->unit;
   UnitNode *unit = NULL;
 
+  bool _y_defined = false;
+  gdouble y = 0;
+
   switch (kind) {
   case OP_ADD:
   case OP_SUB:
@@ -146,6 +149,12 @@ static Value *number_binop(Value *a, Value *b, binop_i64 iop, binop_f64 fop,
   case OP_POW:
     unit = U_PWR(ua, ub);
     break;
+  case OP_DADD:
+  case OP_DSUB:
+    y = eval_number(b, ua);
+    _y_defined = true;
+    unit = ua;
+    break;
   default:
     unit = NULL;
     break;
@@ -153,11 +162,13 @@ static Value *number_binop(Value *a, Value *b, binop_i64 iop, binop_f64 fop,
 
   if (na->kind == NUM_DOUBLE || nb->kind == NUM_DOUBLE) {
     gdouble x = (na->kind == NUM_DOUBLE) ? na->f64 : (gdouble)na->i64;
-    gdouble y = (nb->kind == NUM_DOUBLE) ? nb->f64 : (gdouble)nb->i64;
+
+    if (!_y_defined)
+      y = (nb->kind == NUM_DOUBLE) ? nb->f64 : (gdouble)nb->i64;
+
     return float__init__(fop(x, y), unit);
   }
-
-  return int__init__(iop(na->i64, nb->i64), unit);
+  return int__init__(iop(na->i64, _y_defined ? (gint64)y : nb->i64), unit);
 }
 
 static inline gint64 i_add(gint64 a, gint64 b) { return a + b; }
@@ -191,6 +202,12 @@ static inline Value *number__pow__(Value *a, Value *b) {
 }
 static inline Value *number__mod__(Value *a, Value *b) {
   return number_binop(a, b, i_mod, f_mod, OP_MOD);
+}
+static inline Value *number__dadd__(Value *a, Value *b) {
+  return number_binop(a, b, i_pow, f_add, OP_DADD);
+}
+static inline Value *number__dsub__(Value *a, Value *b) {
+  return number_binop(a, b, i_sub, f_sub, OP_DSUB);
 }
 
 static Value *number__str__(Value *val) {
@@ -243,6 +260,8 @@ static const ValueMethods _number_methods = {
     .__div__ = number__div__,
     .__pow__ = number__pow__,
     .__mod__ = number__mod__,
+    .__dadd__ = number__dadd__,
+    .__dsub__ = number__dsub__,
     .__lt__ = number__lt__,
     .__le__ = number__le__,
     .__gt__ = number__gt__,

@@ -118,7 +118,7 @@ class Typechecker:
 
         return_typ = "Float" if "Float" in {left.name(), right.name()} else "Int"
         match node.op.name:
-            case "add" | "sub":
+            case "add" | "sub" | "dadd" | "dsub":
                 if not (mismatch := dimcheck(left, right)):
                     self.errors.binOpMismatch(node, mismatch)
 

@@ -16,7 +16,9 @@ typedef enum {
   OP_MUL,
   OP_DIV,
   OP_POW,
-  OP_MOD
+  OP_MOD,
+  OP_DADD,
+  OP_DSUB,
 } OpKind;
 
 #endif
