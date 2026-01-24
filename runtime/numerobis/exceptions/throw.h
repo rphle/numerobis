@@ -1,5 +1,5 @@
-#ifndef UNIDAD_THROW_H
-#define UNIDAD_THROW_H
+#ifndef NUMEROBIS_THROW_H
+#define NUMEROBIS_THROW_H
 
 #include <glib.h>
 
@@ -13,7 +13,7 @@ typedef struct {
 #define LOC(line, col, end_line, end_col)                                      \
   &(Location) { line, col, end_line, end_col }
 
-extern GHashTable *UNIDAD_MODULE_REGISTRY;
+extern GHashTable *NUMEROBIS_MODULE_REGISTRY;
 
 void u_throw(const int code, const Location *span);
 

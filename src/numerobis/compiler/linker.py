@@ -68,7 +68,7 @@ class Linker:
             module = self.modules[file]
             module.meta.path = Path(self._path(file))
             output.append(
-                f'/* {self._path(file)} */\nUNIDAD__FILE__ = "{self._path(file)}";\n{module.code}\n'
+                f'/* {self._path(file)} */\nNUMEROBIS__FILE__ = "{self._path(file)}";\n{module.code}\n'
             )
             functions.extend(module.functions)
             typedefs.extend(module.typedefs)

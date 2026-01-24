@@ -1,5 +1,5 @@
-#ifndef UNIDAD_RANGE_H
-#define UNIDAD_RANGE_H
+#ifndef NUMEROBIS_RANGE_H
+#define NUMEROBIS_RANGE_H
 
 #include "glib.h"
 struct Value;

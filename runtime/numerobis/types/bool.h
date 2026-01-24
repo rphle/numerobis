@@ -1,5 +1,5 @@
-#ifndef UNIDAD_BOOL_H
-#define UNIDAD_BOOL_H
+#ifndef NUMEROBIS_BOOL_H
+#define NUMEROBIS_BOOL_H
 
 #include "../values.h"
 #include <glib.h>

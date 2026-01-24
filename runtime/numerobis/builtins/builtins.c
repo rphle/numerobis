@@ -8,7 +8,7 @@
 #include <math.h>
 #include <stdio.h>
 
-static Value *unidad_builtin_random(Value **args) {
+static Value *numerobis_builtin_random(Value **args) {
   static GRand *rng = NULL;
 
   if (G_UNLIKELY(rng == NULL)) {
@@ -20,7 +20,7 @@ static Value *unidad_builtin_random(Value **args) {
   return float__init__(x, U_ONE);
 }
 
-static Value *unidad_builtin_input(Value **args) {
+static Value *numerobis_builtin_input(Value **args) {
   if (args[1]) {
     echo((Value *[]){NULL, args[1], EMPTY_STR});
     fflush(stdout);
@@ -40,7 +40,7 @@ static Value *unidad_builtin_input(Value **args) {
   return result;
 }
 
-static Value *unidad_builtin_floor(Value **args) {
+static Value *numerobis_builtin_floor(Value **args) {
 
   Value *val = args[1];
 
@@ -56,7 +56,7 @@ static Value *unidad_builtin_floor(Value **args) {
   return int__init__(result, n->unit);
 }
 
-static Value *unidad_builtin_indexof(Value **args) {
+static Value *numerobis_builtin_indexof(Value **args) {
   GArray *self = args[1]->list;
   Value *target = args[2];
 
@@ -72,7 +72,7 @@ static Value *unidad_builtin_indexof(Value **args) {
   return int__init__(G_GINT64_CONSTANT(-1), U_ONE);
 }
 
-static Value *unidad_builtin_split(Value **args) {
+static Value *numerobis_builtin_split(Value **args) {
   GString *self = args[1]->str;
   GString *sep = args[2]->str;
 
@@ -106,9 +106,9 @@ static Value *unidad_builtin_split(Value **args) {
 
 void u_register_builtin_externs(void) {
   u_extern_register("echo", echo);
-  u_extern_register("random", unidad_builtin_random);
-  u_extern_register("input", unidad_builtin_input);
-  u_extern_register("floor", unidad_builtin_floor);
-  u_extern_register("indexof", unidad_builtin_indexof);
-  u_extern_register("split", unidad_builtin_split);
+  u_extern_register("random", numerobis_builtin_random);
+  u_extern_register("input", numerobis_builtin_input);
+  u_extern_register("floor", numerobis_builtin_floor);
+  u_extern_register("indexof", numerobis_builtin_indexof);
+  u_extern_register("split", numerobis_builtin_split);
 }

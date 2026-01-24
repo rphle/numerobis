@@ -1,5 +1,5 @@
-#ifndef UNIDAD_RUNTIME_H
-#define UNIDAD_RUNTIME_H
+#ifndef NUMEROBIS_RUNTIME_H
+#define NUMEROBIS_RUNTIME_H
 
 #include <gc.h>
 
@@ -10,8 +10,8 @@
 
 #include <glib.h>
 
-extern char *UNIDAD__FILE__;
+extern char *NUMEROBIS__FILE__;
 
-void unidad_runtime_init(void);
+void numerobis_runtime_init(void);
 
 #endif

@@ -68,14 +68,14 @@ class Compiler:
         self.uid = module_uid(module.path)
         self.include = set(
             {
-                "unidad/runtime",
-                "unidad/constants",
-                "unidad/utils/utils",
-                "unidad/values",
-                "unidad/types/bool",
-                "unidad/exceptions/throw",
-                "unidad/builtins/builtins",
-                "unidad/units/units",
+                "numerobis/runtime",
+                "numerobis/constants",
+                "numerobis/utils/utils",
+                "numerobis/values",
+                "numerobis/types/bool",
+                "numerobis/exceptions/throw",
+                "numerobis/builtins/builtins",
+                "numerobis/units/units",
             }
         )
         self.functions: list[str] = []
@@ -205,7 +205,7 @@ class Compiler:
         return out
 
     def extern_declaration_(self, node: ExternDeclaration, link: int) -> tstr:
-        self.include.add("unidad/extern")
+        self.include.add("numerobis/extern")
 
         out = tstr('Value *und_$uid_$name = u_extern_lookup("$name")')
         out["uid"] = self.uid
@@ -214,7 +214,7 @@ class Compiler:
         return out
 
     def for_loop_(self, node: ForLoop, link: int) -> tstr:
-        self.include.add("unidad/types/number")  # indices
+        self.include.add("numerobis/types/number")  # indices
         if self._link2type(node.iterable) == "range":
             return self.for_loop_range_(node, link)
 
@@ -327,7 +327,7 @@ class Compiler:
         return loop
 
     def function_(self, node: Function, link: int) -> tstr:
-        self.include.add("unidad/closures")
+        self.include.add("numerobis/closures")
 
         old_defined_addrs = self._defined_addrs.copy()
 
@@ -428,7 +428,7 @@ class Compiler:
             return self.slice_(node, link)
 
         if (iterable_type := self._link2type(node.iterable)) not in ("any", "never"):
-            self.include.add(f"unidad/types/{iterable_type}")
+            self.include.add(f"numerobis/types/{iterable_type}")
 
         out = tstr("__getitem__($iterable, $index, $loc)")
         out["index"] = str(self.compile(node.index))
@@ -453,8 +453,8 @@ class Compiler:
         return out
 
     def list_(self, node: List, link: int) -> tstr:
-        self.include.add("unidad/types/list")
-        self.include.add("unidad/types/number")  # list.c includes number.h
+        self.include.add("numerobis/types/list")
+        self.include.add("numerobis/types/number")  # list.c includes number.h
         out = tstr("list_of($items)")
 
         out["items"] = ", ".join(
@@ -464,7 +464,7 @@ class Compiler:
         return out
 
     def number_(self, node: Integer | Float, *, init: bool = True) -> tstr:
-        self.include.add("unidad/types/number")
+        self.include.add("numerobis/types/number")
         out = tstr("$type__init__($value, $unit)") if init else tstr("$value")
 
         value = node.value
@@ -488,7 +488,7 @@ class Compiler:
         return out
 
     def range_(self, node: Range, link: int) -> tstr:
-        self.include.add("unidad/types/range")
+        self.include.add("numerobis/types/range")
         start, stop, step = (
             self.compile(node.start),
             self.compile(node.end),
@@ -521,17 +521,17 @@ class Compiler:
         out["step"] = self.compile(index.step) if index.step is not None else "NONE"
 
         if (iterable_type := self._link2type(node.iterable)) != "any":
-            self.include.add(f"unidad/types/{iterable_type}")
+            self.include.add(f"numerobis/types/{iterable_type}")
 
         return out
 
     def string_(self, node: String, link: int) -> tstr:
-        self.include.add("unidad/types/str")
-        self.include.add("unidad/types/number")  # str.c includes number.h
+        self.include.add("numerobis/types/str")
+        self.include.add("numerobis/types/number")  # str.c includes number.h
         return tstr(f"str__init__(g_string_new({node.value}))")
 
     def unary_op_(self, node: UnaryOp, link: int) -> tstr:
-        self.include.add("unidad/types/bool")
+        self.include.add("numerobis/types/bool")
 
         if node.op.name == "sub":
             return tstr(f"__neg__({self.compile(node.operand)})")
@@ -717,7 +717,7 @@ class Compiler:
                 )
 
     def _builtins(self):
-        uid = module_uid("stdlib/builtins.und")
+        uid = module_uid("stdlib/builtins.nbis")
         self._imported_names.update({name: f"und_{uid}_" for name in BUILTINS})
 
     def _node2type(self, node) -> T:

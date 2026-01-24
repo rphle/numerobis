@@ -1,5 +1,5 @@
-#ifndef UNIDAD_UNITS_H
-#define UNIDAD_UNITS_H
+#ifndef NUMEROBIS_UNITS_H
+#define NUMEROBIS_UNITS_H
 
 #include <glib.h>
 #include <math.h>

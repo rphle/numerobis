@@ -25,8 +25,8 @@ def _pkg(name: str):
 
 
 def _prepare_units_h(units: dict[str, str]) -> str:
-    out = f"""#ifndef UNIDAD_UNITS_DEF_H
-    #define UNIDAD_UNITS_DEF_H
+    out = f"""#ifndef NUMEROBIS_UNITS_DEF_H
+    #define NUMEROBIS_UNITS_DEF_H
 
     #include <stdint.h>
     #include <math.h>
@@ -64,10 +64,10 @@ def _prepare_source_c(
 
         arrays.append(f"static const char *lines_{i}[] = {{ {c_lines} }};")
         structs.append(
-            f"static UnidadProgram mod_{i} = {{ {path_str}, {len(src_lines)}, lines_{i} }};"
+            f"static NumerobisProgram mod_{i} = {{ {path_str}, {len(src_lines)}, lines_{i} }};"
         )
         entries.append(
-            f"g_hash_table_insert(UNIDAD_MODULE_REGISTRY, (gpointer){path_str}, &mod_{i});"
+            f"g_hash_table_insert(NUMEROBIS_MODULE_REGISTRY, (gpointer){path_str}, &mod_{i});"
         )
 
     source = f"""#include <glib.h>
@@ -79,9 +79,9 @@ def _prepare_source_c(
         const gchar *path;
         const int n_lines;
         const gchar **source;
-    }} UnidadProgram;
+    }} NumerobisProgram;
 
-    extern GHashTable *UNIDAD_MODULE_REGISTRY;
+    extern GHashTable *NUMEROBIS_MODULE_REGISTRY;
 
     {chr(10).join(arrays)}
     {chr(10).join(structs)}
@@ -111,8 +111,8 @@ def _prepare_source_c(
 
     __attribute__((constructor))
     void u_init_module_registry() {{
-        if (UNIDAD_MODULE_REGISTRY == NULL) {{
-            UNIDAD_MODULE_REGISTRY = g_hash_table_new(g_str_hash, g_str_equal);
+        if (NUMEROBIS_MODULE_REGISTRY == NULL) {{
+            NUMEROBIS_MODULE_REGISTRY = g_hash_table_new(g_str_hash, g_str_equal);
         }}
         {chr(10).join(entries)}
     }}

@@ -7,8 +7,8 @@
 #include <locale.h>
 #include <stdlib.h>
 
-GHashTable *UNIDAD_MODULE_REGISTRY = NULL;
-extern char *UNIDAD__FILE__;
+GHashTable *NUMEROBIS_MODULE_REGISTRY = NULL;
+extern char *NUMEROBIS__FILE__;
 
 static size_t _strlen(const gchar *s) { return g_utf8_strlen(s, -1); }
 
@@ -44,8 +44,8 @@ static Location *_location_split(const Location *self, size_t *out_len) {
 }
 
 static void print_preview(const Location *span) {
-  UnidadProgram *program =
-      g_hash_table_lookup(UNIDAD_MODULE_REGISTRY, UNIDAD__FILE__);
+  NumerobisProgram *program =
+      g_hash_table_lookup(NUMEROBIS_MODULE_REGISTRY, NUMEROBIS__FILE__);
   size_t n = 0;
   Location *lines = _location_split(span, &n);
   g_printerr("\n");
@@ -112,9 +112,9 @@ static void print_preview(const Location *span) {
 
 void u_throw(const int code, const Location *span) {
   const RuntimeMessage *msg = NULL;
-  for (size_t i = 0; i < G_N_ELEMENTS(UNIDAD_MESSAGES); i++) {
-    if (UNIDAD_MESSAGES[i].code == code) {
-      msg = &UNIDAD_MESSAGES[i];
+  for (size_t i = 0; i < G_N_ELEMENTS(NUMEROBIS_MESSAGES); i++) {
+    if (NUMEROBIS_MESSAGES[i].code == code) {
+      msg = &NUMEROBIS_MESSAGES[i];
       break;
     }
   }
@@ -123,7 +123,7 @@ void u_throw(const int code, const Location *span) {
 
   g_printerr(ANSI_RESET "" ANSI_RED_BOLD "%s" ANSI_RESET " " ANSI_DIM
                         "at %s:%d:%d\n",
-             msg->type, UNIDAD__FILE__, span->line, span->col);
+             msg->type, NUMEROBIS__FILE__, span->line, span->col);
   g_printerr("  [E%d] " ANSI_RESET "%s\n", code, msg->message);
 
   print_preview(span);

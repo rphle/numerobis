@@ -65,7 +65,7 @@ def build(
     opt_level: str,
 ) -> None:
     """
-    Compile SOURCE (.und) into a native executable.
+    Compile SOURCE (.nbis) into a native executable.
     """
 
     t0 = time.time()

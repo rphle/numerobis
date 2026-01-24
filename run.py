@@ -54,7 +54,7 @@ format_code = "--format" in sys.argv
 
 
 if len(sys.argv) - verbose - full > 1:
-    files = [test for test in files if test.removesuffix(".und") in sys.argv[1:]]
+    files = [test for test in files if test.removesuffix(".nbis") in sys.argv[1:]]
 
 tests: dict[str, tuple[Test, list[Test]]] = {}
 for file in files:

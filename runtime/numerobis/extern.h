@@ -1,5 +1,5 @@
-#ifndef UNIDAD_EXTERN_H
-#define UNIDAD_EXTERN_H
+#ifndef NUMEROBIS_EXTERN_H
+#define NUMEROBIS_EXTERN_H
 
 #include "values.h"
 #include <glib.h>
@@ -9,7 +9,7 @@ typedef struct {
   Value *fn;
 } UExternEntry;
 
-extern GHashTable *UNIDAD_EXTERNS;
+extern GHashTable *NUMEROBIS_EXTERNS;
 
 void u_externs_init(void);
 

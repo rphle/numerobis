@@ -1,5 +1,5 @@
-#ifndef UNIDAD_CLOSURES_H
-#define UNIDAD_CLOSURES_H
+#ifndef NUMEROBIS_CLOSURES_H
+#define NUMEROBIS_CLOSURES_H
 
 #include <stdlib.h>
 #include "values.h"

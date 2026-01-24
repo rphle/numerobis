@@ -1,5 +1,5 @@
-#ifndef UNIDAD_ECHO_H
-#define UNIDAD_ECHO_H
+#ifndef NUMEROBIS_ECHO_H
+#define NUMEROBIS_ECHO_H
 
 #include "../constants.h"
 #include "../values.h"

@@ -43,7 +43,7 @@ def build_lib():
 
 
 def generate_messages(
-    categories: tuple = (3, 9), target="runtime/unidad/exceptions/messages.h"
+    categories: tuple = (3, 9), target="runtime/numerobis/exceptions/messages.h"
 ):
     categories = tuple(str(c) for c in categories)
     messages = {

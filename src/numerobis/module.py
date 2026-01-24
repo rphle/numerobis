@@ -78,7 +78,7 @@ class Module:
 
     def resolve_imports(self):
         if self.builtins:
-            builtins_mod = Module(STDLIB_PATH / "builtins.und", builtins=False)
+            builtins_mod = Module(STDLIB_PATH / "builtins.nbis", builtins=False)
             builtins_mod.load()
             self.namespaces.update(builtins_mod.namespaces)
 
@@ -147,7 +147,7 @@ class Module:
                     )
 
         if self.builtins:
-            self.imports.append("stdlib/builtins.und")
+            self.imports.append("stdlib/builtins.nbis")
 
     def dimcheck(self):
         dc = Dimchecker(
@@ -207,7 +207,7 @@ class ModuleResolver:
     @lru_cache(maxsize=128)
     def resolve(self, name: str) -> Path:
         """Resolve a module name to a file path."""
-        file = name.replace(".", "/") + ".und"
+        file = name.replace(".", "/") + ".nbis"
 
         # Check stdlib first
         if (path := self.stdlib_path / file).is_file():

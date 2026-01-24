@@ -1,5 +1,5 @@
-#ifndef UNIDAD_STR_H
-#define UNIDAD_STR_H
+#ifndef NUMEROBIS_STR_H
+#define NUMEROBIS_STR_H
 
 #include "../values.h"
 #include <glib.h>
