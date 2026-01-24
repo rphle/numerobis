@@ -22,9 +22,12 @@ class Linker:
         self.linked: str
 
         self.root = next(
-            p
-            for p in (main.resolve().parent, *main.resolve().parents)
-            if p.name == main.parts[0]
+            (
+                p
+                for p in (main.resolve().parent, *main.resolve().parents)
+                if p.name == main.parts[0]
+            ),
+            Path("."),
         )
 
     def process_module(self, module: CompiledModule):
