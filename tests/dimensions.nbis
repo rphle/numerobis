@@ -1,5 +1,5 @@
 from si import @(Length, Mass, Time, Force, Energy, Power)
-from si import @(metre, kilogram, second, newton, joule, watt, K)
+from si import @(metre, kilogram, second, newton, joule, watt, K, m, kg)
 
 # ---
 dimension TestDim
@@ -150,6 +150,16 @@ t: Time = 20 second
 
 # ---
 f: Force = 50 newton
+
+# ---
+z: Int[Mass] = 5kg
+
+# E536
+z: Float[Energy] = 5 joule
+
+# ---
+dimension Volume = Length^3
+z: Float[Volume] = 1.0m^3
 
 # ---
 v: Length / Time = 10 metre/second

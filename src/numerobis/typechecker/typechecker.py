@@ -776,6 +776,7 @@ class Typechecker:
     def type_(self, node: Type | Expression | FunctionAnnotation | One, env: Env):
         if isinstance(node, linking.Link):
             node = self.unlink(node)
+
         match node:
             case FunctionAnnotation():
                 return FunctionType(
@@ -793,9 +794,24 @@ class Typechecker:
             case Type():
                 match node.name.name:
                     case "Float" | "Int":
+                        if node.param:
+                            if not isinstance(node.param, (One, Expression)):
+                                self.errors.throw(
+                                    503,
+                                    node="parameter",
+                                    actual="dimension",
+                                    loc=node.param.loc,
+                                )
+                                raise
+                            dim = self.simplify(
+                                self.dimchecker.dimensionize(node.param)
+                            )
+                        else:
+                            dim = None
+
                         return NumberType(
                             typ=node.name.name,
-                            dim=self.type_(node.param, env=env) if node.param else None,
+                            dim=dim,
                         )
                     case "List":
                         return ListType(
