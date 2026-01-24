@@ -1,0 +1,49 @@
+[build-system]
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "numerobis"
+version = "0.1.0"
+description = "The Numerobis programming language"
+authors = [{ name = "Raphael", email = "hello@alpharee.de" }]
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.12"
+dependencies = [
+    "click==8.1.7"
+    "mmh3==5.2.0",
+    "rich==14.3.0",
+    "tqdm==4.67.1",
+]
+keywords = ["programming language", "physics", "compiler", "units", "numerobis", "measurement", "education", "programming", "language", "units of measurement", "physics units"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Software Development :: Compilers",
+    "Topic :: Scientific/Engineering :: Astronomy",
+    "Topic :: Scientific/Engineering :: Physics",
+    "Topic :: Scientific/Engineering :: Chemistry",
+    "Topic :: Scientific/Engineering :: Bio-Informatics",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+]
+
+[project.urls]
+Source = "https://github.com/rphle/numerobis"
+Issues = "https://github.com/rphle/numerobis/issues"
+
+
+[project.scripts]
+nbis = "numerobis:cli"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+numerobis = ["compiler/runtime/libruntime.a", "compiler/runtime/glibheader.h.gch"]
