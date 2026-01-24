@@ -8,7 +8,7 @@
 from si import @Power
 from si import @(m, km, s, GHz, W)
 from information import @(bit, bps)
-from constants import π, c, ℏ, @π
+from constants import π, c, ℏ
 
 # ---
 
@@ -20,7 +20,7 @@ datarate = 160 bps
 f = 8.3 GHz
 P_transmit = 23 W
 
-ω = 2π * f
+ω = 2*π * f
 λ = c / f
 
 energy_per_photon = ℏ * ω
@@ -39,7 +39,7 @@ R = 25400000000 km  # as of 2025
 # Diameter of receiver dish:
 d_receiver = 70 m
 
-irradiance = P_transmit / (4π * R^2)
+irradiance = P_transmit / (4*π * R^2)
 P_received: Power = irradiance * (π * d_voyager / λ)^2 * (π * d_receiver^2 / 4)
 
 echo("A " + (d_receiver->Str) + " dish on Earth will receive " + (P_received -> Str) + " of power.")

@@ -2,6 +2,7 @@ from dataclasses import replace
 from typing import Optional, TypeVar
 
 from analysis.invert import _to_x, invert
+from analysis.utils import contains_sum, is_linear
 from classes import Header, ModuleMeta
 from environment import Namespaces
 from exceptions.exceptions import Exceptions
@@ -13,23 +14,6 @@ from typechecker.linking import Link
 from .simplifier import Simplifier, cancel, cancel_
 
 SameType = TypeVar("SameType")
-
-
-def is_linear(node: UnitNode, active: bool = False) -> bool:
-    match node:
-        case Expression() | Neg():
-            return is_linear(node.value, active)
-        case Product() | Sum():
-            return all(is_linear(value, active) for value in node.values)
-        case Power():
-            return is_linear(node.base, active) and is_linear(node.exponent, True)
-        case Identifier():
-            if node.name == "_":
-                return not active
-        case Scalar():
-            if node.placeholder:
-                return not active
-    return True
 
 
 class Preprocessor:
@@ -95,14 +79,20 @@ class Preprocessor:
         self.conversions[name] = inverted
         self.env.units[name] = expr
 
-        base = cancel_(self.to_base(expr))
-        if base is None:
+        is_sum = contains_sum(expr)
+
+        if is_sum:
             base = One()
         else:
-            base = self.simplify(base)
-            base = invert(base) if base else base
+            base = cancel_(self.to_base(expr))
+            if base is None:
+                base = One()
+            else:
+                base = self.simplify(base)
+                base = invert(base) if base else base
+
         self.bases[name] = Expression(_to_x(base))
-        if not is_linear(expr):
+        if not is_linear(expr) or is_sum:
             self.logarithmic.add(name)
 
     def unlink(self, link: SameType) -> SameType:
@@ -144,19 +134,29 @@ class Preprocessor:
             case Scalar():
                 unit = node.unit
                 if unit:
+                    value = Scalar(node.value) if not node.placeholder else n
+
                     base = cancel_(self.to_base(unit))
                     if not base:
                         base = Scalar(1)
+
                     res = self.resolve_(
                         Product([unit, Power(base, Scalar(-1))]),
                         Identifier("_"),
                     )
+
+                    is_sum = contains_sum(res)
+                    if is_sum:
+                        res = self.resolve_(
+                            Product([unit, Scalar(1)]),
+                            Identifier("_"),
+                        )
+
                     res = self.simplify(res, do_cancel=False)
 
-                    if is_linear(res):
+                    if is_linear(res) and not is_sum:
                         res = Product([Identifier("_"), res])
 
-                    value = Scalar(node.value) if not node.placeholder else n
                     res = self.resolve_(res, value)
 
                     return res

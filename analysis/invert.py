@@ -1,5 +1,4 @@
-from dataclasses import replace
-
+from analysis.utils import _to_x, contains_var
 from nodes.core import Identifier
 from nodes.unit import (
     Call,
@@ -70,27 +69,3 @@ def invert_(node: UnitNode, target: UnitNode) -> UnitNode:
             return node
 
     raise ValueError(f"Node type {type(node)} not supported for inversion.", node)
-
-
-def contains_var(node: UnitNode) -> bool:
-    if isinstance(node, Identifier) and node.name == "_":
-        return True
-    if hasattr(node, "values"):
-        return any(contains_var(v) for v in node.values)  # type: ignore
-    if hasattr(node, "value"):
-        return contains_var(node.value)  # type: ignore
-    if isinstance(node, Power):
-        return contains_var(node.base) or contains_var(node.exponent)
-    return False
-
-
-def _to_x(node: UnitNode) -> UnitNode:
-    if isinstance(node, Identifier) and node.name == "_":
-        return replace(node, name="x")
-    if hasattr(node, "values"):
-        return replace(node, values=[_to_x(v) for v in node.values])  # type: ignore
-    if hasattr(node, "value"):
-        return replace(node, value=_to_x(node.value))  # type: ignore
-    if isinstance(node, Power):
-        return replace(node, base=_to_x(node.base), exponent=_to_x(node.exponent))
-    return node

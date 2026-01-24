@@ -1,30 +1,62 @@
-from si import @(W, J)
+from si import @(W, J, g, kg, Mass, Volume)
+# ---
+echo(42)
+
 # ---
 dimension Length
 dimension Time
-dimension Volume = Length^3
 
 unit m: Length
 unit cm: Length = 0.01 m
 unit km: Length = 1000 m
-
-unit L: Volume = (0.1m)^3
-unit mL: Volume = 0.001 L
+unit ft = 0.3m
+unit mile = 1600 m
 
 unit s: Time
 unit h: Time = 3600 s
-
-unit mW = 0.001 W
-
-unit dBm = 10^(_ mW / 10mW)
 
 echo(42)
 echo(5(2*km))
 echo(2(1000*m))
 echo(3m^3)
 echo(100 km/h + 0.05km/s)
-echo(2 * 60dBm)
 echo(5m*s)
-echo(23W)
-echo(1mL == 1 cm^3)
+
 echo(2km + 500m)
+echo(10000ft -> m)
+echo(55 mile/h -> m/s)
+
+x: Mass/Length^3 = 1 (kg/m^3)
+
+# ---
+unit kt = 0.2g
+echo(8kt -> kg)
+
+# ---
+from si import @(m, cm)
+unit L: Volume = (0.1m)^3
+unit mL: Volume = 0.001 L
+
+echo(1mL == 1 cm^3)
+
+# ---
+unit mW = 0.001 W
+unit dBm = 10^(_ mW / 10mW)
+
+echo(2 * 60dBm)
+echo(23W)
+
+# ---
+dimension Temperature
+unit K: Temperature
+unit C: Temperature = _ K + 273.15;
+unit F = (5/9) * (_ K + 459.67);
+
+echo(5C)
+echo(0C -> K)
+echo(0C -> F)
+echo(1C + 1C)
+
+# E543
+from si import @K
+unit t = 5 W + 3 W + 2 K

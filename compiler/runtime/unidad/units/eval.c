@@ -2,6 +2,7 @@
 #include "../units/units.h"
 #include "../values.h"
 #include "glib.h"
+#include "simplifier.h"
 #include "units.h"
 #include <math.h>
 #include <stdbool.h>
