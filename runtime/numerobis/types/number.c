@@ -205,7 +205,7 @@ static inline Value *number__mod__(Value *a, Value *b) {
   return number_binop(a, b, i_mod, f_mod, OP_MOD);
 }
 static inline Value *number__dadd__(Value *a, Value *b) {
-  return number_binop(a, b, i_pow, f_add, OP_DADD);
+  return number_binop(a, b, i_add, f_add, OP_DADD);
 }
 static inline Value *number__dsub__(Value *a, Value *b) {
   return number_binop(a, b, i_sub, f_sub, OP_DSUB);
