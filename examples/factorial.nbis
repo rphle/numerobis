@@ -1,0 +1,11 @@
+factorial!(n: Int): Int = {
+    result = 1
+
+    for i in 2..n + 1 do {
+        result = result * i
+    }
+
+    return result
+}
+
+echo(factorial(20))
