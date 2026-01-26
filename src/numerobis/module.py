@@ -179,10 +179,16 @@ class Module:
         self.linker = Linker(MODULECACHE, main=self.meta.path)
         self.linker.link(print_=print_, format=format)
 
-    def gcc(self, output_path: str = "output/output", flags: set[str] = set()):
+    def gcc(
+        self,
+        output_path: str = "output/output",
+        flags: set[str] = set(),
+        cache: bool = False,
+        cc: str = "gcc",
+    ):
         if self.linker is None:
             raise ValueError("Module not linked")
-        self.linker.gcc(output_path=output_path, flags=flags)
+        self.linker.gcc(output_path=output_path, flags=flags, cache=cache, cc=cc)
 
     def run(self, path: str = "output/output"):
         try:

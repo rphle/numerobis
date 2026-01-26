@@ -128,6 +128,8 @@ def compile(
     logarithmic: set[str],
     output: str | Path = "output/output",
     flags: set[str] = set(),
+    cache: bool = False,
+    cc: str = "gcc",
 ):
     glib_cflags, glib_libs = _pkg("glib-2.0")
     gc_cflags, gc_libs = _pkg("bdw-gc")
@@ -156,8 +158,8 @@ def compile(
         resources.files("numerobis.runtime") / "libruntime.a"
     ) as runtime_path:
         cmd = (
-            ["ccache", "mold"]
-            + ["-run", "tcc"]
+            (["ccache", "mold", "-run"] if cache else [])
+            + [cc]
             + ["-pipe"]
             + [tmp.name, tmp_source.name]
             + ["-o", str(output)]
