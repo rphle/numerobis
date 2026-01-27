@@ -100,7 +100,7 @@ with tqdm(total=sum(len(file[1]) for _, file in tests.items()), leave=False) as 
                     times["Linking"] = timeit(
                         lambda: mod.link(print_=print_code, format=format_code)
                     )
-                    times["GCC"] = timeit(lambda: mod.gcc(cache=True, cc="tcc"))
+                    times["GCC"] = timeit(lambda: mod.gcc(cache=True, cc="gcc"))
                     times["Execution"] = timeit(mod.run)
 
             except SystemExit:

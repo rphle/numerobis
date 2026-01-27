@@ -56,6 +56,13 @@ def cli() -> None:
     default="0",
     help="Set optimization level (passed to the C compiler).",
 )
+@click.option(
+    "--cc",
+    "cc",
+    type=click.STRING,
+    default="gcc",
+    help="Set C compiler to use.",
+)
 def build(
     source: str,
     output: str,
@@ -63,6 +70,7 @@ def build(
     quiet: bool,
     debug: bool,
     opt_level: str,
+    cc: str,
 ) -> None:
     """
     Compile SOURCE (.nbis) into a native executable.
@@ -88,7 +96,7 @@ def build(
         mod = Module(source)
         mod.load()
         mod.link(format=False)
-        mod.gcc(output, flags=flags)
+        mod.gcc(output, flags=flags, cc=cc)
     except KeyboardInterrupt:
         console.print("[red]Build interrupted by user[/red]")
         raise SystemExit(130)

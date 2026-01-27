@@ -1,8 +1,9 @@
 # Numerobis Programming Language
 
-> [!WARNING]  
+> [!WARNING]
 > The language itself and especially its documentation is unfinished and while usable, it is not recommended to use it for production code.
 > This documentation is work in progress.
+> Only Linux is supported at the moment.
 
 
 Install the Python package locally (editable):
@@ -25,6 +26,16 @@ System dependencies (required for compilation and runtime linking):
 
 Note: The build scripts use `pkg-config` to obtain correct compiler and linker flags for `glib-2.0` and `bdw-gc`.
 
+```bash
+sudo apt install -y \
+  pkg-config \
+  libglib2.0-dev \
+  libgc-dev \
+  build-essential \
+  ccache \
+  mold
+
+```
 
 ## Running tests:
 - The repository includes a simple runner used by the `Makefile`:

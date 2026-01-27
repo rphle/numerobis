@@ -1,3 +1,4 @@
+import os
 import re
 import subprocess
 from pathlib import Path
@@ -34,6 +35,8 @@ def build_lib():
             check=True,
         )
         object_files.append(str(obj))
+
+    os.makedirs("src/numerobis/runtime", exist_ok=True)
 
     subprocess.run(
         ["ar", "rcs", "src/numerobis/runtime/libruntime.a"] + object_files, check=True

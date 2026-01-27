@@ -157,6 +157,7 @@ def compile(
     with resources.as_file(
         resources.files("numerobis.runtime") / "libruntime.a"
     ) as runtime_path:
+        print(cache)
         cmd = (
             (["ccache", "mold", "-run"] if cache else [])
             + [cc]
