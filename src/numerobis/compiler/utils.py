@@ -36,7 +36,7 @@ def compile_math(node: UnitNode) -> str:
             return compile_math(node.value)
         case Sum() | Product():
             op = "+" if isinstance(node, Sum) else "*"
-            return op.join(compile_math(v) for v in node.values)
+            return "(" + op.join(compile_math(v) for v in node.values) + ")"
         case Power():
             return f"pow({compile_math(node.base)}, {compile_math(node.exponent)})"
         case Scalar():

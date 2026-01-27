@@ -2,8 +2,9 @@ import dataclasses
 import hashlib
 from typing import Any, TypeVar
 
+from ..analysis.invert import _to_x
 from ..analysis.preprocessor import Preprocessor
-from ..classes import CompiledModule, Header, ModuleMeta
+from ..classes import CompiledModule, CompiledUnits, Header, ModuleMeta
 from ..compiler.scoping import get_free_vars
 from ..environment import Namespaces
 from ..exceptions.exceptions import Exceptions
@@ -80,13 +81,11 @@ class Compiler:
         )
         self.functions: list[str] = []
         self.typedefs: list[str] = []
-        self.units: dict[str, str] = {}
         self._defined_addrs: dict[str, str] = {}
         self._imported_names = {}
         self._imported_units = {}
 
-        self.bases: dict[str, str] = {}
-        self.logarithmic: set[str] = set()
+        self.units: CompiledUnits = CompiledUnits()
 
     def bin_op_(self, node: BinOp, link: int) -> tstr:
         operands = [self.compile(node.left), self.compile(node.right)]
@@ -570,10 +569,10 @@ class Compiler:
             case _:
                 raise NotImplementedError(f"Unit node cannot be compiled: {type(node)}")
 
-    def unit_def(self, node: Expression, name: str) -> None:
+    def unit_def(self, node: Expression, name: str, target) -> None:
         name = name + "_" + self.uid
         h = hashlib.sha1(name.encode("utf-8")).hexdigest()[:8].upper()
-        self.units["U" + h] = compile_math(node.value)
+        target["U" + h] = compile_math(node.value)
 
     def variable_(self, node: Variable, link: int) -> tstr:
         out = tstr("$name = $value")
@@ -625,8 +624,11 @@ class Compiler:
         )
         self.preprocessor.start()
 
-        for name, unit in self.preprocessor.conversions.items():
-            self.unit_def(unit, name)
+        for name, unit in self.preprocessor.units.items():
+            self.unit_def(_to_x(unit), name, self.units.units)  # type: ignore
+
+        for name, unit in self.preprocessor.inverted.items():
+            self.unit_def(unit, name, self.units.inverted)
 
         for n, b in self.preprocessor.bases.items():
             name = (
@@ -635,10 +637,12 @@ class Compiler:
                 .hexdigest()[:8]
                 .upper()
             )
-            self.bases[name] = compile_math(b) if not isinstance(b.value, One) else ""
+            self.units.bases[name] = (
+                compile_math(b) if not isinstance(b.value, One) else ""
+            )
 
         for n in self.preprocessor.logarithmic:
-            self.logarithmic.add(
+            self.units.logarithmic.add(
                 "U"
                 + hashlib.sha1((n + "_" + self.uid).encode("utf-8"))
                 .hexdigest()[:8]
@@ -685,8 +689,6 @@ class Compiler:
             functions=self.functions,
             typedefs=self.typedefs,
             units=self.units,
-            bases=self.bases,
-            logarithmic=self.logarithmic,
         )
 
     def process_header(self):

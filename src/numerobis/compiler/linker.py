@@ -5,7 +5,7 @@ from pathlib import Path
 import rich
 import rich.syntax
 
-from ..classes import CompiledModule
+from ..classes import CompiledModule, CompiledUnits
 from ..exceptions.exceptions import Exceptions
 from . import gcc as gnucc
 from .tstr import tstr
@@ -117,6 +117,18 @@ class Linker:
         cache: bool = False,
         cc: str = "gcc",
     ):
+        units = CompiledUnits(
+            units={
+                k: v for m in self.modules.values() for k, v in m.units.units.items()
+            },
+            inverted={
+                k: v for m in self.modules.values() for k, v in m.units.inverted.items()
+            },
+            bases={
+                k: v for m in self.modules.values() for k, v in m.units.bases.items()
+            },
+            logarithmic={n for m in self.modules.values() for n in m.units.logarithmic},
+        )
         try:
             gnucc.compile(
                 self.linked,
@@ -125,9 +137,7 @@ class Linker:
                     for m in self.modules.values()
                     if str(m.meta.path) in self.order
                 ],
-                units={k: v for m in self.modules.values() for k, v in m.units.items()},
-                bases={k: v for m in self.modules.values() for k, v in m.bases.items()},
-                logarithmic={n for m in self.modules.values() for n in m.logarithmic},
+                units=units,
                 output=output_path,
                 flags=flags,
                 cache=cache,

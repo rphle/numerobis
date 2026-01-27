@@ -5,7 +5,7 @@ from functools import lru_cache
 from importlib import resources
 from pathlib import Path
 
-from ..classes import ModuleMeta
+from ..classes import CompiledUnits, ModuleMeta
 from .utils import repr_double
 
 
@@ -24,7 +24,7 @@ def _pkg(name: str):
     return cflags, libs
 
 
-def _prepare_units_h(units: dict[str, str]) -> str:
+def _prepare_units_h(units: CompiledUnits) -> str:
     out = f"""#ifndef NUMEROBIS_UNITS_DEF_H
     #define NUMEROBIS_UNITS_DEF_H
 
@@ -33,12 +33,13 @@ def _prepare_units_h(units: dict[str, str]) -> str:
     #include <glib.h>
 
     typedef enum {{
-        {",".join(["DUMMY93CF"] + list(units.keys()))}
+        {",".join(["DUMMY93CF"] + list(units.units.keys()))}
     }} UnitId;
 
     static inline gdouble logn(gdouble x, gdouble b);
 
     gdouble unit_id_eval(uint16_t id, gdouble x);
+    gdouble unit_id_eval_normal(uint16_t id, gdouble x);
     gdouble base_unit(uint16_t id, gdouble x);
     gdouble is_logarithmic(uint16_t id);
 
@@ -51,9 +52,7 @@ def _prepare_units_h(units: dict[str, str]) -> str:
 def _prepare_source_c(
     modules: list[ModuleMeta],
     units_h: str,
-    units: dict[str, str],
-    bases: dict[str, str],
-    logarithmic: set[str],
+    units: CompiledUnits,
 ):
     arrays, structs, entries = [], [], []
 
@@ -90,21 +89,28 @@ def _prepare_source_c(
 
     gdouble unit_id_eval(uint16_t id, gdouble x) {{
         switch ((UnitId)id) {{
-            {"\n".join(f"case {n}: return {expr};" for n, expr in units.items())}
+            {"\n".join(f"case {n}: return {expr};" for n, expr in units.inverted.items())}
+            default: return 1;
+        }}
+    }}
+
+    gdouble unit_id_eval_normal(uint16_t id, gdouble x) {{
+        switch ((UnitId)id) {{
+            {"\n".join(f"case {n}: return {expr};" for n, expr in units.units.items())}
             default: return 1;
         }}
     }}
 
     gdouble base_unit(uint16_t id, gdouble x) {{
         switch ((UnitId)id) {{
-            {"\n".join(f"case {n}: return {expr};" for n, expr in bases.items() if expr)}
+            {"\n".join(f"case {n}: return {expr};" for n, expr in units.bases.items() if expr)}
             default: return 1;
         }}
     }}
 
     gdouble is_logarithmic(uint16_t id) {{
         switch ((UnitId)id) {{
-            {"\n".join(f"case {n}: return true;" for n in logarithmic)}
+            {"\n".join(f"case {n}: return true;" for n in units.logarithmic)}
             default: return false;
         }}
     }}
@@ -123,9 +129,7 @@ def _prepare_source_c(
 def compile(
     code: str,
     modules: list[ModuleMeta],
-    units: dict[str, str],
-    bases: dict[str, str],
-    logarithmic: set[str],
+    units: CompiledUnits,
     output: str | Path = "output/output",
     flags: set[str] = set(),
     cache: bool = False,
@@ -140,7 +144,7 @@ def compile(
     tmp_units.write(units_h.encode("utf-8"))
     tmp_units.close()
 
-    source = _prepare_source_c(modules, tmp_units.name, units, bases, logarithmic)
+    source = _prepare_source_c(modules, tmp_units.name, units)
 
     tmp_source = tempfile.NamedTemporaryFile(delete=False, suffix=".c")
     tmp_source.write(source.encode("utf-8"))
@@ -157,7 +161,6 @@ def compile(
     with resources.as_file(
         resources.files("numerobis.runtime") / "libruntime.a"
     ) as runtime_path:
-        print(cache)
         cmd = (
             (["ccache", "mold", "-run"] if cache else [])
             + [cc]

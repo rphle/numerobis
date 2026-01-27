@@ -26,6 +26,14 @@ class Header:
 
 
 @dataclass
+class CompiledUnits:
+    units: dict[str, str] = field(default_factory=dict)
+    inverted: dict[str, str] = field(default_factory=dict)
+    bases: dict[str, str] = field(default_factory=dict)
+    logarithmic: set[str] = field(default_factory=set)
+
+
+@dataclass
 class CompiledModule:
     meta: ModuleMeta
     imports: list[str]
@@ -33,7 +41,5 @@ class CompiledModule:
     code: str
     functions: list[str]
     typedefs: list[str]
-    units: dict[str, str]
-    bases: dict[str, str]
-    logarithmic: set[str]
+    units: CompiledUnits
     namespaces: Optional["Namespaces"] = None  # type: ignore # noqa

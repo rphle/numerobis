@@ -2,8 +2,6 @@ from dataclasses import replace
 from decimal import Decimal
 from typing import Optional, TypeVar
 
-from ..analysis.invert import _to_x, invert
-from ..analysis.utils import contains_sum, is_linear
 from ..classes import Header, ModuleMeta
 from ..environment import Namespaces
 from ..exceptions.exceptions import Exceptions
@@ -11,7 +9,9 @@ from ..nodes.ast import Float, Integer, UnitDefinition
 from ..nodes.core import Identifier
 from ..nodes.unit import Expression, Neg, One, Power, Product, Scalar, Sum, UnitNode
 from ..typechecker.linking import Link
+from .invert import _to_x, invert
 from .simplifier import Simplifier, cancel, cancel_
+from .utils import contains_sum, is_linear
 
 SameType = TypeVar("SameType")
 
@@ -35,7 +35,7 @@ class Preprocessor:
         self.simplify = self.simplifier.simplify
 
         self.units: dict[str, Expression] = dict(units)
-        self.conversions: dict[str, Expression] = {}
+        self.inverted: dict[str, Expression] = {}
         self.bases: dict[str, Expression] = {}
         self.logarithmic: set[str] = set()
 
@@ -56,7 +56,7 @@ class Preprocessor:
         else:
             expr = unit.value
             expr = self.resolve(expr, Identifier("_"))  # type: ignore
-            if is_linear(expr.value, True):
+            if is_linear(expr.value, True) and not contains_sum(expr.value):
                 val = expr.value
                 if isinstance(val, Product):
                     val.values.insert(0, Identifier("_"))
@@ -75,7 +75,7 @@ class Preprocessor:
             inverted = Expression(Identifier("x"))
 
         self.units[name] = expr
-        self.conversions[name] = inverted
+        self.inverted[name] = inverted
         self.env.units[name] = expr
 
         is_sum = contains_sum(expr)

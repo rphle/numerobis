@@ -133,7 +133,9 @@ static Value *number_binop(Value *a, Value *b, binop_i64 iop, binop_f64 fop,
   UnitNode *unit = NULL;
   bool dimless = ub->kind == UNIT_ONE && ua->kind == UNIT_ONE;
 
+  bool _x_defined = false;
   bool _y_defined = false;
+  gdouble x = 0;
   gdouble y = 0;
 
   switch (kind) {
@@ -152,7 +154,12 @@ static Value *number_binop(Value *a, Value *b, binop_i64 iop, binop_f64 fop,
     break;
   case OP_DADD:
   case OP_DSUB:
+    x = eval_number(na, ua);
     y = eval_number(nb, ua);
+    x = fop(x, y);
+    y = 0;
+    x = eval_unit(ua, x, EVAL_NORMAL);
+    _x_defined = true;
     _y_defined = true;
     unit = ua;
     break;
@@ -162,14 +169,17 @@ static Value *number_binop(Value *a, Value *b, binop_i64 iop, binop_f64 fop,
   }
 
   if (na->kind == NUM_DOUBLE || nb->kind == NUM_DOUBLE) {
-    gdouble x = (na->kind == NUM_DOUBLE) ? na->f64 : (gdouble)na->i64;
+    if (!_x_defined)
+      x = (na->kind == NUM_DOUBLE) ? na->f64 : (gdouble)na->i64;
 
     if (!_y_defined)
       y = (nb->kind == NUM_DOUBLE) ? nb->f64 : (gdouble)nb->i64;
 
     return float__init__(fop(x, y), unit);
   }
-  return int__init__(iop(na->i64, _y_defined ? (gint64)y : nb->i64), unit);
+  return int__init__(
+      iop(_x_defined ? (gint64)x : na->i64, _y_defined ? (gint64)y : nb->i64),
+      unit);
 }
 
 static inline gint64 i_add(gint64 a, gint64 b) { return a + b; }
@@ -240,8 +250,8 @@ Value *number__convert__(Value *self, UnitNode *target) {
   gdouble res;
   int target_type = n->kind == NUM_INT64 ? 0 : 1;
   if (target->kind == UNIT_ONE) {
-    gdouble base = eval_unit(n->unit, value, true);
-    gdouble target = eval_unit(n->unit, value, false);
+    gdouble base = eval_unit(n->unit, value, EVAL_BASE);
+    gdouble target = eval_unit(n->unit, value, EVAL_INVERTED);
 
     res = target / base;
     value = is_unit_logarithmic(n->unit) ? res : value * res;
