@@ -1,0 +1,22 @@
+# How much energy is required to boil a gallon of water at room temperature? [Adapted]
+
+from si import @(kg, L, g, K, kJ, kW, h, J)
+from imperial import @gallon
+
+unit °F = (5/9) * (_ K + 459.67);
+
+unit cal = 4.184 J;
+unit kWh = kW * h;
+
+density_water = 1 (kg / L)  # at sea level
+mass_water = 1 gallon * density_water
+
+c_water = 1 (cal / (g * K))
+
+ΔT = (212°F -> K) - (70°F -> K)
+
+heat = mass_water * c_water * ΔT
+
+echo("Energy to boil 1 gallon of room-temperature water:")
+echo(heat -> kJ)
+echo(heat -> kWh)

@@ -45,6 +45,7 @@ unit dBm = 10^(_ mW / 10mW)
 
 echo(2 * 60dBm)
 echo(23W)
+echo(60dBm |+| 60dBm)
 
 # ---
 dimension Temperature
