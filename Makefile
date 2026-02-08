@@ -14,8 +14,11 @@ build:
 
 test:
 	@echo "Running tests..."
-	python3 run.py --verbose
+	python3 run.py --verbose $(filter-out $@,$(MAKECMDGOALS))
 
 help: # Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?#' $(MAKEFILE_LIST) | \
 		awk 'BEGIN {FS = ":.*?# "}; {printf "  make %-12s %s\n", $$1, $$2}'
+
+%:
+	@:
