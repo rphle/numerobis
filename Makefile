@@ -14,7 +14,7 @@ build:
 
 test:
 	@echo "Running tests..."
-	python3 run.py --verbose $(filter-out $@,$(MAKECMDGOALS))
+	python3 run.py $(filter-out $@,$(MAKECMDGOALS))
 
 help: # Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?#' $(MAKEFILE_LIST) | \

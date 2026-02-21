@@ -60,7 +60,7 @@ def parse_args():
         help="Show output for all tests (passed and failed)",
     )
 
-    code_group = parser.add_mutually_exclusive_group()
+    code_group = parser.add_argument_group()
     code_group.add_argument(
         "-p",
         "--print",
@@ -91,6 +91,8 @@ def parse_args():
 
 def main():
     args = parse_args()
+    if not (args.verbose or args.full):
+        args.verbose = True
 
     build_lib()
 
@@ -162,7 +164,9 @@ def main():
                         mod.imports = header.imports[:-1] + mod.imports
                         times["Compilation"] = timeit(mod.compile)
                         times["Linking"] = timeit(
-                            lambda: mod.link(print_=args.print, format=args.format)
+                            lambda: mod.link(
+                                print_=args.print or args.format, format=args.format
+                            )
                         )
                         times["GCC"] = timeit(lambda: mod.gcc(cache=True, cc=args.cc))
                         times["Execution"] = timeit(mod.run)
