@@ -15,16 +15,16 @@ unit mile = 1600 m
 unit s: Time
 unit h: Time = 3600 s
 
-echo(42)
-echo(5(2*km))
-echo(2(1000*m))
-echo(3m^3)
-echo(100 km/h + 0.05km/s)
-echo(5m*s)
+echo(42)            # 42
+echo(5(2*km))       # 5 2*km
+echo(2(1000*m))     # 2 1000*m
+echo(3m^3)          # 3 m^3
+echo(100 km/h + 0.05km/s) # 280 km/h
+echo(5m*s) # m*s
 
-echo(2km + 500m)
-echo(10000ft -> m)
-echo(55 mile/h -> m/s)
+echo(2km + 500m)    # 2.5 km
+echo(10000ft -> m)  # 3000 m
+echo(55 mile/h -> m/s) # 24.4444 m/s
 
 x: Mass/Length^3 = 1 (kg/m^3)
 

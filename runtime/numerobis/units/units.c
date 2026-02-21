@@ -1,4 +1,5 @@
 #include "units.h"
+#include "simplifier.h"
 #include <glib.h>
 #include <stdarg.h>
 #include <stdint.h>
@@ -91,6 +92,8 @@ static void print_unit_rec(UnitNode *node, GString *out, bool in_denominator) {
     return;
 
   switch (node->kind) {
+  case UNIT_ONE:
+    break;
   case UNIT_SCALAR: {
     double val = node->as.scalar.value;
     if (val == (long)val)
@@ -237,6 +240,18 @@ static void print_unit_rec(UnitNode *node, GString *out, bool in_denominator) {
     UnitNode *base = node->as.power.base;
     UnitNode *exp = node->as.power.exponent;
 
+    // don't render the exponent at all when it is the scalar 1 or ONE
+    if ((exp->kind == UNIT_SCALAR && exp->as.scalar.value == 1.0) ||
+        exp->kind == UNIT_ONE) {
+      bool base_parens = is_compound(base);
+      if (base_parens)
+        g_string_append(out, "(");
+      print_unit_rec(base, out, false);
+      if (base_parens)
+        g_string_append(out, ")");
+      break;
+    }
+
     bool base_parens = is_compound(base);
     bool exp_parens =
         (exp->kind != UNIT_SCALAR && exp->kind != UNIT_IDENTIFIER);
@@ -256,14 +271,12 @@ static void print_unit_rec(UnitNode *node, GString *out, bool in_denominator) {
       g_string_append(out, ")");
     break;
   }
-
-  case UNIT_ONE:
-    break;
   }
 }
 
 GString *print_unit(UnitNode *node) {
+  UnitNode *simplified = unit_simplify(node);
   GString *out = g_string_new("");
-  print_unit_rec(node, out, false);
+  print_unit_rec(simplified, out, false);
   return out;
 }

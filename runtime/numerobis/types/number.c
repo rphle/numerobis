@@ -150,7 +150,7 @@ static Value *number_binop(Value *a, Value *b, binop_i64 iop, binop_f64 fop,
     unit = !dimless ? U_PROD(ua, U_PWR(ub, U_NUM(-1))) : U_ONE;
     break;
   case OP_POW:
-    unit = U_PWR(ua, ub);
+    unit = ub == U_ONE ? ua : U_PWR(ua, ub);
     break;
   case OP_DADD:
   case OP_DSUB:

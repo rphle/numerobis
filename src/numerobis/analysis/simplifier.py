@@ -20,11 +20,13 @@ from ..utils import camel2snake_pattern
 
 
 def cancel(node: UnitNode | One) -> UnitNode | One:
+    """Remove neutral/empty subnodes; return One() if fully canceled."""
     canceled = cancel_(node)
     return canceled if canceled is not None else One()
 
 
 def cancel_(node: UnitNode | One) -> UnitNode | None:
+    """Recursively strip neutral elements; return None if node vanishes."""
     match node:
         case Expression():
             return Expression(v) if (v := cancel(node.value)) else None
@@ -46,15 +48,18 @@ def cancel_(node: UnitNode | One) -> UnitNode | None:
 
 class Simplifier:
     def __init__(self, module: ModuleMeta):
+        """Initialize simplifier with module-bound error handler."""
         self.errors = Exceptions(module)
 
     def simplify(self, node: UnitNode, do_cancel: bool = True) -> Expression | One:
+        """Fully simplify a node and optionally cancel neutral elements."""
         res = self._simplify(node)
         if do_cancel:
             res = cancel(res)
         return res if isinstance(res, (Expression, One)) else Expression(value=res)
 
     def _simplify(self, node: UnitNode):
+        """Dispatch to type-specific simplify handler if available."""
         method_name = f"{camel2snake_pattern.sub('_', type(node).__name__).lower()}_"
         handler = getattr(self, method_name, None)
 
@@ -63,6 +68,7 @@ class Simplifier:
         return node
 
     def _flatten(self, values: list[UnitNode], op_type: Type[Product | Sum]):
+        """Flatten nested operations of the same type and simplify children."""
         flat = []
         for val in values:
             s_val = self._simplify(val)
@@ -75,6 +81,7 @@ class Simplifier:
     def _finalize(
         self, values: list[UnitNode], op_type: Type[Product | Sum], identity: Decimal
     ):
+        """Rebuild operation or return identity/single element if trivial."""
         if not values:
             return Scalar(identity)
         if len(values) == 1:
@@ -101,14 +108,17 @@ class Simplifier:
         return Decimal(1), node
 
     def call_(self, node: Call):
+        """Simplify call arguments."""
         return replace(
             node, args=[replace(a, value=self._simplify(a.value)) for a in node.args]
         )
 
     def expression_(self, node: Expression):
+        """Simplify wrapped expression."""
         return self._simplify(node.value)
 
     def neg_(self, node: Neg):
+        """Simplify negation and fold scalar/identity cases."""
         val = self._simplify(node.value)
         if isinstance(val, (One, Scalar)):
             v = Decimal(1) if isinstance(val, One) else val.value
@@ -116,6 +126,7 @@ class Simplifier:
         return replace(node, value=val)
 
     def power_(self, node: Power):
+        """Simplify exponentiation with constant folding and power rules."""
         base = self._simplify(node.base)
         exp = self._simplify(node.exponent)
 
@@ -143,7 +154,7 @@ class Simplifier:
         return replace(node, base=base, exponent=exp)
 
     def product_(self, node: Product):
-        """Simplifies products: x * x * 2 -> 2 * x^2"""
+        """Simplify product: combine scalars and merge equal bases."""
         terms = self._flatten(node.values, Product)
 
         scalar_acc = Decimal(1)
@@ -177,7 +188,7 @@ class Simplifier:
         return self._finalize(new_values, Product, Decimal(1))
 
     def sum_(self, node: Sum):
-        """Simplifies sums with factorization: 1x + 2x -> 3x. Enforces E543."""
+        """Simplify sum: combine like terms and enforce dimension consistency."""
         terms = self._flatten(node.values, Sum)
 
         scalar_acc = Decimal(0)
