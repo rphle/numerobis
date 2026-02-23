@@ -8,7 +8,8 @@
 #include <stdlib.h>
 
 GHashTable *NUMEROBIS_MODULE_REGISTRY = NULL;
-extern char *NUMEROBIS__FILE__;
+extern int NUMEROBIS__FILE__;
+extern char *NUMEROBIS__FILES__[];
 
 static size_t _strlen(const gchar *s) { return g_utf8_strlen(s, -1); }
 
@@ -44,8 +45,8 @@ static Location *_location_split(const Location *self, size_t *out_len) {
 }
 
 static void print_preview(const Location *span) {
-  NumerobisProgram *program =
-      g_hash_table_lookup(NUMEROBIS_MODULE_REGISTRY, NUMEROBIS__FILE__);
+  NumerobisProgram *program = g_hash_table_lookup(
+      NUMEROBIS_MODULE_REGISTRY, NUMEROBIS__FILES__[NUMEROBIS__FILE__]);
   size_t n = 0;
   Location *lines = _location_split(span, &n);
   g_printerr("\n");
@@ -121,9 +122,9 @@ void u_throw(const int code, const Location *span) {
 
   setlocale(LC_ALL, ""); // set locale for utf-8 output
 
-  g_printerr(ANSI_RESET "" ANSI_RED_BOLD "%s" ANSI_RESET " " ANSI_DIM
-                        "at %s:%d:%d\n",
-             msg->type, NUMEROBIS__FILE__, span->line, span->col);
+  g_printerr(
+      ANSI_RESET "" ANSI_RED_BOLD "%s" ANSI_RESET " " ANSI_DIM "at %s:%d:%d\n",
+      msg->type, NUMEROBIS__FILES__[NUMEROBIS__FILE__], span->line, span->col);
   g_printerr("  [E%d] " ANSI_RESET "%s\n", code, msg->message);
 
   print_preview(span);

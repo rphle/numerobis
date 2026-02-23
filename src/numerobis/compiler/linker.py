@@ -11,6 +11,7 @@ from ..classes import CompiledModule, CompiledUnits
 from ..exceptions.exceptions import Exceptions
 from . import gcc as gnucc
 from .tstr import tstr
+from .utils import module_uid
 
 
 class Linker:
@@ -20,7 +21,7 @@ class Linker:
         self.errors = Exceptions(module=modules[str(self.main)].meta)
 
         self.include = set()
-        self.order: list[str] = []
+        self.order: list[list[str]] = [[], []]
         self.linked: str
 
         self.root = next(
@@ -33,7 +34,7 @@ class Linker:
         )
 
     def process_module(self, module: CompiledModule):
-        if str(module.meta.path) in self.order:
+        if str(module.meta.path) in self.order[0]:
             return
 
         self.include.update(module.include)
@@ -41,7 +42,8 @@ class Linker:
         for dependency in module.imports:
             self.process_module(self.modules[dependency])
 
-        self.order.append(str(module.meta.path))
+        self.order[0].append(str(module.meta.path))
+        self.order[1].append(module_uid(module.meta.path))
 
     def link(self, print_: bool = False, format: bool = False):
         self.process_module(self.modules[str(self.main)])
@@ -49,6 +51,14 @@ class Linker:
         code = tstr("""$include
 
                     $typedefs
+
+                    enum NumerobisFile {
+                        $filehashes
+                    };
+
+                    const char* NUMEROBIS__FILES__[] = {
+                        $filenames
+                    };
 
                     extern void u_init_module_registry(void);
 
@@ -62,20 +72,24 @@ class Linker:
                     }""")
 
         code["include"] = "\n".join([f"#include <{lib}.h>" for lib in self.include])
+        code["filehashes"] = ", ".join([f"__FILE__{uid}" for uid in self.order[1]])
+        code["filenames"] = ", ".join(
+            [f'"{self._path(file)}"' for file in self.order[0]]
+        )
 
         output = []
         functions = []
         typedefs = []
-        for file in self.order:
+        for file, uid in zip(*self.order):
             module = self.modules[file]
             module.meta.path = Path(self._path(file))
             output.append(
-                f'/* {self._path(file)} */\nNUMEROBIS__FILE__ = "{self._path(file)}";\n{module.code}\n'
+                f"/* {self._path(file)} */\nNUMEROBIS__FILE__ = __FILE__{uid};\n{module.code}\n"
             )
             functions.extend(module.functions)
             typedefs.extend(module.typedefs)
 
-        self.order = [self._path(file) for file in self.order]
+        self.order[0] = [self._path(file) for file in self.order[0]]
 
         code["output"] = "\n\n".join(output)
         code["functions"] = "\n\n".join(functions)
@@ -107,8 +121,7 @@ class Linker:
     def _path(self, p: str | Path) -> str:
         """Get path relative to main module's directory"""
         try:
-            rel = Path(p).resolve().relative_to(self.root)
-            return str(Path(self.root.name) / rel)
+            return str(Path(p).resolve().relative_to(self.root.resolve()))
         except ValueError:
             return str(p)
 

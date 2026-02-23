@@ -10,7 +10,8 @@
 
 #include <glib.h>
 
-extern char *NUMEROBIS__FILE__;
+extern int NUMEROBIS__FILE__;
+extern const char *NUMEROBIS__FILES__[];
 
 void numerobis_runtime_init(void);
 

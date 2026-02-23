@@ -2,7 +2,7 @@
 #include "builtins/builtins.h"
 #include "extern.h"
 
-char *NUMEROBIS__FILE__ = NULL;
+int NUMEROBIS__FILE__ = 0;
 
 __attribute__((constructor)) static void numerobis_runtime_ctor(void) {
   GC_INIT();
