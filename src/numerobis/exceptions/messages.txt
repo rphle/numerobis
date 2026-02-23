@@ -52,6 +52,11 @@ invalid assignment target
 the 'macro' keyword is only valid for extern functions
 help: extern functions must be declared directly
 
+[E023 / SyntaxError]
+break statement not within loop
+
+[E024 / SyntaxError]
+continue statement not within loop
 
 
 

@@ -17,8 +17,10 @@ from ..nodes.ast import (
     Block,
     Boolean,
     BoolOp,
+    Break,
     Call,
     Compare,
+    Continue,
     Conversion,
     DimensionDefinition,
     ExternDeclaration,
@@ -179,7 +181,7 @@ class Typechecker:
         for i, statement in enumerate(node.body):
             checked = self.check(statement, env=env)
 
-            if checked.meta("#return"):
+            if checked and checked.meta("#return"):
                 returns = check_return(returns, checked)
             elif i == len(node.body) - 1:
                 returns = check_return(returns, NoneType())
@@ -199,6 +201,11 @@ class Typechecker:
             self.errors.binOpMismatch(node, Mismatch("type", left, right))
 
         return BoolType()
+
+    def break_(self, node: Break, env: Env):
+        if not env.meta.get("#loop"):
+            self.errors.throw(23, loc=node.loc)
+        return NoneType()
 
     def call_(self, node: Call, env: Env, link: int, dummy: bool = False):
         try:
@@ -404,6 +411,11 @@ class Typechecker:
 
         return BoolType()
 
+    def continue_(self, node: Continue, env: Env):
+        if not env.meta.get("#loop"):
+            self.errors.throw(24, loc=node.loc)
+        return NoneType()
+
     def conversion_(self, node: Conversion, env: Env):
         value = self.check(node.value, env=env)
 
@@ -486,6 +498,7 @@ class Typechecker:
         new_env = env.copy()
         for iterator in node.iterators:
             new_env.set("names")(self.unlink(iterator, attrs=["name"]).name, value)
+        new_env.meta["#loop"] = True
         self.check(node.body, env=new_env)
 
         self.namespaces.nodes[link].meta["value"] = value
@@ -572,6 +585,7 @@ class Typechecker:
                 self.unlink(node.params[i].name).name, param, address=param_addrs[i]
             )
         new_env.meta["#function"] = signature
+        new_env.meta["#loop"] = False
 
         try:
             body = self.check(node.body, env=new_env)
@@ -924,7 +938,10 @@ class Typechecker:
         if "__bool__" not in typetable[cond.name()].fields:
             self.errors.throw(520, type=cond.name(), loc=node.loc)
 
-        self.check(node.body, env=env)
+        new_env = env.copy()
+        new_env.meta["#loop"] = True
+        self.check(node.body, env=new_env)
+
         return NoneType()
 
     def check(self, link, env: Env) -> T:

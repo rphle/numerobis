@@ -152,3 +152,12 @@ map_func(echo_emoji, [1.2, 2.7, 3.4])
 echo("")
 greet!(name: Str, greeting: Str = "Hello") = {echo(greeting + ", " + name + "!")}
 greet("Alice")
+
+# ---
+i = 0
+while true do {
+    i = i + 1
+    if i >= 11 then {break}
+    if i % 2 == 0 then {continue}
+    echo(i)
+}

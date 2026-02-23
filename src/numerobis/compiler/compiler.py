@@ -18,9 +18,11 @@ from ..nodes.ast import (
     Block,
     Boolean,
     BoolOp,
+    Break,
     Call,
     CallArg,
     Compare,
+    Continue,
     Conversion,
     DimensionDefinition,
     ExternDeclaration,
@@ -122,6 +124,9 @@ class Compiler:
 
         return out
 
+    def break_(self, node: Break, link: int) -> tstr:
+        return tstr("break;")
+
     def call_(self, node: Call, link: int) -> tstr:
         out = tstr("$callee($args)")
 
@@ -180,6 +185,9 @@ class Compiler:
                 comparisons.append(f"__cbool__({out})")
 
         return tstr(f"bool__init__({' && '.join(comparisons)})")
+
+    def continue_(self, node: Continue, link: int) -> tstr:
+        return tstr("continue;")
 
     def conversion_(self, node: Conversion, link: int) -> tstr:
         if not isinstance(node.target, Type):
