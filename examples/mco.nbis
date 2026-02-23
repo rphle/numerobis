@@ -1,0 +1,19 @@
+from si import @(kg, m, s, N)
+
+unit N = kg*m/s^2
+unit lbf = 4.4482216152605 N
+
+expected_impulse = 100 N * 1 s
+
+echo("Expected impulse (SI):")
+echo(expected_impulse)
+
+actual_impulse = 100 lbf * 1 s
+
+echo("Actual impulse (imperial):")
+echo(actual_impulse)
+
+correction = actual_impulse - expected_impulse
+
+echo("Correction:")
+echo(correction)
