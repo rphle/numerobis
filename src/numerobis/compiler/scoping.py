@@ -1,3 +1,5 @@
+"""Variable scoping and closure analysis for function definitions."""
+
 import dataclasses
 from typing import Any
 

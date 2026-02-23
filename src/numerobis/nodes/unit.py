@@ -1,3 +1,8 @@
+"""Unit and dimension expression nodes for dimensional analysis.
+
+Represents algebraic expressions of units and dimensions as trees.
+"""
+
 from collections import Counter
 from dataclasses import dataclass, field
 from decimal import Decimal

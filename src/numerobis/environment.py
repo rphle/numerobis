@@ -1,3 +1,5 @@
+"""Namespace and environment management for symbol resolution and scoping."""
+
 import uuid
 from difflib import get_close_matches
 from typing import Any, Callable, Literal, Optional, overload

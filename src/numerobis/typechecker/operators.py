@@ -1,3 +1,5 @@
+"""Operator type signatures and binary operation type checking rules."""
+
 from ..nodes.unit import One
 from .types import (
     AnyType,

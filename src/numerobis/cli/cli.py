@@ -1,3 +1,5 @@
+"""Command-line interface for Numerobis compiler."""
+
 import platform
 import time
 from pathlib import Path

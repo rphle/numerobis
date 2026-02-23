@@ -1,3 +1,8 @@
+"""Type checking and semantic analysis for Numerobis programs.
+
+Performs type inference, dimensional consistency checking, and program validation.
+"""
+
 import uuid
 from decimal import Decimal
 

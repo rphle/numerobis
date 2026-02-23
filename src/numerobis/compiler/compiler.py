@@ -1,3 +1,8 @@
+"""Code generation from typechecked AST to C code.
+
+Transforms intermediate representation into compilable C source code.
+"""
+
 import dataclasses
 import hashlib
 from typing import Any, TypeVar

@@ -1,3 +1,9 @@
+"""Build system for compiling runtime C library and generating message headers.
+
+Compiles C sources into object files, creates static library, and generates
+C headers from message definitions.
+"""
+
 import os
 import re
 import subprocess

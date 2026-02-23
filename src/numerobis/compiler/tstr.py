@@ -1,3 +1,5 @@
+"""Template string formatting for code generation with named placeholders."""
+
 import re
 from typing import Any, Optional
 

@@ -1,3 +1,5 @@
+"""Unit expression inversion and algebraic simplification for dimensional analysis."""
+
 from decimal import Decimal
 
 from ..nodes.core import Identifier

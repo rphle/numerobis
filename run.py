@@ -1,3 +1,9 @@
+"""Test runner.
+
+Parses .nbis test files with inline test annotations and executes them,
+reporting pass/fail status and performance metrics.
+"""
+
 import argparse
 import dataclasses
 import itertools

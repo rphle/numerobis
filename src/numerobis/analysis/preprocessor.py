@@ -1,3 +1,5 @@
+"""Unit definition preprocessing and constant expansion for compilation."""
+
 from dataclasses import replace
 from decimal import Decimal
 from typing import Optional, TypeVar

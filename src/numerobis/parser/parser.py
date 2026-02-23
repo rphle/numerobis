@@ -1,3 +1,5 @@
+"""Syntax analysis and AST generation from token streams."""
+
 import dataclasses
 import math
 

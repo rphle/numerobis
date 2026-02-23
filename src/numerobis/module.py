@@ -1,3 +1,5 @@
+"""Module loading, parsing, and compilation pipeline."""
+
 import subprocess
 import sys
 from functools import lru_cache

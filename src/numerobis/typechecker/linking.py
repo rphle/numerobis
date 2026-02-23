@@ -1,3 +1,5 @@
+"""Transforms AST nodes into linked IR suitable for code generation."""
+
 import dataclasses
 from typing import Optional, TypeVar
 

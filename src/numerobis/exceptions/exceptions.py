@@ -1,3 +1,5 @@
+"""Exception handling and formatted error reporting."""
+
 import dataclasses
 import sys
 import textwrap

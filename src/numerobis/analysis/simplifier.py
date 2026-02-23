@@ -1,3 +1,5 @@
+"""Unit expression simplification and algebraic reduction."""
+
 from collections import defaultdict
 from dataclasses import replace
 from decimal import Decimal

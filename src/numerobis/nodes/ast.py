@@ -1,3 +1,5 @@
+"""AST node definitions for language constructs."""
+
 from dataclasses import dataclass
 from typing import Optional
 

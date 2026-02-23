@@ -1,3 +1,5 @@
+"""Template-based unit and dimension expression parsing."""
+
 from itertools import islice
 from typing import Optional
 

@@ -1,3 +1,5 @@
+"""Type system definitions and type variable environment management."""
+
 from dataclasses import dataclass, field, replace
 from typing import Any, Literal, Optional, Union, overload
 

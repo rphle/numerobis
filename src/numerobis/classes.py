@@ -1,3 +1,5 @@
+"""Core data structures for module metadata, headers, and compiled output."""
+
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional

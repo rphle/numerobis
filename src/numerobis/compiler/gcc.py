@@ -1,3 +1,5 @@
+"""GCC compiler integration for generating native executables from C code."""
+
 import os
 import subprocess
 import tempfile

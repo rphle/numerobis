@@ -1,3 +1,5 @@
+"""Core AST node base classes, tokens, and location tracking."""
+
 import random
 from dataclasses import dataclass, field, fields
 

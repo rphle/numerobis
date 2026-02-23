@@ -1,3 +1,5 @@
+"""Dimensional consistency checking and unit validation for expressions."""
+
 import re
 from dataclasses import replace
 from typing import Literal, Optional
