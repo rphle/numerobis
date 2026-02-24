@@ -150,7 +150,7 @@ class Linker:
                 modules=[
                     m.meta
                     for m in self.modules.values()
-                    if str(m.meta.path) in self.order
+                    if str(m.meta.path) in self.order[0]
                 ],
                 units=units,
                 output=output_path,
