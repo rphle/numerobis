@@ -45,4 +45,4 @@ nbis = "numerobis.cli:cli"
 where = ["src"]
 
 [tool.setuptools.package-data]
-numerobis = ["runtime/libruntime.a", "stdlib/*.nbis"]
+numerobis = ["runtime/libruntime.a", "stdlib/*.nbis", "exceptions/messages.txt"]

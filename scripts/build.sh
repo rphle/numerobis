@@ -1,6 +1,8 @@
 #!/bin/bash
 set -euo pipefail
 
+pip install -e .
+
 python3 runtime/build_lib.py
 
 pip install -e .

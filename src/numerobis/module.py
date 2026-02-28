@@ -144,9 +144,7 @@ class Module:
                                     else "",
                                     loc=name.loc,
                                 )
-                    self.namespaces.write(
-                        "imports", node.module.name, module.namespaces
-                    )
+                self.namespaces.write("imports", node.module.name, module.namespaces)
 
         if self.builtins:
             self.imports.append("stdlib/builtins.nbis")

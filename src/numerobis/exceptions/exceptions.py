@@ -3,6 +3,7 @@
 import dataclasses
 import sys
 import textwrap
+from importlib import resources
 from typing import Any, Literal
 
 import rich.console
@@ -119,7 +120,10 @@ class Exceptions:
     def __init__(self, module: ModuleMeta, stack: list[Location] = []):
         self.module = module
         self.stack = stack
-        self.codes = msgparser.parse("src/numerobis/exceptions/messages.txt")
+        with resources.as_file(
+            resources.files("numerobis.exceptions") / "messages.txt"
+        ) as messages_path:
+            self.codes = msgparser.parse(messages_path)
 
     def unexpectedToken(self, tok: Token, help: str | None = None):
         self.throw(1, token=tok.value, loc=tok.loc, help=help)
