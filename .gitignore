@@ -11,6 +11,7 @@ output
 *.a
 *.gch
 
+src/numerobis/runtime/numerobis
 
 notes/
 test.py

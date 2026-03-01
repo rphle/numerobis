@@ -6,6 +6,7 @@ C headers from message definitions.
 
 import os
 import re
+import shutil
 import subprocess
 from pathlib import Path
 
@@ -20,7 +21,14 @@ def build_lib():
     glib_cflags, _ = _pkg("glib-2.0")
     gc_cflags, _ = _pkg("bdw-gc")
 
-    runtime_root = Path("runtime")
+    script_dir = Path(__file__).parent.resolve()
+    runtime_root = script_dir
+    dest_runtime = script_dir.parent / "src" / "numerobis" / "runtime"
+
+    if dest_runtime.exists():
+        shutil.rmtree(dest_runtime)
+    os.makedirs(dest_runtime, exist_ok=True)
+
     sources = [f for f in runtime_root.rglob("*.c") if f.name != "source.c"]
     object_files = []
 
@@ -42,13 +50,17 @@ def build_lib():
         )
         object_files.append(str(obj))
 
-    os.makedirs("src/numerobis/runtime", exist_ok=True)
-
     subprocess.run(
-        ["ar", "rcs", "src/numerobis/runtime/libruntime.a"] + object_files, check=True
+        ["ar", "rcs", str(dest_runtime / "libruntime.a")] + object_files, check=True
     )
 
-    print("Static library created at src/numerobis/runtime/libruntime.a")
+    # Mirror the .h files
+    for h_file in runtime_root.rglob("*.h"):
+        target_path = dest_runtime / h_file.relative_to(runtime_root)
+        target_path.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(h_file, target_path)
+
+    print(f"Static library and headers created at {dest_runtime}")
 
 
 def generate_messages(

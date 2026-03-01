@@ -160,21 +160,20 @@ def compile(
 
     flags = {"-O0", "-g"} | flags
 
-    with resources.as_file(
-        resources.files("numerobis.runtime") / "libruntime.a"
-    ) as runtime_path:
+    with resources.as_file(resources.files("numerobis")) as base_path:
+        runtime_path = base_path / "runtime"
         cmd = (
             (["ccache", "mold", "-run"] if cache else [])
             + [cc]
             + ["-pipe"]
             + [tmp.name, tmp_source.name]
             + ["-o", str(output)]
-            + ["-Iruntime"]
+            + [f"-I{runtime_path}"]
             + glib_cflags
             + gc_cflags
             + [
                 "-Wl,--whole-archive",
-                str(runtime_path),
+                str(runtime_path / "libruntime.a"),
                 "-Wl,--no-whole-archive",
             ]
             + glib_libs
