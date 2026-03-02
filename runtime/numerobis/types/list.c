@@ -55,7 +55,7 @@ static bool list__cbool__(Value *self) { return _list_len(self->list) > 0; }
 
 static Value *list__getitem__(Value *_self, Value *_index) {
   GArray *self = _self->list;
-  ssize_t index = (ssize_t)_index->number->i64;
+  ssize_t index = (ssize_t)_index->number.i64;
 
   ssize_t len = (ssize_t)_list_len(self);
   if (len == 0)
@@ -73,12 +73,12 @@ static Value *list__getslice__(Value *_self, Value *_start, Value *_stop,
   GArray *self = _self->list;
   ssize_t len = (ssize_t)_list_len(self);
 
-  ssize_t start = (_start->type == VALUE_NUMBER) ? (ssize_t)_start->number->i64
-                                                 : SLICE_NONE;
+  ssize_t start =
+      (_start->type == VALUE_NUMBER) ? (ssize_t)_start->number.i64 : SLICE_NONE;
   ssize_t end =
-      (_stop->type == VALUE_NUMBER) ? (ssize_t)_stop->number->i64 : SLICE_NONE;
+      (_stop->type == VALUE_NUMBER) ? (ssize_t)_stop->number.i64 : SLICE_NONE;
   ssize_t step =
-      (_step->type == VALUE_NUMBER) ? (ssize_t)_step->number->i64 : SLICE_NONE;
+      (_step->type == VALUE_NUMBER) ? (ssize_t)_step->number.i64 : SLICE_NONE;
 
   GArray *result = g_array_new(FALSE, FALSE, sizeof(Value *));
   if (len == 0 || step == 0)
@@ -118,8 +118,8 @@ static Value *list__add__(Value *_self, Value *_other) {
 
 static Value *list__mul__(Value *_self, Value *_n) {
   GArray *self = _self->list;
-  g_assert(_n->type == VALUE_NUMBER && _n->number->kind == NUM_INT64);
-  ssize_t n = (ssize_t)_n->number->i64;
+  g_assert(_n->type == VALUE_NUMBER && _n->number.kind == NUM_INT64);
+  ssize_t n = (ssize_t)_n->number.i64;
 
   size_t len = _list_len(self);
   if (n <= 0 || len == 0)
@@ -168,7 +168,7 @@ Value *list_insert(Value *_self, Value *_index, Value *val) {
 
   GArray *self = _self->list;
 
-  gint64 idx_raw = (_index->type == VALUE_NUMBER) ? _index->number->i64 : 0;
+  gint64 idx_raw = (_index->type == VALUE_NUMBER) ? _index->number.i64 : 0;
   ssize_t index = (ssize_t)idx_raw;
   ssize_t len = (ssize_t)self->len;
 
@@ -190,7 +190,7 @@ Value *list__setitem__(Value *_self, Value *_index, Value *val) {
 
   GArray *self = _self->list;
   g_assert(_index->type == VALUE_NUMBER);
-  ssize_t index = (ssize_t)_index->number->i64;
+  ssize_t index = (ssize_t)_index->number.i64;
   ssize_t len = (ssize_t)self->len;
 
   ssize_t nidx = normalize_index(index, len);
@@ -207,7 +207,7 @@ Value *list__delitem__(Value *_self, Value *_index) {
 
   GArray *self = _self->list;
   g_assert(_index->type == VALUE_NUMBER);
-  ssize_t index = (ssize_t)_index->number->i64;
+  ssize_t index = (ssize_t)_index->number.i64;
   ssize_t len = (ssize_t)self->len;
 
   ssize_t nidx = normalize_index(index, len);
@@ -230,7 +230,7 @@ Value *list_pop(Value *_self, Value *_index) {
     idx = len - 1;
   } else {
     g_assert(_index->type == VALUE_NUMBER);
-    idx = (ssize_t)_index->number->i64;
+    idx = (ssize_t)_index->number.i64;
   }
 
   ssize_t nidx = normalize_index(idx, len);

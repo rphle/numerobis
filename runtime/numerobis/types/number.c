@@ -12,65 +12,56 @@ typedef gdouble (*binop_f64)(gdouble, gdouble);
 
 static const ValueMethods _number_methods;
 
-static inline Value *_create_value(Number *n) {
+Value *int__init__(gint64 x, UnitNode *unit) {
   Value *v = g_new(Value, 1);
   v->type = VALUE_NUMBER;
-  v->number = n;
   v->methods = &_number_methods;
+  v->number.kind = NUM_INT64;
+  v->number.i64 = x;
+  v->number.unit = unit;
   return v;
 }
 
-Value *int__init__(gint64 x, UnitNode *unit) {
-  Number *n = g_new(Number, 1);
-  n->kind = NUM_INT64;
-  n->i64 = x;
-  n->unit = unit;
-  return _create_value(n);
-}
-
 Value *float__init__(gdouble x, UnitNode *unit) {
-  Number *n = g_new(Number, 1);
-  n->kind = NUM_DOUBLE;
-  n->f64 = x;
-  n->unit = unit;
-  return _create_value(n);
+  Value *v = g_new(Value, 1);
+  v->type = VALUE_NUMBER;
+  v->methods = &_number_methods;
+  v->number.kind = NUM_DOUBLE;
+  v->number.f64 = x;
+  v->number.unit = unit;
+  return v;
 }
 
 static Value *number__bool__(Value *self) {
   bool result = false;
-  switch (self->number->kind) {
+  switch (self->number.kind) {
   case NUM_INT64:
-    result = self->number->i64 != 0;
+    result = self->number.i64 != 0;
     break;
   case NUM_DOUBLE:
-    result = self->number->f64 != 0.0;
+    result = self->number.f64 != 0.0;
     break;
   }
   return bool__init__(result);
 }
 
 static bool number__cbool__(Value *self) {
-  switch (self->number->kind) {
+  switch (self->number.kind) {
   case NUM_INT64:
-    return self->number->i64 != 0;
+    return self->number.i64 != 0;
     break;
   case NUM_DOUBLE:
-    return self->number->f64 != 0.0;
+    return self->number.f64 != 0.0;
     break;
   }
 }
 
 Value *number__neg__(Value *self) {
-  Number *n = g_new(Number, 1);
-  n->kind = self->number->kind;
-
-  if (n->kind == NUM_INT64) {
-    n->i64 = -(self->number->i64);
+  if (self->number.kind == NUM_INT64) {
+    return int__init__(-(self->number.i64), self->number.unit);
   } else {
-    n->f64 = -(self->number->f64);
+    return float__init__(-(self->number.f64), self->number.unit);
   }
-
-  return _create_value(n);
 }
 
 // Comparisons
@@ -99,19 +90,19 @@ static int number_cmp(const Number *a, const Number *b) {
 }
 
 static inline Value *number__lt__(Value *a, Value *b) {
-  return bool__init__(number_cmp(a->number, b->number) < 0);
+  return bool__init__(number_cmp(&a->number, &b->number) < 0);
 }
 static inline Value *number__le__(Value *a, Value *b) {
-  return bool__init__(number_cmp(a->number, b->number) <= 0);
+  return bool__init__(number_cmp(&a->number, &b->number) <= 0);
 }
 static inline Value *number__gt__(Value *a, Value *b) {
-  return bool__init__(number_cmp(a->number, b->number) > 0);
+  return bool__init__(number_cmp(&a->number, &b->number) > 0);
 }
 static inline Value *number__ge__(Value *a, Value *b) {
-  return bool__init__(number_cmp(a->number, b->number) >= 0);
+  return bool__init__(number_cmp(&a->number, &b->number) >= 0);
 }
 static inline Value *number__eq__(Value *a, Value *b) {
-  return bool__init__(number_cmp(a->number, b->number) == 0);
+  return bool__init__(number_cmp(&a->number, &b->number) == 0);
 }
 
 // Binary operators
@@ -125,8 +116,8 @@ static inline gdouble number_as_double(const Number *n) {
 
 static Value *number_binop(Value *a, Value *b, binop_i64 iop, binop_f64 fop,
                            OpKind kind) {
-  Number *na = a->number;
-  Number *nb = b->number;
+  Number *na = &a->number;
+  Number *nb = &b->number;
 
   UnitNode *ua = na->unit;
   UnitNode *ub = nb->unit;
@@ -222,11 +213,11 @@ static inline Value *number__dsub__(Value *a, Value *b) {
 }
 
 static Value *number__str__(Value *val) {
-  return str__init__(print_number(val->number));
+  return str__init__(print_number(&val->number));
 }
 
 static Value *number__int__(Value *self) {
-  Number *n = self->number;
+  Number *n = &self->number;
   if (n->kind == NUM_INT64) {
     return self;
   } else {
@@ -235,7 +226,7 @@ static Value *number__int__(Value *self) {
 }
 
 static Value *number__float__(Value *self) {
-  Number *n = self->number;
+  Number *n = &self->number;
   if (n->kind == NUM_DOUBLE) {
     return self;
   } else {
@@ -244,7 +235,7 @@ static Value *number__float__(Value *self) {
 }
 
 Value *number__convert__(Value *self, UnitNode *target) {
-  Number *n = self->number;
+  Number *n = &self->number;
   gdouble value = n->kind == NUM_INT64 ? (gdouble)(n->i64) : n->f64;
 
   gdouble res;

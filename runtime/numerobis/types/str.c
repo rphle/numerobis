@@ -46,8 +46,8 @@ static bool str__cbool__(Value *self) { return self->str->len > 0; }
 
 static Value *str__getitem__(Value *_self, Value *_index) {
   GString *self = _self->str;
-  g_assert(_index->type == VALUE_NUMBER && _index->number->kind == NUM_INT64);
-  gint64 index = _index->number->i64;
+  g_assert(_index->type == VALUE_NUMBER && _index->number.kind == NUM_INT64);
+  gint64 index = _index->number.i64;
 
   if (!self)
     return NULL;
@@ -78,12 +78,12 @@ static Value *str__getslice__(Value *_self, Value *_start, Value *_stop,
 
   ssize_t len = (ssize_t)_str_len(self);
 
-  ssize_t start = (_start->type == VALUE_NUMBER) ? (ssize_t)_start->number->i64
-                                                 : SLICE_NONE;
+  ssize_t start =
+      (_start->type == VALUE_NUMBER) ? (ssize_t)_start->number.i64 : SLICE_NONE;
   ssize_t end =
-      (_stop->type == VALUE_NUMBER) ? (ssize_t)_stop->number->i64 : SLICE_NONE;
+      (_stop->type == VALUE_NUMBER) ? (ssize_t)_stop->number.i64 : SLICE_NONE;
   ssize_t step =
-      (_step->type == VALUE_NUMBER) ? (ssize_t)_step->number->i64 : SLICE_NONE;
+      (_step->type == VALUE_NUMBER) ? (ssize_t)_step->number.i64 : SLICE_NONE;
 
   if (len == 0 || step == 0)
     return str__init__(g_string_new(""));
@@ -109,10 +109,10 @@ static Value *str__getslice__(Value *_self, Value *_start, Value *_stop,
 
 static Value *str__setitem__(Value *_self, Value *_index, Value *_value) {
   GString *self = _self->str;
-  g_assert(_index->type == VALUE_NUMBER && _index->number->kind == NUM_INT64);
+  g_assert(_index->type == VALUE_NUMBER && _index->number.kind == NUM_INT64);
   g_assert(_value->type == VALUE_STR);
 
-  gint64 index = _index->number->i64;
+  gint64 index = _index->number.i64;
   GString *value = _value->str;
 
   if (!self || !value)
@@ -160,7 +160,7 @@ static Value *str__add__(Value *_self, Value *_other) {
 
 static Value *str__mul__(Value *_self, Value *_n) {
   GString *self = _self->str;
-  gint64 n = _n->number->i64;
+  gint64 n = _n->number.i64;
 
   if (!self || n <= 0)
     return str__init__(g_string_new(""));

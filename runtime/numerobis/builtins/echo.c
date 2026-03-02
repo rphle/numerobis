@@ -39,7 +39,7 @@ Value *echo(Value **args) {
 
   switch (val->type) {
   case VALUE_NUMBER:
-    g_print("%s", print_number(val->number)->str);
+    g_print("%s", print_number(&val->number)->str);
     break;
   case VALUE_STR:
     if (_echo_in_list)

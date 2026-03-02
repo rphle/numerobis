@@ -44,7 +44,7 @@ static Value *numerobis_builtin_floor(Value **args) {
 
   Value *val = args[1];
 
-  Number *n = val->number;
+  Number *n = &val->number;
   gint64 result;
 
   if (n->kind == NUM_INT64) {

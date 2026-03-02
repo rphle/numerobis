@@ -69,7 +69,7 @@ typedef struct Value {
   ValueType type;
   const ValueMethods *methods;
   union {
-    Number *number;
+    Number number;
     bool boolean;
     GString *str;
     GArray *list;

@@ -233,7 +233,7 @@ class Compiler:
         if "value" not in node.meta:
             return tstr("// empty loop")
 
-        loop = tstr("""for (size_t $iterator = 0; $iterator < $iterable->methods->len($iterable)->number->i64; $iterator++) {
+        loop = tstr("""for (size_t $iterator = 0; $iterator < $iterable->methods->len($iterable)->number.i64; $iterator++) {
             $iterator_defs
             $body
         }""")
@@ -334,7 +334,7 @@ class Compiler:
             else:
                 part = self.compile(value)
                 typ = "i64" if self._link2type(_value) == "int" else "f64"
-                loop[key] = f"{part}->number->{typ}"
+                loop[key] = f"{part}->number.{typ}"
 
         return loop
 
