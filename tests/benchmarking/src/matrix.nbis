@@ -1,0 +1,12 @@
+matrix_mult!(n: Int): Int = {
+    result = 0
+    for i in 0..n do {
+        for j in 0..n do {
+            for k in 0..n do {
+                result = result + (i * j * k)
+            }
+        }
+    }
+    return result
+}
+echo(matrix_mult(100))

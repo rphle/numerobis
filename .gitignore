@@ -12,6 +12,7 @@ output
 *.gch
 
 src/numerobis/runtime/numerobis
+tests/benchmarking/out
 
 notes/
 test.py
