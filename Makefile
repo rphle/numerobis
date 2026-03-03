@@ -1,6 +1,7 @@
 PYTHON := python3
 PIP := $(PYTHON) -m pip
 NPM := npm
+CC := "gcc"
 
 .PHONY: install build test docs docs-serve clean help
 
@@ -14,7 +15,7 @@ build:
 
 test:
 	@echo "Running tests..."
-	python3 run.py $(filter-out $@,$(MAKECMDGOALS))
+	python3 run.py $(filter-out $@,$(MAKECMDGOALS)) --cc "$(CC)"
 
 runtimelib:
 	@echo "Building static runtime library..."
