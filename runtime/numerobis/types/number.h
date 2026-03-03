@@ -5,10 +5,10 @@
 #include <glib.h>
 #include <stdbool.h>
 
-Value *int__init__(gint64 x, UnitNode *unit);
-Value *float__init__(gdouble x, UnitNode *unit);
+Value int__init__(gint64 x, UnitNode *unit);
+Value float__init__(gdouble x, UnitNode *unit);
 
-Value *number__convert__(Value *self, UnitNode *target);
+Value number__convert__(Value self, UnitNode *target);
 
 typedef enum {
   OP_ADD,
@@ -20,5 +20,7 @@ typedef enum {
   OP_DADD,
   OP_DSUB,
 } OpKind;
+
+void number_methods_init(void);
 
 #endif

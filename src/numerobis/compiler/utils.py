@@ -14,7 +14,7 @@ def ensuresuffix(s: str, ch: str) -> str:
 
 
 def mthd(name, *args):
-    return f"{args[0]}->methods->{name}({', '.join(args)})"
+    return f"NUMEROBIS_METHODS[{args[0]}.type]->{name}({', '.join(args)})"
 
 
 def repr_double(s):

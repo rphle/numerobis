@@ -3,6 +3,7 @@
 #include "../utils/utils.h"
 #include "../values.h"
 #include "bool.h"
+#include "methods.h"
 #include "number.h"
 #include "str.h"
 #include <glib.h>
@@ -13,11 +14,10 @@
 
 static const ValueMethods _list_methods;
 
-Value *list__init__(GArray *x) {
-  Value *v = g_new(Value, 1);
-  v->type = VALUE_LIST;
-  v->list = x;
-  v->methods = &_list_methods;
+Value list__init__(GArray *x) {
+  Value v;
+  v.type = VALUE_LIST;
+  v.list = x;
   return v;
 }
 
@@ -25,60 +25,63 @@ static inline size_t _list_len(const GArray *self) {
   return self ? self->len : 0;
 }
 
-static Value *list_len(Value *self) {
-  return int__init__((gint64)_list_len(self->list), U_ONE);
+static Value list_len(Value self) {
+  return int__init__((gint64)_list_len(self.list), U_ONE);
 }
 
-Value *list_of(Value *first, ...) {
+Value list_of(Value first, ...) {
   GArray *result = g_array_new(FALSE, FALSE, sizeof(Value *));
 
-  if (!first)
+  if (first.type == VALUE_NONE)
     return list__init__(result);
 
   va_list ap;
   va_start(ap, first);
 
-  Value *current = first;
-  while (current) {
-    g_array_append_val(result, current);
-    current = va_arg(ap, Value *);
+  Value current = first;
+  while (current.type != VALUE_NONE) {
+    Value *heap_val = g_new(Value, 1);
+    *heap_val = current;
+    g_array_append_val(result, heap_val);
+    current = va_arg(ap, Value);
   }
 
   va_end(ap);
   return list__init__(result);
 }
 
-static Value *list__bool__(Value *self) {
-  return bool__init__(_list_len(self->list) > 0);
+static Value list__bool__(Value self) {
+  return bool__init__(_list_len(self.list) > 0);
 }
-static bool list__cbool__(Value *self) { return _list_len(self->list) > 0; }
+static bool list__cbool__(Value self) { return _list_len(self.list) > 0; }
 
-static Value *list__getitem__(Value *_self, Value *_index) {
-  GArray *self = _self->list;
-  ssize_t index = (ssize_t)_index->number.i64;
+static Value list__getitem__(Value _self, Value _index) {
+  GArray *self = _self.list;
+  ssize_t index = (ssize_t)_index.number.i64;
 
   ssize_t len = (ssize_t)_list_len(self);
   if (len == 0)
-    return NULL;
+    return (Value){.type = VALUE_NONE};
 
   ssize_t nidx = normalize_index(index, len);
   if (nidx < 0 || nidx >= len)
-    return NULL;
+    return (Value){.type = VALUE_NONE};
 
-  return g_array_index(self, Value *, (guint)nidx);
+  Value *v = g_array_index(self, Value *, (guint)nidx);
+  return *v;
 }
 
-static Value *list__getslice__(Value *_self, Value *_start, Value *_stop,
-                               Value *_step) {
-  GArray *self = _self->list;
+static Value list__getslice__(Value _self, Value _start, Value _stop,
+                              Value _step) {
+  GArray *self = _self.list;
   ssize_t len = (ssize_t)_list_len(self);
 
   ssize_t start =
-      (_start->type == VALUE_NUMBER) ? (ssize_t)_start->number.i64 : SLICE_NONE;
+      (_start.type == VALUE_NUMBER) ? (ssize_t)_start.number.i64 : SLICE_NONE;
   ssize_t end =
-      (_stop->type == VALUE_NUMBER) ? (ssize_t)_stop->number.i64 : SLICE_NONE;
+      (_stop.type == VALUE_NUMBER) ? (ssize_t)_stop.number.i64 : SLICE_NONE;
   ssize_t step =
-      (_step->type == VALUE_NUMBER) ? (ssize_t)_step->number.i64 : SLICE_NONE;
+      (_step.type == VALUE_NUMBER) ? (ssize_t)_step.number.i64 : SLICE_NONE;
 
   GArray *result = g_array_new(FALSE, FALSE, sizeof(Value *));
   if (len == 0 || step == 0)
@@ -94,9 +97,9 @@ static Value *list__getslice__(Value *_self, Value *_start, Value *_stop,
   return list__init__(result);
 }
 
-static Value *list__add__(Value *_self, Value *_other) {
-  GArray *self = _self->list;
-  GArray *other = _other->list;
+static Value list__add__(Value _self, Value _other) {
+  GArray *self = _self.list;
+  GArray *other = _other.list;
 
   size_t a_len = _list_len(self);
   size_t b_len = _list_len(other);
@@ -116,10 +119,10 @@ static Value *list__add__(Value *_self, Value *_other) {
   return list__init__(result);
 }
 
-static Value *list__mul__(Value *_self, Value *_n) {
-  GArray *self = _self->list;
-  g_assert(_n->type == VALUE_NUMBER && _n->number.kind == NUM_INT64);
-  ssize_t n = (ssize_t)_n->number.i64;
+static Value list__mul__(Value _self, Value _n) {
+  GArray *self = _self.list;
+  g_assert(_n.type == VALUE_NUMBER && _n.number.kind == NUM_INT64);
+  ssize_t n = (ssize_t)_n.number.i64;
 
   size_t len = _list_len(self);
   if (n <= 0 || len == 0)
@@ -141,34 +144,37 @@ static Value *list__mul__(Value *_self, Value *_n) {
 
 // Mutation
 
-Value *list_append(Value *_self, Value *val) {
-  if (_self && _self->list) {
-    g_array_append_val(_self->list, val);
+Value list_append(Value _self, Value val) {
+  if (_self.type == VALUE_LIST && _self.list) {
+    Value *heap_val = g_new(Value, 1);
+    *heap_val = val;
+    g_array_append_val(_self.list, heap_val);
   }
-  return NONE;
+  return (Value){.type = VALUE_NONE};
 }
 
-Value *list_extend(Value *_self, Value *_other) {
-  if (!_self || !_self->list || !_other || !_other->list)
-    return NONE;
+Value list_extend(Value _self, Value _other) {
+  if (_self.type != VALUE_LIST || !_self.list || _other.type != VALUE_LIST ||
+      !_other.list)
+    return (Value){.type = VALUE_NONE};
 
-  GArray *self = _self->list;
-  GArray *other = _other->list;
+  GArray *self = _self.list;
+  GArray *other = _other.list;
 
   for (guint i = 0; i < other->len; i++) {
     Value *val = g_array_index(other, Value *, i);
     g_array_append_val(self, val);
   }
-  return NONE;
+  return (Value){.type = VALUE_NONE};
 }
 
-Value *list_insert(Value *_self, Value *_index, Value *val) {
-  if (!_self || !_self->list)
-    return NONE;
+Value list_insert(Value _self, Value _index, Value val) {
+  if (_self.type != VALUE_LIST || !_self.list)
+    return (Value){.type = VALUE_NONE};
 
-  GArray *self = _self->list;
+  GArray *self = _self.list;
 
-  gint64 idx_raw = (_index->type == VALUE_NUMBER) ? _index->number.i64 : 0;
+  gint64 idx_raw = (_index.type == VALUE_NUMBER) ? _index.number.i64 : 0;
   ssize_t index = (ssize_t)idx_raw;
   ssize_t len = (ssize_t)self->len;
 
@@ -180,78 +186,83 @@ Value *list_insert(Value *_self, Value *_index, Value *val) {
   if (index > len)
     index = len;
 
-  g_array_insert_val(self, (guint)index, val);
-  return NONE;
+  Value *heap_val = g_new(Value, 1);
+  *heap_val = val;
+  g_array_insert_val(self, (guint)index, heap_val);
+  return (Value){.type = VALUE_NONE};
 }
 
-Value *list__setitem__(Value *_self, Value *_index, Value *val) {
-  if (!_self || !_self->list)
-    return NULL;
+Value list__setitem__(Value _self, Value _index, Value val) {
+  if (_self.type != VALUE_LIST || !_self.list)
+    return (Value){.type = VALUE_NONE};
 
-  GArray *self = _self->list;
-  g_assert(_index->type == VALUE_NUMBER);
-  ssize_t index = (ssize_t)_index->number.i64;
+  GArray *self = _self.list;
+  g_assert(_index.type == VALUE_NUMBER);
+  ssize_t index = (ssize_t)_index.number.i64;
   ssize_t len = (ssize_t)self->len;
 
   ssize_t nidx = normalize_index(index, len);
   if (nidx < 0 || nidx >= len)
-    return NULL;
+    return (Value){.type = VALUE_NONE};
 
-  g_array_index(self, Value *, (guint)nidx) = val;
-  return NONE;
+  Value *heap_val = g_new(Value, 1);
+  *heap_val = val;
+  g_array_index(self, Value *, (guint)nidx) = heap_val;
+  return val;
 }
 
-Value *list__delitem__(Value *_self, Value *_index) {
-  if (!_self || !_self->list)
-    return NONE;
+Value list__delitem__(Value _self, Value _index) {
+  if (_self.type != VALUE_LIST || !_self.list)
+    return (Value){.type = VALUE_NONE};
 
-  GArray *self = _self->list;
-  g_assert(_index->type == VALUE_NUMBER);
-  ssize_t index = (ssize_t)_index->number.i64;
+  GArray *self = _self.list;
+  g_assert(_index.type == VALUE_NUMBER);
+  ssize_t index = (ssize_t)_index.number.i64;
   ssize_t len = (ssize_t)self->len;
 
   ssize_t nidx = normalize_index(index, len);
   if (nidx < 0 || nidx >= len)
-    return NONE;
+    return (Value){.type = VALUE_NONE};
 
   g_array_remove_index(self, (guint)nidx);
-  return NONE;
+  return (Value){.type = VALUE_NONE};
 }
 
-Value *list_pop(Value *_self, Value *_index) {
-  if (!_self || !_self->list || _self->list->len == 0)
-    return NONE; // IndexError
+Value list_pop(Value _self, Value _index) {
+  if (_self.type != VALUE_LIST || !_self.list || _self.list->len == 0)
+    return (Value){.type = VALUE_NONE};
 
-  GArray *self = _self->list;
+  GArray *self = _self.list;
   ssize_t len = (ssize_t)self->len;
   ssize_t idx;
 
-  if (!_index || _index->type == VALUE_NONE) {
+  if (_index.type == VALUE_NONE) {
     idx = len - 1;
   } else {
-    g_assert(_index->type == VALUE_NUMBER);
-    idx = (ssize_t)_index->number.i64;
+    g_assert(_index.type == VALUE_NUMBER);
+    idx = (ssize_t)_index.number.i64;
   }
 
   ssize_t nidx = normalize_index(idx, len);
   if (nidx < 0 || nidx >= len)
-    return NONE;
+    return (Value){.type = VALUE_NONE};
 
   Value *val = g_array_index(self, Value *, (guint)nidx);
+  Value result = *val;
   g_array_remove_index(self, (guint)nidx);
-  return val;
+  return result;
 }
 
 // Comparison
 
-static Value *list__eq__(Value *a, Value *b) {
-  if (a == b)
+static Value list__eq__(Value a, Value b) {
+  if (a.list == b.list)
     return VTRUE;
-  if (a->type != VALUE_LIST || b->type != VALUE_LIST)
+  if (a.type != VALUE_LIST || b.type != VALUE_LIST)
     return VFALSE;
 
-  GArray *al = a->list;
-  GArray *bl = b->list;
+  GArray *al = a.list;
+  GArray *bl = b.list;
 
   if (al->len != bl->len)
     return VFALSE;
@@ -260,46 +271,47 @@ static Value *list__eq__(Value *a, Value *b) {
     Value *val_a = g_array_index(al, Value *, i);
     Value *val_b = g_array_index(bl, Value *, i);
 
-    if (!(__eq__(val_a, val_b)->boolean))
+    Value eq_result = __eq__(*val_a, *val_b);
+    if (!eq_result.boolean)
       return VFALSE;
   }
 
   return VTRUE;
 }
 
-static Value *list__lt__(Value *self, Value *other) {
-  return bool__init__(_list_len(self->list) < _list_len(other->list));
+static Value list__lt__(Value self, Value other) {
+  return bool__init__(_list_len(self.list) < _list_len(other.list));
 }
 
-static Value *list__le__(Value *self, Value *other) {
-  return bool__init__(_list_len(self->list) <= _list_len(other->list));
+static Value list__le__(Value self, Value other) {
+  return bool__init__(_list_len(self.list) <= _list_len(other.list));
 }
 
-static Value *list__gt__(Value *self, Value *other) {
-  return bool__init__(_list_len(self->list) > _list_len(other->list));
+static Value list__gt__(Value self, Value other) {
+  return bool__init__(_list_len(self.list) > _list_len(other.list));
 }
 
-static Value *list__ge__(Value *self, Value *other) {
-  return bool__init__(_list_len(self->list) >= _list_len(other->list));
+static Value list__ge__(Value self, Value other) {
+  return bool__init__(_list_len(self.list) >= _list_len(other.list));
 }
 
 // serialization
-static Value *list__str__(Value *self) {
+static Value list__str__(Value self) {
   GString *result = g_string_new("");
 
   g_string_append_c(result, '[');
-  GArray *arr = self->list;
+  GArray *arr = self.list;
   for (size_t i = 0; i < arr->len; i++) {
     if (i > 0)
       g_string_append(result, ", ");
 
     Value *elem = g_array_index(arr, Value *, i);
-    if (elem && elem->type == VALUE_STR) {
+    if (elem->type == VALUE_STR) {
       g_string_append_printf(result, "\"%s\"", elem->str->str);
     } else {
       // recursively convert
-      Value *elem_str = list__str__(elem);
-      g_string_append(result, elem_str->str->str);
+      Value elem_str = list__str__(*elem);
+      g_string_append(result, elem_str.str->str);
     }
   }
   g_string_append_c(result, ']');
@@ -323,3 +335,5 @@ static const ValueMethods _list_methods = {
     .__mul__ = list__mul__,
     .__str__ = list__str__,
 };
+
+void list_methods_init(void) { NUMEROBIS_METHODS[VALUE_LIST] = &_list_methods; }

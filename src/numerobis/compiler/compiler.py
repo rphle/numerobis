@@ -157,9 +157,12 @@ class Compiler:
         else:
             args = [arg.value for arg in arg_names.values()]
 
-        args = [str(self.compile(arg)) if arg else "NULL" for arg in args]
+        args = [
+            str(self.compile(arg)) if arg else "(Value){.type = VALUE_NONE}"
+            for arg in args
+        ]
 
-        str_args = f"(Value*[]){{{callee}, {', '.join(args)}}}"
+        str_args = f"(Value[]){{{callee}, {', '.join(args)}}}"
         out = tstr(f"__call__({callee}, {str_args})")
 
         return out
@@ -180,7 +183,9 @@ class Compiler:
 
             if opname == "ne":
                 out["op"] = "eq"
-                comparisons.append(f"(__cbool__({out}) ? VFALSE : VTRUE)")  # unary !
+                comparisons.append(
+                    f"(!__cbool__({out}))"
+                )  # unary ! on __cbool__ result
             else:
                 comparisons.append(f"__cbool__({out})")
 
@@ -219,7 +224,7 @@ class Compiler:
     def extern_declaration_(self, node: ExternDeclaration, link: int) -> tstr:
         self.include.add("numerobis/extern")
 
-        out = tstr('Value *und_$uid_$name = u_extern_lookup("$name")')
+        out = tstr('Value und_$uid_$name = *u_extern_lookup("$name")')
         out["uid"] = self.uid
         out["name"] = self.unlink(self.unlink(node.value).name).name  # type: ignore
 
@@ -233,7 +238,7 @@ class Compiler:
         if "value" not in node.meta:
             return tstr("// empty loop")
 
-        loop = tstr("""for (size_t $iterator = 0; $iterator < $iterable->methods->len($iterable)->number.i64; $iterator++) {
+        loop = tstr("""for (size_t $iterator = 0; $iterator < len($iterable).number.i64; $iterator++) {
             $iterator_defs
             $body
         }""")
@@ -252,18 +257,20 @@ class Compiler:
         if len(node.iterators) == 1:
             iterator = iterators[0]
             loop["iterator_defs"] = (
-                f"Value *und_{self.uid}_{iterator.name} = "  # type: ignore
-                + mthd("__getitem__", "$iterable", "int__init__($iterator, U_ONE)")
+                f"Value und_{self.uid}_{iterator.name} = "
+                + "__getitem__("
+                + "$iterable, int__init__($iterator, U_ONE), LOC(0, 0, 0, 0))"
                 + ";"
             )
         else:
             # if there are >1 iterators, it is guaranteed that the iterable is a list of lists
             iterrow_name = f"__iterrow_{abs(link)}"
-            iterator_defs = f"Value *{iterrow_name} = {mthd('__getitem__', '$iterable', 'int__init__($iterator, U_ONE)')};"
+            iterator_defs = f"Value {iterrow_name} = {mthd('__getitem__', '$iterable', 'int__init__($iterator, U_ONE)')};"
             iterator_defs += "\n".join(
-                f"Value *und_{self.uid}_{iterator.name} = "  # type: ignore
-                + mthd("__getitem__", iterrow_name, f"int__init__({i}, U_ONE)")
-                + ";"
+                f"Value und_{self.uid}_{iterator.name} = "
+                + f"__getitem__({iterrow_name}, "
+                f"int__init__({i}, U_ONE), "
+                f"LOC(0, 0, 0, 0));"
                 for i, iterator in enumerate(iterators)
             )
             loop["iterator_defs"] = iterator_defs
@@ -271,7 +278,7 @@ class Compiler:
         iterable = self.compile(node.iterable)
         if "reference" not in iterable.meta:
             out = tstr("{\n$iterable_def;\n$loop}")
-            out["iterable_def"] = f"Value *{iterable_name} = {iterable}"
+            out["iterable_def"] = f"Value {iterable_name} = {iterable}"
             out["loop"] = loop
             return out
         else:
@@ -281,12 +288,12 @@ class Compiler:
 
     def for_loop_range_(self, node: ForLoop, link: int) -> tstr:
         loop = tstr("""{
-            Range *$range = $range_def->range;
+            Range *$range = $range_def.range;
             for ($type $i = $range->start;
                 (($range->step > 0) ? ($i < $range->stop) : ($i > $range->stop));
                 $i += $range->step)
             {
-                Value *$iv = $vtype__init__($i, U_ONE);
+                Value $iv = $vtype__init__($i, U_ONE);
                 $body
             }}""")
 
@@ -312,7 +319,7 @@ class Compiler:
                 (($step > 0) ? ($i < $stop) : ($i > $stop));
                 $i += $step)
             {
-                Value *$iv = $vtype__init__($i, U_ONE);
+                Value $iv = $vtype__init__($i, U_ONE);
                 $body
             }}""",
             content=loop.content,
@@ -334,7 +341,7 @@ class Compiler:
             else:
                 part = self.compile(value)
                 typ = "i64" if self._link2type(_value) == "int" else "f64"
-                loop[key] = f"{part}->number.{typ}"
+                loop[key] = f"{part}.number.{typ}"
 
         return loop
 
@@ -343,10 +350,10 @@ class Compiler:
 
         old_defined_addrs = self._defined_addrs.copy()
 
-        definition = tstr("""Value *$name(void *__env, Value **__args) {
+        definition = tstr("""Value $name(void *__env, Value *__args) {
                                 U_UNPACK_ENV($env)
                                 $shadow_vars
-                                Value *self = __args[0];
+                                Value self = __args[0];
                                 $actual_name
                                 $args
 
@@ -379,7 +386,7 @@ class Compiler:
         definition["body"] = strip_parens(str(body), "{")
         definition["name"] = f"__impl_{self.uid}_{abs(link)}"
         definition["actual_name"] = (
-            f"Value *{name} = __args[0];" if name and name else ""
+            f"Value {name} = __args[0];" if name and name else ""
         )
         definition["env"] = env_type
 
@@ -397,11 +404,11 @@ class Compiler:
 
         out = f"U_NEW_CLOSURE({definition['name']}, {env_type} {', ' + ', '.join([] + free_vars) if free_vars else ''})"
         if name is not None:
-            out = f"Value *{name} = {out}"
+            out = f"Value {name} = {out}"
 
         self.typedefs.append(
             "typedef struct { "
-            + "".join(f"Value *{v}; " for v in free_vars)
+            + "".join(f"Value {v}; " for v in free_vars)
             + f"}} {env_type};"
         )
 
@@ -467,10 +474,15 @@ class Compiler:
     def list_(self, node: List, link: int) -> tstr:
         self.include.add("numerobis/types/list")
         self.include.add("numerobis/types/number")  # list.c includes number.h
+
+        if not node.items:
+            # Empty list - just call list_of with NONE
+            return tstr("list_of(NONE)")
+
         out = tstr("list_of($items)")
 
         out["items"] = ", ".join(
-            [str(self.compile(item)) for item in node.items] + ["NULL"]
+            [str(self.compile(item)) for item in node.items] + ["NONE"]
         )
 
         return out
@@ -598,12 +610,12 @@ class Compiler:
 
         if name not in self._defined_addrs:
             self._defined_addrs[name] = addr
-            out = tstr("Value *") + out
+            out = tstr("Value ") + out
 
         return out
 
     def variable_declaration_(self, node: Variable, link: int) -> tstr:
-        out = tstr("Value *$name")
+        out = tstr("Value $name")
 
         out["name"] = self.compile(node.name)
 

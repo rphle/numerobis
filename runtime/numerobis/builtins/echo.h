@@ -7,6 +7,6 @@
 #include <stdbool.h>
 #include <stdio.h>
 
-Value *echo(Value **args);
+Value echo(Value *args);
 
 #endif

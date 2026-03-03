@@ -2,6 +2,7 @@
 #include "../utils/utils.h"
 #include "../values.h"
 #include "bool.h"
+#include "methods.h"
 #include "number.h"
 #include <glib.h>
 #include <stdbool.h>
@@ -9,11 +10,10 @@
 
 static const ValueMethods _str_methods;
 
-Value *str__init__(GString *x) {
-  Value *v = g_new(Value, 1);
-  v->type = VALUE_STR;
-  v->str = x;
-  v->methods = &_str_methods;
+Value str__init__(GString *x) {
+  Value v;
+  v.type = VALUE_STR;
+  v.str = x;
   return v;
 }
 
@@ -21,8 +21,8 @@ static inline size_t _str_len(const GString *self) {
   return self ? g_utf8_strlen(self->str, self->len) : 0;
 }
 
-static inline Value *str_len(Value *self) {
-  return int__init__(self ? _str_len(self->str) : 0, U_ONE);
+static inline Value str_len(Value self) {
+  return int__init__(self.str ? _str_len(self.str) : 0, U_ONE);
 }
 
 static const char **build_char_positions(const GString *self, size_t len) {
@@ -39,24 +39,22 @@ static const char **build_char_positions(const GString *self, size_t len) {
   return positions;
 }
 
-static Value *str__bool__(Value *self) {
-  return bool__init__(self->str->len > 0);
-}
-static bool str__cbool__(Value *self) { return self->str->len > 0; }
+static Value str__bool__(Value self) { return bool__init__(self.str->len > 0); }
+static bool str__cbool__(Value self) { return self.str->len > 0; }
 
-static Value *str__getitem__(Value *_self, Value *_index) {
-  GString *self = _self->str;
-  g_assert(_index->type == VALUE_NUMBER && _index->number.kind == NUM_INT64);
-  gint64 index = _index->number.i64;
+static Value str__getitem__(Value _self, Value _index) {
+  GString *self = _self.str;
+  g_assert(_index.type == VALUE_NUMBER && _index.number.kind == NUM_INT64);
+  gint64 index = _index.number.i64;
 
   if (!self)
-    return NULL;
+    return (Value){.type = VALUE_NONE};
 
   ssize_t len = (ssize_t)_str_len(self);
   ssize_t nidx = normalize_index(index, len);
 
   if (nidx < 0 || nidx >= len)
-    return NULL;
+    return (Value){.type = VALUE_NONE};
 
   const char *p = self->str;
   for (ssize_t i = 0; i < nidx; i++)
@@ -70,20 +68,20 @@ static Value *str__getitem__(Value *_self, Value *_index) {
   return str__init__(g_string_new(buf));
 }
 
-static Value *str__getslice__(Value *_self, Value *_start, Value *_stop,
-                              Value *_step) {
-  GString *self = _self->str;
+static Value str__getslice__(Value _self, Value _start, Value _stop,
+                             Value _step) {
+  GString *self = _self.str;
   if (!self)
     return str__init__(g_string_new(""));
 
   ssize_t len = (ssize_t)_str_len(self);
 
   ssize_t start =
-      (_start->type == VALUE_NUMBER) ? (ssize_t)_start->number.i64 : SLICE_NONE;
+      (_start.type == VALUE_NUMBER) ? (ssize_t)_start.number.i64 : SLICE_NONE;
   ssize_t end =
-      (_stop->type == VALUE_NUMBER) ? (ssize_t)_stop->number.i64 : SLICE_NONE;
+      (_stop.type == VALUE_NUMBER) ? (ssize_t)_stop.number.i64 : SLICE_NONE;
   ssize_t step =
-      (_step->type == VALUE_NUMBER) ? (ssize_t)_step->number.i64 : SLICE_NONE;
+      (_step.type == VALUE_NUMBER) ? (ssize_t)_step.number.i64 : SLICE_NONE;
 
   if (len == 0 || step == 0)
     return str__init__(g_string_new(""));
@@ -107,22 +105,22 @@ static Value *str__getslice__(Value *_self, Value *_start, Value *_stop,
   return str__init__(result);
 }
 
-static Value *str__setitem__(Value *_self, Value *_index, Value *_value) {
-  GString *self = _self->str;
-  g_assert(_index->type == VALUE_NUMBER && _index->number.kind == NUM_INT64);
-  g_assert(_value->type == VALUE_STR);
+static Value str__setitem__(Value _self, Value _index, Value _value) {
+  GString *self = _self.str;
+  g_assert(_index.type == VALUE_NUMBER && _index.number.kind == NUM_INT64);
+  g_assert(_value.type == VALUE_STR);
 
-  gint64 index = _index->number.i64;
-  GString *value = _value->str;
+  gint64 index = _index.number.i64;
+  GString *value = _value.str;
 
   if (!self || !value)
-    return NULL;
+    return (Value){.type = VALUE_NONE};
 
   ssize_t len = (ssize_t)_str_len(self);
   ssize_t nidx = normalize_index(index, len);
 
   if (nidx < 0 || nidx >= len)
-    return NULL;
+    return (Value){.type = VALUE_NONE};
 
   const char *p = self->str;
   for (ssize_t i = 0; i < nidx; i++)
@@ -144,9 +142,9 @@ static Value *str__setitem__(Value *_self, Value *_index, Value *_value) {
   return _self;
 }
 
-static Value *str__add__(Value *_self, Value *_other) {
-  GString *self = _self->str;
-  GString *other = _other->str;
+static Value str__add__(Value _self, Value _other) {
+  GString *self = _self.str;
+  GString *other = _other.str;
 
   if (!self || !other)
     return str__init__(g_string_new(""));
@@ -158,9 +156,9 @@ static Value *str__add__(Value *_self, Value *_other) {
   return str__init__(result);
 }
 
-static Value *str__mul__(Value *_self, Value *_n) {
-  GString *self = _self->str;
-  gint64 n = _n->number.i64;
+static Value str__mul__(Value _self, Value _n) {
+  GString *self = _self.str;
+  gint64 n = _n.number.i64;
 
   if (!self || n <= 0)
     return str__init__(g_string_new(""));
@@ -177,42 +175,42 @@ static Value *str__mul__(Value *_self, Value *_n) {
   return str__init__(result);
 }
 
-static Value *str__eq__(Value *a, Value *b) {
-  if (a == b)
+static Value str__eq__(Value a, Value b) {
+  if (a.str == b.str)
     return VTRUE;
-  if (!a || !b)
+  if (!a.str || !b.str)
     return VFALSE;
-  return bool__init__(g_string_equal(a->str, b->str));
+  return bool__init__(g_string_equal(a.str, b.str));
 }
 
-static Value *str__lt__(Value *self, Value *other) {
-  if (!self || !other)
+static Value str__lt__(Value self, Value other) {
+  if (!self.str || !other.str)
     return VFALSE;
-  return bool__init__(_str_len(self->str) < _str_len(other->str));
+  return bool__init__(_str_len(self.str) < _str_len(other.str));
 }
 
-static Value *str__le__(Value *self, Value *other) {
-  if (!self || !other)
+static Value str__le__(Value self, Value other) {
+  if (!self.str || !other.str)
     return VFALSE;
-  return bool__init__(_str_len(self->str) <= _str_len(other->str));
+  return bool__init__(_str_len(self.str) <= _str_len(other.str));
 }
 
-static Value *str__gt__(Value *self, Value *other) {
-  if (!self || !other)
+static Value str__gt__(Value self, Value other) {
+  if (!self.str || !other.str)
     return VFALSE;
-  return bool__init__(_str_len(self->str) > _str_len(other->str));
+  return bool__init__(_str_len(self.str) > _str_len(other.str));
 }
 
-static Value *str__ge__(Value *self, Value *other) {
-  if (!self || !other)
+static Value str__ge__(Value self, Value other) {
+  if (!self.str || !other.str)
     return VFALSE;
-  return bool__init__(_str_len(self->str) >= _str_len(other->str));
+  return bool__init__(_str_len(self.str) >= _str_len(other.str));
 }
 
-static inline Value *str__str__(Value *self) { return self; }
+static inline Value str__str__(Value self) { return self; }
 
-static Value *str__int__(Value *self) {
-  const gchar *str = self->str->str;
+static Value str__int__(Value self) {
+  const gchar *str = self.str->str;
   gchar *endptr = NULL;
 
   while (g_ascii_isspace(*str)) {
@@ -220,7 +218,7 @@ static Value *str__int__(Value *self) {
   }
 
   if (*str == '\0') {
-    return NULL;
+    return (Value){.type = VALUE_NONE};
   }
 
   gint64 result = g_ascii_strtoll(str, &endptr, 10);
@@ -230,17 +228,17 @@ static Value *str__int__(Value *self) {
   }
 
   if (*endptr != '\0') {
-    return NULL;
+    return (Value){.type = VALUE_NONE};
   }
 
   return int__init__(result, U_ONE);
 }
 
-static Value *str__float__(Value *self) {
-  if (!self || !self->str)
-    return NULL;
+static Value str__float__(Value self) {
+  if (!self.str)
+    return (Value){.type = VALUE_NONE};
 
-  const gchar *str = self->str->str;
+  const gchar *str = self.str->str;
   gchar *endptr = NULL;
 
   while (g_ascii_isspace(*str)) {
@@ -248,7 +246,7 @@ static Value *str__float__(Value *self) {
   }
 
   if (*str == '\0') {
-    return NULL;
+    return (Value){.type = VALUE_NONE};
   }
 
   gdouble result = g_ascii_strtod(str, &endptr);
@@ -258,7 +256,7 @@ static Value *str__float__(Value *self) {
   }
 
   if (*endptr != '\0') {
-    return NULL;
+    return (Value){.type = VALUE_NONE};
   }
 
   return float__init__(result, U_ONE);
@@ -282,3 +280,5 @@ static const ValueMethods _str_methods = {
     .__int__ = str__int__,
     .__float__ = str__float__,
 };
+
+void str_methods_init(void) { NUMEROBIS_METHODS[VALUE_STR] = &_str_methods; }

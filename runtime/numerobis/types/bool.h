@@ -8,6 +8,8 @@
 #define VTRUE bool__init__(true)
 #define VFALSE bool__init__(false)
 
-Value *bool__init__(bool x);
+Value bool__init__(bool x);
+
+void bool_methods_init(void);
 
 #endif

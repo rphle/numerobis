@@ -8,7 +8,7 @@
 #include <math.h>
 #include <stdio.h>
 
-static Value *numerobis_builtin_random(Value **args) {
+static Value numerobis_builtin_random(Value *args) {
   static GRand *rng = NULL;
 
   if (G_UNLIKELY(rng == NULL)) {
@@ -20,9 +20,10 @@ static Value *numerobis_builtin_random(Value **args) {
   return float__init__(x, U_ONE);
 }
 
-static Value *numerobis_builtin_input(Value **args) {
-  if (args[1]) {
-    echo((Value *[]){NULL, args[1], EMPTY_STR});
+static Value numerobis_builtin_input(Value *args) {
+  if (args[1].type != VALUE_NONE) {
+    Value echo_args[] = {NONE, args[1], EMPTY_STR};
+    echo(echo_args);
     fflush(stdout);
   }
 
@@ -35,16 +36,14 @@ static Value *numerobis_builtin_input(Value **args) {
 
   g_strchomp(line);
 
-  Value *result = str__init__(g_string_new(line));
+  Value result = str__init__(g_string_new(line));
 
   return result;
 }
 
-static Value *numerobis_builtin_floor(Value **args) {
-
-  Value *val = args[1];
-
-  Number *n = &val->number;
+static Value numerobis_builtin_floor(Value *args) {
+  Value val = args[1];
+  Number *n = &val.number;
   gint64 result;
 
   if (n->kind == NUM_INT64) {
@@ -56,15 +55,15 @@ static Value *numerobis_builtin_floor(Value **args) {
   return int__init__(result, n->unit);
 }
 
-static Value *numerobis_builtin_indexof(Value **args) {
-  GArray *self = args[1]->list;
-  Value *target = args[2];
+static Value numerobis_builtin_indexof(Value *args) {
+  GArray *self = args[1].list;
+  Value target = args[2];
 
   for (guint i = 0; i < self->len; i++) {
     Value *item = g_array_index(self, Value *, i);
-    Value *eq_result = __eq__(item, target);
+    Value eq_result = __eq__(*item, target);
 
-    if (eq_result->boolean) {
+    if (eq_result.boolean) {
       return int__init__((gint64)i, U_ONE);
     }
   }
@@ -72,9 +71,9 @@ static Value *numerobis_builtin_indexof(Value **args) {
   return int__init__(G_GINT64_CONSTANT(-1), U_ONE);
 }
 
-static Value *numerobis_builtin_split(Value **args) {
-  GString *self = args[1]->str;
-  GString *sep = args[2]->str;
+static Value numerobis_builtin_split(Value *args) {
+  GString *self = args[1].str;
+  GString *sep = args[2].str;
 
   GArray *result_arr = g_array_new(FALSE, FALSE, sizeof(Value *));
 
@@ -85,7 +84,8 @@ static Value *numerobis_builtin_split(Value **args) {
       gssize char_len = next - p;
 
       GString *char_str = g_string_new_len(p, char_len);
-      Value *val = str__init__(char_str);
+      Value *val = g_new(Value, 1);
+      *val = str__init__(char_str);
       g_array_append_val(result_arr, val);
 
       p = next;
@@ -95,7 +95,8 @@ static Value *numerobis_builtin_split(Value **args) {
 
     if (parts) {
       for (int i = 0; parts[i] != NULL; i++) {
-        Value *val = str__init__(g_string_new(parts[i]));
+        Value *val = g_new(Value, 1);
+        *val = str__init__(g_string_new(parts[i]));
         g_array_append_val(result_arr, val);
       }
     }

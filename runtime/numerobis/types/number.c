@@ -2,6 +2,7 @@
 #include "../units/eval.h"
 #include "../values.h"
 #include "bool.h"
+#include "methods.h"
 #include "str.h"
 #include <glib.h>
 #include <math.h>
@@ -12,55 +13,53 @@ typedef gdouble (*binop_f64)(gdouble, gdouble);
 
 static const ValueMethods _number_methods;
 
-Value *int__init__(gint64 x, UnitNode *unit) {
-  Value *v = g_new(Value, 1);
-  v->type = VALUE_NUMBER;
-  v->methods = &_number_methods;
-  v->number.kind = NUM_INT64;
-  v->number.i64 = x;
-  v->number.unit = unit;
+Value int__init__(gint64 x, UnitNode *unit) {
+  Value v;
+  v.type = VALUE_NUMBER;
+  v.number.kind = NUM_INT64;
+  v.number.i64 = x;
+  v.number.unit = unit;
   return v;
 }
 
-Value *float__init__(gdouble x, UnitNode *unit) {
-  Value *v = g_new(Value, 1);
-  v->type = VALUE_NUMBER;
-  v->methods = &_number_methods;
-  v->number.kind = NUM_DOUBLE;
-  v->number.f64 = x;
-  v->number.unit = unit;
+Value float__init__(gdouble x, UnitNode *unit) {
+  Value v;
+  v.type = VALUE_NUMBER;
+  v.number.kind = NUM_DOUBLE;
+  v.number.f64 = x;
+  v.number.unit = unit;
   return v;
 }
 
-static Value *number__bool__(Value *self) {
+static Value number__bool__(Value self) {
   bool result = false;
-  switch (self->number.kind) {
+  switch (self.number.kind) {
   case NUM_INT64:
-    result = self->number.i64 != 0;
+    result = self.number.i64 != 0;
     break;
   case NUM_DOUBLE:
-    result = self->number.f64 != 0.0;
+    result = self.number.f64 != 0.0;
     break;
   }
   return bool__init__(result);
 }
 
-static bool number__cbool__(Value *self) {
-  switch (self->number.kind) {
+static bool number__cbool__(Value self) {
+  switch (self.number.kind) {
   case NUM_INT64:
-    return self->number.i64 != 0;
+    return self.number.i64 != 0;
     break;
   case NUM_DOUBLE:
-    return self->number.f64 != 0.0;
+    return self.number.f64 != 0.0;
     break;
   }
 }
 
-Value *number__neg__(Value *self) {
-  if (self->number.kind == NUM_INT64) {
-    return int__init__(-(self->number.i64), self->number.unit);
+Value number__neg__(Value self) {
+  if (self.number.kind == NUM_INT64) {
+    return int__init__(-(self.number.i64), self.number.unit);
   } else {
-    return float__init__(-(self->number.f64), self->number.unit);
+    return float__init__(-(self.number.f64), self.number.unit);
   }
 }
 
@@ -89,20 +88,20 @@ static int number_cmp(const Number *a, const Number *b) {
   return 0;
 }
 
-static inline Value *number__lt__(Value *a, Value *b) {
-  return bool__init__(number_cmp(&a->number, &b->number) < 0);
+static inline Value number__lt__(Value a, Value b) {
+  return bool__init__(number_cmp(&a.number, &b.number) < 0);
 }
-static inline Value *number__le__(Value *a, Value *b) {
-  return bool__init__(number_cmp(&a->number, &b->number) <= 0);
+static inline Value number__le__(Value a, Value b) {
+  return bool__init__(number_cmp(&a.number, &b.number) <= 0);
 }
-static inline Value *number__gt__(Value *a, Value *b) {
-  return bool__init__(number_cmp(&a->number, &b->number) > 0);
+static inline Value number__gt__(Value a, Value b) {
+  return bool__init__(number_cmp(&a.number, &b.number) > 0);
 }
-static inline Value *number__ge__(Value *a, Value *b) {
-  return bool__init__(number_cmp(&a->number, &b->number) >= 0);
+static inline Value number__ge__(Value a, Value b) {
+  return bool__init__(number_cmp(&a.number, &b.number) >= 0);
 }
-static inline Value *number__eq__(Value *a, Value *b) {
-  return bool__init__(number_cmp(&a->number, &b->number) == 0);
+static inline Value number__eq__(Value a, Value b) {
+  return bool__init__(number_cmp(&a.number, &b.number) == 0);
 }
 
 // Binary operators
@@ -114,10 +113,10 @@ static inline gdouble number_as_double(const Number *n) {
   return n->kind == NUM_DOUBLE ? n->f64 : (gdouble)n->i64;
 }
 
-static Value *number_binop(Value *a, Value *b, binop_i64 iop, binop_f64 fop,
-                           OpKind kind) {
-  Number *na = &a->number;
-  Number *nb = &b->number;
+static Value number_binop(Value a, Value b, binop_i64 iop, binop_f64 fop,
+                          OpKind kind) {
+  Number *na = &a.number;
+  Number *nb = &b.number;
 
   UnitNode *ua = na->unit;
   UnitNode *ub = nb->unit;
@@ -187,37 +186,37 @@ static inline gdouble f_div(gdouble a, gdouble b) { return a / b; }
 static inline gdouble f_pow(gdouble a, gdouble b) { return pow(a, b); }
 static inline gdouble f_mod(gdouble a, gdouble b) { return fmod(a, b); }
 
-static inline Value *number__add__(Value *a, Value *b) {
+static inline Value number__add__(Value a, Value b) {
   return number_binop(a, b, i_add, f_add, OP_ADD);
 }
-static inline Value *number__sub__(Value *a, Value *b) {
+static inline Value number__sub__(Value a, Value b) {
   return number_binop(a, b, i_sub, f_sub, OP_SUB);
 }
-static inline Value *number__mul__(Value *a, Value *b) {
+static inline Value number__mul__(Value a, Value b) {
   return number_binop(a, b, i_mul, f_mul, OP_MUL);
 }
-static inline Value *number__div__(Value *a, Value *b) {
+static inline Value number__div__(Value a, Value b) {
   return number_binop(a, b, i_div, f_div, OP_DIV);
 }
-static inline Value *number__pow__(Value *a, Value *b) {
+static inline Value number__pow__(Value a, Value b) {
   return number_binop(a, b, i_pow, f_pow, OP_POW);
 }
-static inline Value *number__mod__(Value *a, Value *b) {
+static inline Value number__mod__(Value a, Value b) {
   return number_binop(a, b, i_mod, f_mod, OP_MOD);
 }
-static inline Value *number__dadd__(Value *a, Value *b) {
+static inline Value number__dadd__(Value a, Value b) {
   return number_binop(a, b, i_add, f_add, OP_DADD);
 }
-static inline Value *number__dsub__(Value *a, Value *b) {
+static inline Value number__dsub__(Value a, Value b) {
   return number_binop(a, b, i_sub, f_sub, OP_DSUB);
 }
 
-static Value *number__str__(Value *val) {
-  return str__init__(print_number(&val->number));
+static Value number__str__(Value val) {
+  return str__init__(print_number(&val.number));
 }
 
-static Value *number__int__(Value *self) {
-  Number *n = &self->number;
+static Value number__int__(Value self) {
+  Number *n = &self.number;
   if (n->kind == NUM_INT64) {
     return self;
   } else {
@@ -225,8 +224,8 @@ static Value *number__int__(Value *self) {
   }
 }
 
-static Value *number__float__(Value *self) {
-  Number *n = &self->number;
+static Value number__float__(Value self) {
+  Number *n = &self.number;
   if (n->kind == NUM_DOUBLE) {
     return self;
   } else {
@@ -234,17 +233,17 @@ static Value *number__float__(Value *self) {
   }
 }
 
-Value *number__convert__(Value *self, UnitNode *target) {
-  Number *n = &self->number;
+Value number__convert__(Value self, UnitNode *target) {
+  Number *n = &self.number;
   gdouble value = n->kind == NUM_INT64 ? (gdouble)(n->i64) : n->f64;
 
   gdouble res;
   int target_type = n->kind == NUM_INT64 ? 0 : 1;
   if (target->kind == UNIT_ONE) {
     gdouble base = eval_unit(n->unit, value, EVAL_BASE);
-    gdouble target = eval_unit(n->unit, value, EVAL_INVERTED);
+    gdouble target_val = eval_unit(n->unit, value, EVAL_INVERTED);
 
-    res = target / base;
+    res = target_val / base;
     value = is_unit_logarithmic(n->unit) ? res : value * res;
   }
 
@@ -274,3 +273,7 @@ static const ValueMethods _number_methods = {
     .__int__ = number__int__,
     .__float__ = number__float__,
 };
+
+void number_methods_init(void) {
+  NUMEROBIS_METHODS[VALUE_NUMBER] = &_number_methods;
+}

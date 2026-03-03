@@ -7,15 +7,14 @@ void u_externs_init(void) {
       g_hash_table_new_full(g_str_hash, g_str_equal, g_free, g_free);
 }
 
-Value *extern_fn__init__(Value *(*fn)(Value **args)) {
+Value *extern_fn__init__(Value (*fn)(Value *args)) {
   Value *v = g_new(Value, 1);
   v->type = VALUE_EXTERN_FN;
   v->extern_fn = fn;
-  v->methods = NULL;
   return v;
 }
 
-void u_extern_register(const char *name, Value *(*fn)(Value **args)) {
+void u_extern_register(const char *name, Value (*fn)(Value *args)) {
   g_return_if_fail(name != NULL);
   g_return_if_fail(fn != NULL);
   g_return_if_fail(NUMEROBIS_EXTERNS != NULL);

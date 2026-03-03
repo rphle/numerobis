@@ -11,6 +11,7 @@ typedef struct Range {
   gdouble step;
 } Range;
 
-Value *range__init__(Range x);
+Value range__init__(Range x);
+void range_methods_init(void);
 
 #endif

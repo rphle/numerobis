@@ -10,15 +10,15 @@ void *closure_capture(size_t size, void *stack_env) {
   return heap_env;
 }
 
-Value *closure__init__(Value *(*func)(void *, Value **), void *env) {
-  Value *v = g_malloc(sizeof(Value));
-  v->type = VALUE_CLOSURE;
-  v->closure = g_malloc(sizeof(Closure));
-  v->closure->func = func;
-  v->closure->env = env;
+Value closure__init__(Value (*func)(void *, Value *), void *env) {
+  Value v;
+  v.type = VALUE_CLOSURE;
+  v.closure = g_malloc(sizeof(Closure));
+  v.closure->func = func;
+  v.closure->env = env;
   return v;
 }
 
-Value *closure__call__(Value *callee, Value **args) {
-  return callee->closure->func(callee->closure->env, args);
+Value closure__call__(Value callee, Value *args) {
+  return callee.closure->func(callee.closure->env, args);
 }
