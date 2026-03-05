@@ -5,6 +5,6 @@ int fib(int n) {
   return fib(n - 1) + fib(n - 2);
 }
 int main(void) {
-  printf("%d\n", fib(30));
+  printf("%d\n", fib(20));
   return 0;
 }
