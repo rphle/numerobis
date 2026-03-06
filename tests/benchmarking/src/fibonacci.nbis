@@ -3,4 +3,4 @@ fibonacci!(n: Int): Int = {
         return n
     return fibonacci(n - 1) + fibonacci(n - 2)
 }
-echo(fibonacci(20))
+echo(fibonacci(30))

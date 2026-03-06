@@ -21,6 +21,9 @@ runtimelib:
 	@echo "Building static runtime library..."
 	python3 runtime/build_lib.py
 
+benchmark:
+	python3 tests/benchmarking/benchmark.py
+
 
 help: # Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?#' $(MAKEFILE_LIST) | \

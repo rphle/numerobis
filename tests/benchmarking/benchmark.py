@@ -63,7 +63,7 @@ for name, test in tests.items():
         print(f"Command : {run_cmd}")
         print("-" * 60)
 
-        benchmark_cmd = f"hyperfine --warmup 10 --runs 250 --style basic '{run_cmd}'"
+        benchmark_cmd = f"hyperfine --warmup 10 --runs 50 --style basic '{run_cmd}'"
 
         subprocess.run(benchmark_cmd, shell=True)
         print()

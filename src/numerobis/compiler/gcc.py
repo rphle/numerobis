@@ -166,7 +166,7 @@ def compile(
     tmp.write(code.encode("utf-8"))
     tmp.close()
 
-    flags = {"-O0", "-g"} | flags
+    flags = {"-O3", "-fno-plt", "-march=native"} | flags
 
     with resources.as_file(resources.files("numerobis")) as base_path:
         runtime_path = base_path / "runtime"
