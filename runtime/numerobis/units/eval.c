@@ -2,6 +2,7 @@
 #include "../values.h"
 #include "glib.h"
 #include "units.h"
+
 #include <math.h>
 #include <stdbool.h>
 #include <stddef.h>
@@ -12,6 +13,7 @@ gdouble eval_unit(const Unit *u, gdouble number, EvalMode mode) {
 
   if (u->len == 0 && u->scalar == 1.0)
     return number;
+
   gdouble result = 1.0;
 
   for (uint16_t i = 0; i < u->len; i++) {

@@ -37,8 +37,6 @@ typedef struct {
   void *env;
 } Closure;
 
-extern Value closure__call__(Value callee, Value *args);
-
 typedef struct Value {
   ValueType type;
   union {
@@ -147,7 +145,7 @@ static inline Value __call__(Value self, Value *args) {
   case VALUE_EXTERN_FN:
     return self.extern_fn(args);
   default:
-    return closure__call__(self, args);
+    return self.closure->func(self.closure->env, args);
   }
 }
 

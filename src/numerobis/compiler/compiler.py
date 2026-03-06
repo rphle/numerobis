@@ -105,13 +105,22 @@ class Compiler:
 
         self.units: CompiledUnits = CompiledUnits()
 
+    # These bypass the full number_binop dispatch for plain dimless integers.
+    _FAST_BINOP = {"add": "FAST_ADD", "sub": "FAST_SUB", "mul": "FAST_MUL"}
+
     def bin_op_(self, node: BinOp, link: int) -> tstr:
         operands = [self.compile(node.left), self.compile(node.right)]
+        left, right = operands[:: node.meta.get("side", 1)]
+        op_name = node.op.name
+
+        if op_name in self._FAST_BINOP:
+            self.include.add("numerobis/closures")
+            macro = self._FAST_BINOP[op_name]
+            return tstr(f"{macro}({left}, {right})")
 
         out = tstr("__$func__($left, $right)")
-        out["left"], out["right"] = operands[:: node.meta.get("side", 1)]
-        out["func"] = node.op.name
-
+        out["left"], out["right"] = left, right
+        out["func"] = op_name
         return out
 
     def block_(self, node: Block, link: int) -> tstr:
@@ -175,6 +184,8 @@ class Compiler:
 
         return out
 
+    _FAST_CMP = {"le": "FAST_LE_BOOL", "lt": "FAST_LT_BOOL", "eq": "FAST_EQ_BOOL"}
+
     def compare_(self, node: Compare, link: int) -> tstr:
         comparators = [node.left, *node.comparators]
         values = [self.compile(c) for c in comparators]
@@ -182,19 +193,21 @@ class Compiler:
         comparisons = []
         for i, op in enumerate(node.ops):
             opname = self.unlink(op).name  # type: ignore
+            left, right = values[i], values[i + 1]
 
-            out = tstr("__$op__($left, $right)")
-            operands = [values[i], values[i + 1]]
-
-            out["left"], out["right"] = operands[:: node.meta["side"][i]]
-            out["op"] = opname
+            if node.meta["side"][i] == -1:
+                left, right = right, left
 
             if opname == "ne":
-                out["op"] = "eq"
-                comparisons.append(
-                    f"(!__cbool__({out}))"
-                )  # unary ! on __cbool__ result
+                self.include.add("numerobis/closures")
+                comparisons.append(f"(!FAST_EQ_BOOL({left}, {right}))")
+            elif opname in self._FAST_CMP:
+                self.include.add("numerobis/closures")
+                comparisons.append(f"{self._FAST_CMP[opname]}({left}, {right})")
             else:
+                out = tstr("__$op__($left, $right)")
+                out["left"], out["right"] = left, right
+                out["op"] = opname
                 comparisons.append(f"__cbool__({out})")
 
         return tstr(f"bool__init__({' && '.join(comparisons)})")
@@ -645,12 +658,24 @@ class Compiler:
         return out
 
     def while_loop_(self, node: WhileLoop, link: int) -> tstr:
-        out = tstr("while (__cbool__($condition)) $body")
+        condition = self.compile(node.condition)
+        body = self.compile(self._make_block(node.body))
 
-        out["condition_type"] = str(self._link2type(node.condition))
-        out["condition"] = self.compile(node.condition)
-        out["body"] = self.compile(self._make_block(node.body))
+        cond_node = (
+            self.unlink(node.condition)
+            if isinstance(node.condition, (int, Link))
+            else node.condition
+        )
+        cond_str = str(condition)
+        if isinstance(cond_node, Compare):
+            prefix, suffix = "bool__init__(", ")"
+            if cond_str.startswith(prefix) and cond_str.endswith(suffix):
+                cond_str = cond_str[len(prefix) : -len(suffix)]
+        else:
+            cond_str = f"__cbool__({cond_str})"
 
+        out = tstr(f"while ({cond_str}) $body")
+        out["body"] = body
         return out
 
     def unlink(self, link: SameType) -> SameType:

@@ -49,43 +49,34 @@ static bool number__cbool__(Value self) {
   switch (self.number.kind) {
   case NUM_INT64:
     return self.number.i64 != 0;
-    break;
   case NUM_DOUBLE:
     return self.number.f64 != 0.0;
-    break;
   }
+  return false;
 }
 
 Value number__neg__(Value self) {
-  if (self.number.kind == NUM_INT64) {
+  if (self.number.kind == NUM_INT64)
     return int__init__(-(self.number.i64), self.number.unit);
-  } else {
-    return float__init__(-(self.number.f64), self.number.unit);
-  }
+  return float__init__(-(self.number.f64), self.number.unit);
 }
 
 // Comparisons
 
 static int number_cmp(const Number *a, const Number *b) {
-  // same type
   if (a->kind == b->kind) {
     if (a->kind == NUM_INT64)
       return (a->i64 > b->i64) - (a->i64 < b->i64);
     return (a->f64 > b->f64) - (a->f64 < b->f64);
   }
-
-  // mixed types
   gint64 iv = (a->kind == NUM_INT64) ? a->i64 : b->i64;
   gdouble fv = (a->kind == NUM_DOUBLE) ? a->f64 : b->f64;
   int flip = (a->kind == NUM_DOUBLE) ? -1 : 1;
-
   if (isnan(fv))
     return 0;
-
   gdouble diff = (gdouble)iv - fv;
   if (diff != 0.0)
     return flip * ((diff > 0.0) - (diff < 0.0));
-
   return 0;
 }
 
@@ -106,9 +97,6 @@ static inline Value number__eq__(Value a, Value b) {
 }
 
 // Binary operators
-static inline bool number_is_double(const Number *n) {
-  return n->kind == NUM_DOUBLE;
-}
 
 static inline gdouble number_as_double(const Number *n) {
   return n->kind == NUM_DOUBLE ? n->f64 : (gdouble)n->i64;
@@ -121,17 +109,18 @@ static Value number_binop(Value a, Value b, binop_i64 iop, binop_f64 fop,
 
   uint64_t uha = na->unit;
   uint64_t uhb = nb->unit;
+
   const Unit *ua = unit_get(uha);
   const Unit *ub = unit_get(uhb);
-  uint64_t unit = U_ONE;
+
   bool dimless =
       (is_one(ua) && ua->scalar == 1.0) && (is_one(ub) && ub->scalar == 1.0);
 
+  uint64_t unit = NUMEROBIS_UNIT_ONE_HASH;
+
   bool _x_defined = false;
   bool _y_defined = false;
-  gdouble x = 0;
-  gdouble y = 0;
-  gdouble exp;
+  gdouble x = 0, y = 0;
 
   switch (kind) {
   case OP_ADD:
@@ -139,15 +128,16 @@ static Value number_binop(Value a, Value b, binop_i64 iop, binop_f64 fop,
     unit = uha;
     break;
   case OP_MUL:
-    unit = !dimless ? unit_mul(ua, ub, false) : U_ONE;
+    unit = !dimless ? unit_mul(ua, ub, false) : NUMEROBIS_UNIT_ONE_HASH;
     break;
   case OP_DIV:
-    unit = !dimless ? unit_mul(ua, ub, true) : U_ONE;
+    unit = !dimless ? unit_mul(ua, ub, true) : NUMEROBIS_UNIT_ONE_HASH;
     break;
-  case OP_POW:
-    exp = (nb->kind == NUM_DOUBLE) ? nb->f64 : (gdouble)nb->i64;
-    unit = !dimless ? unit_pow(ua, exp) : U_ONE;
+  case OP_POW: {
+    gdouble exp = (nb->kind == NUM_DOUBLE) ? nb->f64 : (gdouble)nb->i64;
+    unit = !dimless ? unit_pow(ua, exp) : NUMEROBIS_UNIT_ONE_HASH;
     break;
+  }
   case OP_DADD:
   case OP_DSUB:
     x = eval_number(na, &uha);
@@ -160,17 +150,15 @@ static Value number_binop(Value a, Value b, binop_i64 iop, binop_f64 fop,
     unit = uha;
     break;
   default:
-    unit = U_ONE;
+    unit = NUMEROBIS_UNIT_ONE_HASH;
     break;
   }
 
   if (na->kind == NUM_DOUBLE || nb->kind == NUM_DOUBLE) {
     if (!_x_defined)
-      x = (na->kind == NUM_DOUBLE) ? na->f64 : (gdouble)na->i64;
-
+      x = number_as_double(na);
     if (!_y_defined)
-      y = (nb->kind == NUM_DOUBLE) ? nb->f64 : (gdouble)nb->i64;
-
+      y = number_as_double(nb);
     return float__init__(fop(x, y), unit);
   }
   return int__init__(
@@ -182,8 +170,12 @@ static inline gint64 i_add(gint64 a, gint64 b) { return a + b; }
 static inline gint64 i_sub(gint64 a, gint64 b) { return a - b; }
 static inline gint64 i_mul(gint64 a, gint64 b) { return a * b; }
 static inline gint64 i_div(gint64 a, gint64 b) { return a / b; }
-static inline gint64 i_pow(gint64 a, gint64 b) { return pow(a, b); }
-static inline gint64 i_mod(gint64 a, gint64 b) { return fmod(a, b); }
+static inline gint64 i_pow(gint64 a, gint64 b) {
+  return (gint64)pow((gdouble)a, (gdouble)b);
+}
+static inline gint64 i_mod(gint64 a, gint64 b) {
+  return (gint64)fmod((gdouble)a, (gdouble)b);
+}
 
 static inline gdouble f_add(gdouble a, gdouble b) { return a + b; }
 static inline gdouble f_sub(gdouble a, gdouble b) { return a - b; }
@@ -217,26 +209,21 @@ static inline Value number__dsub__(Value a, Value b) {
   return number_binop(a, b, i_sub, f_sub, OP_DSUB);
 }
 
+// Conversions
+
 static Value number__str__(Value val) {
   return str__init__(print_number(&val.number));
 }
 
 static Value number__int__(Value self) {
   Number *n = &self.number;
-  if (n->kind == NUM_INT64) {
-    return self;
-  } else {
-    return int__init__((gint64)n->f64, n->unit);
-  }
+  return (n->kind == NUM_INT64) ? self : int__init__((gint64)n->f64, n->unit);
 }
 
 static Value number__float__(Value self) {
   Number *n = &self.number;
-  if (n->kind == NUM_DOUBLE) {
-    return self;
-  } else {
-    return float__init__((gdouble)n->i64, n->unit);
-  }
+  return (n->kind == NUM_DOUBLE) ? self
+                                 : float__init__((gdouble)n->i64, n->unit);
 }
 
 Value number__convert__(Value self, const uint64_t target) {
@@ -245,13 +232,10 @@ Value number__convert__(Value self, const uint64_t target) {
   Unit *u = unit_get(target);
   bool dimless = (is_one(u) && u->scalar == 1.0);
 
-  gdouble res;
-  int target_type = n->kind == NUM_INT64 ? 0 : 1;
   if (dimless) {
     gdouble base = eval_unit(u, value, EVAL_BASE);
     gdouble target_val = eval_unit(u, value, EVAL_INVERTED);
-
-    res = target_val / base;
+    gdouble res = target_val / base;
     value = unit_is_logarithmic(u) ? res : value * res;
   }
 

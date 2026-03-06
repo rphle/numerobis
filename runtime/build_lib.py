@@ -45,6 +45,9 @@ def build_lib():
                 *glib_cflags,
                 *gc_cflags,
                 "-fPIC",
+                "-O3",
+                "-fno-plt",
+                "-march=native",
             ],
             check=True,
         )
