@@ -7,6 +7,11 @@ void u_externs_init(void) {
       g_hash_table_new_full(g_str_hash, g_str_equal, g_free, g_free);
 }
 
+void u_externs_shutdown(void) {
+  g_hash_table_destroy(NUMEROBIS_EXTERNS);
+  NUMEROBIS_EXTERNS = NULL;
+}
+
 Value *extern_fn__init__(Value (*fn)(Value *args)) {
   Value *v = g_new(Value, 1);
   v->type = VALUE_EXTERN_FN;

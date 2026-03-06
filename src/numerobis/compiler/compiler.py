@@ -4,11 +4,12 @@ Transforms intermediate representation into compilable C source code.
 """
 
 import dataclasses
-import hashlib
+from decimal import Decimal
 from typing import Any, TypeVar
 
 from ..analysis.invert import _to_x
 from ..analysis.preprocessor import Preprocessor
+from ..analysis.simplifier import Simplifier
 from ..classes import CompiledModule, CompiledUnits, Header, ModuleMeta
 from ..compiler.scoping import get_free_vars
 from ..environment import Namespaces
@@ -47,12 +48,20 @@ from ..nodes.ast import (
     WhileLoop,
 )
 from ..nodes.core import AstNode, Identifier, UnitNode
-from ..nodes.unit import Expression, Neg, One, Power, Product, Scalar, Sum
+from ..nodes.unit import Expression, Neg, One, Power, Product, Scalar
 from ..typechecker.linking import Link
 from ..typechecker.types import FunctionType, T
 from ..utils import camel2snake_pattern
 from .tstr import tstr
-from .utils import BUILTINS, compile_math, ensuresuffix, module_uid, mthd, strip_parens
+from .utils import (
+    BUILTINS,
+    compile_math,
+    ensuresuffix,
+    module_uid,
+    mthd,
+    strip_parens,
+    unit_uid,
+)
 
 SameType = TypeVar("SameType")
 
@@ -69,6 +78,8 @@ class Compiler:
         self.program = program
         self.module = module
         self.errors = Exceptions(module=module)
+        self.simplifier = Simplifier(module=module)
+        self.simplify = self.simplifier.simplify
         self.env = namespaces
         self.header = header
         self.imports = imports
@@ -157,10 +168,7 @@ class Compiler:
         else:
             args = [arg.value for arg in arg_names.values()]
 
-        args = [
-            str(self.compile(arg)) if arg else "(Value){.type = VALUE_NONE}"
-            for arg in args
-        ]
+        args = [str(self.compile(arg)) if arg else "NONE" for arg in args]
 
         str_args = f"(Value[]){{{callee}, {', '.join(args)}}}"
         out = tstr(f"__call__({callee}, {str_args})")
@@ -201,7 +209,7 @@ class Compiler:
             if self._link2type(node.value.target) in {"int", "float"}:  # type: ignore
                 assert isinstance(node.target, Expression)
                 target = (
-                    self.unit_(node.target)
+                    self.unit_suffix_(self.simplify(node.target, do_cancel=False))
                     if not isinstance(node.target.value, Scalar)
                     else "U_ONE"
                 )
@@ -505,9 +513,8 @@ class Compiler:
 
         if init:
             out["type"] = typ
-            unit = self.unit_(node.unit)
-
-            out["unit"] = unit if unit else "U_ONE"
+            unit = self.unit_suffix_(self.simplify(node.unit, do_cancel=False))
+            out["unit"] = unit
 
         return out
 
@@ -564,40 +571,53 @@ class Compiler:
         else:
             raise ValueError(f"Unknown unary operator {node.op.name}")
 
-    def unit_(self, node: UnitNode) -> str:
+    def unit_suffix_(self, node: UnitNode) -> str:
+        factor, unit = self._unit_suffix_(node)
+        if factor == 1 and unit == "":
+            return "U_ONE"
+        elif factor != 1:
+            return f"U_({str(factor)}, {unit})"
+        else:
+            return f"U({unit})"
+
+    def _unit_suffix_(self, node: UnitNode) -> tuple[Decimal, str]:
         match node:
             case Expression():
-                return self.unit_(node.value)
-            case Sum() | Product():
-                op = "U_SUM" if isinstance(node, Sum) else "U_PROD"
-                values = ",".join(self.unit_(v) for v in node.values)
-                if not values:
-                    return ""
-                return f"{op}({values})"
+                return self._unit_suffix_(node.value)
+            case Product():
+                if not node.values:
+                    return Decimal(1), ""
+
+                scalar = Decimal(1)
+                values = []
+                for v in node.values:
+                    n, value = self._unit_suffix_(v)
+                    scalar *= n
+                    if value:
+                        values.append(value)
+
+                return scalar, ",".join(values)
             case Power():
-                return f"U_PWR({self.unit_(node.base)}, {self.unit_(node.exponent)})"
+                n, base = self._unit_suffix_(node.base)
+                exponent, exponent_val = self._unit_suffix_(node.exponent)
+                assert exponent_val == ""
+                return n, base[:-2] + f"{exponent})"
             case Scalar():
-                return f"U_NUM({node.value})"
+                return (node.value, "")
             case Identifier():
                 module = self._imported_units.get(node.name, {"module": self.uid})[
                     "module"
                 ]
-                enum = "U" + (
-                    hashlib.sha1((node.name + "_" + module).encode("utf-8"))
-                    .hexdigest()[:8]
-                    .upper()
-                )
-
-                return f'U_ID("{node.name}", {enum})'
+                enum = unit_uid(node.name, module)
+                return Decimal(1), f"UF({enum}, 1)"
             case Neg():
-                return f"U_NEG({self.unit_(node.value)})"
+                n, value = self._unit_suffix_(node.value)
+                return Decimal(-1) * n, value
             case _:
                 raise NotImplementedError(f"Unit node cannot be compiled: {type(node)}")
 
     def unit_def(self, node: Expression, name: str, target) -> None:
-        name = name + "_" + self.uid
-        h = hashlib.sha1(name.encode("utf-8")).hexdigest()[:8].upper()
-        target["U" + h] = compile_math(node.value)
+        target[unit_uid(name, self.uid)] = compile_math(node.value)
 
     def variable_(self, node: Variable, link: int) -> tstr:
         out = tstr("$name = $value")
@@ -651,28 +671,18 @@ class Compiler:
 
         for name, unit in self.preprocessor.units.items():
             self.unit_def(_to_x(unit), name, self.units.units)  # type: ignore
+            self.units.names[unit_uid(name, self.uid)] = name
 
         for name, unit in self.preprocessor.inverted.items():
             self.unit_def(unit, name, self.units.inverted)
 
         for n, b in self.preprocessor.bases.items():
-            name = (
-                "U"
-                + hashlib.sha1((n + "_" + self.uid).encode("utf-8"))
-                .hexdigest()[:8]
-                .upper()
-            )
-            self.units.bases[name] = (
+            self.units.bases[unit_uid(n, self.uid)] = (
                 compile_math(b) if not isinstance(b.value, One) else ""
             )
 
         for n in self.preprocessor.logarithmic:
-            self.units.logarithmic.add(
-                "U"
-                + hashlib.sha1((n + "_" + self.uid).encode("utf-8"))
-                .hexdigest()[:8]
-                .upper()
-            )
+            self.units.logarithmic.add(unit_uid(n, self.uid))
 
     def compile(self, link: Link | Any) -> tstr:
         node = self.unlink(link) if isinstance(link, Link) else link

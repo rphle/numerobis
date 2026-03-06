@@ -33,6 +33,7 @@ class CompiledUnits:
     inverted: dict[str, str] = field(default_factory=dict)
     bases: dict[str, str] = field(default_factory=dict)
     logarithmic: set[str] = field(default_factory=set)
+    names: dict[str, str] = field(default_factory=dict)
 
 
 @dataclass

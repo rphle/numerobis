@@ -1,3 +1,4 @@
+import hashlib
 from functools import lru_cache
 from hashlib import md5
 from pathlib import Path
@@ -55,3 +56,8 @@ def compile_math(node: UnitNode) -> str:
 def module_uid(path: str | Path) -> str:
     uid = md5(str(Path(path).resolve()).encode()).hexdigest()[:8]
     return str(uid)
+
+
+@lru_cache(maxsize=None)
+def unit_uid(n: str, uid: str) -> str:
+    return "U" + hashlib.sha1((n + "_" + uid).encode("utf-8")).hexdigest()[:8].upper()

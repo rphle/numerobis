@@ -7,13 +7,14 @@
 #include <glib.h>
 #include <math.h>
 #include <stdbool.h>
+#include <stdint.h>
 
 typedef gint64 (*binop_i64)(gint64, gint64);
 typedef gdouble (*binop_f64)(gdouble, gdouble);
 
 static const ValueMethods _number_methods;
 
-Value int__init__(gint64 x, UnitNode *unit) {
+Value int__init__(gint64 x, const uint64_t unit) {
   Value v;
   v.type = VALUE_NUMBER;
   v.number.kind = NUM_INT64;
@@ -22,7 +23,7 @@ Value int__init__(gint64 x, UnitNode *unit) {
   return v;
 }
 
-Value float__init__(gdouble x, UnitNode *unit) {
+Value float__init__(gdouble x, const uint64_t unit) {
   Value v;
   v.type = VALUE_NUMBER;
   v.number.kind = NUM_DOUBLE;
@@ -118,43 +119,48 @@ static Value number_binop(Value a, Value b, binop_i64 iop, binop_f64 fop,
   Number *na = &a.number;
   Number *nb = &b.number;
 
-  UnitNode *ua = na->unit;
-  UnitNode *ub = nb->unit;
-  UnitNode *unit = NULL;
-  bool dimless = ub->kind == UNIT_ONE && ua->kind == UNIT_ONE;
+  uint64_t uha = na->unit;
+  uint64_t uhb = nb->unit;
+  const Unit *ua = unit_get(uha);
+  const Unit *ub = unit_get(uhb);
+  uint64_t unit = U_ONE;
+  bool dimless =
+      (is_one(ua) && ua->scalar == 1.0) && (is_one(ub) && ub->scalar == 1.0);
 
   bool _x_defined = false;
   bool _y_defined = false;
   gdouble x = 0;
   gdouble y = 0;
+  gdouble exp;
 
   switch (kind) {
   case OP_ADD:
   case OP_SUB:
-    unit = ua;
+    unit = uha;
     break;
   case OP_MUL:
-    unit = !dimless ? U_PROD(ua, ub) : U_ONE;
+    unit = !dimless ? unit_mul(ua, ub, false) : U_ONE;
     break;
   case OP_DIV:
-    unit = !dimless ? U_PROD(ua, U_PWR(ub, U_NUM(-1))) : U_ONE;
+    unit = !dimless ? unit_mul(ua, ub, true) : U_ONE;
     break;
   case OP_POW:
-    unit = ub == U_ONE ? ua : U_PWR(ua, ub);
+    exp = (nb->kind == NUM_DOUBLE) ? nb->f64 : (gdouble)nb->i64;
+    unit = !dimless ? unit_pow(ua, exp) : U_ONE;
     break;
   case OP_DADD:
   case OP_DSUB:
-    x = eval_number(na, ua);
-    y = eval_number(nb, ua);
+    x = eval_number(na, &uha);
+    y = eval_number(nb, &uha);
     x = fop(x, y);
     y = 0;
     x = eval_unit(ua, x, EVAL_NORMAL);
     _x_defined = true;
     _y_defined = true;
-    unit = ua;
+    unit = uha;
     break;
   default:
-    unit = NULL;
+    unit = U_ONE;
     break;
   }
 
@@ -233,18 +239,20 @@ static Value number__float__(Value self) {
   }
 }
 
-Value number__convert__(Value self, UnitNode *target) {
+Value number__convert__(Value self, const uint64_t target) {
   Number *n = &self.number;
   gdouble value = n->kind == NUM_INT64 ? (gdouble)(n->i64) : n->f64;
+  Unit *u = unit_get(target);
+  bool dimless = (is_one(u) && u->scalar == 1.0);
 
   gdouble res;
   int target_type = n->kind == NUM_INT64 ? 0 : 1;
-  if (target->kind == UNIT_ONE) {
-    gdouble base = eval_unit(n->unit, value, EVAL_BASE);
-    gdouble target_val = eval_unit(n->unit, value, EVAL_INVERTED);
+  if (dimless) {
+    gdouble base = eval_unit(u, value, EVAL_BASE);
+    gdouble target_val = eval_unit(u, value, EVAL_INVERTED);
 
     res = target_val / base;
-    value = is_unit_logarithmic(n->unit) ? res : value * res;
+    value = unit_is_logarithmic(u) ? res : value * res;
   }
 
   if (n->kind == NUM_INT64)

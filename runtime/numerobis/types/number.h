@@ -2,13 +2,14 @@
 #define NUMEROBIS_NUMBER_H
 
 #include "../values.h"
+
 #include <glib.h>
 #include <stdbool.h>
 
-Value int__init__(gint64 x, UnitNode *unit);
-Value float__init__(gdouble x, UnitNode *unit);
+Value int__init__(gint64 x, const uint64_t unit);
+Value float__init__(gdouble x, const uint64_t unit);
 
-Value number__convert__(Value self, UnitNode *target);
+Value number__convert__(Value self, const uint64_t target);
 
 typedef enum {
   OP_ADD,

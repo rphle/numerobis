@@ -2,72 +2,73 @@
 #define NUMEROBIS_UNITS_H
 
 #include <glib.h>
-#include <math.h>
 #include <stdbool.h>
 #include <stdint.h>
 
-typedef enum {
-  UNIT_SCALAR,
-  UNIT_PRODUCT,
-  UNIT_SUM,
-  UNIT_EXPRESSION,
-  UNIT_NEG,
-  UNIT_POWER,
-  UNIT_IDENTIFIER,
-  UNIT_ONE
-} UnitKind;
+extern GHashTable *NUMEROBIS_UNITS;       /* uint64_t hash -> Unit *  */
+extern GHashTable *NUMEROBIS_UNIT_COMBOS; /* ComboKey -> Unit * (borrowed) */
+extern const char *NUMEROBIS_UNIT_NAMES[];
 
-typedef struct UnitNode UnitNode;
+typedef struct {
+  uint16_t id;
+  int16_t exp;
+} UnitFactor;
 
-struct UnitNode {
-  UnitKind kind;
-  union {
-    struct {
-      gdouble value;
-    } scalar;
+typedef struct {
+  UnitFactor *data;
+  uint16_t len;
+  gdouble scalar;
+} UnitFactorList;
 
-    struct {
-      GPtrArray *values;
-    } group;
+typedef struct Unit {
+  uint64_t hash;
+  uint16_t len;
+  gdouble scalar;
+  UnitFactor data[];
+} Unit;
 
-    struct {
-      UnitNode *value;
-    } unary;
+typedef uint64_t ComboKey;
 
-    struct {
-      char *name;
-      uint16_t id;
-    } label;
+static inline ComboKey u_combo_key(uint64_t a, uint64_t b) {
+  if (a < b) {
+    uint64_t t = a;
+    a = b;
+    b = t;
+  }
+  return (a << 32) | (b & 0xFFFFFFFF);
+}
 
-    struct {
-      UnitNode *base;
-      UnitNode *exponent;
-    } power;
-  } as;
-};
+void units_init(void);
+void units_shutdown(void);
 
-UnitNode *unit_scalar_new(double value, UnitNode *unit);
-UnitNode *unit_id_new(const char *name, uint16_t id);
-UnitNode *unit_product_new();
-UnitNode *unit_sum_new();
-UnitNode *unit_expression_new(UnitNode *value);
-UnitNode *unit_neg_new(UnitNode *value);
-UnitNode *unit_power_new(UnitNode *base, UnitNode *exponent);
-UnitNode *unit_one_new();
+uint64_t unit_new(uint16_t count, const UnitFactor *factors, gdouble scalar);
 
-UnitNode *unit_product_of(UnitNode *first, ...);
-UnitNode *unit_sum_of(UnitNode *first, ...);
+Unit *unit_get(uint64_t hash);
 
-GString *print_unit(UnitNode *node);
+bool is_one(const Unit *u);
 
-#define U_PROD(...) unit_product_of(__VA_ARGS__, NULL)
-#define U_SUM(...) unit_sum_of(__VA_ARGS__, NULL)
-#define U_NUM(v) unit_scalar_new((v), NULL)
-#define U_NUM_U(v, u) unit_scalar_new((v), (u))
-#define U_ID(n, id) unit_id_new(n, id)
-#define U_EXPR(v) unit_expression_new(v)
-#define U_NEG(v) unit_neg_new(v)
-#define U_PWR(b, e) unit_power_new((b), (e))
-#define U_ONE unit_one_new()
+uint64_t unit_mul(const Unit *a, const Unit *b, bool invert);
+
+uint64_t unit_pow(const Unit *u, gdouble exp);
+
+UnitFactorList unit_simplify(const UnitFactor *data, uint16_t len,
+                             gdouble scalar);
+
+GString *unit_print(const Unit *u);
+
+/* ==== MACROS ==== */
+
+#define UF(id, exp) {(id), (exp)}
+
+#define _U_BUILD(scalar, ...)                                                  \
+  ({                                                                           \
+    const UnitFactor _uf[] = {__VA_ARGS__};                                    \
+    unit_new((uint16_t)(sizeof(_uf) / sizeof(_uf[0])), _uf,                    \
+             (gdouble)(scalar));                                               \
+  })
+
+#define U(...) _U_BUILD(1, __VA_ARGS__)
+#define U_(scalar, ...) _U_BUILD(scalar, __VA_ARGS__)
+#define U_ONE unit_new(0, NULL, 1.0)
 
 #endif

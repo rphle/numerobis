@@ -74,7 +74,7 @@ force = spring_constant * displacement
 # ---
 mass = 1 kilogram
 spring_constant = 100 newton/metre
-angular_frequency = (spring_constant / mass)^0.5
+angular_frequency = (spring_constant / mass)# ^0.5
 
 # ---
 radius = 10 metre

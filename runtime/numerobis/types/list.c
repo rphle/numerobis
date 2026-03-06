@@ -1,11 +1,13 @@
 #include "list.h"
 #include "../constants.h"
+#include "../units/units.h"
 #include "../utils/utils.h"
 #include "../values.h"
 #include "bool.h"
 #include "methods.h"
 #include "number.h"
 #include "str.h"
+
 #include <glib.h>
 #include <stdarg.h>
 #include <stdbool.h>
@@ -61,11 +63,11 @@ static Value list__getitem__(Value _self, Value _index) {
 
   ssize_t len = (ssize_t)_list_len(self);
   if (len == 0)
-    return (Value){.type = VALUE_NONE};
+    return NONE;
 
   ssize_t nidx = normalize_index(index, len);
   if (nidx < 0 || nidx >= len)
-    return (Value){.type = VALUE_NONE};
+    return NONE;
 
   Value *v = g_array_index(self, Value *, (guint)nidx);
   return *v;
@@ -150,13 +152,13 @@ Value list_append(Value _self, Value val) {
     *heap_val = val;
     g_array_append_val(_self.list, heap_val);
   }
-  return (Value){.type = VALUE_NONE};
+  return NONE;
 }
 
 Value list_extend(Value _self, Value _other) {
   if (_self.type != VALUE_LIST || !_self.list || _other.type != VALUE_LIST ||
       !_other.list)
-    return (Value){.type = VALUE_NONE};
+    return NONE;
 
   GArray *self = _self.list;
   GArray *other = _other.list;
@@ -165,12 +167,12 @@ Value list_extend(Value _self, Value _other) {
     Value *val = g_array_index(other, Value *, i);
     g_array_append_val(self, val);
   }
-  return (Value){.type = VALUE_NONE};
+  return NONE;
 }
 
 Value list_insert(Value _self, Value _index, Value val) {
   if (_self.type != VALUE_LIST || !_self.list)
-    return (Value){.type = VALUE_NONE};
+    return NONE;
 
   GArray *self = _self.list;
 
@@ -189,12 +191,12 @@ Value list_insert(Value _self, Value _index, Value val) {
   Value *heap_val = g_new(Value, 1);
   *heap_val = val;
   g_array_insert_val(self, (guint)index, heap_val);
-  return (Value){.type = VALUE_NONE};
+  return NONE;
 }
 
 Value list__setitem__(Value _self, Value _index, Value val) {
   if (_self.type != VALUE_LIST || !_self.list)
-    return (Value){.type = VALUE_NONE};
+    return NONE;
 
   GArray *self = _self.list;
   g_assert(_index.type == VALUE_NUMBER);
@@ -203,7 +205,7 @@ Value list__setitem__(Value _self, Value _index, Value val) {
 
   ssize_t nidx = normalize_index(index, len);
   if (nidx < 0 || nidx >= len)
-    return (Value){.type = VALUE_NONE};
+    return NONE;
 
   Value *heap_val = g_new(Value, 1);
   *heap_val = val;
@@ -213,7 +215,7 @@ Value list__setitem__(Value _self, Value _index, Value val) {
 
 Value list__delitem__(Value _self, Value _index) {
   if (_self.type != VALUE_LIST || !_self.list)
-    return (Value){.type = VALUE_NONE};
+    return NONE;
 
   GArray *self = _self.list;
   g_assert(_index.type == VALUE_NUMBER);
@@ -222,15 +224,15 @@ Value list__delitem__(Value _self, Value _index) {
 
   ssize_t nidx = normalize_index(index, len);
   if (nidx < 0 || nidx >= len)
-    return (Value){.type = VALUE_NONE};
+    return NONE;
 
   g_array_remove_index(self, (guint)nidx);
-  return (Value){.type = VALUE_NONE};
+  return NONE;
 }
 
 Value list_pop(Value _self, Value _index) {
   if (_self.type != VALUE_LIST || !_self.list || _self.list->len == 0)
-    return (Value){.type = VALUE_NONE};
+    return NONE;
 
   GArray *self = _self.list;
   ssize_t len = (ssize_t)self->len;
@@ -245,7 +247,7 @@ Value list_pop(Value _self, Value _index) {
 
   ssize_t nidx = normalize_index(idx, len);
   if (nidx < 0 || nidx >= len)
-    return (Value){.type = VALUE_NONE};
+    return NONE;
 
   Value *val = g_array_index(self, Value *, (guint)nidx);
   Value result = *val;

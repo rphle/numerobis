@@ -2,8 +2,10 @@
 #include "../types/list.h"
 #include "../types/number.h"
 #include "../types/str.h"
+#include "../units/units.h"
 #include "../values.h"
 #include "echo.h"
+
 #include <glib.h>
 #include <math.h>
 #include <stdio.h>
@@ -15,7 +17,7 @@ static Value numerobis_builtin_random(Value *args) {
     rng = g_rand_new();
   }
 
-  double x = g_rand_double(rng);
+  gdouble x = g_rand_double(rng);
 
   return float__init__(x, U_ONE);
 }

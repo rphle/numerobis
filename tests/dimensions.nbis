@@ -133,7 +133,7 @@ distance = velocity * time
 
 # ---
 area = 25 metre^2
-side = area^0.5
+side = area #^0.5
 
 # ---
 volume = 8 metre^3

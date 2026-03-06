@@ -143,6 +143,9 @@ class Linker:
                 k: v for m in self.modules.values() for k, v in m.units.bases.items()
             },
             logarithmic={n for m in self.modules.values() for n in m.units.logarithmic},
+            names={
+                k: v for m in self.modules.values() for k, v in m.units.names.items()
+            },
         )
         try:
             gnucc.compile(

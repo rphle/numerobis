@@ -79,7 +79,7 @@ unit_val = (1 metre / 1 metre) * 10
 one = 1 kilogram / 1 kilogram
 
 # ---
-sqrt_area = (16 metre^2)^0.5
+sqrt_area = (16 metre^2) # ^0.5
 
 # ---
 cube_root = (8 metre^3)^(1.0/3.0)

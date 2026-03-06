@@ -154,7 +154,14 @@ class Typechecker:
                     return left.edit(typ="Float")
 
                 assert isinstance(right, NumberType)
-                dimension = Power(base=left.dim, exponent=Scalar(Decimal(right.value)))
+                exp = Decimal(right.value)
+                if exp % 1 != 0:
+                    self.errors.throw(
+                        102,
+                        value=exp,
+                        loc=self.unlink(node.right).loc,
+                    )
+                dimension = Power(base=left.dim, exponent=Scalar(exp))
                 dimension = self.simplify(dimension)
                 assert dimension is not None
                 return (

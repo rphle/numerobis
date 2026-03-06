@@ -1,10 +1,11 @@
 #ifndef VALUES_H
 #define VALUES_H
+
 #include "exceptions/throw.h"
 #include "types/methods.h"
-#include "units/units.h"
 #include <glib.h>
 #include <stdbool.h>
+#include <stdint.h>
 
 typedef enum {
   VALUE_NUMBER,
@@ -24,7 +25,7 @@ typedef struct Value Value;
 
 typedef struct {
   NumberKind kind;
-  UnitNode *unit;
+  uint64_t unit;
   union {
     gint64 i64;
     gdouble f64;

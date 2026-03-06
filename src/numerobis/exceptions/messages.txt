@@ -63,6 +63,9 @@ continue statement not within loop
 [E101 / ValueError]
 Exponent must be a dimensionless scalar, not {value}
 
+[E102 / ValueError]
+Exponent must be an integer, not {value}
+
 
 
 [E201 / CompilerError]

@@ -71,6 +71,10 @@ def _prepare_source_c(
             f"g_hash_table_insert(NUMEROBIS_MODULE_REGISTRY, (gpointer){path_str}, &mod_{i});"
         )
 
+    unit_names = "\n".join(
+        f'    [{uid}] = "{name}",' for uid, name in units.names.items()
+    )
+
     source = f"""#include <glib.h>
     #include <math.h>
     #include <stdbool.h>
@@ -116,6 +120,10 @@ def _prepare_source_c(
             default: return false;
         }}
     }}
+
+    const char *NUMEROBIS_UNIT_NAMES[] = {{
+    {unit_names}
+    }};
 
     __attribute__((constructor))
     void u_init_module_registry() {{
