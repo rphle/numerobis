@@ -11,8 +11,8 @@ gdouble eval_unit(const Unit *u, gdouble number, EvalMode mode) {
   if (u == NULL)
     return 1.0;
 
-  if (u->len == 0 && u->scalar == 1.0)
-    return number;
+  // BUG FIX: Remove the 'if (u->len == 0 && u->scalar == 1.0) return number;'
+  // fast path. It must return a multiplier, not the raw number itself.
 
   gdouble result = 1.0;
 
@@ -67,13 +67,20 @@ GString *print_number(Number *n) {
   GString *out = g_string_new("");
   g_string_printf(out, "%g", value);
 
-  GString *unit = unit_print(unit_get(n->unit));
+  const Unit *u = unit_get(n->unit);
+  if (is_one(u) && u->scalar == 1.0) {
+    return out;
+  }
+
+  GString *unit = unit_print(u);
   size_t len = g_utf8_strlen(unit->str, unit->len);
 
   if (len > 0) {
     g_string_append(out, " ");
     g_string_append(out, unit->str);
   }
+
+  g_string_free(unit, TRUE);
 
   return out;
 }

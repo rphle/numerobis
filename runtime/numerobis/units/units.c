@@ -115,19 +115,10 @@ uint64_t unit_new(uint16_t count, const UnitFactor *factors, gdouble scalar) {
   if (scalar == 0.0)
     scalar = 1.0;
 
-  if (!factors || count == 0) {
-    if (NUMEROBIS_UNIT_ONE_HASH)
-      return NUMEROBIS_UNIT_ONE_HASH;
-    return dimensionless_unit()->hash;
-  }
-
   UnitFactorList sl = unit_simplify(factors, count, scalar);
-
-  if (sl.len == 0) {
+  if (sl.len == 0 && sl.scalar == 1.0 && NUMEROBIS_UNIT_ONE_HASH) {
     g_free(sl.data);
-    if (NUMEROBIS_UNIT_ONE_HASH)
-      return NUMEROBIS_UNIT_ONE_HASH;
-    return dimensionless_unit()->hash;
+    return NUMEROBIS_UNIT_ONE_HASH;
   }
 
   uint64_t h = hash_factors(sl.data, sl.len, sl.scalar);
@@ -142,7 +133,10 @@ uint64_t unit_new(uint16_t count, const UnitFactor *factors, gdouble scalar) {
   u->hash = h;
   u->len = sl.len;
   u->scalar = sl.scalar;
-  memcpy(u->data, sl.data, sl.len * sizeof(UnitFactor));
+
+  if (sl.len > 0)
+    memcpy(u->data, sl.data, sl.len * sizeof(UnitFactor));
+
   g_free(sl.data);
 
   umap_insert(&NUMEROBIS_UNITS, h, u);

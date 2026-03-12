@@ -232,7 +232,7 @@ Value number__convert__(Value self, const uint64_t target) {
   Unit *u = unit_get(target);
   bool dimless = (is_one(u) && u->scalar == 1.0);
 
-  if (dimless) {
+  if (!dimless) {
     gdouble base = eval_unit(u, value, EVAL_BASE);
     gdouble target_val = eval_unit(u, value, EVAL_INVERTED);
     gdouble res = target_val / base;
