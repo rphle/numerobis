@@ -25,6 +25,10 @@ benchmark:
 	python3 tests/benchmarking/benchmark.py
 
 
+graph:
+	pyreverse -ASmy -o png -d assets src/numerobis
+
+
 help: # Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?#' $(MAKEFILE_LIST) | \
 		awk 'BEGIN {FS = ":.*?# "}; {printf "  make %-12s %s\n", $$1, $$2}'
