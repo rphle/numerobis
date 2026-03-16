@@ -115,6 +115,11 @@ uint64_t unit_new(uint16_t count, const UnitFactor *factors, gdouble scalar) {
   if (scalar == 0.0)
     scalar = 1.0;
 
+  if (!factors || count == 0) {
+    if (scalar == 1.0 && NUMEROBIS_UNIT_ONE_HASH)
+      return NUMEROBIS_UNIT_ONE_HASH;
+  }
+
   UnitFactorList sl = unit_simplify(factors, count, scalar);
   if (sl.len == 0 && sl.scalar == 1.0 && NUMEROBIS_UNIT_ONE_HASH) {
     g_free(sl.data);

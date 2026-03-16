@@ -11,8 +11,8 @@ gdouble eval_unit(const Unit *u, gdouble number, EvalMode mode) {
   if (u == NULL)
     return 1.0;
 
-  // BUG FIX: Remove the 'if (u->len == 0 && u->scalar == 1.0) return number;'
-  // fast path. It must return a multiplier, not the raw number itself.
+  if (u->len == 0 && u->scalar == 1.0)
+    return 1.0;
 
   gdouble result = 1.0;
 
