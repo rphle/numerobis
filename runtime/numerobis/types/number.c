@@ -126,6 +126,20 @@ static Value number_binop(Value a, Value b, binop_i64 iop, binop_f64 fop,
   case OP_ADD:
   case OP_SUB:
     unit = uha;
+
+    // if nb is dimensionless and ua has a scalar, convert nb into ua's space
+    if (!dimless && (is_one(ub) && ub->scalar == 1.0) &&
+        (is_one(ua) && ua->scalar != 1.0)) {
+      gdouble nb_val = nb->kind == NUM_INT64 ? (gdouble)nb->i64 : nb->f64;
+      gdouble na_val = na->kind == NUM_INT64 ? (gdouble)na->i64 : na->f64;
+      gdouble converted = nb_val / ua->scalar;
+      gdouble result = kind == OP_ADD ? na_val + converted : na_val - converted;
+
+      if (result == (gdouble)(gint64)result && na->kind != NUM_DOUBLE &&
+          nb->kind != NUM_DOUBLE)
+        return int__init__((gint64)result, unit);
+      return float__init__(result, unit);
+    }
     break;
   case OP_MUL:
     unit = !dimless ? unit_mul(ua, ub, false) : NUMEROBIS_UNIT_ONE_HASH;
@@ -232,11 +246,10 @@ Value number__convert__(Value self, const uint64_t target) {
   Unit *u = unit_get(target);
   bool dimless = (is_one(u) && u->scalar == 1.0);
 
-  if (!dimless) {
-    gdouble base = eval_unit(u, value, EVAL_BASE);
-    gdouble target_val = eval_unit(u, value, EVAL_INVERTED);
-    gdouble res = target_val / base;
-    value = unit_is_logarithmic(u) ? res : value * res;
+  if (dimless) {
+    value = eval_number(n, NULL);
+    Unit *src = unit_get(n->unit);
+    value *= src->scalar;
   }
 
   if (n->kind == NUM_INT64)

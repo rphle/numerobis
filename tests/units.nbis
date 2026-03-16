@@ -35,6 +35,37 @@ echo(5(2*km) / 1 km)
 x: Mass/Length^3 = 1 (kg/m^3)
 
 # ---
+dimension Time;
+unit sec: Time;
+unit min = 60 * sec;
+unit hour = 60 * min;
+unit day = 24 * hour;
+unit week = 7 * day;
+unit month = 30 * day;
+unit year = 365 * day;
+
+age = 17.5 year + 1 month + 2 week + 15 hour + 48 min;
+echo(age)
+echo(age -> year)
+echo(age -> week)
+
+# ---
+unit a;
+
+x = 5 (2*a) / 1a
+y = x -> 1
+x1 = x + 3
+y1 = y + 3
+
+echo(x) # 5 2
+echo(y) # 10
+echo(x1) # 6.5 2
+echo(y1) # 13
+
+# ---
+echo(42 kg -> 1) # 42
+
+# ---
 unit kt = 0.2g
 echo(8kt -> kg)
 
