@@ -15,6 +15,7 @@ void u_externs_init(void);
 void u_externs_shutdown(void);
 
 Value *extern_fn__init__(Value (*fn)(Value *args));
+void u_extern_entry_free(gpointer data);
 void u_extern_register(const char *name, Value (*fn)(Value *args));
 Value *u_extern_lookup(const char *name);
 

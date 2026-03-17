@@ -1,10 +1,11 @@
 #include "extern.h"
+#include <gc.h>
 
 GHashTable *NUMEROBIS_EXTERNS = NULL;
 
 void u_externs_init(void) {
   NUMEROBIS_EXTERNS =
-      g_hash_table_new_full(g_str_hash, g_str_equal, g_free, g_free);
+      g_hash_table_new_full(g_str_hash, g_str_equal, NULL, u_extern_entry_free);
 }
 
 void u_externs_shutdown(void) {
@@ -13,10 +14,17 @@ void u_externs_shutdown(void) {
 }
 
 Value *extern_fn__init__(Value (*fn)(Value *args)) {
-  Value *v = g_new(Value, 1);
+  Value *v = GC_MALLOC(sizeof(Value));
   v->type = VALUE_EXTERN_FN;
   v->extern_fn = fn;
   return v;
+}
+
+void u_extern_entry_free(gpointer data) {
+  if (data) {
+    UExternEntry *e = (UExternEntry *)data;
+    GC_FREE(e);
+  }
 }
 
 void u_extern_register(const char *name, Value (*fn)(Value *args)) {
@@ -24,14 +32,13 @@ void u_extern_register(const char *name, Value (*fn)(Value *args)) {
   g_return_if_fail(fn != NULL);
   g_return_if_fail(NUMEROBIS_EXTERNS != NULL);
 
-  char *key = g_strdup(name);
+  char *key = GC_STRDUP(name);
 
   if (g_hash_table_contains(NUMEROBIS_EXTERNS, key)) {
-    g_free(key);
     g_error("Extern function already defined: %s", name);
   }
 
-  UExternEntry *e = g_new(UExternEntry, 1);
+  UExternEntry *e = GC_MALLOC(sizeof(UExternEntry));
   e->name = key;
   e->fn = extern_fn__init__(fn);
 

@@ -9,6 +9,7 @@
 #include <glib.h>
 #include <math.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 static Value numerobis_builtin_random(Value *args) {
   static GRand *rng = NULL;
@@ -33,12 +34,15 @@ static Value numerobis_builtin_input(Value *args) {
   size_t n = 0;
 
   if (getline((char **)&line, &n, stdin) == -1) {
+    if (line)
+      free(line);
     return str__init__(g_string_new(""));
   }
 
   g_strchomp(line);
 
   Value result = str__init__(g_string_new(line));
+  free(line);
 
   return result;
 }
@@ -101,6 +105,7 @@ static Value numerobis_builtin_split(Value *args) {
         *val = str__init__(g_string_new(parts[i]));
         g_array_append_val(result_arr, val);
       }
+      g_strfreev(parts);
     }
   }
 

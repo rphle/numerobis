@@ -106,7 +106,16 @@ static void print_preview(const Location *span) {
       g_printerr(ANSI_DIM "      │   " ANSI_RESET "%*s" ANSI_RED_BOLD
                           "%s" ANSI_RESET "\n",
                  (int)(prefix_len + before_len), "", underline_str->str);
+      g_string_free(underline_str, TRUE);
     }
+
+    g_free(before);
+    g_free(highlight);
+    g_free(after);
+  }
+
+  if (lines) {
+    g_free(lines);
   }
 }
 
