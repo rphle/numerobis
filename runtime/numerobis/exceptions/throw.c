@@ -4,7 +4,6 @@
 #include "source.h"
 #include <gc.h>
 #include <glib.h>
-#include <locale.h>
 #include <stdlib.h>
 
 GHashTable *NUMEROBIS_MODULE_REGISTRY = NULL;
@@ -119,8 +118,6 @@ void u_throw(const int code, const Location *span) {
       break;
     }
   }
-
-  setlocale(LC_ALL, ""); // set locale for utf-8 output
 
   g_printerr(
       ANSI_RESET "" ANSI_RED_BOLD "%s" ANSI_RESET " " ANSI_DIM "at %s:%d:%d\n",

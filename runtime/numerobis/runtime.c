@@ -7,11 +7,14 @@
 #include "types/range.h"
 #include "types/str.h"
 #include "units/units.h"
+#include <locale.h>
 
 int NUMEROBIS__FILE__ = 0;
 
 __attribute__((constructor)) static void numerobis_runtime_ctor(void) {
+  setlocale(LC_ALL, ""); // set locale for utf-8 output
   GC_INIT();
+
   u_externs_init();
   u_register_builtin_externs();
   units_init();

@@ -161,3 +161,31 @@ while true do {
     if i % 2 == 0 then {continue}
     echo(i)
 }
+
+# ---
+sieve!(limit: Int): List[Int] = {
+    is_prime: List[Bool] = [true] * (limit + 1)
+    is_prime[0] = false
+    is_prime[1] = false
+
+    max_check = (limit ^ 0.5) -> Int
+
+    for i in 2..max_check do {
+        if is_prime[i] then {
+            for j in (i * i)..limit..i do {
+                is_prime[j] = false
+            }
+        }
+    }
+
+    primes: List[Int] = []
+    for i in 2..limit do {
+        if is_prime[i] == true then {
+            primes = primes + [i]
+        }
+    }
+    return primes
+}
+
+primes = sieve(100)
+echo("Primes ≤ 100: " + (primes -> Str))

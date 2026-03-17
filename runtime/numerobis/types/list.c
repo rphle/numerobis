@@ -136,8 +136,10 @@ static Value list__mul__(Value _self, Value _n) {
 
   for (ssize_t r = 0; r < n; r++) {
     for (guint i = 0; i < (guint)len; i++) {
-      Value *val = g_array_index(self, Value *, i);
-      g_array_append_val(result, val);
+      Value *original = g_array_index(self, Value *, i);
+      Value *copy = g_new(Value, 1);
+      *copy = *original;
+      g_array_append_val(result, copy);
     }
   }
 
@@ -311,8 +313,7 @@ static Value list__str__(Value self) {
     if (elem->type == VALUE_STR) {
       g_string_append_printf(result, "\"%s\"", elem->str->str);
     } else {
-      // recursively convert
-      Value elem_str = list__str__(*elem);
+      Value elem_str = __str__(*elem, NULL);
       g_string_append(result, elem_str.str->str);
     }
   }
