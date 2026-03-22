@@ -101,6 +101,8 @@ class Expression(UnitNode):
     value: UnitNode
 
     def __post_init__(self):
+        if isinstance(self.value, Expression):
+            object.__setattr__(self, "loc", self.value.value)
         if self.value:
             object.__setattr__(self, "loc", self.value.loc)
 
@@ -110,7 +112,11 @@ class Expression(UnitNode):
     def __eq__(self, other):
         if not isinstance(other, Expression):
             return False
-        return self.value == other.value
+        if isinstance(self.value, Expression):
+            value = self.value.value
+        else:
+            value = self.value
+        return value == other.value
 
     def __bool__(self) -> bool:
         return bool(self.value)

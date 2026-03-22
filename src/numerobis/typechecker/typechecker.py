@@ -164,10 +164,15 @@ class Typechecker:
                 dimension = Power(base=left.dim, exponent=Scalar(exp))
                 dimension = self.simplify(dimension)
                 assert dimension is not None
+                dimension = (
+                    Expression(dimension)
+                    if not isinstance(dimension, Expression)
+                    else dimension
+                )
                 return (
-                    NumberType(typ="Float", dim=Expression(dimension))
+                    NumberType(typ="Float", dim=dimension)
                     if isinstance(left, Expression)
-                    else left.edit(dim=Expression(dimension))
+                    else left.edit(dim=dimension)
                 )
             case "mod":
                 if not (mismatch := dimcheck(left, right)):
