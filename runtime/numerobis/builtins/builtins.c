@@ -5,23 +5,11 @@
 #include "../units/units.h"
 #include "../values.h"
 #include "echo.h"
+#include "math_builtins.h"
 
 #include <glib.h>
-#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
-
-static Value numerobis_builtin_random(Value *args) {
-  static GRand *rng = NULL;
-
-  if (G_UNLIKELY(rng == NULL)) {
-    rng = g_rand_new();
-  }
-
-  gdouble x = g_rand_double(rng);
-
-  return float__init__(x, U_ONE);
-}
 
 static Value numerobis_builtin_input(Value *args) {
   if (args[1].type != VALUE_NONE) {
@@ -45,20 +33,6 @@ static Value numerobis_builtin_input(Value *args) {
   free(line);
 
   return result;
-}
-
-static Value numerobis_builtin_floor(Value *args) {
-  Value val = args[1];
-  Number *n = &val.number;
-  gint64 result;
-
-  if (n->kind == NUM_INT64) {
-    result = n->i64;
-  } else {
-    result = (gint64)floor(n->f64);
-  }
-
-  return int__init__(result, n->unit);
 }
 
 static Value numerobis_builtin_indexof(Value *args) {
@@ -114,9 +88,9 @@ static Value numerobis_builtin_split(Value *args) {
 
 void u_register_builtin_externs(void) {
   u_extern_register("echo", echo);
-  u_extern_register("random", numerobis_builtin_random);
   u_extern_register("input", numerobis_builtin_input);
-  u_extern_register("floor", numerobis_builtin_floor);
   u_extern_register("indexof", numerobis_builtin_indexof);
   u_extern_register("split", numerobis_builtin_split);
+
+  numerobis_math_register_builtins();
 }

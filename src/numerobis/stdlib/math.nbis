@@ -1,0 +1,64 @@
+# Constants
+pi      = 3.14159265358979323846
+tau     = 6.28318530717958647692   # 2π
+e       = 2.71828182845904523536
+phi     = 1.61803398874989484820   # golden ratio
+
+# Rounding
+extern floor!(value: Float): Int;
+extern ceil!(value: Float): Int;
+extern round!(value: Float): Int;
+extern trunc!(value: Float): Int;
+
+# Basic math
+extern sqrt!(value: Float): Float;
+extern cbrt!(value: Float): Float;
+extern abs!(value: Float): Float;
+extern pow!(base: Float, exponent: Float): Float;
+extern exp!(value: Float): Float;
+extern exp2!(value: Float): Float;
+extern hypot!(x: Float, y: Float): Float;
+extern sign!(value: Float): Float;
+extern clamp!(value: Float, lo: Float, hi: Float): Float;
+extern min!(a: Float, b: Float): Float;
+extern max!(a: Float, b: Float): Float;
+
+# Logarithms
+extern log!(value: Float): Float;
+extern log2!(value: Float): Float;
+extern log10!(value: Float): Float;
+extern logn!(x: Float, base: Float): Float;
+
+# Trigonometry (radians)
+extern sin!(value: Float): Float;
+extern cos!(value: Float): Float;
+extern tan!(value: Float): Float;
+extern asin!(value: Float): Float;
+extern acos!(value: Float): Float;
+extern atan!(value: Float): Float;
+extern atan2!(y: Float, x: Float): Float;
+
+# Trigonometry (degrees)
+extern sind!(value: Float): Float;
+extern cosd!(value: Float): Float;
+extern tand!(value: Float): Float;
+extern asind!(value: Float): Float;
+extern acosd!(value: Float): Float;
+extern atand!(value: Float): Float;
+extern atan2d!(y: Float, x: Float): Float;
+
+# Hyperbolic
+extern sinh!(value: Float): Float;
+extern cosh!(value: Float): Float;
+extern tanh!(value: Float): Float;
+extern asinh!(value: Float): Float;
+extern acosh!(value: Float): Float;
+extern atanh!(value: Float): Float;
+
+# Angle conversion
+extern deg_to_rad!(value: Float): Float;
+extern rad_to_deg!(value: Float): Float;
+
+# Random
+extern random!(): Float;
+extern randint!(lo: Int, hi: Int): Int;

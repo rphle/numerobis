@@ -1,7 +1,8 @@
 # Number guessing game
+from math import randint
 
 echo("Try to guess the number between 0 and 100!")
-x = floor(random()*101)
+x = randint(0, 100)
 i = 10
 
 win = false

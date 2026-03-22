@@ -1,10 +1,12 @@
+import math
+
 # ---
 sieve!(n: Int): Int = {
     is_prime = [true] * (n + 1)
     is_prime[0] = false
     is_prime[1] = false
 
-    for i in 2..floor(n^0.5) + 1 do {
+    for i in 2..math.floor(n^0.5) + 1 do {
         if is_prime[i] then {
             for j in i*i..n + 1..i do {
                 is_prime[j] = false
