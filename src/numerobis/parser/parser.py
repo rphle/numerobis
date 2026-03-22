@@ -30,6 +30,7 @@ from ..nodes.ast import (
     IndexAssignment,
     Integer,
     List,
+    ModuleAccess,
     Param,
     Range,
     Return,
@@ -695,6 +696,11 @@ class Parser(ParserTemplate):
             case "TRUE" | "FALSE":
                 return Boolean(value=tok.value == "true", loc=tok.loc)
             case "ID":
+                if (
+                    self._peek(ignore_whitespace=False).type == "PERIOD"
+                    and self._peek(2, ignore_whitespace=False).type == "ID"
+                ):
+                    return self.module_access(tok)
                 return self._make_id(tok)
             case "STRING":
                 return String(value=tok.value, loc=tok.loc)
@@ -812,6 +818,12 @@ class Parser(ParserTemplate):
 
         assert isinstance(value, (Function, VariableDeclaration))
         return ExternDeclaration(value=value, loc=nodeloc(_start, value))
+
+    def module_access(self, tok: Token) -> AstNode:
+        mod = self._make_id(tok)
+        self._consume("PERIOD")
+        name = self._make_id(self._consume("ID"))
+        return ModuleAccess(module=mod, name=name, loc=mod.loc.merge(name.loc))
 
     def type(self) -> Type | FunctionAnnotation | Expression | One:
         if self._peek().type == "BANG":

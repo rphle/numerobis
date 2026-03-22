@@ -3,7 +3,7 @@
 import dataclasses
 from typing import Any
 
-from ..nodes.ast import ForLoop, Function, Variable, VariableDeclaration
+from ..nodes.ast import ForLoop, Function, ModuleAccess, Variable, VariableDeclaration
 from ..nodes.core import AstNode, Identifier
 from ..typechecker.linking import Link
 from ..typechecker.linking import unlink as _unlink
@@ -51,6 +51,12 @@ def get_free_vars(
             case ForLoop():
                 for iterator in n.iterators:
                     current_defined.add(unlink(iterator).name)
+            case ModuleAccess():
+                mod = table[n.module.target].name  # type: ignore
+                name = f"{mod}.{table[n.name.target].name}"  # type: ignore
+                if name not in current_defined:
+                    used.add(name)
+                return
 
         for field in fields:
             if field.name in ("name", "annotation", "unit"):

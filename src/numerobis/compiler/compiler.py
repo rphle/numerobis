@@ -37,6 +37,7 @@ from ..nodes.ast import (
     IndexAssignment,
     Integer,
     List,
+    ModuleAccess,
     Range,
     Return,
     Slice,
@@ -102,6 +103,7 @@ class Compiler:
         self._defined_addrs: dict[str, str] = {}
         self._imported_names = {}
         self._imported_units = {}
+        self._imported_modules = {}
 
         self.units: CompiledUnits = CompiledUnits()
 
@@ -396,7 +398,7 @@ class Compiler:
 
         params = [str(self.compile(param.name)) for param in _unlinked_params]
         free_vars = [
-            self._imported_names.get(var, f"und_{self.uid}_") + var
+            self._imported_names.get(var, f"und_{self.uid}_") + var.split(".")[-1]
             for var in get_free_vars(
                 self.env.nodes, node, link=link, defined_addrs=defined_addrs
             )
@@ -506,6 +508,14 @@ class Compiler:
             [str(self.compile(item)) for item in node.items] + ["NONE"]
         )
 
+        return out
+
+    def module_access_(self, node: ModuleAccess, link: int) -> tstr:
+        out = tstr("$prefix$name", meta={"reference": True})
+        mod = self.unlink(node.module).name
+        out["prefix"] = "und_" + self._imported_modules[mod] + "_"
+        out["name"] = self.unlink(node.name).name
+        self._imported_names[f"{mod}.{out['name']}"] = out["prefix"]
         return out
 
     def number_(self, node: Integer | Float, *, init: bool = True) -> tstr:
@@ -777,6 +787,9 @@ class Compiler:
                         if name.startswith("@") and name.lstrip("@") in ns.units
                     }
                 )
+            elif isinstance(node, Import):
+                uid = module_uid(self.imports[i])
+                self._imported_modules[node.module.name] = uid
 
     def _builtins(self):
         uid = module_uid("stdlib/builtins.nbis")

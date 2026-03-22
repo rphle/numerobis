@@ -208,6 +208,12 @@ class Return(AstNode):
 
 
 @dataclass(kw_only=True, frozen=True)
+class ModuleAccess(AstNode):
+    module: Identifier
+    name: Identifier
+
+
+@dataclass(kw_only=True, frozen=True)
 class Import(AstNode):
     module: Identifier
     alias: Identifier | None = None

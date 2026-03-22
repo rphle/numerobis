@@ -36,6 +36,7 @@ from ..nodes.ast import (
     IndexAssignment,
     Integer,
     List,
+    ModuleAccess,
     Range,
     Return,
     Slice,
@@ -743,6 +744,15 @@ class Typechecker:
 
             content = unify(content, element_type)  # type: ignore
         return ListType(content=content)
+
+    def module_access_(self, node: ModuleAccess, env: Env) -> T:
+        node_ = self.unlink(node)
+        assert isinstance(node_, ModuleAccess), node_
+        try:
+            return self.namespaces.imports[node_.module.name].names[node_.name.name]
+        except KeyError:
+            self.errors.throw(804, name=node_.name.name, loc=node.loc)
+            raise
 
     def none_type_(self, node: NoneType, env: Env) -> NoneType:
         return NoneType()
