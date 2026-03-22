@@ -8,12 +8,15 @@ version = "0.1.0"
 description = "The Numerobis programming language"
 authors = [{ name = "Raphael", email = "hello@alpharee.de" }]
 readme = "README.md"
-license = { file = "LICENSE" }
+license = "Apache-2.0"
+license-files = ["LICENSE"]
 requires-python = ">=3.12"
 dependencies = [
     "mmh3==5.2.0",
     "rich==14.3.0",
     "tqdm==4.67.1",
+    "click==8.3.1"
+    "clang-format==22.1.1"
 ]
 keywords = ["programming language", "physics", "compiler", "units", "numerobis", "measurement", "education", "programming", "language", "units of measurement", "physics units"]
 classifiers = [
