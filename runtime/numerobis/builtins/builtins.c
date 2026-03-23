@@ -1,3 +1,4 @@
+#include "../constants.h"
 #include "../extern.h"
 #include "../types/list.h"
 #include "../types/number.h"
@@ -5,13 +6,14 @@
 #include "../units/units.h"
 #include "../values.h"
 #include "echo.h"
+#include "graphics_builtins.h"
 #include "math_builtins.h"
 
 #include <glib.h>
 #include <stdio.h>
 #include <stdlib.h>
 
-static Value numerobis_builtin_input(Value *args) {
+static Value numerobis_builtin_input(Value *args, ...) {
   if (args[1].type != VALUE_NONE) {
     Value echo_args[] = {NONE, args[1], EMPTY_STR};
     echo(echo_args);
@@ -35,7 +37,7 @@ static Value numerobis_builtin_input(Value *args) {
   return result;
 }
 
-static Value numerobis_builtin_indexof(Value *args) {
+static Value numerobis_builtin_indexof(Value *args, ...) {
   GArray *self = args[1].list;
   Value target = args[2];
 
@@ -51,7 +53,7 @@ static Value numerobis_builtin_indexof(Value *args) {
   return int__init__(G_GINT64_CONSTANT(-1), U_ONE);
 }
 
-static Value numerobis_builtin_split(Value *args) {
+static Value numerobis_builtin_split(Value *args, ...) {
   GString *self = args[1].str;
   GString *sep = args[2].str;
 

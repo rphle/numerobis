@@ -46,7 +46,7 @@ typedef struct Value {
     GArray *list;
     Range *range;
     Closure *closure;
-    Value (*extern_fn)(Value *args);
+    Value (*extern_fn)(Value *args, ...);
     void *none;
   };
 } Value;
@@ -140,10 +140,10 @@ static inline Value __float__(Value self, const Location *loc) {
   return r;
 }
 
-static inline Value __call__(Value self, Value *args) {
+static inline Value __call__(Value self, Value *args, const Location *loc) {
   switch (self.type) {
   case VALUE_EXTERN_FN:
-    return self.extern_fn(args);
+    return self.extern_fn(args, loc);
   default:
     return self.closure->func(self.closure->env, args);
   }

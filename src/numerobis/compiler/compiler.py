@@ -182,7 +182,10 @@ class Compiler:
         args = [str(self.compile(arg)) if arg else "NONE" for arg in args]
 
         str_args = f"(Value[]){{{callee}, {', '.join(args)}}}"
-        out = tstr(f"__call__({callee}, {str_args})")
+        out = tstr(f"__call__({callee}, {str_args}, $loc)")
+        out["loc"] = (
+            f"LOC({node.loc.line}, {node.loc.col}, {node.loc.end_line}, {node.loc.end_col})"
+        )
 
         return out
 

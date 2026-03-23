@@ -13,7 +13,7 @@ void u_externs_shutdown(void) {
   NUMEROBIS_EXTERNS = NULL;
 }
 
-Value *extern_fn__init__(Value (*fn)(Value *args)) {
+Value *extern_fn__init__(Value (*fn)(Value *args, ...)) {
   Value *v = GC_MALLOC(sizeof(Value));
   v->type = VALUE_EXTERN_FN;
   v->extern_fn = fn;
@@ -27,7 +27,7 @@ void u_extern_entry_free(gpointer data) {
   }
 }
 
-void u_extern_register(const char *name, Value (*fn)(Value *args)) {
+void u_extern_register(const char *name, Value (*fn)(Value *args, ...)) {
   g_return_if_fail(name != NULL);
   g_return_if_fail(fn != NULL);
   g_return_if_fail(NUMEROBIS_EXTERNS != NULL);
