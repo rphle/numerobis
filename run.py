@@ -26,6 +26,7 @@ from tqdm import tqdm
 from numerobis.module import Module
 from runtime.build_lib import build_lib
 
+os.makedirs("output", exist_ok=True)
 console = Console()
 
 
