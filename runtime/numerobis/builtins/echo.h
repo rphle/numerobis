@@ -3,6 +3,6 @@
 
 #include "../values.h"
 
-Value echo(Value *args, ...);
+Value echo(Value *args);
 
 #endif

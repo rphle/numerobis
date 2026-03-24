@@ -30,7 +30,7 @@ static inline void echo_garray(GArray *arr) {
   _echo_in_list = was_in_list;
 }
 
-Value echo(Value *args, ...) {
+Value echo(Value *args) {
   Value val = args[1];
   Value end = args[2];
 

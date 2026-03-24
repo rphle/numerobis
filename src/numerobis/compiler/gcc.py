@@ -147,6 +147,8 @@ def compile(
 ):
     glib_cflags, glib_libs = _pkg("glib-2.0")
     gc_cflags, gc_libs = _pkg("bdw-gc")
+    sdl2_cflags, sdl2_libs = _pkg("sdl2")
+    sdl2_ttf_cflags, sdl2_ttf_libs = _pkg("SDL2_ttf")
 
     units_h = _prepare_units_h(units)
 
@@ -179,6 +181,8 @@ def compile(
             + [f"-I{runtime_path}"]
             + glib_cflags
             + gc_cflags
+            + sdl2_cflags
+            + sdl2_ttf_cflags
             + [
                 "-Wl,--whole-archive",
                 str(runtime_path / "libruntime.a"),
@@ -186,6 +190,8 @@ def compile(
             ]
             + glib_libs
             + gc_libs
+            + sdl2_libs
+            + sdl2_ttf_libs
             + ["-lm"]
             + list(flags)
         )

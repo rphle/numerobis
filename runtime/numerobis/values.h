@@ -23,6 +23,8 @@ struct Value;
 typedef struct Range Range;
 typedef struct Value Value;
 
+typedef const Location *LocRef;
+
 typedef struct {
   NumberKind kind;
   uint64_t unit;
@@ -46,7 +48,7 @@ typedef struct Value {
     GArray *list;
     Range *range;
     Closure *closure;
-    Value (*extern_fn)(Value *args, ...);
+    Value (*extern_fn)(Value *args);
     void *none;
   };
 } Value;
@@ -105,17 +107,17 @@ static inline Value __neg__(Value x) {
 
 static inline Value len(Value a) { return NUMEROBIS_METHODS[a.type]->len(a); }
 
-static inline Value __getitem__(Value self, Value index, const Location *loc) {
+static inline Value __getitem__(Value self, Value index, LocRef loc) {
   Value r = NUMEROBIS_METHODS[self.type]->__getitem__(self, index);
   if (r.type == VALUE_NONE)
-    u_throw(self.type == VALUE_LIST ? 901 : 902, loc);
+    u_throw(self.type == VALUE_LIST ? 901 : 902, NULL, loc);
   return r;
 }
 static inline Value __setitem__(Value self, Value index, Value value,
-                                const Location *loc) {
+                                LocRef loc) {
   Value r = NUMEROBIS_METHODS[self.type]->__setitem__(self, index, value);
   if (r.type == VALUE_NONE)
-    u_throw(self.type == VALUE_LIST ? 903 : 904, loc);
+    u_throw(self.type == VALUE_LIST ? 903 : 904, NULL, loc);
   return r;
 }
 static inline Value __getslice__(Value _self, Value _start, Value _stop,
@@ -124,26 +126,26 @@ static inline Value __getslice__(Value _self, Value _start, Value _stop,
                                                      _step);
 }
 
-static inline Value __str__(Value self, const Location *loc) {
+static inline Value __str__(Value self, LocRef loc) {
   return NUMEROBIS_METHODS[self.type]->__str__(self);
 }
-static inline Value __int__(Value self, const Location *loc) {
+static inline Value __int__(Value self, LocRef loc) {
   Value r = NUMEROBIS_METHODS[self.type]->__int__(self);
   if (r.type == VALUE_NONE)
-    u_throw(301, loc);
+    u_throw(301, NULL, loc);
   return r;
 }
-static inline Value __float__(Value self, const Location *loc) {
+static inline Value __float__(Value self, LocRef loc) {
   Value r = NUMEROBIS_METHODS[self.type]->__float__(self);
   if (r.type == VALUE_NONE)
-    u_throw(302, loc);
+    u_throw(302, NULL, loc);
   return r;
 }
 
-static inline Value __call__(Value self, Value *args, const Location *loc) {
+static inline Value __call__(Value self, Value *args) {
   switch (self.type) {
   case VALUE_EXTERN_FN:
-    return self.extern_fn(args, loc);
+    return self.extern_fn(args);
   default:
     return self.closure->func(self.closure->env, args);
   }
