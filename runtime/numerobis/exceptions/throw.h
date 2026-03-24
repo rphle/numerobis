@@ -1,6 +1,7 @@
 #ifndef NUMEROBIS_THROW_H
 #define NUMEROBIS_THROW_H
 
+#include "../exceptions/messages.h"
 #include <glib.h>
 
 typedef struct {
@@ -11,10 +12,11 @@ typedef struct {
 } Location;
 
 #define LOC(line, col, end_line, end_col)                                      \
-  &(Location) { line, col, end_line, end_col }
+  &(Location){line, col, end_line, end_col}
 
 extern GHashTable *NUMEROBIS_MODULE_REGISTRY;
 
-void u_throw(const int code, const Location *span);
+void u_throw(const int code, const RuntimeMessage *msg, const Location *span);
+void rt_err(const gchar *message, const gchar *help, const Location *span);
 
 #endif

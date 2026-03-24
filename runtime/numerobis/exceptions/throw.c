@@ -119,12 +119,13 @@ static void print_preview(const Location *span) {
   }
 }
 
-void u_throw(const int code, const Location *span) {
-  const RuntimeMessage *msg = NULL;
-  for (size_t i = 0; i < G_N_ELEMENTS(NUMEROBIS_MESSAGES); i++) {
-    if (NUMEROBIS_MESSAGES[i].code == code) {
-      msg = &NUMEROBIS_MESSAGES[i];
-      break;
+void u_throw(const int code, const RuntimeMessage *msg, const Location *span) {
+  if (msg == NULL) {
+    for (size_t i = 0; i < G_N_ELEMENTS(NUMEROBIS_MESSAGES); i++) {
+      if (NUMEROBIS_MESSAGES[i].code == code) {
+        msg = &NUMEROBIS_MESSAGES[i];
+        break;
+      }
     }
   }
 
@@ -136,4 +137,8 @@ void u_throw(const int code, const Location *span) {
   print_preview(span);
 
   exit(EXIT_FAILURE);
+}
+
+void rt_err(const gchar *message, const gchar *help, const Location *span) {
+  u_throw(303, &(RuntimeMessage){303, "RuntimeError", message, help}, span);
 }

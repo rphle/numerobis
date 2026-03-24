@@ -79,6 +79,9 @@ failed to convert value to integer
 [E302 / ValueError]
 failed to convert value to float
 
+[E303 / RuntimeError]
+...
+
 
 
 [E502 / TypeError]
