@@ -175,7 +175,9 @@ def main():
                                 print_=args.print or args.format, format=args.format
                             )
                         )
-                        times["GCC"] = timeit(lambda: mod.gcc(cache=True, cc=args.cc))
+                        times["GCC"] = timeit(
+                            lambda: mod.cmake(cache=True, cc=args.cc, use_cmake=False)
+                        )
                         times["Execution"] = timeit(mod.run)
 
                 except SystemExit:

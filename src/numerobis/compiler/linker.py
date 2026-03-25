@@ -9,6 +9,7 @@ import rich.syntax
 
 from ..classes import CompiledModule, CompiledUnits
 from ..exceptions.exceptions import Exceptions
+from . import cmake
 from . import gcc as gnucc
 from .tstr import tstr
 from .utils import module_uid
@@ -125,12 +126,13 @@ class Linker:
         except ValueError:
             return str(p)
 
-    def gcc(
+    def cmake(
         self,
         output_path: str = "output/output",
         flags: set[str] = set(),
         cache: bool = False,
         cc: str = "gcc",
+        use_cmake: bool = True,
     ):
         units = CompiledUnits(
             units={
@@ -148,7 +150,8 @@ class Linker:
             },
         )
         try:
-            gnucc.compile(
+            system = cmake if use_cmake else gnucc
+            system.compile(
                 self.linked,
                 modules=[
                     m.meta

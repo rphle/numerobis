@@ -98,7 +98,7 @@ def build(
         mod = Module(source)
         mod.load()
         mod.link(format=False)
-        mod.gcc(output, flags=flags, cc=cc)
+        mod.cmake(output, flags=flags, cc=cc)
     except KeyboardInterrupt:
         console.print("[red]Build interrupted by user[/red]")
         raise SystemExit(130)

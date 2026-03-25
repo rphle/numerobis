@@ -9,7 +9,7 @@ from typing import Optional
 
 from .analysis.dimchecker import Dimchecker
 from .classes import CompiledModule, Header, ModuleMeta
-from .compiler import gcc as gnucc
+from .compiler import cmake
 from .compiler.compiler import Compiler
 from .compiler.linker import Linker
 from .environment import Namespaces
@@ -179,20 +179,27 @@ class Module:
         self.linker = Linker(MODULECACHE, main=self.meta.path)
         self.linker.link(print_=print_, format=format)
 
-    def gcc(
+    def cmake(
         self,
         output_path: str = "output/output",
         flags: set[str] = set(),
         cache: bool = False,
         cc: str = "gcc",
+        use_cmake: bool = True,
     ):
         if self.linker is None:
             raise ValueError("Module not linked")
-        self.linker.gcc(output_path=output_path, flags=flags, cache=cache, cc=cc)
+        self.linker.cmake(
+            output_path=output_path,
+            flags=flags,
+            cache=cache,
+            cc=cc,
+            use_cmake=use_cmake,
+        )
 
     def run(self, path: str = "output/output"):
         try:
-            proc = gnucc.run(path=path)
+            proc = cmake.run(path=path)
             print(proc.stdout.rstrip("\n"))
             if proc.returncode != 0:
                 print(proc.stderr, file=sys.stderr)
