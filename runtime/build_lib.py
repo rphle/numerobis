@@ -1,6 +1,6 @@
 """Build system for compiling runtime C library and generating message headers.
 
-Compiles C sources into object files, creates static library, and generates
+Compiles C sources into a static library via CMake, and generates
 C headers from message definitions.
 """
 
@@ -8,18 +8,16 @@ import os
 import re
 import shutil
 import subprocess
+import tempfile
 from pathlib import Path
 
-from numerobis.compiler.gcc import _pkg
+from numerobis.compiler.cmake import _run_subprocess
 from numerobis.compiler.utils import repr_double
 from numerobis.exceptions import msgparser
 
 
 def build_lib():
     generate_messages()
-
-    glib_cflags, _ = _pkg("glib-2.0")
-    gc_cflags, _ = _pkg("bdw-gc")
 
     script_dir = Path(__file__).parent.resolve()
     runtime_root = script_dir
@@ -29,33 +27,55 @@ def build_lib():
         shutil.rmtree(dest_runtime)
     os.makedirs(dest_runtime, exist_ok=True)
 
-    sources = [f for f in runtime_root.rglob("*.c") if f.name != "source.c"]
-    object_files = []
+    with tempfile.TemporaryDirectory() as temp_dir:
+        temp_path = Path(temp_dir)
 
-    for src in sources:
-        obj = src.with_suffix(".o")
-        subprocess.run(
-            [
-                "gcc",
-                "-c",
-                str(src),
-                "-o",
-                str(obj),
-                "-Iruntime",
-                *glib_cflags,
-                *gc_cflags,
-                "-fPIC",
-                "-O3",
-                "-fno-plt",
-                "-march=native",
-            ],
-            check=True,
+        # Collect all .c sources (excluding generated source.c)
+        sources = [f for f in runtime_root.rglob("*.c") if f.name != "source.c"]
+        source_list = "\n    ".join(str(s.as_posix()) for s in sources)
+
+        cmakelists = f"""\
+cmake_minimum_required(VERSION 3.10)
+project(NumerobisRuntime C)
+
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(GLIB REQUIRED glib-2.0)
+pkg_check_modules(GC REQUIRED bdw-gc)
+
+set(RUNTIME_SOURCES
+    {source_list}
+)
+
+add_library(runtime STATIC ${{RUNTIME_SOURCES}})
+
+target_include_directories(runtime PRIVATE
+    "{runtime_root.as_posix()}"
+    ${{GLIB_INCLUDE_DIRS}}
+    ${{GC_INCLUDE_DIRS}}
+)
+
+target_compile_options(runtime PRIVATE
+    -fPIC -O3 -fno-plt -march=native
+)
+
+set_target_properties(runtime PROPERTIES
+    ARCHIVE_OUTPUT_DIRECTORY "{temp_path.as_posix()}/build"
+    OUTPUT_NAME "runtime"
+)
+"""
+        (temp_path / "CMakeLists.txt").write_text(cmakelists, encoding="utf-8")
+
+        _run_subprocess(
+            ["cmake", "-B", "build", "-S", "."],
+            cwd=temp_path,
         )
-        object_files.append(str(obj))
+        _run_subprocess(
+            ["cmake", "--build", "build"],
+            cwd=temp_path,
+        )
 
-    subprocess.run(
-        ["ar", "rcs", str(dest_runtime / "libruntime.a")] + object_files, check=True
-    )
+        built_lib = temp_path / "build" / "libruntime.a"
+        shutil.copy2(built_lib, dest_runtime / "libruntime.a")
 
     # Mirror the .h files
     for h_file in runtime_root.rglob("*.h"):
