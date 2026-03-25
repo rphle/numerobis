@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "numerobis"
 version = "0.1.0"
 description = "The Numerobis programming language"
-authors = [{ name = "Raphael", email = "hello@alpharee.de" }]
+authors = [{ name = "Raphael", email = "hello@rphle.de" }]
 readme = "README.md"
 license = "Apache-2.0"
 license-files = ["LICENSE"]
@@ -15,7 +15,7 @@ dependencies = [
     "mmh3==5.2.0",
     "rich==14.3.0",
     "tqdm==4.67.1",
-    "click==8.3.1"
+    "click==8.3.1",
     "clang-format==22.1.1"
 ]
 keywords = ["programming language", "physics", "compiler", "units", "numerobis", "measurement", "education", "programming", "language", "units of measurement", "physics units"]
