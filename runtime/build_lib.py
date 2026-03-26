@@ -1,7 +1,11 @@
 """Build system for compiling runtime C library and generating message headers.
 
-Compiles C sources into a static library via CMake, and generates
-C headers from message definitions.
+Compiles C sources into two static libraries via CMake:
+  - libruntime.a:    all non-graphics runtime sources
+  - libgraphics.a:   SDL2-dependent graphics sources (only linked when the
+                     graphics stdlib module is imported by the program)
+
+Also generates C headers from message definitions.
 """
 
 import os
@@ -15,6 +19,16 @@ from numerobis.compiler.cmake import _run_subprocess
 from numerobis.compiler.utils import repr_double
 from numerobis.exceptions import msgparser
 
+_graphics_pkgconfig_cmake = """\
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(SDL2     REQUIRED sdl2)
+pkg_check_modules(SDL2_TTF REQUIRED SDL2_ttf)
+"""
+
+
+def _is_graphics_source(path: Path) -> bool:
+    return path.parent.name == "graphics" and path.suffix == ".c"
+
 
 def build_lib():
     generate_messages()
@@ -27,63 +41,102 @@ def build_lib():
         shutil.rmtree(dest_runtime)
     os.makedirs(dest_runtime, exist_ok=True)
 
-    with tempfile.TemporaryDirectory() as temp_dir:
-        temp_path = Path(temp_dir)
+    all_sources = [f for f in runtime_root.rglob("*.c") if f.name != "source.c"]
+    runtime_sources = [s for s in all_sources if not _is_graphics_source(s)]
+    graphics_sources = [s for s in all_sources if _is_graphics_source(s)]
 
-        # Collect all .c sources (excluding generated source.c)
-        sources = [f for f in runtime_root.rglob("*.c") if f.name != "source.c"]
-        source_list = "\n    ".join(str(s.as_posix()) for s in sources)
+    _build_static_lib(
+        name="runtime",
+        sources=runtime_sources,
+        runtime_root=runtime_root,
+        dest=dest_runtime,
+        extra_cmake="",
+    )
 
-        cmakelists = f"""\
-cmake_minimum_required(VERSION 3.10)
-project(NumerobisRuntime C)
-
-find_package(PkgConfig REQUIRED)
-pkg_check_modules(GLIB REQUIRED glib-2.0)
-pkg_check_modules(GC REQUIRED bdw-gc)
-
-set(RUNTIME_SOURCES
-    {source_list}
-)
-
-add_library(runtime STATIC ${{RUNTIME_SOURCES}})
-
-target_include_directories(runtime PRIVATE
-    "{runtime_root.as_posix()}"
-    ${{GLIB_INCLUDE_DIRS}}
-    ${{GC_INCLUDE_DIRS}}
-)
-
-target_compile_options(runtime PRIVATE
-    -fPIC -O3 -fno-plt -march=native
-)
-
-set_target_properties(runtime PROPERTIES
-    ARCHIVE_OUTPUT_DIRECTORY "{temp_path.as_posix()}/build"
-    OUTPUT_NAME "runtime"
-)
-"""
-        (temp_path / "CMakeLists.txt").write_text(cmakelists, encoding="utf-8")
-
-        _run_subprocess(
-            ["cmake", "-B", "build", "-S", "."],
-            cwd=temp_path,
-        )
-        _run_subprocess(
-            ["cmake", "--build", "build"],
-            cwd=temp_path,
+    if graphics_sources:
+        _build_static_lib(
+            name="graphics",
+            sources=graphics_sources,
+            runtime_root=runtime_root,
+            dest=dest_runtime,
+            extra_cmake=_graphics_pkgconfig_cmake,
         )
 
-        built_lib = temp_path / "build" / "libruntime.a"
-        shutil.copy2(built_lib, dest_runtime / "libruntime.a")
-
-    # Mirror the .h files
     for h_file in runtime_root.rglob("*.h"):
         target_path = dest_runtime / h_file.relative_to(runtime_root)
         target_path.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(h_file, target_path)
 
-    print(f"Static library and headers created at {dest_runtime}")
+    print(f"Static libraries and headers created at {dest_runtime}")
+
+
+def _build_static_lib(
+    name: str,
+    sources: list[Path],
+    runtime_root: Path,
+    dest: Path,
+    extra_cmake: str,
+) -> None:
+    """Compile sources into lib{name}.a and copy it to dest."""
+    if not sources:
+        return
+
+    source_list = "\n    ".join(str(s.as_posix()) for s in sources)
+
+    if name == "graphics":
+        include_extras = """\
+    ${SDL2_INCLUDE_DIRS}
+    ${SDL2_TTF_INCLUDE_DIRS}"""
+        compile_extras = """\
+    ${SDL2_CFLAGS_OTHER}
+    ${SDL2_TTF_CFLAGS_OTHER}"""
+    else:
+        include_extras = ""
+        compile_extras = ""
+
+    with tempfile.TemporaryDirectory() as temp_dir:
+        temp_path = Path(temp_dir)
+
+        cmakelists = f"""\
+cmake_minimum_required(VERSION 3.10)
+project(NumerobisLib_{name} C)
+
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(GLIB REQUIRED glib-2.0)
+pkg_check_modules(GC   REQUIRED bdw-gc)
+{extra_cmake}
+set(LIB_SOURCES
+    {source_list}
+)
+
+add_library({name} STATIC ${{LIB_SOURCES}})
+
+target_include_directories({name} PRIVATE
+    "{runtime_root.as_posix()}"
+    ${{GLIB_INCLUDE_DIRS}}
+    ${{GC_INCLUDE_DIRS}}
+{include_extras}
+)
+
+target_compile_options({name} PRIVATE
+    -fPIC -O3 -fno-plt -march=native
+{compile_extras}
+)
+
+set_target_properties({name} PROPERTIES
+    ARCHIVE_OUTPUT_DIRECTORY "{temp_path.as_posix()}/build"
+    OUTPUT_NAME "{name}"
+)
+"""
+        (temp_path / "CMakeLists.txt").write_text(cmakelists, encoding="utf-8")
+
+        _run_subprocess(["cmake", "-B", "build", "-S", "."], cwd=temp_path)
+        _run_subprocess(["cmake", "--build", "build"], cwd=temp_path)
+
+        built_lib = temp_path / "build" / f"lib{name}.a"
+        shutil.copy2(built_lib, dest / f"lib{name}.a")
+
+    print(f"  lib{name}.a built successfully")
 
 
 def generate_messages(

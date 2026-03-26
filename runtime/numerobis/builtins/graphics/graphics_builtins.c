@@ -1,12 +1,11 @@
-#include "graphics_builtins.h"
-#include "../extern.h"
-#include "../types/number.h"
-#include "../units/units.h"
-#include "../utils/utils.h"
-#include "../values.h"
-#include "graphics/fonts.h"
-#include "graphics/primitives.h"
-#include "graphics/state.h"
+#include "../../extern.h"
+#include "../../types/number.h"
+#include "../../units/units.h"
+#include "../../utils/utils.h"
+#include "../../values.h"
+#include "fonts.h"
+#include "primitives.h"
+#include "state.h"
 
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
@@ -306,7 +305,7 @@ static Value numerobis_builtin_blit(Value *args) {
   return _none();
 }
 
-void numerobis_graphics_register_builtins(void) {
+__attribute__((constructor)) void numerobis_graphics_register_builtins(void) {
   u_extern_register("init", numerobis_builtin_graphics_init);
   u_extern_register("set_bg", numerobis_builtin_set_bg);
   u_extern_register("set_title", numerobis_builtin_set_title);

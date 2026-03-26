@@ -144,11 +144,16 @@ def compile(
     flags: set[str] = set(),
     cache: bool = False,
     cc: str = "gcc",
+    use_graphics: bool = False,
 ):
     glib_cflags, glib_libs = _pkg("glib-2.0")
     gc_cflags, gc_libs = _pkg("bdw-gc")
-    sdl2_cflags, sdl2_libs = _pkg("sdl2")
-    sdl2_ttf_cflags, sdl2_ttf_libs = _pkg("SDL2_ttf")
+
+    if use_graphics:
+        sdl2_cflags, sdl2_libs = _pkg("sdl2")
+        sdl2_ttf_cflags, sdl2_ttf_libs = _pkg("SDL2_ttf")
+    else:
+        sdl2_cflags = sdl2_libs = sdl2_ttf_cflags = sdl2_ttf_libs = []
 
     units_h = _prepare_units_h(units)
 
@@ -172,6 +177,17 @@ def compile(
 
     with resources.as_file(resources.files("numerobis")) as base_path:
         runtime_path = base_path / "runtime"
+        graphics_libs = (
+            [
+                "-Wl,--whole-archive",
+                str(runtime_path / "libgraphics.a"),
+                "-Wl,--no-whole-archive",
+            ]
+            + sdl2_libs
+            + sdl2_ttf_libs
+            if use_graphics
+            else []
+        )
         cmd = (
             (["ccache", "mold", "-run"] if cache else [])
             + [cc]
@@ -188,10 +204,9 @@ def compile(
                 str(runtime_path / "libruntime.a"),
                 "-Wl,--no-whole-archive",
             ]
+            + graphics_libs
             + glib_libs
             + gc_libs
-            + sdl2_libs
-            + sdl2_ttf_libs
             + ["-lm"]
             + list(flags)
         )

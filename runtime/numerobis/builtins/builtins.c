@@ -6,7 +6,6 @@
 #include "../units/units.h"
 #include "../values.h"
 #include "echo.h"
-#include "graphics_builtins.h"
 #include "math_builtins.h"
 
 #include <glib.h>
@@ -95,5 +94,4 @@ void u_register_builtin_externs(void) {
   u_extern_register("split", numerobis_builtin_split);
 
   numerobis_math_register_builtins();
-  numerobis_graphics_register_builtins();
 }

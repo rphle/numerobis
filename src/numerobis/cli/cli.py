@@ -104,8 +104,14 @@ def build(
         raise SystemExit(130)
 
     if not quiet:
+        graphics_suffix = (
+            " [blue dim](+gfx)[/blue dim]"
+            if mod.linker and mod.linker._uses_graphics()
+            else ""
+        )
+
         console.print(
-            f"[green]Built {output} ({time.time() - t0:.2f}s)[/green]",
+            f"[green]Built {output}[/green]{graphics_suffix} [green]({time.time() - t0:.2f}s)[/green]",
             highlight=False,
         )
 

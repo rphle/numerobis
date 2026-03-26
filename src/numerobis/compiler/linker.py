@@ -9,6 +9,7 @@ import rich.syntax
 
 from ..classes import CompiledModule, CompiledUnits
 from ..exceptions.exceptions import Exceptions
+from ..utils import STDLIB_PATH
 from . import cmake
 from . import gcc as gnucc
 from .tstr import tstr
@@ -45,6 +46,15 @@ class Linker:
 
         self.order[0].append(str(module.meta.path))
         self.order[1].append(module_uid(module.meta.path))
+
+    def _uses_graphics(self) -> bool:
+        graphics_module = str(STDLIB_PATH / "graphics.nbis")
+        uses = any(
+            graphics_module in m.imports
+            for m in self.modules.values()
+            if str(m.meta.path) in self.order[0]
+        )
+        return uses
 
     def link(self, print_: bool = False, format: bool = False):
         self.process_module(self.modules[str(self.main)])
@@ -163,6 +173,7 @@ class Linker:
                 flags=flags,
                 cache=cache,
                 cc=cc,
+                use_graphics=self._uses_graphics(),
             )
         except subprocess.CalledProcessError as e:
             self.errors.throw(201, command=" ".join(map(str, e.cmd)), help=e.stderr)
