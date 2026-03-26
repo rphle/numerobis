@@ -1,0 +1,47 @@
+from graphics import *;
+from math import abs, random, round;
+
+# Window setup
+init(800, 600)
+set_bg("#0d1117")
+set_title("Bouncing Ball")
+
+# Ball state
+bx = 400
+by = 300
+vx = 2.0
+vy = 3.0
+radius = 30
+
+while not quit_requested() do {
+    # Update position
+    if mouse_down() then {
+        bx = mouse_x()
+        by = mouse_y()
+    } else {
+        bx = round(bx + vx)
+        by = round(by + vy)
+    }
+
+    # Bounce off walls
+    if bx - radius < 0 or bx + radius > 800 then { vx = vx * (-1.5 + random()) }
+    if by - radius < 0 or by + radius > 600 then { vy = vy * (-1.5 + random()) }
+
+    # Background panel
+    rounded_rect(10, 10, 780, 580, 16, "#161b22", true)
+
+    # Ball shadow
+    circle(bx + 4, by + 4, radius, "#00000066", true)
+
+    # Ball
+    circle(bx, by, radius, "#58a6ff", true)
+
+    # Highlight
+    circle(bx - 8, by - 8, radius / 4, "#ffffff44", true)
+
+    # HUD
+    text(20, 20, "pos: (" + (bx -> Str) + ", " + (by -> Str) + ")",
+         14, "#8b949e", [], "", 0.0)
+
+    blit()
+}
