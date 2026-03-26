@@ -106,3 +106,20 @@ TTF_Font *_get_font(const gchar *path, gint32 size, gint32 style) {
   g_hash_table_insert(_font_cache, key, font);
   return font;
 }
+
+void _cleanup_fonts(void) {
+  if (_font_cache) {
+    GHashTableIter iter;
+    gpointer key, value;
+    g_hash_table_iter_init(&iter, _font_cache);
+    while (g_hash_table_iter_next(&iter, &key, &value)) {
+      TTF_CloseFont((TTF_Font *)value);
+    }
+    g_hash_table_destroy(_font_cache);
+    _font_cache = NULL;
+  }
+  if (_fc_cache) {
+    g_hash_table_destroy(_fc_cache);
+    _fc_cache = NULL;
+  }
+}

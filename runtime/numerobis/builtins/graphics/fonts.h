@@ -12,4 +12,6 @@ const gchar *_default_font(void);
 const gchar *_resolve_font_name(const gchar *name);
 TTF_Font *_get_font(const gchar *path, gint32 size, gint32 style);
 
+void _cleanup_fonts(void);
+
 #endif

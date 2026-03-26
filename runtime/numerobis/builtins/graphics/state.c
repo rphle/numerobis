@@ -39,3 +39,18 @@ void _update_input_state(void) {
     }
   }
 }
+
+void _cleanup_state(void) {
+  if (_queue) {
+    g_array_unref(_queue);
+    _queue = NULL;
+  }
+  if (_renderer) {
+    SDL_DestroyRenderer(_renderer);
+    _renderer = NULL;
+  }
+  if (_window) {
+    SDL_DestroyWindow(_window);
+    _window = NULL;
+  }
+}

@@ -350,3 +350,15 @@ __attribute__((constructor)) void numerobis_graphics_register_builtins(void) {
   u_extern_register("mouse_y", numerobis_builtin_mouse_y);
   u_extern_register("quit_requested", numerobis_builtin_quit_requested);
 }
+
+__attribute__((destructor)) void numerobis_graphics_cleanup(void) {
+  _cleanup_fonts();
+  _cleanup_state();
+
+  if (TTF_WasInit()) {
+    TTF_Quit();
+  }
+  if (SDL_WasInit(SDL_INIT_VIDEO)) {
+    SDL_Quit();
+  }
+}

@@ -82,4 +82,6 @@ inline void _set_color(Color c) {
 void _ensure_queue(void);
 void _update_input_state(void);
 
+void _cleanup_state(void);
+
 #endif
