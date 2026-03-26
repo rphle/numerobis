@@ -7,7 +7,7 @@ from typing import Literal
 from ..nodes.core import Identifier, UnitNode
 from ..nodes.unit import Call, Expression, Neg, Power, Product, Scalar, Sum
 
-BUILTINS = ["echo", "input", "indexof", "split", "sleep"]
+BUILTINS = ["echo", "input", "indexof", "split"]
 
 
 def ensuresuffix(s: str, ch: str) -> str:
