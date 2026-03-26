@@ -3,7 +3,6 @@
 import subprocess
 import sys
 from functools import lru_cache
-from importlib import resources
 from pathlib import Path
 from typing import Optional
 
@@ -19,11 +18,10 @@ from .nodes.ast import Import
 from .parser.parser import Parser
 from .typechecker.linking import Link
 from .typechecker.typechecker import Typechecker
+from .utils import STDLIB_PATH
 
 # pre-compiled modules
 MODULECACHE: dict[str, CompiledModule] = {}
-
-STDLIB_PATH: Path = Path(next(iter(resources.files("numerobis.stdlib")._paths)))  # type: ignore
 
 
 class Module:

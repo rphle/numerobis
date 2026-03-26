@@ -147,6 +147,7 @@ def compile(
     flags: set[str] = set(),
     cache: bool = False,
     cc: str = "gcc",
+    use_graphics: bool = False,
 ):
     output_path = Path(output).resolve()
     output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -160,6 +161,7 @@ def compile(
     with resources.as_file(resources.files("numerobis")) as base_path:
         runtime_path = base_path / "runtime"
         runtime_lib = runtime_path / "libruntime.a"
+        graphics_lib = runtime_path / "libgraphics.a"
 
         with tempfile.TemporaryDirectory() as temp_dir:
             temp_path = Path(temp_dir)
@@ -168,31 +170,50 @@ def compile(
             (temp_path / "source.c").write_text(source_c, encoding="utf-8")
             (temp_path / "main.c").write_text(main_c, encoding="utf-8")
 
-            cmakelists = f"""
+            if use_graphics:
+                graphics_pkgconfig = """\
+pkg_check_modules(SDL2     REQUIRED sdl2)
+pkg_check_modules(SDL2_TTF REQUIRED SDL2_ttf)
+"""
+                graphics_include_dirs = """\
+    ${SDL2_INCLUDE_DIRS}
+    ${SDL2_TTF_INCLUDE_DIRS}"""
+                graphics_link_dirs = """\
+    ${SDL2_LIBRARY_DIRS}
+    ${SDL2_TTF_LIBRARY_DIRS}"""
+                graphics_libs = f"""\
+    "-Wl,--whole-archive"
+    "{graphics_lib.as_posix()}"
+    "-Wl,--no-whole-archive"
+    ${{SDL2_LIBRARIES}}
+    ${{SDL2_TTF_LIBRARIES}}"""
+            else:
+                graphics_pkgconfig = ""
+                graphics_include_dirs = ""
+                graphics_link_dirs = ""
+                graphics_libs = ""
+
+            cmakelists = f"""\
 cmake_minimum_required(VERSION 3.10)
 project(NumerobisNative C)
 
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(GLIB REQUIRED glib-2.0)
-pkg_check_modules(GC REQUIRED bdw-gc)
-pkg_check_modules(SDL2 REQUIRED sdl2)
-pkg_check_modules(SDL2_TTF REQUIRED SDL2_ttf)
-
+pkg_check_modules(GC   REQUIRED bdw-gc)
+{graphics_pkgconfig}
 add_executable(numerobis_bin main.c source.c)
 
 target_include_directories(numerobis_bin PRIVATE
     ${{GLIB_INCLUDE_DIRS}}
     ${{GC_INCLUDE_DIRS}}
-    ${{SDL2_INCLUDE_DIRS}}
-    ${{SDL2_TTF_INCLUDE_DIRS}}
+{graphics_include_dirs}
     "{runtime_path.as_posix()}"
 )
 
 target_link_directories(numerobis_bin PRIVATE
     ${{GLIB_LIBRARY_DIRS}}
     ${{GC_LIBRARY_DIRS}}
-    ${{SDL2_LIBRARY_DIRS}}
-    ${{SDL2_TTF_LIBRARY_DIRS}}
+{graphics_link_dirs}
 )
 
 target_compile_options(numerobis_bin PRIVATE {combined_flags})
@@ -201,10 +222,9 @@ target_link_libraries(numerobis_bin PRIVATE
     "-Wl,--whole-archive"
     "{runtime_lib.as_posix()}"
     "-Wl,--no-whole-archive"
+{graphics_libs}
     ${{GLIB_LIBRARIES}}
     ${{GC_LIBRARIES}}
-    ${{SDL2_LIBRARIES}}
-    ${{SDL2_TTF_LIBRARIES}}
     m
 )
 """

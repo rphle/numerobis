@@ -7,7 +7,6 @@
 #include "../utils/utils.h"
 #include "../values.h"
 #include "echo.h"
-#include "graphics_builtins.h"
 #include "math_builtins.h"
 #include "time_builtins.h"
 
@@ -104,6 +103,5 @@ void u_register_builtin_externs(void) {
   u_extern_register("exit", numerobis_builtin_exit);
 
   numerobis_math_register_builtins();
-  numerobis_graphics_register_builtins();
   numerobis_time_register_builtins();
 }
