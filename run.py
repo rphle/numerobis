@@ -5,15 +5,14 @@ reporting pass/fail status and performance metrics.
 """
 
 import argparse
-import dataclasses
-import itertools
 import os
 import re
 import sys
 import time
 from collections import defaultdict
+from concurrent.futures import ProcessPoolExecutor, as_completed
 from contextlib import redirect_stderr, redirect_stdout
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from io import StringIO
 from pathlib import Path
 from typing import Optional
@@ -31,17 +30,15 @@ console = Console()
 
 
 @dataclass
-class Test:
-    file: str | Path
+class TestResult:
+    file_name: str
+    file_path: str
     line: int
-    source: str
-    throws: Optional[str] = None
+    throws: Optional[str]
     thrown: Optional[str] = None
-    time: dict[str, float] = dataclasses.field(default_factory=dict)
     output: str = ""
-
-    def module(self, builtins: bool = True):
-        return Module(path=self.file, source=self.source, builtins=builtins)
+    times: dict[str, float] = field(default_factory=dict)
+    success: bool = False
 
 
 def timeit(func):
@@ -50,49 +47,103 @@ def timeit(func):
     return time.perf_counter() - t0
 
 
-def parse_args():
-    parser = argparse.ArgumentParser(
-        description="Run Numerobis test suite",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
+def run_single_test(
+    file_path,
+    header_source,
+    test_source,
+    line,
+    throws,
+    cc,
+    print_code,
+    format_code,
+    use_cmake,
+):
+    output = StringIO()
+    times = {}
+    thrown_error = None
+    output_bin = f"output/bin_{abs(hash((str(file_path), line)))}"
+
+    try:
+        with redirect_stdout(output), redirect_stderr(output):
+            header_mod = Module(path=file_path, source=header_source)
+            header_mod.parse()
+            header_mod.typecheck()
+
+            mod = Module(path=file_path, source=test_source)
+            mod.namespaces.update(header_mod.namespaces)
+            mod.namespaces.imports.update(header_mod.namespaces.imports)
+
+            print(mod.meta.source.strip())
+            print()
+
+            times["Parsing"] = timeit(mod.parse)
+            times["Typechecking"] = timeit(mod.typecheck)
+
+            mod.header = mod.header.merge(header_mod.header)
+            mod.imports = header_mod.imports[:-1] + mod.imports
+
+            times["Compilation"] = timeit(mod.compile)
+            times["Linking"] = timeit(
+                lambda: mod.link(print_=print_code or format_code, format=format_code)
+            )
+
+            times["C Compiler"] = timeit(
+                lambda: mod.cmake(
+                    output_path=output_bin, cache=True, cc=cc, use_cmake=use_cmake
+                )
+            )
+            times["Execution"] = timeit(lambda: mod.run(path=output_bin))
+
+    except SystemExit:
+        pass
+    except Exception as e:
+        print(f"\nInternal Compiler Error: {e}", file=output)
+
+    out_str = output.getvalue()
+    error_match = re.search(r"\[(E\d{3})\]", out_str)
+    thrown_error = error_match.group(1) if error_match else None
+
+    success = (throws == thrown_error) or (throws == "///")
+
+    return TestResult(
+        file_name=Path(file_path).name,
+        file_path=str(file_path),
+        line=line,
+        throws=throws,
+        thrown=thrown_error,
+        output=out_str,
+        times=times,
+        success=success,
     )
 
+
+def parse_args():
+    parser = argparse.ArgumentParser(description="Run Numerobis test suite")
     output_group = parser.add_mutually_exclusive_group()
     output_group.add_argument(
-        "-v", "--verbose", action="store_true", help="Show output for failed tests only"
+        "-v", "--verbose", action="store_true", help="Show failed tests"
     )
     output_group.add_argument(
-        "-f",
-        "--full",
-        action="store_true",
-        help="Show output for all tests (passed and failed)",
+        "-f", "--full", action="store_true", help="Show all tests"
     )
-
-    code_group = parser.add_argument_group()
-    code_group.add_argument(
-        "-p",
-        "--print",
-        action="store_true",
-        help="Print generated code (simple output)",
-    )
-    code_group.add_argument(
-        "-F", "--format", action="store_true", help="Print formatted generated code"
-    )
-
     parser.add_argument(
-        "--cc",
-        default="gcc",
-        metavar="COMPILER",
-        help="C compiler to use (default: gcc)",
+        "-p", "--print", action="store_true", help="Print generated code"
     )
-
-    # Test file selection
     parser.add_argument(
-        "tests",
-        nargs="*",
-        metavar="TEST",
-        help="Specific test files to run (without .nbis extension)",
+        "-F", "--format", action="store_true", help="Print formatted code"
     )
-
+    parser.add_argument("--cc", default="gcc", help="C compiler")
+    parser.add_argument(
+        "-j", "--jobs", type=int, default=os.cpu_count() or 4, help="Parallel jobs"
+    )
+    parser.add_argument(
+        "--no-cmake",
+        dest="use_cmake",
+        action="store_false",
+        default=True,
+        help="Skip CMake and use direct GCC bindings (potentially unstable)",
+    )
+    parser.add_argument("tests", nargs="*", help="Specific tests to run")
     return parser.parse_args()
 
 
@@ -100,159 +151,121 @@ def main():
     args = parse_args()
     if not (args.verbose or args.full):
         args.verbose = True
-
     build_lib()
+    print()
 
     tests_dir = Path("tests")
-    files = sorted(os.listdir(tests_dir))
-
-    # Filter test files
+    files = sorted([f for f in os.listdir(tests_dir) if f.endswith(".nbis")])
     if args.tests:
-        files = [test for test in files if test.removesuffix(".nbis") in args.tests]
+        files = [f for f in files if f.removesuffix(".nbis") in args.tests]
 
-    # Print header
     console.print(
         "[bold]Running tests[/bold] "
         f"[dim]\\[mode={'full' if args.full else 'verbose' if args.verbose else 'quiet'}, "
         f"output={'simple' if args.print else 'formatted' if args.format else 'none'}, "
-        f"compiler={args.cc}][/dim]",
+        f"compiler={args.cc}, "
+        f"cmake={str(args.use_cmake).lower()}][/dim]",
         highlight=False,
     )
-
     if args.tests:
         console.print(
-            f"[dim]Running {len(files)} selected test file(s)[/dim]",
-            highlight=False,
+            f"[dim]Running {len(files)} selected test file(s)[/dim]", highlight=False
         )
 
-    # Parse test files
-    tests: dict[str, tuple[Test, list[Test]]] = {}
+    test_queue = []
     for file in files:
         path = tests_dir / file
-        if path.is_dir():
-            continue
         lines = open(path, "r", encoding="utf-8").readlines()
-        chunks = [Test(path, 1, "")]
+        header_src, chunk_src, curr_line, curr_throws, first = "", "", 1, None, True
+
         for i, line in enumerate(lines):
             if match := re.match(r"# ((---+)|(E\d{3})|(///+))", line.strip()):
-                throws = match.group(1) if not match.group(1).startswith("-") else None
-                chunks.append(Test(path, i + 1, "", throws))
+                if first:
+                    header_src, first = chunk_src, False
+                else:
+                    test_queue.append(
+                        (path, header_src, chunk_src, curr_line, curr_throws)
+                    )
+                curr_throws = (
+                    match.group(1) if not match.group(1).startswith("-") else None
+                )
+                chunk_src, curr_line = "", i + 2
             else:
-                chunks[-1].source += line
-        tests[str(path)] = (chunks[0], chunks[1:])
+                chunk_src += line
+        test_queue.append((path, header_src, chunk_src, curr_line, curr_throws))
 
-    # Run tests
-    with tqdm(
-        total=sum(len(file[1]) for _, file in tests.items()), leave=False
-    ) as pbar:
-        errors = 0
-        for file in tests:
-            pbar.set_description(f"{Path(file).name}")
-            pbar.refresh()
-            header = tests[file][0].module()
-            header.parse()
-            header.typecheck()
+    results: list[TestResult] = []
+    fail_count = 0
+    with ProcessPoolExecutor(max_workers=args.jobs) as executor:
+        futures = [
+            executor.submit(
+                run_single_test,
+                p,
+                h,
+                c,
+                ll,
+                t,
+                args.cc,
+                args.print,
+                args.format,
+                args.use_cmake,
+            )
+            for p, h, c, ll, t in test_queue
+        ]
 
-            for i, test in enumerate(tests[file][1]):
-                mod = test.module()
-                mod.namespaces.update(header.namespaces)
-                mod.namespaces.imports.update(header.namespaces.imports)
+        with tqdm(total=len(futures), leave=False) as pbar:
+            for future in as_completed(futures):
+                res = future.result()
+                results.append(res)
+                if not res.success:
+                    fail_count += 1
 
-                output = StringIO()
-                times = {}
-                try:
-                    with redirect_stdout(output), redirect_stderr(output):
-                        print(mod.meta.source.strip())
-                        print()
-                        times["Parsing"] = timeit(mod.parse)
-                        times["Typechecking"] = timeit(mod.typecheck)
-
-                        mod.header = mod.header.merge(header.header)
-                        mod.imports = header.imports[:-1] + mod.imports
-                        times["Compilation"] = timeit(mod.compile)
-                        times["Linking"] = timeit(
-                            lambda: mod.link(
-                                print_=args.print or args.format, format=args.format
-                            )
-                        )
-                        times["GCC"] = timeit(
-                            lambda: mod.cmake(cache=True, cc=args.cc, use_cmake=False)
-                        )
-                        times["Execution"] = timeit(mod.run)
-
-                except SystemExit:
-                    pass
-                except Exception as e:
-                    if not test.throws == "///":
-                        print(output.getvalue())
-                        console.print(
-                            f"[bold red][FAIL] [/bold red][red]{test.file}:{test.line}[/red]",
-                            highlight=False,
-                            emoji=False,
-                        )
-                        raise e
-
-                tests[file][1][i].time = times
-
-                error = re.search(r"\[(E\d{3})\]", output.getvalue())
-                test.thrown = error.group(1) if error else None
-                test.output = output.getvalue()
-
-                if test.throws != test.thrown and test.throws != "///":
-                    errors += 1
-
+                pbar.set_description(f"{res.file_name}")
+                pbar.set_postfix(errors=fail_count, line=res.line)
                 pbar.update(1)
-                pbar.set_postfix(errors=errors, line=test.line)
 
-    # Print results
+    results.sort(key=lambda x: (x.file_path, x.line))
     cumulative = defaultdict(float)
-    ratio = [0, 0]
-    for test in itertools.chain.from_iterable(file[1] for _, file in tests.items()):
-        if test.throws != test.thrown and test.throws != "///":
+    passed = 0
+
+    for res in results:
+        if not res.success:
             text = (
-                (f"expected [bold]{test.throws}[/bold]" if test.throws else "")
-                + (", " if test.throws and test.thrown else "")
-                + (f"raised [bold]{test.thrown}[/bold]" if test.thrown else "")
+                (f"expected [bold]{res.throws}[/bold]" if res.throws else "")
+                + (", " if res.throws and res.thrown else "")
+                + (f"raised [bold]{res.thrown}[/bold]" if res.thrown else "")
             )
             console.print(
-                f"[bold red][FAIL] [/bold red][red]{test.file}:{test.line}[/red]: {text}",
+                f"[bold red][FAIL][/bold red] [red]{res.file_path}:{res.line}[/red]: {text}",
                 highlight=False,
-                emoji=False,
             )
             if args.verbose or args.full:
                 console.print(
                     rich.padding.Padding(
-                        f"[dim]{rich.markup.escape(test.output)}[/dim]",
-                        pad=(0, 0, 0, 2),
+                        f"[dim]{rich.markup.escape(res.output)}[/dim]", (0, 0, 0, 2)
                     ),
                     highlight=False,
-                    emoji=False,
                 )
         else:
+            passed += 1
             if args.full:
                 console.print(
-                    f"[bold green][PASS] [/bold green][green]{test.file}:{test.line}[/green]",
+                    f"[bold green][PASS][/bold green] [green]{res.file_path}:{res.line}[/green]",
                     highlight=False,
-                    emoji=False,
                 )
                 console.print(
                     rich.padding.Padding(
-                        f"[dim]{rich.markup.escape(test.output)}[/dim]",
-                        pad=(0, 0, 0, 2),
+                        f"[dim]{rich.markup.escape(res.output)}[/dim]", (0, 0, 0, 2)
                     ),
                     highlight=False,
-                    emoji=False,
                 )
-            ratio[0] += 1
 
-        for key, value in test.time.items():
-            cumulative[key] += value
-        ratio[1] += 1
+        for k, v in res.times.items():
+            cumulative[k] += v
 
-    # Print summary
     console.print("\n[bold][SUMMARY][/bold]")
-    p, t = ratio
-    ratio_pct = p / t if t > 0 else 0
+    t = len(results)
+    ratio_pct = passed / t if t > 0 else 0
     color = (
         "green"
         if ratio_pct == 1 or t == 0
@@ -260,23 +273,28 @@ def main():
         if ratio_pct >= 0.6
         else "red"
     )
+
     console.print(
-        f"[bold {color}]{p}/{t}[/bold {color}] tests passed "
-        f"[dim]([bold {color}]{ratio_pct:.2%}[/bold {color}])[/dim]"
+        f"[bold {color}]{passed}/{t}[/bold {color}] tests passed "
+        f"[dim]([bold {color}]{ratio_pct:.2%}[/bold {color}])[/dim]",
+        highlight=False,
     )
 
-    total = sum(cumulative.values())
+    total_time = sum(cumulative.values())
     console.print(
-        f"[bold]Total time[/bold]: [bold cyan]{total:.3f}s[/bold cyan] "
-        f"[dim]([bold cyan]{total / t if t > 0 else 0:.4f}s[/bold cyan] average)[/dim]"
+        f"[bold]Total time[/bold]: [bold cyan]{total_time:.3f}s[/bold cyan] "
+        f"[dim]([bold cyan]{total_time / t if t > 0 else 0:.4f}s[/bold cyan] average)[/dim]",
+        highlight=False,
     )
+
     for key, value in cumulative.items():
         console.print(
             f"  {key}: [bold cyan]{value:.3f}s[/bold cyan] "
-            f"[dim]([bold cyan]{value / t if t > 0 else 0:.4f}s[/bold cyan] average)[/dim]"
+            f"[dim]([bold cyan]{value / t if t > 0 else 0:.4f}s[/bold cyan] average)[/dim]",
+            highlight=False,
         )
 
-    sys.exit(0 if p == t else 1)
+    sys.exit(0 if passed == t else 1)
 
 
 if __name__ == "__main__":
