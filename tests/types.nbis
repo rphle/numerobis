@@ -4,7 +4,7 @@ from si import @(metre, kilogram, second, Mass, Length, Time)
 x: Int = 5
 
 # ---
-y: Float = 10.5
+y: Num = 10.5
 
 # ---
 s: Str = "hello"
@@ -152,7 +152,7 @@ x: Int = 5
 x = "hello"
 
 # E535
-y: Float = 10.5
+y: Num = 10.5
 y = true
 
 # E535
@@ -185,7 +185,7 @@ m: Mass = 10 kilogram
 m = 5 metre
 
 # E535
-y: Float = 5.5
+y: Num = 5.5
 y = "hello"
 
 # E535

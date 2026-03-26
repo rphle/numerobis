@@ -1,2 +1,2 @@
-extern now!(): Float;
-extern sleep!(secs: Float): None;
+extern now!(): Num;
+extern sleep!(secs: Num): None;

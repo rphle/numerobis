@@ -135,8 +135,8 @@ static inline Value __int__(Value self, LocRef loc) {
     u_throw(301, NULL, loc);
   return r;
 }
-static inline Value __float__(Value self, LocRef loc) {
-  Value r = NUMEROBIS_METHODS[self.type]->__float__(self);
+static inline Value __num__(Value self, LocRef loc) {
+  Value r = NUMEROBIS_METHODS[self.type]->__num__(self);
   if (r.type == VALUE_NONE)
     u_throw(302, NULL, loc);
   return r;

@@ -132,7 +132,7 @@ if true then {
 distance
 
 # ---
-mass = 10 kilogram
+mass: Num = 10 kilogram
 for i in [1, 2, 3] do {
     mass = mass + 1 kilogram
 }

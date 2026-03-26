@@ -236,7 +236,7 @@ static Value str__int__(Value self) {
   return int__init__(result, U_ONE);
 }
 
-static Value str__float__(Value self) {
+static Value str__num__(Value self) {
   if (!self.str)
     return NONE;
 
@@ -261,7 +261,7 @@ static Value str__float__(Value self) {
     return NONE;
   }
 
-  return float__init__(result, U_ONE);
+  return num__init__(result, U_ONE);
 }
 
 static const ValueMethods _str_methods = {
@@ -280,7 +280,7 @@ static const ValueMethods _str_methods = {
     .__mul__ = str__mul__,
     .__str__ = str__str__,
     .__int__ = str__int__,
-    .__float__ = str__float__,
+    .__num__ = str__num__,
 };
 
 void str_methods_init(void) { NUMEROBIS_METHODS[VALUE_STR] = &_str_methods; }

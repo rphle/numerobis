@@ -29,7 +29,7 @@ identity!(x: Int) = x
 identity(5)
 
 # ---
-double!(x: Float) = x * 2.0
+double!(x: Num) = x * 2.0
 double(5.5)
 
 # ---
@@ -53,7 +53,7 @@ identity!(x: Int): Int = x
 identity(5)
 
 # ---
-double!(x: Float): Float = x * 2.0
+double!(x: Num): Num = x * 2.0
 double(5.5)
 
 # ---
@@ -256,7 +256,7 @@ multi_return!(): Int = {
     return "hello"
 }
 
-# E519
+# ---
 block_mismatch!(): Int = {
     if true then { return 5 }
     { return 10.5 }
@@ -287,7 +287,7 @@ need_length!(d: Length) = d + 10 metre
 need_length(5 kilogram)
 
 # E513
-typed_add!(a: Int, b: Float) = a + b
+typed_add!(a: Int, b: Num) = a + b
 typed_add(5, 10)
 
 # E513
@@ -304,7 +304,7 @@ mass_default!(m: Mass = 10 metre): Mass = m
 length_default!(d: Length = 5 kilogram): Length = d
 
 # E518
-type_mismatch_default!(x: Float = true): Float = x
+type_mismatch_default!(x: Num = true): Num = x
 
 # E518
 wrong_return_dim!(x: Mass = 5 metre): Mass = x

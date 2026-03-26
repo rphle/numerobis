@@ -24,7 +24,6 @@ from ..nodes.ast import (
     Conversion,
     DimensionDefinition,
     ExternDeclaration,
-    Float,
     ForLoop,
     FromImport,
     Function,
@@ -37,6 +36,7 @@ from ..nodes.ast import (
     Integer,
     List,
     ModuleAccess,
+    Num,
     Range,
     Return,
     Slice,
@@ -124,7 +124,11 @@ class Typechecker:
             assert isinstance(definition, FunctionType)
             return definition.return_type
 
-        return_typ = "Float" if "Float" in {left.name(), right.name()} else "Int"
+        if left.dim or right.dim:
+            return_typ = "Num"  # unitful operations always return float
+        else:
+            return_typ = "Num" if "Num" in {left.name(), right.name()} else "Int"
+
         match node.op.name:
             case "add" | "sub" | "dadd" | "dsub":
                 if not (mismatch := dimcheck(left, right)):
@@ -133,9 +137,17 @@ class Typechecker:
                 return NumberType(typ=return_typ, dim=left.dim)
             case "mul" | "div":
                 if not right.dim:
-                    return left
+                    return (
+                        left.edit(typ=return_typ)
+                        if isinstance(left, NumberType)
+                        else left
+                    )
                 elif not left.dim:
-                    return right
+                    return (
+                        right.edit(typ=return_typ)
+                        if isinstance(right, NumberType)
+                        else right
+                    )
 
                 r = right.dim
                 if node.op.name == "div":
@@ -143,6 +155,10 @@ class Typechecker:
 
                 dimension = self.simplify(Product([left.dim, r]))
 
+                if isinstance(left, NumberType):
+                    return left.edit(
+                        typ=return_typ, dim=dimension if dimension else None
+                    )
                 return left.edit(dim=dimension if dimension else None)
             case "pow":
                 if right.dim:
@@ -152,7 +168,7 @@ class Typechecker:
                         loc=self.unlink(node.right).loc,
                     )
                 if not left.dim:
-                    return left.edit(typ="Float")
+                    return left.edit(typ="Num")
 
                 assert isinstance(right, NumberType)
                 exp = Decimal(right.value)
@@ -171,7 +187,7 @@ class Typechecker:
                     else dimension
                 )
                 return (
-                    NumberType(typ="Float", dim=dimension)
+                    NumberType(typ="Num", dim=dimension)
                     if isinstance(left, Expression)
                     else left.edit(dim=dimension)
                 )
@@ -187,7 +203,9 @@ class Typechecker:
         returns = None
 
         def check_return(returns: T | None, checked: T):
-            if returns is not None and not nomismatch(returns, checked):
+            if returns is not None and not nomismatch(
+                returns, checked, commutative=True
+            ):
                 self.errors.throw(505, loc=node.loc)
             return checked
 
@@ -440,7 +458,7 @@ class Typechecker:
                 and typ != value.name()
             ):
                 self.errors.throw(515, left=value, right=typ, loc=node.loc)
-            if typ in {"Int", "Float"} and isinstance(value, NumberType):
+            if typ in {"Int", "Num"} and isinstance(value, NumberType):
                 # don't erase dimension
                 return value.edit(typ=typ)
             return AnyType(typ)
@@ -663,7 +681,7 @@ class Typechecker:
         if len(branches) == 1:
             return branches[0]
 
-        if not (mismatch := nomismatch(*branches)):
+        if not (mismatch := nomismatch(*branches, commutative=True)):
             self.errors.throw(
                 521,
                 kind=mismatch.kind,
@@ -672,7 +690,7 @@ class Typechecker:
                 loc=node.loc,
             )
 
-        return unify(*branches)
+        return unify(*branches, commutative=True)
 
     def index_(self, node: Index, env: Env):
         value = self.check(node.iterable, env=env)
@@ -757,7 +775,7 @@ class Typechecker:
     def none_type_(self, node: NoneType, env: Env) -> NoneType:
         return NoneType()
 
-    def number_(self, node: Integer | Float, env: Env) -> NumberType:
+    def number_(self, node: Integer | Num, env: Env) -> NumberType:
         dimension = self.simplify(self.dimchecker.dimensionize(node.unit, mode="unit"))
         assert dimension is None or isinstance(dimension, (Expression, One)), node
         return NumberType(
@@ -777,7 +795,7 @@ class Typechecker:
 
         if node.step is not None:
             value = self.check(node.step, env=env)
-            if not value.name("Int", "Float"):
+            if not value.name("Int", "Num"):
                 self.errors.throw(
                     528, type=value, loc=self.unlink(node.step, ["loc"]).loc
                 )
@@ -834,7 +852,7 @@ class Typechecker:
 
             case Type():
                 match node.name.name:
-                    case "Float" | "Int":
+                    case "Num" | "Int":
                         if node.param:
                             if not isinstance(node.param, (One, Expression)):
                                 self.errors.throw(
@@ -971,7 +989,7 @@ class Typechecker:
         node = self.namespaces.nodes[link.target] if islink else link
 
         match node:
-            case Integer() | Float():
+            case Integer() | Num():
                 ret = self.number_(node, env=env.copy())
             case String() | Boolean():
                 name = type(node).__name__.removesuffix("ing").removesuffix("ean")

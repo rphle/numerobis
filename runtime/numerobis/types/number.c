@@ -23,7 +23,7 @@ Value int__init__(gint64 x, const uint64_t unit) {
   return v;
 }
 
-Value float__init__(gdouble x, const uint64_t unit) {
+Value num__init__(gdouble x, const uint64_t unit) {
   Value v;
   v.type = VALUE_NUMBER;
   v.number.kind = NUM_DOUBLE;
@@ -58,7 +58,7 @@ static bool number__cbool__(Value self) {
 Value number__neg__(Value self) {
   if (self.number.kind == NUM_INT64)
     return int__init__(-(self.number.i64), self.number.unit);
-  return float__init__(-(self.number.f64), self.number.unit);
+  return num__init__(-(self.number.f64), self.number.unit);
 }
 
 // Comparisons
@@ -138,7 +138,7 @@ static Value number_binop(Value a, Value b, binop_i64 iop, binop_f64 fop,
       if (result == (gdouble)(gint64)result && na->kind != NUM_DOUBLE &&
           nb->kind != NUM_DOUBLE)
         return int__init__((gint64)result, unit);
-      return float__init__(result, unit);
+      return num__init__(result, unit);
     }
     break;
   case OP_MUL:
@@ -173,7 +173,7 @@ static Value number_binop(Value a, Value b, binop_i64 iop, binop_f64 fop,
       x = number_as_double(na);
     if (!_y_defined)
       y = number_as_double(nb);
-    return float__init__(fop(x, y), unit);
+    return num__init__(fop(x, y), unit);
   }
   return int__init__(
       iop(_x_defined ? (gint64)x : na->i64, _y_defined ? (gint64)y : nb->i64),
@@ -234,10 +234,9 @@ static Value number__int__(Value self) {
   return (n->kind == NUM_INT64) ? self : int__init__((gint64)n->f64, n->unit);
 }
 
-static Value number__float__(Value self) {
+static Value number__num__(Value self) {
   Number *n = &self.number;
-  return (n->kind == NUM_DOUBLE) ? self
-                                 : float__init__((gdouble)n->i64, n->unit);
+  return (n->kind == NUM_DOUBLE) ? self : num__init__((gdouble)n->i64, n->unit);
 }
 
 Value number__convert__(Value self, const uint64_t target) {
@@ -254,7 +253,7 @@ Value number__convert__(Value self, const uint64_t target) {
 
   if (n->kind == NUM_INT64)
     return int__init__((gint64)value, target);
-  return float__init__(value, target);
+  return num__init__(value, target);
 }
 
 static const ValueMethods _number_methods = {
@@ -276,7 +275,7 @@ static const ValueMethods _number_methods = {
     .__neg__ = number__neg__,
     .__str__ = number__str__,
     .__int__ = number__int__,
-    .__float__ = number__float__,
+    .__num__ = number__num__,
 };
 
 void number_methods_init(void) {

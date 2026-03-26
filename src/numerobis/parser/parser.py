@@ -18,7 +18,6 @@ from ..nodes.ast import (
     Conversion,
     DimensionDefinition,
     ExternDeclaration,
-    Float,
     ForLoop,
     FromImport,
     Function,
@@ -31,6 +30,7 @@ from ..nodes.ast import (
     Integer,
     List,
     ModuleAccess,
+    Num,
     Param,
     Range,
     Return,
@@ -832,7 +832,7 @@ class Parser(ParserTemplate):
             token = self._consume("ID")
             name = Identifier(name=token.value, loc=token.loc)
             if self._peek(ignore_whitespace=True).type == "LBRACKET":
-                if name.name in ["Int", "Float", "List"]:
+                if name.name in ["Int", "Num", "List"]:
                     self._consume("LBRACKET")
                     param = self.type()
                     self._consume("RBRACKET")
@@ -889,7 +889,7 @@ class Parser(ParserTemplate):
             loc=_bang.loc.merge(_end.loc),
         )
 
-    def _parse_number(self, token: Token) -> Float | Integer:
+    def _parse_number(self, token: Token) -> Num | Integer:
         split = token.value.lower().split("e")
         number = split[0].replace("_", "")
         exponent = split[1] if len(split) > 1 else ""
@@ -898,6 +898,6 @@ class Parser(ParserTemplate):
 
         unit = self._make_unit()
         if "." in number or exponent.startswith("-"):
-            return Float(value=number, exponent=exponent, unit=unit, loc=token.loc)
+            return Num(value=number, exponent=exponent, unit=unit, loc=token.loc)
         else:
             return Integer(value=number, exponent=exponent, unit=unit, loc=token.loc)

@@ -114,8 +114,8 @@ if true then 5 kilogram else 10 metre
 # E521
 if false then 10 second else 5 kilogram
 
-# E521
-if true then 5 else 10.5
+# ---
+x: Num = if true then 5 else 10.5
 
 # E521
 if true then 5.5 else "test"

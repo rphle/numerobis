@@ -132,7 +132,7 @@ x: Type = expr
 x: Mass = 1000       # dimension annotation
 
 i: Int   = 10
-f: Float = 3.14
+f: Num   = 3.14
 m: Int[Length] = 10 m
 s: Str  = "hello"
 b: Bool = true
@@ -296,7 +296,7 @@ from si       import @(kg, m, km, s, K, J, kJ, kW, h)
 
 ```python
 x: Length = 42 m
-y: Float[Mass] = 3.14 kg
+y: Num[Mass] = 3.14 kg
 l: List[Length] = [x, 6 m, 7 km]
 ```
 

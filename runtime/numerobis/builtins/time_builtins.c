@@ -11,7 +11,7 @@
 static Value numerobis_builtin_now(Value *args) {
   gint64 microseconds = g_get_real_time();
   gdouble seconds = (gdouble)microseconds / 1000000.0;
-  return float__init__(seconds, U_ONE);
+  return num__init__(seconds, U_ONE);
 }
 
 static Value numerobis_builtin_sleep(Value *args) {

@@ -38,7 +38,7 @@ class Integer(AstNode):
 
 
 @dataclass(kw_only=True, frozen=True)
-class Float(AstNode):
+class Num(AstNode):
     value: str
     exponent: str
     unit: Expression

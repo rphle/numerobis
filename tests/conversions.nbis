@@ -48,7 +48,7 @@ ratio -> Int
 
 # ---
 pure = 5 metre / 5 metre
-pure -> Float
+pure -> Num
 
 # ---
 dimensionless = (100 gram / 1 kilogram) * 10
@@ -125,7 +125,7 @@ mass -> Length
 5 metre -> Int
 
 # ---
-10 kilogram -> Float
+10 kilogram -> Num
 
 # ---
 20 second -> Bool
@@ -136,13 +136,13 @@ mass -> Int
 
 # ---
 distance = 100 metre
-distance -> Float
+distance -> Num
 
 # E301
 "hello" -> Int
 
 # ---
-true -> Float
+true -> Num
 
 # ---
 [1, 2, 3] -> Str

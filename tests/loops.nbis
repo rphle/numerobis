@@ -25,7 +25,7 @@ for n in [1, 2, 3, 4] do {
 }
 
 # ---
-sum_mass = 0 kilogram
+sum_mass = 0.0 kilogram
 for m in [1 kilogram, 2 kilogram, 3 kilogram] do {
     sum_mass = sum_mass + m
 }

@@ -27,7 +27,6 @@ from ..nodes.ast import (
     Conversion,
     DimensionDefinition,
     ExternDeclaration,
-    Float,
     ForLoop,
     FromImport,
     Function,
@@ -38,6 +37,7 @@ from ..nodes.ast import (
     Integer,
     List,
     ModuleAccess,
+    Num,
     Range,
     Return,
     Slice,
@@ -221,7 +221,7 @@ class Compiler:
         if not isinstance(node.target, Type):
             # unit conversion
             value = self.compile(node.value)
-            if self._link2type(node.value.target) in {"int", "float"}:  # type: ignore
+            if self._link2type(node.value.target) in {"int", "num"}:  # type: ignore
                 assert isinstance(node.target, Expression)
                 target = (
                     self.unit_suffix_(self.simplify(node.target, do_cancel=False))
@@ -326,7 +326,7 @@ class Compiler:
         loop["iv"] = self.compile(node.iterators[0])
 
         loop["vtype"] = node.meta["value"].name().lower()  # 'int' or 'float'
-        loop["type"] = {"Int": "gint64", "Float": "gdouble"}[node.meta["value"].name()]
+        loop["type"] = {"Int": "gint64", "Num": "gdouble"}[node.meta["value"].name()]
 
         r = self.unlink(node.iterable)
         if not isinstance(r, Range):
@@ -353,12 +353,12 @@ class Compiler:
             if not value:
                 loop[key] = "1"
             elif isinstance(value, UnaryOp) and isinstance(
-                value.operand, (Integer, Float)
+                value.operand, (Integer, Num)
             ):
                 # negative
                 value = self.unlink(value.operand)
                 value = dataclasses.replace(value, value=f"-{value.value}")
-            elif isinstance(value, (Integer, Float)):
+            elif isinstance(value, (Integer, Num)):
                 # constant range
                 loop[key] = self.number_(value, init=False)
             else:
@@ -518,12 +518,12 @@ class Compiler:
         self._imported_names[f"{mod}.{out['name']}"] = out["prefix"]
         return out
 
-    def number_(self, node: Integer | Float, *, init: bool = True) -> tstr:
+    def number_(self, node: Integer | Num, *, init: bool = True) -> tstr:
         self.include.add("numerobis/types/number")
         out = tstr("$type__init__($value, $unit)") if init else tstr("$value")
 
         value = node.value
-        typ = "float"
+        typ = "num"
         if "." not in str(value) and "." not in str(node.exponent):
             out["value"] = (
                 f"G_GINT64_CONSTANT({value}{f'E{node.exponent}' if node.exponent else ''})"
@@ -723,7 +723,7 @@ class Compiler:
         node = self.unlink(link) if isinstance(link, Link) else link
 
         match node:
-            case Integer() | Float():
+            case Integer() | Num():
                 return self.number_(node)
             case Import() | FromImport() | DimensionDefinition() | UnitDefinition():
                 return tstr("")

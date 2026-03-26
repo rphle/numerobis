@@ -154,12 +154,12 @@ f: Force = 50 newton
 # ---
 z: Int[Mass] = 5kg
 
-# E536
-z: Float[Energy] = 5 joule
+# ---
+z: Num[Energy] = 5 joule
 
 # ---
 dimension Volume = Length^3
-z: Float[Volume] = 1.0m^3
+z: Num[Volume] = 1.0m^3
 
 # ---
 v: Length / Time = 10 metre/second

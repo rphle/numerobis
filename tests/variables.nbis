@@ -38,7 +38,7 @@ force = m * 10 metre/second^2
 x: Int = 5
 
 # ---
-y: Float = 10.5
+y: Num = 10.5
 
 # ---
 s: Str = "hello"
@@ -85,7 +85,7 @@ total = total + 10
 total = total * 2
 
 # ---
-m = 5 kilogram
+m: Num = 5 kilogram
 m = m + 3 kilogram
 m = m * 2
 
@@ -133,11 +133,11 @@ x = 15
 
 # E604
 y: Int = 5
-y: Float = 10.5
+y: Num = 10.5
 
 # E604
 x: Int = 5
-x: Float = 10.0
+x: Num = 10.0
 
 # E604
 m: Mass = 5 kilogram
@@ -147,7 +147,7 @@ m: Length = 10 metre
 x: Int = "hello"
 
 # E536
-y: Float = true
+y: Num = true
 
 # E536
 m: Mass = 10 metre

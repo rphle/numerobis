@@ -83,7 +83,7 @@ class NoneType(UType):
 
 @dataclass(kw_only=True, frozen=True)
 class NumberType(UType):
-    typ: Literal["Int", "Float"] = "Float"
+    typ: Literal["Int", "Num"] = "Num"
     dim: Optional[Expression | One] = None
     value: float | int = 0
 
@@ -252,7 +252,7 @@ class AnyType(UType):
             "none": NoneType(),
             "number": NumberType(),
             "int": NumberType(typ="Int"),
-            "float": NumberType(typ="Float"),
+            "num": NumberType(typ="Num"),
             "bool": BoolType(),
             "str": StrType(),
             "list": ListType(),
@@ -272,7 +272,7 @@ class AnyType(UType):
         super().__init__()
 
 
-def unify(a: T, b: T) -> T | Mismatch:
+def unify(a: T, b: T, commutative: bool = False) -> T | Mismatch:
     mismatch = Mismatch("type", a, b)
 
     if isanyofinstance((a, b), NeverType):
@@ -300,6 +300,10 @@ def unify(a: T, b: T) -> T | Mismatch:
 
     match a, b:
         case NumberType() as a, NumberType() as b:
+            if a.typ == "Num":
+                return a
+            elif commutative and b.typ == "Num":
+                return b
             return a if a.typ == b.typ else mismatch
         case ListType() as a, ListType() as b:
             content = unify(a.content, b.content)
@@ -357,6 +361,6 @@ class IntType:
         return NumberType(typ="Int")
 
 
-class FloatType:
+class NumType:
     def __new__(cls) -> NumberType:
-        return NumberType(typ="Float")
+        return NumberType(typ="Num")

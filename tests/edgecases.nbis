@@ -140,7 +140,7 @@ x = 5
 x = x
 
 # ---
-m = 10 kilogram
+m = 10.0 kilogram
 m = m + 0 kilogram
 
 # ---

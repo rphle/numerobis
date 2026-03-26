@@ -4,13 +4,13 @@ from ..nodes.unit import One
 from .types import (
     AnyType,
     BoolType,
-    FloatType,
     FunctionType,
     IntType,
     ListType,
     NeverType,
     NoneType,
     NumberType,
+    NumType,
     Overload,
     SliceType,
     StrType,
@@ -20,15 +20,15 @@ from .types import (
 
 _numberoverload = Overload(
     FunctionType(params=[IntType(), IntType()], return_type=IntType()),
-    FunctionType(params=[IntType(), FloatType()], return_type=FloatType()),
-    FunctionType(params=[FloatType(), FloatType()], return_type=FloatType()),
-    FunctionType(params=[FloatType(), IntType()], return_type=FloatType()),
+    FunctionType(params=[IntType(), NumType()], return_type=NumType()),
+    FunctionType(params=[NumType(), NumType()], return_type=NumType()),
+    FunctionType(params=[NumType(), IntType()], return_type=NumType()),
 )
 _boolnumberoverload = Overload(
     FunctionType(params=[IntType(), IntType()], return_type=BoolType()),
-    FunctionType(params=[IntType(), FloatType()], return_type=BoolType()),
-    FunctionType(params=[FloatType(), FloatType()], return_type=BoolType()),
-    FunctionType(params=[FloatType(), IntType()], return_type=BoolType()),
+    FunctionType(params=[IntType(), NumType()], return_type=BoolType()),
+    FunctionType(params=[NumType(), NumType()], return_type=BoolType()),
+    FunctionType(params=[NumType(), IntType()], return_type=BoolType()),
 )
 
 
@@ -52,24 +52,24 @@ typetable: dict[str, Struct] = {
     "Any": Struct({}),
     "Int": Struct(
         {
-            **_conv("Int", "Bool", "Str", "Float"),
+            **_conv("Int", "Bool", "Str", "Num"),
             **{f"__{op}__": _numberoverload for op in _ops},
             **{f"__{op}__": _boolnumberoverload for op in _boolops},
             **_eq,
         }
     ),
-    "Float": Struct(
+    "Num": Struct(
         {
-            **_conv("Float", "Bool", "Str", "Int"),
+            **_conv("Num", "Bool", "Str", "Int"),
             **{f"__{op}__": _numberoverload for op in _ops},
             **{f"__{op}__": _boolnumberoverload for op in _boolops},
             **_eq,
         }
     ),
-    "Bool": Struct({**_conv("Bool", "Bool", "Str", "Int", "Float"), **_eq}),
+    "Bool": Struct({**_conv("Bool", "Bool", "Str", "Int", "Num"), **_eq}),
     "Str": Struct(
         {
-            **_conv("Str", "Bool", "Int", "Float"),
+            **_conv("Str", "Bool", "Int", "Num"),
             "__add__": FunctionType(
                 params=[StrType(), StrType()], return_type=StrType()
             ),
@@ -143,7 +143,7 @@ typetable: dict[str, Struct] = {
     "None": Struct({**_eq}),
     "Never": Struct(
         {
-            **_conv("Float", "Bool", "Str", "Int", "Any", "Str", "List"),
+            **_conv("Num", "Bool", "Str", "Int", "Any", "Str", "List"),
             **{f"__{op}__": _numberoverload for op in _ops},
             **{f"__{op}__": _boolnumberoverload for op in _boolops},
             **_eq,

@@ -7,7 +7,7 @@ from typing import Optional, TypeVar
 from ..classes import Header, ModuleMeta
 from ..environment import Namespaces
 from ..exceptions.exceptions import Exceptions
-from ..nodes.ast import Float, Integer, UnitDefinition
+from ..nodes.ast import Integer, Num, UnitDefinition
 from ..nodes.core import Identifier
 from ..nodes.unit import Expression, Neg, One, Power, Product, Scalar, Sum, UnitNode
 from ..typechecker.linking import Link
@@ -41,7 +41,7 @@ class Preprocessor:
         self.bases: dict[str, Expression] = {}
         self.logarithmic: set[str] = set()
 
-    def number_(self, node: Integer | Float, link: int):
+    def number_(self, node: Integer | Num, link: int):
         if not node.unit:
             return
         res = self.resolve(Scalar(value=Decimal(node.value), unit=cancel(node.unit)))  # type: ignore
@@ -104,7 +104,7 @@ class Preprocessor:
 
     def process(self, node, link: int = -1):
         match node:
-            case Integer() | Float():
+            case Integer() | Num():
                 self.number_(node, link)
 
     def start(self):

@@ -191,7 +191,7 @@ static Value numerobis_builtin_point(Value *args) {
   return _none();
 }
 
-/* text!(x, y, content, size, color, style: List[Str], font: Str, angle: Float)
+/* text!(x, y, content, size, color, style: List[Str], font: Str, angle: Num)
  */
 static Value numerobis_builtin_text(Value *args) {
   _ensure_queue();

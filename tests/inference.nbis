@@ -119,7 +119,7 @@ for i in [1, 2, 3] do {
 }
 
 # ---
-total = 0 kilogram
+total = 0.0 kilogram
 for m in [1 kilogram, 2 kilogram] do {
     total = total + m
 }

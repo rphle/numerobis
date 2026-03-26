@@ -5,60 +5,60 @@ e       = 2.71828182845904523536
 phi     = 1.61803398874989484820   # golden ratio
 
 # Rounding
-extern floor!(value: Float): Int;
-extern ceil!(value: Float): Int;
-extern round!(value: Float): Int;
-extern trunc!(value: Float): Int;
+extern floor!(value: Num): Int;
+extern ceil!(value: Num): Int;
+extern round!(value: Num): Int;
+extern trunc!(value: Num): Int;
 
 # Basic math
-extern sqrt!(value: Float): Float;
-extern cbrt!(value: Float): Float;
-extern abs!(value: Float): Float;
-extern pow!(base: Float, exponent: Float): Float;
-extern exp!(value: Float): Float;
-extern exp2!(value: Float): Float;
-extern hypot!(x: Float, y: Float): Float;
-extern sign!(value: Float): Float;
-extern clamp!(value: Float, lo: Float, hi: Float): Float;
-extern min!(a: Float, b: Float): Float;
-extern max!(a: Float, b: Float): Float;
+extern sqrt!(value: Num): Num;
+extern cbrt!(value: Num): Num;
+extern abs!(value: Num): Num;
+extern pow!(base: Num, exponent: Num): Num;
+extern exp!(value: Num): Num;
+extern exp2!(value: Num): Num;
+extern hypot!(x: Num, y: Num): Num;
+extern sign!(value: Num): Num;
+extern clamp!(value: Num, lo: Num, hi: Num): Num;
+extern min!(a: Num, b: Num): Num;
+extern max!(a: Num, b: Num): Num;
 
 # Logarithms
-extern log!(value: Float): Float;
-extern log2!(value: Float): Float;
-extern log10!(value: Float): Float;
-extern logn!(x: Float, base: Float): Float;
+extern log!(value: Num): Num;
+extern log2!(value: Num): Num;
+extern log10!(value: Num): Num;
+extern logn!(x: Num, base: Num): Num;
 
 # Trigonometry (radians)
-extern sin!(value: Float): Float;
-extern cos!(value: Float): Float;
-extern tan!(value: Float): Float;
-extern asin!(value: Float): Float;
-extern acos!(value: Float): Float;
-extern atan!(value: Float): Float;
-extern atan2!(y: Float, x: Float): Float;
+extern sin!(value: Num): Num;
+extern cos!(value: Num): Num;
+extern tan!(value: Num): Num;
+extern asin!(value: Num): Num;
+extern acos!(value: Num): Num;
+extern atan!(value: Num): Num;
+extern atan2!(y: Num, x: Num): Num;
 
 # Trigonometry (degrees)
-extern sind!(value: Float): Float;
-extern cosd!(value: Float): Float;
-extern tand!(value: Float): Float;
-extern asind!(value: Float): Float;
-extern acosd!(value: Float): Float;
-extern atand!(value: Float): Float;
-extern atan2d!(y: Float, x: Float): Float;
+extern sind!(value: Num): Num;
+extern cosd!(value: Num): Num;
+extern tand!(value: Num): Num;
+extern asind!(value: Num): Num;
+extern acosd!(value: Num): Num;
+extern atand!(value: Num): Num;
+extern atan2d!(y: Num, x: Num): Num;
 
 # Hyperbolic
-extern sinh!(value: Float): Float;
-extern cosh!(value: Float): Float;
-extern tanh!(value: Float): Float;
-extern asinh!(value: Float): Float;
-extern acosh!(value: Float): Float;
-extern atanh!(value: Float): Float;
+extern sinh!(value: Num): Num;
+extern cosh!(value: Num): Num;
+extern tanh!(value: Num): Num;
+extern asinh!(value: Num): Num;
+extern acosh!(value: Num): Num;
+extern atanh!(value: Num): Num;
 
 # Angle conversion
-extern deg_to_rad!(value: Float): Float;
-extern rad_to_deg!(value: Float): Float;
+extern deg_to_rad!(value: Num): Num;
+extern rad_to_deg!(value: Num): Num;
 
 # Random
-extern random!(): Float;
+extern random!(): Num;
 extern randint!(lo: Int, hi: Int): Int;

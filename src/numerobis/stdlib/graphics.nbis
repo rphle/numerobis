@@ -7,12 +7,12 @@ extern rect!(x: Int, y: Int, w: Int, h: Int, color: Str = "#000000", filled: Boo
 extern rounded_rect!(x: Int, y: Int, w: Int, h: Int, radius: Int, color: Str = "#000000", filled: Bool = true): None;
 extern circle!(x: Int, y: Int, radius: Int, color: Str = "#000000", filled: Bool = true): None;
 extern ellipse!(x: Int, y: Int, rx: Int, ry: Int, color: Str = "#000000", filled: Bool = true): None;
-extern line!(x1: Int, y1: Int, x2: Int, y2: Int, color: Str = "#000000", thickness: Float = 1.0): None;
+extern line!(x1: Int, y1: Int, x2: Int, y2: Int, color: Str = "#000000", thickness: Num = 1.0): None;
 extern polygon!(points: List[Int], color: Str = "#000000", filled: Bool = true): None;
-extern arc!(x: Int, y: Int, radius: Int, start: Float, end: Float, color: Str = "#000000", filled: Bool = true): None;
+extern arc!(x: Int, y: Int, radius: Int, start: Num, end: Num, color: Str = "#000000", filled: Bool = true): None;
 extern point!(x: Int, y: Int, color: Str = "#000000"): None;
 
-extern text!(x: Int, y: Int, content: Str, size: Int = 16, color: Str = "#000000", style: List[Str] = [], font: Str = "", angle: Float = 0.0): None;
+extern text!(x: Int, y: Int, content: Str, size: Int = 16, color: Str = "#000000", style: List[Str] = [], font: Str = "", angle: Num = 0.0): None;
 
 extern blit!(): None;
 

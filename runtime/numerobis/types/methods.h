@@ -6,7 +6,6 @@
 
 typedef struct Value Value;
 
-
 typedef struct {
   Value (*__bool__)(Value self);
   bool (*__cbool__)(Value self);
@@ -30,7 +29,7 @@ typedef struct {
   Value (*__getslice__)(Value _self, Value _start, Value _stop, Value _step);
   Value (*__str__)(Value self);
   Value (*__int__)(Value self);
-  Value (*__float__)(Value self);
+  Value (*__num__)(Value self);
 } ValueMethods;
 
 extern const ValueMethods *NUMEROBIS_METHODS[8];

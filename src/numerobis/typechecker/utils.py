@@ -23,8 +23,8 @@ def _check_method(method, *args) -> FunctionType | Mismatch | None:
     raise ValueError()
 
 
-def nomismatch(a: T, b: T) -> Mismatch | Literal[True]:
-    if not (mismatch := unify(a, b)):
+def nomismatch(a: T, b: T, commutative: bool = False) -> Mismatch | Literal[True]:
+    if not (mismatch := unify(a, b, commutative)):
         assert isinstance(mismatch, Mismatch)
         return mismatch
     elif not (mismatch := dimcheck(a, b)):

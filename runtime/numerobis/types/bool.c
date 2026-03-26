@@ -31,8 +31,8 @@ static inline Value bool__int__(Value self) {
   return int__init__(self.boolean ? 1 : 0, U_ONE);
 }
 
-static inline Value bool__float__(Value self) {
-  return float__init__(self.boolean ? 1.0 : 0.0, U_ONE);
+static inline Value bool__num__(Value self) {
+  return num__init__(self.boolean ? 1.0 : 0.0, U_ONE);
 }
 
 static const ValueMethods _bool_methods = {
@@ -41,7 +41,7 @@ static const ValueMethods _bool_methods = {
     .__eq__ = bool__eq__,
     .__str__ = bool__str__,
     .__int__ = bool__int__,
-    .__float__ = bool__float__,
+    .__num__ = bool__num__,
 };
 
 void bool_methods_init(void) { NUMEROBIS_METHODS[VALUE_BOOL] = &_bool_methods; }
