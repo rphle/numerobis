@@ -11,6 +11,11 @@ extern SDL_Renderer *_renderer;
 extern GArray *_queue;
 extern Color _bg;
 
+extern gint32 _mouse_x;
+extern gint32 _mouse_y;
+extern gboolean _mouse_down;
+extern gboolean _quit_requested;
+
 typedef enum {
   CMD_RECT,
   CMD_ROUNDED_RECT,
@@ -75,5 +80,6 @@ inline void _set_color(Color c) {
 }
 
 void _ensure_queue(void);
+void _update_input_state(void);
 
 #endif

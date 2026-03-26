@@ -3,3 +3,5 @@ extern input!(prompt: Str = ""): Str;
 
 extern indexof!(lst: List, item): Int;
 extern split!(s: Str, sep: Str): List[Str];
+
+extern exit!(code: Int = 0): None;

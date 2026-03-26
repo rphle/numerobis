@@ -1,4 +1,5 @@
 #include "../../extern.h"
+#include "../../types/bool.h"
 #include "../../types/number.h"
 #include "../../units/units.h"
 #include "../../utils/utils.h"
@@ -305,6 +306,30 @@ static Value numerobis_builtin_blit(Value *args) {
   return _none();
 }
 
+/* mouse_down!(): Bool */
+static Value numerobis_builtin_mouse_down(Value *args) {
+  _update_input_state();
+  return bool__init__(_mouse_down);
+}
+
+/* mouse_x!(): Int */
+static Value numerobis_builtin_mouse_x(Value *args) {
+  _update_input_state();
+  return int__init__((gint64)_mouse_x, U_ONE);
+}
+
+/* mouse_y!(): Int */
+static Value numerobis_builtin_mouse_y(Value *args) {
+  _update_input_state();
+  return int__init__((gint64)_mouse_y, U_ONE);
+}
+
+/* quit_requested!(): Bool */
+static Value numerobis_builtin_quit_requested(Value *args) {
+  _update_input_state();
+  return bool__init__(_quit_requested);
+}
+
 __attribute__((constructor)) void numerobis_graphics_register_builtins(void) {
   u_extern_register("init", numerobis_builtin_graphics_init);
   u_extern_register("set_bg", numerobis_builtin_set_bg);
@@ -320,4 +345,8 @@ __attribute__((constructor)) void numerobis_graphics_register_builtins(void) {
   u_extern_register("point", numerobis_builtin_point);
   u_extern_register("text", numerobis_builtin_text);
   u_extern_register("blit", numerobis_builtin_blit);
+  u_extern_register("mouse_down", numerobis_builtin_mouse_down);
+  u_extern_register("mouse_x", numerobis_builtin_mouse_x);
+  u_extern_register("mouse_y", numerobis_builtin_mouse_y);
+  u_extern_register("quit_requested", numerobis_builtin_quit_requested);
 }
