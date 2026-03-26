@@ -130,10 +130,12 @@ def _run_subprocess(cmd: list[str], cwd: Path):
         encoding="utf-8",
         errors="replace",
     )
+
     if proc.returncode != 0:
-        raise subprocess.CalledProcessError(
-            proc.returncode, cmd, output=proc.stdout, stderr=proc.stderr
-        )
+        print(f"\n--- BUILD FAILED: {' '.join(cmd)} ---")
+        print(f"STDOUT:\n{proc.stdout}")
+        print(f"STDERR:\n{proc.stderr}")
+        raise SystemExit(1)
     return proc
 
 

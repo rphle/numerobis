@@ -15,3 +15,8 @@ extern point!(x: Int, y: Int, color: Str = "#000000"): None;
 extern text!(x: Int, y: Int, content: Str, size: Int = 16, color: Str = "#000000", style: List[Str] = [], font: Str = "", angle: Float = 0.0): None;
 
 extern blit!(): None;
+
+extern mouse_down!(): Bool;
+extern mouse_x!(): Int;
+extern mouse_y!(): Int;
+extern quit_requested!(): Bool;

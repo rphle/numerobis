@@ -90,11 +90,18 @@ static Value numerobis_builtin_split(Value *args) {
   return list__init__(result_arr);
 }
 
+static Value numerobis_builtin_exit(Value *args) {
+  int exit_code = args[1].type == VALUE_NONE ? 0 : _i64(args, 1);
+  exit(exit_code);
+  return NONE;
+}
+
 void u_register_builtin_externs(void) {
   u_extern_register("echo", echo);
   u_extern_register("input", numerobis_builtin_input);
   u_extern_register("indexof", numerobis_builtin_indexof);
   u_extern_register("split", numerobis_builtin_split);
+  u_extern_register("exit", numerobis_builtin_exit);
 
   numerobis_math_register_builtins();
   numerobis_graphics_register_builtins();
