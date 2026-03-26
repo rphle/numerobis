@@ -1,5 +1,7 @@
 extern echo!(value, end: Str = "\n"): None;
 extern input!(prompt: Str = ""): Str;
 
+extern sleep!(secs: Float): None;
+
 extern indexof!(lst: List, item): Int;
 extern split!(s: Str, sep: Str): List[Str];

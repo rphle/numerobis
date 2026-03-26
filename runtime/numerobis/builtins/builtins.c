@@ -4,6 +4,7 @@
 #include "../types/number.h"
 #include "../types/str.h"
 #include "../units/units.h"
+#include "../utils/utils.h"
 #include "../values.h"
 #include "echo.h"
 #include "graphics_builtins.h"
@@ -88,11 +89,20 @@ static Value numerobis_builtin_split(Value *args) {
   return list__init__(result_arr);
 }
 
+static Value numerobis_builtin_sleep(Value *args) {
+  double seconds = _f64(args, 1);
+  if (seconds > 0) {
+    g_usleep((gulong)(seconds * 1000000));
+  }
+  return NONE;
+}
+
 void u_register_builtin_externs(void) {
   u_extern_register("echo", echo);
   u_extern_register("input", numerobis_builtin_input);
   u_extern_register("indexof", numerobis_builtin_indexof);
   u_extern_register("split", numerobis_builtin_split);
+  u_extern_register("sleep", numerobis_builtin_sleep);
 
   numerobis_math_register_builtins();
   numerobis_graphics_register_builtins();
