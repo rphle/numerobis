@@ -1,0 +1,127 @@
+from si import *
+import math
+
+unit AE = 1.49598e11 m
+unit ly = 9.4607e15 m
+unit days = day
+
+# Constants
+G = 6.67430e-11 m^3*kg^(-1)*s^(-2)
+M = 1.98892e27 t
+
+# Simulation Parameters
+dt = 0.5 days
+steps = 2000
+
+# Initial Conditions
+dist_input = input("Enter perihelion distance in AE (Earth: 0.9833): ")
+_dist = if dist_input == "" then 0.9833 else dist_input -> Num
+vel_input = input("Enter initial velocity in km/s (Earth: 30.290): ")
+_vel = if vel_input == "" then 30.290 else vel_input -> Num
+
+echo("----------")
+
+x = _dist * 1.0 AE
+y = 0.0 AE
+vx = 0.0 m/s
+vy = _vel * 1.0 km/s
+
+# Tracking Variables
+perihelion = 100.0 AE
+aphelion = 0.0 AE
+min_v = 1000000.0 km/s
+max_v = 0.0 km/s
+
+distance_total = 0.0 AE
+area_total = 0.0 AE^2
+
+prev_x = x
+prev_y = y
+
+# Period & Escape Detection
+start_y_sign = y >= 0.0 m
+crossings = 0
+period_found = false
+is_escaping = false
+period_steps = 0
+
+for step in 1..steps do {
+    r_mag = math.sqrt(x^2 + y^2) -> AE
+    v_mag = math.sqrt(vx^2 + vy^2) -> km/s
+
+    # Escape Detection
+    # Specific Orbital Energy: E = (v^2 / 2) - (GM / r)
+    energy = (v_mag^2 / 2.0) - (G * M / r_mag)
+    if energy >= 0.0 m^2/s^2 then {
+        is_escaping = true
+        echo("Escape velocity detected! Object is on a parabolic/hyperbolic trajectory.")
+        break
+    }
+
+    # Semi-implicit Euler
+    abs_a = G * M / r_mag^2
+    dir_a = [-x / r_mag, -y / r_mag]
+
+    ax = abs_a * dir_a[0]
+    ay = abs_a * dir_a[1]
+
+    vx = vx + ax * dt
+    vy = vy + ay * dt
+
+    x = x + vx * dt
+    y = y + vy * dt
+
+    # Period Detection
+    # Detect when Y crosses from negative to positive (completing one orbit)
+    current_y_sign = y >= 0.0 m
+    if current_y_sign != start_y_sign then {
+        crossings = crossings + 1
+        start_y_sign = current_y_sign
+        if crossings == 2 and not period_found then {
+            period_steps = step
+            period_found = true
+            break
+        }
+    }
+
+    # Statistics
+    r_ae = r_mag -> AE
+    if r_ae < perihelion then { perihelion = r_ae }
+    if r_ae > aphelion then { aphelion = r_ae }
+
+    v_km_s = v_mag -> km/s
+    if v_km_s < min_v then { min_v = v_km_s }
+    if v_km_s > max_v then { max_v = v_km_s }
+
+    ds = math.sqrt((x-prev_x)^2 + (y-prev_y)^2)
+    distance_total = distance_total + ds
+
+    # Kepler 2nd Law: Area = 0.5 * |r x v| * dt
+    h = math.abs(x*vy - y*vx) -> km^2/s
+    dA = h * dt / 2
+    area_total = area_total + dA
+
+    prev_x = x
+    prev_y = y
+}
+
+a = (aphelion + perihelion) / 2
+eccentricity = (aphelion - perihelion) / (aphelion + perihelion)
+
+if is_escaping then {
+    echo("Outcome: ESCAPE")
+} else {
+
+if period_found then {
+    period_days = period_steps * dt -> day
+    echo("Detected Period: " + (period_days -> Str))
+} else {
+    echo("Outcome: BOUND (Incomplete orbit)")
+}
+
+echo("Perihelion: " + (perihelion -> Str))
+echo("Aphelion: " + (aphelion -> Str))
+echo("Eccentricity: " + (eccentricity -> Str))
+echo("Travelled distance: " + ((distance_total -> AE) -> Str))
+echo("Total swept area: " + ((area_total -> AE^2) -> Str))
+}
