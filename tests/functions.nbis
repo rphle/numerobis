@@ -256,7 +256,7 @@ multi_return!(): Int = {
     return "hello"
 }
 
-# ---
+# E519
 block_mismatch!(): Int = {
     if true then { return 5 }
     { return 10.5 }
@@ -286,7 +286,7 @@ need_mass(5)
 need_length!(d: Length) = d + 10 metre
 need_length(5 kilogram)
 
-# E513
+# ---
 typed_add!(a: Int, b: Num) = a + b
 typed_add(5, 10)
 

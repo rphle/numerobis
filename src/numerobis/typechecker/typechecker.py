@@ -308,13 +308,13 @@ class Typechecker:
                 if param.name("Any"):
                     param = typ
 
-                if not (mismatch := nomismatch(typ, param)):
+                if not (mismatch := nomismatch(param, typ)):
                     self.errors.throw(
                         513,
                         kind=mismatch.kind,
-                        expected=mismatch.right,
+                        expected=mismatch.left,
                         name=name,
-                        actual=mismatch.left,
+                        actual=mismatch.right,
                         loc=arg.loc,
                     )
 
@@ -630,12 +630,12 @@ class Typechecker:
                 return signature
             raise e
 
-        if not (mismatch := nomismatch(body, return_type)):
+        if not (mismatch := nomismatch(return_type, body)):
             self.errors.throw(
                 519,
-                value=mismatch.left,
+                value=mismatch.right,
                 kind=mismatch.kind,
-                expected=mismatch.right,
+                expected=mismatch.left,
                 loc=self.unlink(node.body).loc,
             )
 
@@ -812,12 +812,12 @@ class Typechecker:
 
         value = self.check(node.value, env=env) if node.value else NoneType()
 
-        if return_type and (not (mismatch := nomismatch(value, return_type))):
+        if return_type and (not (mismatch := nomismatch(return_type, value))):
             self.errors.throw(
                 519,
-                value=mismatch.left,
+                value=mismatch.right,
                 kind=mismatch.kind,
-                expected=mismatch.right,
+                expected=mismatch.left,
                 loc=node.loc,
             )
 

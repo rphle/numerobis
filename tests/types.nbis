@@ -201,3 +201,33 @@ x = y + 2.5
 m: Mass = 10 kilogram
 n: Length = 20 metre
 m = n
+
+# E513
+f!(x: Int) = x
+f(2.0)
+
+# ---
+f!(x: Num) = x
+f(2)
+
+# ---
+f!(): Num = 2
+
+# E519
+f!(): Int = 2.2
+
+# ---
+f!(): Num = {
+    return 2
+}
+
+# E519
+f!(): Int = {
+    return 2.2
+}
+
+# ---
+x: Num = 2
+
+# E536
+x: Int = 2.2
