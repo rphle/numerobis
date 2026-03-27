@@ -181,18 +181,20 @@ class Module:
         self,
         output_path: str = "output/output",
         flags: set[str] = set(),
-        cache: bool = False,
         cc: str = "gcc",
+        linker: Optional[str] = None,
         use_cmake: bool = True,
+        use_ccache: bool = False,
     ):
         if self.linker is None:
             raise ValueError("Module not linked")
         self.linker.cmake(
             output_path=output_path,
             flags=flags,
-            cache=cache,
             cc=cc,
+            linker=linker,
             use_cmake=use_cmake,
+            use_ccache=use_ccache,
         )
 
     def run(self, path: str = "output/output"):

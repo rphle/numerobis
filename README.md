@@ -44,18 +44,47 @@ sudo apt install -y \
   pkg-config \
   libglib2.0-dev \
   libgc-dev \
-  build-essential \
-  ccache \
-  mold
+  build-essential
 ```
 
 - `pkg-config` — discovers `glib-2.0` and `bdw-gc`
 - `libglib2.0-dev` — dynamic lists and strings
 - `libgc-dev` — Boehm–Demers–Weiser garbage collector
 - `build-essential` — C toolchain
-- `ccache` + `mold` — C compiler cache and faster linker
 
-In case you want to run benchmarks, you also need to install `hyperfine` for precise timing:
+#### Graphics (optional)
+
+For graphical programs (using the `graphics` module), install SDL2 and SDL2_ttf:
+
+```bash
+sudo apt install -y \
+  libsdl2-dev \
+  libsdl2-ttf-dev
+```
+
+- `libsdl2-dev` — windowing, input, rendering
+- `libsdl2-ttf-dev` — font rendering support
+
+Graphics support is automatically enabled when required.
+
+#### CCache (optional)
+
+To speed up repeated builds, install `ccache`:
+
+```bash
+sudo apt install ccache
+```
+
+You can then enable compiler caching via:
+
+```bash
+--cache
+```
+
+#### Benchmarks
+
+To run benchmarks, install `hyperfine` for statistically robust timing:
+
 ```bash
 sudo apt install hyperfine
 ```

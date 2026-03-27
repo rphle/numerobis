@@ -1,13 +1,11 @@
 PYTHON := python3
 PIP := $(PYTHON) -m pip
-NPM := npm
-CC := "gcc"
 
-.PHONY: install build test docs docs-serve clean help
+.PHONY: install build test runtimelib benchmark graph help
 
 install:
 	@echo "Installing Numerobis from source..."
-	pip install -e .
+	$(PIP) install -e .
 
 build:
 	@echo "Building Numerobis..."
@@ -15,19 +13,17 @@ build:
 
 test:
 	@echo "Running tests..."
-	python3 run.py $(filter-out $@,$(MAKECMDGOALS)) --cc "$(CC)"
+	$(PYTHON) run.py $(filter-out $@,$(MAKECMDGOALS))
 
 runtimelib:
 	@echo "Building static runtime library..."
-	python3 runtime/build_lib.py
+	$(PYTHON) runtime/build_lib.py
 
 benchmark:
-	python3 tests/benchmarking/benchmark.py
-
+	$(PYTHON) tests/benchmarking/benchmark.py
 
 graph:
 	pyreverse -ASmy -o png -d assets src/numerobis
-
 
 help: # Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?#' $(MAKEFILE_LIST) | \

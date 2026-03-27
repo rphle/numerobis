@@ -6,6 +6,7 @@ import tempfile
 from functools import lru_cache
 from importlib import resources
 from pathlib import Path
+from typing import Optional
 
 from ..classes import CompiledUnits, ModuleMeta
 from .utils import repr_double
@@ -142,9 +143,10 @@ def compile(
     units: CompiledUnits,
     output: str | Path = "output/output",
     flags: set[str] = set(),
-    cache: bool = False,
     cc: str = "gcc",
+    linker: Optional[str] = None,
     use_graphics: bool = False,
+    use_ccache: bool = False,
 ):
     glib_cflags, glib_libs = _pkg("glib-2.0")
     gc_cflags, gc_libs = _pkg("bdw-gc")
@@ -189,8 +191,9 @@ def compile(
             else []
         )
         cmd = (
-            (["ccache", "mold", "-run"] if cache else [])
+            (["ccache"] if use_ccache else [])
             + [cc]
+            + ([f"-fuse-ld={linker}"] if linker else [])
             + ["-pipe"]
             + [tmp.name, tmp_source.name]
             + ["-o", str(output)]

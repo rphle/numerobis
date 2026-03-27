@@ -3,6 +3,7 @@
 import platform
 import time
 from pathlib import Path
+from typing import Optional
 
 import click
 import rich
@@ -65,6 +66,25 @@ def cli() -> None:
     default="gcc",
     help="Set C compiler to use.",
 )
+@click.option(
+    "--linker",
+    "linker",
+    type=click.STRING,
+    default=None,
+    help="Set C linker to use.",
+)
+@click.option(
+    "--cmake/--no-cmake",
+    "use_cmake",
+    default=True,
+    help="Use CMake for build configuration.",
+)
+@click.option(
+    "--ccache/--no-ccache",
+    "use_ccache",
+    default=False,
+    help="Use ccache to speed up recompilation.",
+)
 def build(
     source: str,
     output: str,
@@ -73,6 +93,9 @@ def build(
     debug: bool,
     opt_level: str,
     cc: str,
+    linker: Optional[str],
+    use_cmake: bool,
+    use_ccache: bool,
 ) -> None:
     """
     Compile SOURCE (.nbis) into a native executable.
@@ -98,7 +121,14 @@ def build(
         mod = Module(source)
         mod.load()
         mod.link(format=False)
-        mod.cmake(output, flags=flags, cc=cc)
+        mod.cmake(
+            output,
+            flags=flags,
+            cc=cc,
+            linker=linker if linker else None,
+            use_cmake=use_cmake,
+            use_ccache=use_ccache,
+        )
     except KeyboardInterrupt:
         console.print("[red]Build interrupted by user[/red]")
         raise SystemExit(130)

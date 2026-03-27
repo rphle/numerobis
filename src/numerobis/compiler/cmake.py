@@ -5,6 +5,7 @@ import subprocess
 import tempfile
 from importlib import resources
 from pathlib import Path
+from typing import Optional
 
 from ..classes import CompiledUnits, ModuleMeta
 from .utils import repr_double
@@ -145,9 +146,10 @@ def compile(
     units: CompiledUnits,
     output: str | Path = "output/output",
     flags: set[str] = set(),
-    cache: bool = False,
     cc: str = "gcc",
+    linker: Optional[str] = None,
     use_graphics: bool = False,
+    use_ccache: bool = False,
 ):
     output_path = Path(output).resolve()
     output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -237,12 +239,9 @@ target_link_libraries(numerobis_bin PRIVATE
                 "-S",
                 ".",
                 f"-DCMAKE_C_COMPILER={cc}",
+                "-DCMAKE_C_COMPILER_LAUNCHER=ccache" if use_ccache else "",
+                f"-DCMAKE_EXE_LINKER_FLAGS=-fuse-ld={linker}" if linker else "",
             ]
-            if cache:
-                cmake_config += [
-                    "-DCMAKE_C_COMPILER_LAUNCHER=ccache",
-                    "-DCMAKE_EXE_LINKER_FLAGS=-fuse-ld=mold",
-                ]
 
             _run_subprocess(cmake_config, cwd=temp_path)
 

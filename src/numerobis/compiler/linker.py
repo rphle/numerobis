@@ -3,6 +3,7 @@
 import subprocess
 from functools import lru_cache
 from pathlib import Path
+from typing import Optional
 
 import rich
 import rich.syntax
@@ -140,9 +141,10 @@ class Linker:
         self,
         output_path: str = "output/output",
         flags: set[str] = set(),
-        cache: bool = False,
         cc: str = "gcc",
+        linker: Optional[str] = None,
         use_cmake: bool = True,
+        use_ccache: bool = False,
     ):
         units = CompiledUnits(
             units={
@@ -171,9 +173,10 @@ class Linker:
                 units=units,
                 output=output_path,
                 flags=flags,
-                cache=cache,
                 cc=cc,
+                linker=linker,
                 use_graphics=self._uses_graphics(),
+                use_ccache=use_ccache,
             )
         except subprocess.CalledProcessError as e:
             self.errors.throw(201, command=" ".join(map(str, e.cmd)), help=e.stderr)

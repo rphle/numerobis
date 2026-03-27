@@ -54,9 +54,11 @@ def run_single_test(
     line,
     throws,
     cc,
+    linker,
     print_code,
     format_code,
     use_cmake,
+    use_ccache,
 ):
     output = StringIO()
     times = {}
@@ -89,7 +91,11 @@ def run_single_test(
 
             times["C Compiler"] = timeit(
                 lambda: mod.cmake(
-                    output_path=output_bin, cache=True, cc=cc, use_cmake=use_cmake
+                    output_path=output_bin,
+                    cc=cc,
+                    linker=linker,
+                    use_cmake=use_cmake,
+                    use_ccache=use_ccache,
                 )
             )
             times["Execution"] = timeit(lambda: mod.run(path=output_bin))
@@ -133,6 +139,7 @@ def parse_args():
         "-F", "--format", action="store_true", help="Print formatted code"
     )
     parser.add_argument("--cc", default="gcc", help="C compiler")
+    parser.add_argument("--linker", default=None, help="C linker")
     parser.add_argument(
         "-j", "--jobs", type=int, default=os.cpu_count() or 4, help="Parallel jobs"
     )
@@ -148,6 +155,13 @@ def parse_args():
         action="store_true",
         help="Skip re-building the static runtime libraries",
     )
+    parser.add_argument(
+        "--ccache",
+        dest="use_ccache",
+        action="store_true",
+        help="Use ccache to speed up recompilation.",
+    )
+
     parser.add_argument("tests", nargs="*", help="Specific tests to run")
     return parser.parse_args()
 
@@ -171,7 +185,9 @@ def main():
         f"[dim]\\[mode={'full' if args.full else 'verbose' if args.verbose else 'quiet'}, "
         f"output={'simple' if args.print else 'formatted' if args.format else 'none'}, "
         f"compiler={args.cc}, "
-        f"cmake={str(args.use_cmake).lower()}][/dim]",
+        f"linker={args.linker if args.linker else 'default'}, "
+        f"cmake={str(args.use_cmake).lower()}, "
+        f"ccache={str(args.use_ccache).lower()}][/dim]",
         highlight=False,
     )
     if args.tests:
@@ -215,9 +231,11 @@ def main():
                 ll,
                 t,
                 args.cc,
+                args.linker,
                 args.print,
                 args.format,
                 args.use_cmake,
+                args.use_ccache,
             )
             for p, h, c, ll, t in test_queue
         ]
