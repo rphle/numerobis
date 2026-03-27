@@ -143,6 +143,11 @@ def parse_args():
         default=True,
         help="Skip CMake and use direct GCC bindings (potentially unstable)",
     )
+    parser.add_argument(
+        "--no-lib",
+        action="store_true",
+        help="Skip re-building the static runtime libraries",
+    )
     parser.add_argument("tests", nargs="*", help="Specific tests to run")
     return parser.parse_args()
 
@@ -151,8 +156,10 @@ def main():
     args = parse_args()
     if not (args.verbose or args.full):
         args.verbose = True
-    build_lib()
-    print()
+
+    if not args.no_lib:
+        build_lib()
+        print()
 
     tests_dir = Path("tests")
     files = sorted([f for f in os.listdir(tests_dir) if f.endswith(".nbis")])
@@ -171,6 +178,8 @@ def main():
         console.print(
             f"[dim]Running {len(files)} selected test file(s)[/dim]", highlight=False
         )
+
+    actual_time = time.time()
 
     test_queue = []
     for file in files:
@@ -283,7 +292,8 @@ def main():
     total_time = sum(cumulative.values())
     console.print(
         f"[bold]Total time[/bold]: [bold cyan]{total_time:.3f}s[/bold cyan] "
-        f"[dim]([bold cyan]{total_time / t if t > 0 else 0:.4f}s[/bold cyan] average)[/dim]",
+        f"[dim]([bold cyan]{total_time / t if t > 0 else 0:.4f}s[/bold cyan] average, "
+        f"[bold cyan]{time.time() - actual_time:.4f}s[/bold cyan] real)[/dim]",
         highlight=False,
     )
 

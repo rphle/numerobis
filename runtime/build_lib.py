@@ -13,6 +13,7 @@ import re
 import shutil
 import subprocess
 import tempfile
+import time
 from pathlib import Path
 
 from numerobis.compiler.cmake import _run_subprocess
@@ -31,6 +32,7 @@ def _is_graphics_source(path: Path) -> bool:
 
 
 def build_lib():
+    t0 = time.time()
     generate_messages()
 
     script_dir = Path(__file__).parent.resolve()
@@ -67,7 +69,9 @@ def build_lib():
         target_path.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(h_file, target_path)
 
-    print(f"Static libraries and headers created at {dest_runtime}")
+    print(
+        f"Static libraries and headers created at {dest_runtime} ({time.time() - t0:.2f}s)"
+    )
 
 
 def _build_static_lib(
