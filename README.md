@@ -41,12 +41,14 @@ After installation, the `nbis` CLI entry point is available.
 
 ```bash
 sudo apt install -y \
+  cmake \
   pkg-config \
   libglib2.0-dev \
   libgc-dev \
   build-essential
 ```
 
+- `cmake` – Used by the compiler and test runner to manage the build process
 - `pkg-config` — discovers `glib-2.0` and `bdw-gc`
 - `libglib2.0-dev` — dynamic lists and strings
 - `libgc-dev` — Boehm–Demers–Weiser garbage collector
@@ -91,50 +93,61 @@ sudo apt install hyperfine
 
 ---
 
-## CLI
-
-```
-nbis build SOURCE [-o OUTPUT] [--run] [--quiet] [--debug/--no-debug] [-O {0,1,2,3,s}] [--cc COMPILER]
-nbis view  SOURCE [-o OUTPUT] [--theme THEME] [--line-numbers/--no-line-numbers]
-```
+## CLI Reference
 
 ### `nbis build`
+**Usage:** `nbis build SOURCE [OPTIONS]`
 
 | Flag | Default | Description |
-|---|---|---|
-| `-o`, `--output` | source filename | Output binary path |
-| `--run` / `--no-run` | off | Execute the binary immediately after building |
-| `--quiet` | off | Suppress the build summary line |
-| `--debug` / `--no-debug` | on | Emit debug info (`-g`) |
-| `-O {0,1,2,3,s}` | `0` | Optimization level passed to the C compiler |
-| `--cc` | `gcc` | C compiler to use (e.g. `--cc clang`) |
-
+| :--- | :--- | :--- |
+| `-o`, `--output` | `src_name` | Output binary path. |
+| `--run` / `--no-run` | `--no-run` | Execute the binary immediately after building. |
+| `--quiet` | Off | Suppress non-essential compiler output. |
+| `--debug` / `--no-debug` | `--debug` | Emit debug information (`-g`). |
+| `-O {0,1,2,3,s}` | `0` | Optimization level passed to the C compiler. |
+| `--cc` | `gcc` | C compiler to use (e.g., `clang`). |
+| `--linker` | `None` | Set a specific C linker to use. |
+| `--cmake` / `--no-cmake` | `--cmake` | Use CMake for build configuration. |
+| `--ccache` / `--no-ccache`| `--no-ccache`| Use `ccache` to speed up recompilation. |
 
 ### `nbis view`
+**Usage:** `nbis view SOURCE [OPTIONS]`
 
 | Flag | Default | Description |
-|---|---|---|
-| `-o`, `--output` | _(print to terminal)_ | Write generated C code to a file instead of printing |
-| `--theme` | `monokai` | Syntax highlighting theme |
-| `--line-numbers` / `--no-line-numbers` | on | Show line numbers |
+| :--- | :--- | :--- |
+| `-o`, `--output` | _(stdout)_ | Write generated C code to a file instead of printing. |
+| `--theme` | `monokai` | Rich syntax highlighting theme. |
+| `--line-numbers` / `--no-line-numbers` | On | Toggle line numbers in terminal output. |
 
-### Make Targets
+---
 
-| Target | Description |
-|---|---|
-| `make install` | Install the Python package (editable) |
-| `make build` | Build the compiler and runtime library |
-| `make test` | Run the full test suite |
-| `make benchmark` | Run performance benchmarks against Python and C |
-| `make runtimelib` | Rebuild the static runtime library (`libruntime.a`) only |
-| `make graph` | Generate class/package diagrams into `assets/` |
-| `make help` | List all available targets |
+## Running Tests
 
-You can pass flags to the test runner directly:
+Tests are executed via `run.py` (or `make test`). The runner parses `.nbis` files, checks for expected error codes, and measures performance.
 
+**Usage:** `python3 run.py [TEST_NAMES...] [OPTIONS]` or `make test -- [TEST_NAMES...] [OPTIONS]`
+
+### Output Options
+* `-v`, `--verbose`: Show output for failed tests (default mode).
+* `-f`, `--full`: Show output for **all** tests (passed and failed).
+* `-p`, `--print`: Print the generated C code during the test run.
+* `-F`, `--format`: Print C code with formatting applied.
+
+### Execution Options
+| Flag | Default | Description |
+| :--- | :--- | :--- |
+| `-j`, `--jobs` | `CPU Count` | Number of parallel jobs for test execution. |
+| `--cc` | `gcc` | C compiler used for test binaries. |
+| `--linker` | `None` | C linker used for test binaries. |
+| `--no-cmake` | Off | Skip CMake and use direct GCC bindings (unstable). |
+| `--no-lib` | Off | Skip re-building the static runtime libraries before testing. |
+| `--ccache` | Off | Enable `ccache` for test compilation. |
+
+### Targeted Testing
+You can run specific test files by providing their names without the `.nbis` extension:
 ```bash
-make test -- --verbose
-make test CC=clang
+# Run only the echo and logic tests
+make test -- echo logic
 ```
 
 ---
