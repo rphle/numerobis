@@ -1,29 +1,80 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
+#include <dirent.h>
 #include <gc.h>
 #include <glib.h>
 #include <stdio.h>
 #include <string.h>
+#include <sys/stat.h>
 
 const gchar *_font_path = NULL;
 
 static GHashTable *_fc_cache = NULL;
 
-static const gchar *_fallback_fonts[] = {
-    "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
-    "/usr/share/fonts/TTF/DejaVuSans.ttf",
-    "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
-    NULL,
-};
+static const char *linux_font_dirs[] = {"/usr/share/fonts",
+                                        "/usr/local/share/fonts",
+                                        "/usr/share/fonts/truetype",
+                                        "/usr/share/fonts/opentype",
+                                        "/usr/share/fonts/TTF",
+                                        "/usr/share/fonts/Type1",
+                                        "/usr/share/fonts/misc",
+                                        "/usr/share/X11/fonts",
+                                        "~/.local/share/fonts",
+                                        "~/.fonts",
+                                        NULL};
+
+static const gchar *PREFERRED_FONTS[] = {"Roboto-Regular.ttf",
+                                         "Ubuntu-R.ttf",
+                                         "DejaVuSans.ttf",
+                                         "FreeSans.ttf",
+                                         "LiberationSans-Regular.ttf",
+                                         NULL};
+
+static gboolean is_preferred(const gchar *name) {
+  for (int i = 0; PREFERRED_FONTS[i]; i++)
+    if (g_ascii_strcasecmp(name, PREFERRED_FONTS[i]) == 0)
+      return TRUE;
+  return FALSE;
+}
+
+static void scan_dir(const gchar *path) {
+  GDir *dir = g_dir_open(path, 0, NULL);
+  if (!dir || _font_path)
+    return;
+
+  const gchar *name;
+  while ((name = g_dir_read_name(dir)) && !_font_path) {
+    gchar *full = g_build_filename(path, name, NULL);
+
+    if (g_file_test(full, G_FILE_TEST_IS_DIR)) {
+      scan_dir(full);
+    } else if (g_str_has_suffix(name, ".ttf") && is_preferred(name)) {
+      _font_path = g_steal_pointer(&full);
+    }
+
+    g_free(full);
+  }
+  g_dir_close(dir);
+}
 
 const gchar *_default_font(void) {
   if (_font_path)
     return _font_path;
-  for (int i = 0; _fallback_fonts[i]; i++) {
-    if (g_file_test(_fallback_fonts[i], G_FILE_TEST_EXISTS))
-      return _fallback_fonts[i];
+
+  GPtrArray *paths = g_ptr_array_new_with_free_func(g_free);
+  g_ptr_array_add(paths,
+                  g_build_filename(g_get_user_data_dir(), "fonts", NULL));
+  g_ptr_array_add(paths, g_build_filename(g_get_home_dir(), ".fonts", NULL));
+
+  for (int i = 0; linux_font_dirs[i]; i++)
+    g_ptr_array_add(paths, g_strdup(linux_font_dirs[i]));
+
+  for (guint i = 0; i < paths->len && !_font_path; i++) {
+    scan_dir(g_ptr_array_index(paths, i));
   }
-  return NULL;
+
+  g_ptr_array_unref(paths);
+  return _font_path;
 }
 
 const gchar *_resolve_font_name(const gchar *name) {

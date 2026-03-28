@@ -41,7 +41,7 @@ while not quit_requested() do {
 
     # HUD
     text(20, 20, "pos: (" + (bx -> Str) + ", " + (by -> Str) + ")",
-         14, "#8b949e", [], "", 0.0)
+         14, "#8b949e")
 
     blit()
 }
