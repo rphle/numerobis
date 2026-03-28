@@ -1,3 +1,4 @@
+#include "../../constants.h"
 #include "../../extern.h"
 #include "../../types/bool.h"
 #include "../../types/number.h"
@@ -5,6 +6,7 @@
 #include "../../utils/utils.h"
 #include "../../values.h"
 #include "fonts.h"
+#include "glibconfig.h"
 #include "primitives.h"
 #include "state.h"
 
@@ -14,6 +16,10 @@
 #include <glib.h>
 #include <stdio.h>
 #include <string.h>
+
+static inline gint32 _tx_x(gdouble x) { return (gint32)((x + _tx) * _scale); }
+static inline gint32 _tx_y(gdouble y) { return (gint32)((y + _ty) * _scale); }
+static inline gint32 _tx_dim(gdouble dim) { return (gint32)(dim * _scale); }
 
 static gint32 _parse_style_list(Value style_val) {
   if (style_val.type != VALUE_LIST)
@@ -37,14 +43,10 @@ static gint32 _parse_style_list(Value style_val) {
   return flags;
 }
 
-static inline Value _none(void) {
-  return (Value){.type = VALUE_NONE, .none = NULL};
-}
-
 /* init!(width: Int, height: Int): Int */
 static Value numerobis_builtin_graphics_init(Value *args) {
-  gint32 w = (gint32)_i64(args, 1);
-  gint32 h = (gint32)_i64(args, 2);
+  gint32 w = (gint32)_i64(args[1]);
+  gint32 h = (gint32)_i64(args[2]);
 
   if (SDL_Init(SDL_INIT_VIDEO) != 0) {
     fprintf(stderr, "graphics: SDL_Init: %s\n", SDL_GetError());
@@ -73,20 +75,20 @@ static Value numerobis_builtin_graphics_init(Value *args) {
 
 /* set_bg!(color: Str) */
 static Value numerobis_builtin_set_bg(Value *args) {
-  _bg = _parse_color(_str(args, 1));
-  return _none();
+  _bg = _parse_color(_str(args[1]));
+  return NONE;
 }
 
 /* set_title!(title: Str) */
 static Value numerobis_builtin_set_title(Value *args) {
   if (_window)
-    SDL_SetWindowTitle(_window, _str(args, 1));
-  return _none();
+    SDL_SetWindowTitle(_window, _str(args[1]));
+  return NONE;
 }
 
 /* set_font!(name: Str) — e.g. "Arial", "DejaVu Sans" */
 static Value numerobis_builtin_set_font(Value *args) {
-  const gchar *path = _resolve_font_name(_str(args, 1));
+  const gchar *path = _resolve_font_name(_str(args[1]));
   if (!path)
     return int__init__(0, U_ONE);
   _font_path = path;
@@ -96,107 +98,111 @@ static Value numerobis_builtin_set_font(Value *args) {
 /* rect!(x, y, w, h, color, filled) */
 static Value numerobis_builtin_rect(Value *args) {
   _ensure_queue();
+  gint32 x = _tx_x(_f64(args[1]));
   DrawCmd cmd = {.kind = CMD_RECT,
-                 .color = _parse_color(_str(args, 5)),
-                 .rect = {(gint32)_i64(args, 1), (gint32)_i64(args, 2),
-                          (gint32)_i64(args, 3), (gint32)_i64(args, 4),
-                          _bool(args, 6)}};
+                 .color = _parse_color(_str(args[5])),
+                 .rect = {_tx_x(_f64(args[1])), _tx_y(_f64(args[2])),
+                          _tx_dim(_f64(args[3])), _tx_dim(_f64(args[4])),
+                          _bool(args[6])}};
   g_array_append_val(_queue, cmd);
-  return _none();
+  return NONE;
 }
 
 /* rounded_rect!(x, y, w, h, radius, color, filled) */
 static Value numerobis_builtin_rounded_rect(Value *args) {
   _ensure_queue();
   DrawCmd cmd = {.kind = CMD_ROUNDED_RECT,
-                 .color = _parse_color(_str(args, 6)),
-                 .rrect = {(gint32)_i64(args, 1), (gint32)_i64(args, 2),
-                           (gint32)_i64(args, 3), (gint32)_i64(args, 4),
-                           (gint32)_i64(args, 5), _bool(args, 7)}};
+                 .color = _parse_color(_str(args[6])),
+                 .rrect = {_tx_x(_f64(args[1])), _tx_y(_f64(args[2])),
+                           _tx_dim(_f64(args[3])), _tx_dim(_f64(args[4])),
+                           _tx_dim(_f64(args[5])), _bool(args[7])}};
   g_array_append_val(_queue, cmd);
-  return _none();
+  return NONE;
 }
 
 /* circle!(x, y, radius, color, filled) */
 static Value numerobis_builtin_circle(Value *args) {
   _ensure_queue();
   DrawCmd cmd = {.kind = CMD_CIRCLE,
-                 .color = _parse_color(_str(args, 4)),
-                 .circle = {(gint32)_i64(args, 1), (gint32)_i64(args, 2),
-                            (gint32)_i64(args, 3), _bool(args, 5)}};
+                 .color = _parse_color(_str(args[4])),
+                 .circle = {_tx_x(_f64(args[1])), _tx_y(_f64(args[2])),
+                            _tx_dim(_f64(args[3])), _bool(args[5])}};
   g_array_append_val(_queue, cmd);
-  return _none();
+  return NONE;
 }
 
 /* ellipse!(x, y, rx, ry, color, filled) */
 static Value numerobis_builtin_ellipse(Value *args) {
   _ensure_queue();
   DrawCmd cmd = {.kind = CMD_ELLIPSE,
-                 .color = _parse_color(_str(args, 5)),
-                 .ellipse = {(gint32)_i64(args, 1), (gint32)_i64(args, 2),
-                             (gint32)_i64(args, 3), (gint32)_i64(args, 4),
-                             _bool(args, 6)}};
+                 .color = _parse_color(_str(args[5])),
+                 .ellipse = {_tx_x(_f64(args[1])), _tx_y(_f64(args[2])),
+                             _tx_dim(_f64(args[3])), _tx_dim(_f64(args[4])),
+                             _bool(args[6])}};
   g_array_append_val(_queue, cmd);
-  return _none();
+  return NONE;
 }
 
 /* line!(x1, y1, x2, y2, color, thickness) */
 static Value numerobis_builtin_line(Value *args) {
   _ensure_queue();
   DrawCmd cmd = {.kind = CMD_LINE,
-                 .color = _parse_color(_str(args, 5)),
-                 .line = {(gint32)_i64(args, 1), (gint32)_i64(args, 2),
-                          (gint32)_i64(args, 3), (gint32)_i64(args, 4),
-                          _f64(args, 6)}};
+                 .color = _parse_color(_str(args[5])),
+                 .line = {_tx_x(_f64(args[1])), _tx_y(_f64(args[2])),
+                          _tx_x(_f64(args[3])), _tx_y(_f64(args[4])),
+                          _f64(args[6])}}; // Thickness remains unscaled
   g_array_append_val(_queue, cmd);
-  return _none();
+  return NONE;
 }
 
-/* polygon!(points: List[Int], color, filled) */
+/* polygon!(points: List[Num], color, filled) */
 static Value numerobis_builtin_polygon(Value *args) {
   _ensure_queue();
   GArray *arr = args[1].list;
   gint32 n = (gint32)(arr->len / 2);
   SDL_Point *pts = GC_MALLOC(n * sizeof(SDL_Point));
+
   for (gint32 i = 0; i < n; i++) {
-    pts[i].x = (int)g_array_index(arr, Value, i * 2).number.i64;
-    pts[i].y = (int)g_array_index(arr, Value, i * 2 + 1).number.i64;
+    gdouble px = _f64(*g_array_index(arr, Value *, i * 2));
+    gdouble py = _f64(*g_array_index(arr, Value *, i * 2 + 1));
+    pts[i].x = _tx_x(px);
+    pts[i].y = _tx_y(py);
   }
+
   DrawCmd cmd = {.kind = CMD_POLYGON,
-                 .color = _parse_color(_str(args, 2)),
-                 .polygon = {pts, n, _bool(args, 3)}};
+                 .color = _parse_color(_str(args[2])),
+                 .polygon = {pts, n, _bool(args[3])}};
   g_array_append_val(_queue, cmd);
-  return _none();
+  return NONE;
 }
 
 /* arc!(x, y, radius, start, end, color, filled) */
 static Value numerobis_builtin_arc(Value *args) {
   _ensure_queue();
   DrawCmd cmd = {.kind = CMD_ARC,
-                 .color = _parse_color(_str(args, 6)),
-                 .arc = {(gint32)_i64(args, 1), (gint32)_i64(args, 2),
-                         (gint32)_i64(args, 3), (gfloat)_f64(args, 4),
-                         (gfloat)_f64(args, 5), _bool(args, 7)}};
+                 .color = _parse_color(_str(args[6])),
+                 .arc = {_tx_x(_f64(args[1])), _tx_y(_f64(args[2])),
+                         _tx_dim(_f64(args[3])), (gfloat)_f64(args[4]),
+                         (gfloat)_f64(args[5]), _bool(args[7])}};
   g_array_append_val(_queue, cmd);
-  return _none();
+  return NONE;
 }
 
 /* point!(x, y, color) */
 static Value numerobis_builtin_point(Value *args) {
   _ensure_queue();
   DrawCmd cmd = {.kind = CMD_POINT,
-                 .color = _parse_color(_str(args, 3)),
-                 .point = {(gint32)_i64(args, 1), (gint32)_i64(args, 2)}};
+                 .color = _parse_color(_str(args[3])),
+                 .point = {_tx_x(_f64(args[1])), _tx_y(_f64(args[2]))}};
   g_array_append_val(_queue, cmd);
-  return _none();
+  return NONE;
 }
 
-/* text!(x, y, content, size, color, style: List[Str], font: Str, angle: Num)
- */
+/* text!(x, y, content, size, color, style: List[Str], font: Str, angle: Num) */
 static Value numerobis_builtin_text(Value *args) {
   _ensure_queue();
 
-  const gchar *font_arg = _str(args, 7);
+  const gchar *font_arg = _str(args[7]);
   const gchar *font_path =
       (font_arg && *font_arg) ? _resolve_font_name(font_arg) : _default_font();
   if (!font_path)
@@ -204,26 +210,26 @@ static Value numerobis_builtin_text(Value *args) {
 
   DrawCmd cmd = {
       .kind = CMD_TEXT,
-      .color = _parse_color(_str(args, 5)),
+      .color = _parse_color(_str(args[5])),
       .text =
           {
-              .x = (gint32)_i64(args, 1),
-              .y = (gint32)_i64(args, 2),
-              .str = GC_STRDUP(_str(args, 3)),
-              .size = (gint32)_i64(args, 4),
+              .x = _tx_x(_f64(args[1])),
+              .y = _tx_y(_f64(args[2])),
+              .str = GC_STRDUP(_str(args[3])),
+              .size = _tx_dim(_f64(args[4])),
               .style = _parse_style_list(args[6]),
               .font_path = font_path ? GC_STRDUP(font_path) : NULL,
-              .angle = _f64(args, 8),
+              .angle = _f64(args[8]),
           },
   };
   g_array_append_val(_queue, cmd);
-  return _none();
+  return NONE;
 }
 
 static Value numerobis_builtin_blit(Value *args) {
   (void)args;
   if (!_renderer || !_queue)
-    return _none();
+    return NONE;
 
   _set_color(_bg);
   SDL_RenderClear(_renderer);
@@ -303,7 +309,7 @@ static Value numerobis_builtin_blit(Value *args) {
 
   SDL_RenderPresent(_renderer);
   g_array_set_size(_queue, 0);
-  return _none();
+  return NONE;
 }
 
 /* mouse_down!(): Bool */
@@ -312,22 +318,49 @@ static Value numerobis_builtin_mouse_down(Value *args) {
   return bool__init__(_mouse_down);
 }
 
-/* mouse_x!(): Int */
+/* mouse_x!(): Num */
 static Value numerobis_builtin_mouse_x(Value *args) {
   _update_input_state();
-  return int__init__((gint64)_mouse_x, U_ONE);
+  return num__init__(_mouse_x, U_ONE);
 }
 
-/* mouse_y!(): Int */
+/* mouse_y!(): Num */
 static Value numerobis_builtin_mouse_y(Value *args) {
   _update_input_state();
-  return int__init__((gint64)_mouse_y, U_ONE);
+  return num__init__(_mouse_y, U_ONE);
+}
+
+/* mouse_vx!(): Num */
+static Value numerobis_builtin_mouse_vx(Value *args) {
+  _update_input_state();
+  return num__init__(((_mouse_x / _scale) - _tx), U_ONE);
+}
+
+/* mouse_vy!(): Num */
+static Value numerobis_builtin_mouse_vy(Value *args) {
+  _update_input_state();
+  return num__init__(((_mouse_y / _scale) - _ty), U_ONE);
 }
 
 /* quit_requested!(): Bool */
 static Value numerobis_builtin_quit_requested(Value *args) {
   _update_input_state();
   return bool__init__(_quit_requested);
+}
+
+/* set_scale!(value: Num, pixels: Num = 1): None */
+static Value numerobis_builtin_set_scale(Value *args) {
+  gdouble value = _f64(args[1]);
+  gdouble pixels = args[2].type != VALUE_NONE ? _f64(args[2]) : 1;
+  _scale = pixels / value;
+  return NONE;
+}
+
+/* set_origin!(x: Num, y: Num): None */
+static Value numerobis_builtin_set_origin(Value *args) {
+  _tx = _f64(args[1]);
+  _ty = _f64(args[2]);
+  return NONE;
 }
 
 __attribute__((constructor)) void numerobis_graphics_register_builtins(void) {
@@ -349,6 +382,8 @@ __attribute__((constructor)) void numerobis_graphics_register_builtins(void) {
   u_extern_register("mouse_x", numerobis_builtin_mouse_x);
   u_extern_register("mouse_y", numerobis_builtin_mouse_y);
   u_extern_register("quit_requested", numerobis_builtin_quit_requested);
+  u_extern_register("set_scale", numerobis_builtin_set_scale);
+  u_extern_register("set_origin", numerobis_builtin_set_origin);
 }
 
 __attribute__((destructor)) void numerobis_graphics_cleanup(void) {

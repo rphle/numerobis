@@ -90,7 +90,7 @@ static Value numerobis_builtin_split(Value *args) {
 }
 
 static Value numerobis_builtin_exit(Value *args) {
-  int exit_code = args[1].type == VALUE_NONE ? 0 : _i64(args, 1);
+  int exit_code = args[1].type == VALUE_NONE ? 0 : _i64(args[1]);
   exit(exit_code);
   return NONE;
 }

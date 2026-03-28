@@ -1,4 +1,5 @@
 #include "state.h"
+#include "glibconfig.h"
 
 #include <gc.h>
 
@@ -11,6 +12,10 @@ gint32 _mouse_x = 0;
 gint32 _mouse_y = 0;
 gboolean _mouse_down = FALSE;
 gboolean _quit_requested = FALSE;
+
+gdouble _scale = 1.0;
+gdouble _tx = 0.0;
+gdouble _ty = 0.0;
 
 void _ensure_queue(void) {
   if (!_queue)

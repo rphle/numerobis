@@ -3,20 +3,23 @@ extern set_bg!(color: Str): None;
 extern set_title!(title: Str): None;
 extern set_font!(name: Str): None;
 
-extern rect!(x: Int, y: Int, w: Int, h: Int, color: Str = "#000000", filled: Bool = true): None;
-extern rounded_rect!(x: Int, y: Int, w: Int, h: Int, radius: Int, color: Str = "#000000", filled: Bool = true): None;
-extern circle!(x: Int, y: Int, radius: Int, color: Str = "#000000", filled: Bool = true): None;
-extern ellipse!(x: Int, y: Int, rx: Int, ry: Int, color: Str = "#000000", filled: Bool = true): None;
-extern line!(x1: Int, y1: Int, x2: Int, y2: Int, color: Str = "#000000", thickness: Num = 1.0): None;
-extern polygon!(points: List[Int], color: Str = "#000000", filled: Bool = true): None;
-extern arc!(x: Int, y: Int, radius: Int, start: Num, end: Num, color: Str = "#000000", filled: Bool = true): None;
-extern point!(x: Int, y: Int, color: Str = "#000000"): None;
+extern rect!(x: Num, y: Num, w: Num, h: Num, color: Str = "#000000", filled: Bool = true): None;
+extern rounded_rect!(x: Num, y: Num, w: Num, h: Num, radius: Num, color: Str = "#000000", filled: Bool = true): None;
+extern circle!(x: Num, y: Num, radius: Num, color: Str = "#000000", filled: Bool = true): None;
+extern ellipse!(x: Num, y: Num, rx: Num, ry: Num, color: Str = "#000000", filled: Bool = true): None;
+extern line!(x1: Num, y1: Num, x2: Num, y2: Num, color: Str = "#000000", thickness: Num = 1.0): None;
+extern polygon!(points: List[Num], color: Str = "#000000", filled: Bool = true): None;
+extern arc!(x: Num, y: Num, radius: Num, start: Num, end: Num, color: Str = "#000000", filled: Bool = true): None;
+extern point!(x: Num, y: Num, color: Str = "#000000"): None;
 
-extern text!(x: Int, y: Int, content: Str, size: Int = 16, color: Str = "#000000", style: List[Str] = [], font: Str = "", angle: Num = 0.0): None;
+extern text!(x: Num, y: Num, content: Str, size: Num = 16, color: Str = "#000000", style: List[Str] = [], font: Str = "", angle: Num = 0.0): None;
 
 extern blit!(): None;
 
 extern mouse_down!(): Bool;
-extern mouse_x!(): Int;
-extern mouse_y!(): Int;
+extern mouse_x!(): Num;
+extern mouse_y!(): Num;
 extern quit_requested!(): Bool;
+
+extern set_scale!(scale: Num, pixels: Num = 1): None;
+extern set_origin!(x: Num, y: Num): None;

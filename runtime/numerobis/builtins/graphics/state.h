@@ -16,6 +16,10 @@ extern gint32 _mouse_y;
 extern gboolean _mouse_down;
 extern gboolean _quit_requested;
 
+extern gdouble _scale;
+extern gdouble _tx;
+extern gdouble _ty;
+
 typedef enum {
   CMD_RECT,
   CMD_ROUNDED_RECT,

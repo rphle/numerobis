@@ -15,7 +15,7 @@ static Value numerobis_builtin_now(Value *args) {
 }
 
 static Value numerobis_builtin_sleep(Value *args) {
-  double seconds = _f64(args, 1);
+  double seconds = _f64(args[1]);
   if (seconds > 0) {
     g_usleep((gulong)(seconds * 1000000));
   }
