@@ -184,7 +184,7 @@ fibonacci(10)
 complex_recursive!(n: Int, acc: Int = 0): Int = {
     if n <= 0 then return acc
     if n % 2 == 0 then {
-        return complex_recursive(n / 2, acc + n)
+        return complex_recursive(n / 2 -> Int, acc + n)
     } else {
         return complex_recursive(n - 1, acc + n * 2)
     }

@@ -124,8 +124,10 @@ class Typechecker:
             assert isinstance(definition, FunctionType)
             return definition.return_type
 
-        if left.dim or right.dim:
-            return_typ = "Num"  # unitful operations always return float
+        if left.dim or right.dim or (node.op.name == "div"):
+            return_typ = (
+                "Num"  # unitful operations as well as division always return float
+            )
         else:
             return_typ = "Num" if "Num" in {left.name(), right.name()} else "Int"
 

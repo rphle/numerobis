@@ -180,12 +180,11 @@ normal_force = 100 newton
 friction_force = coefficient * normal_force
 
 
-# ---
+# E535
 x: Int
 x = 1
 y = x + 2e2
 y = y / 1
-z = (y+x)^(-2)
 
 # E703
 mass = 10 kilogram

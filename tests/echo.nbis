@@ -77,7 +77,7 @@ a = "h e l l o"
 b = "1234"
 for i in 1..9..2 do {
     echo((i-1) / 2)
-    a[i] = b[(i-1) / 2]
+    a[i] = b[math.round((i-1) / 2)]
 }
 echo(a)
 a[0] = "world"

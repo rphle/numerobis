@@ -7,8 +7,8 @@ set_bg("#0d1117")
 set_title("Bouncing Ball")
 
 # Ball state
-bx = 400
-by = 300
+bx = 400.0
+by = 300.0
 vx = 2.0
 vy = 3.0
 radius = 30

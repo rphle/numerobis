@@ -168,7 +168,7 @@ static Value number_binop(Value a, Value b, binop_i64 iop, binop_f64 fop,
     break;
   }
 
-  if (na->kind == NUM_DOUBLE || nb->kind == NUM_DOUBLE) {
+  if (na->kind == NUM_DOUBLE || nb->kind == NUM_DOUBLE || (kind == OP_DIV)) {
     if (!_x_defined)
       x = number_as_double(na);
     if (!_y_defined)
