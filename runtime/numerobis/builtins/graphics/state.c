@@ -12,6 +12,7 @@ gint32 _mouse_x = 0;
 gint32 _mouse_y = 0;
 gboolean _mouse_down = FALSE;
 gboolean _quit_requested = FALSE;
+gboolean _keys[SDL_NUM_SCANCODES] = {FALSE};
 
 gdouble _scale = 1.0;
 gdouble _tx = 0.0;
@@ -40,6 +41,14 @@ void _update_input_state(void) {
     case SDL_MOUSEBUTTONUP:
       if (event.button.button == SDL_BUTTON_LEFT)
         _mouse_down = FALSE;
+      break;
+    case SDL_KEYDOWN:
+      if (event.key.keysym.scancode < SDL_NUM_SCANCODES)
+        _keys[event.key.keysym.scancode] = TRUE;
+      break;
+    case SDL_KEYUP:
+      if (event.key.keysym.scancode < SDL_NUM_SCANCODES)
+        _keys[event.key.keysym.scancode] = FALSE;
       break;
     }
   }

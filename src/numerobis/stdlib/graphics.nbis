@@ -22,6 +22,7 @@ extern mouse_y!(): Num;
 extern mouse_vx!(): Num;
 extern mouse_vy!(): Num;
 extern quit_requested!(): Bool;
+extern key_pressed!(key_name: Str): Bool;
 
 extern set_scale!(scale: Num, pixels: Num = 1): None;
 extern set_origin!(x: Num, y: Num): None;

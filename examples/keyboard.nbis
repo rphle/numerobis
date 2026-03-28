@@ -1,0 +1,13 @@
+from graphics import *
+
+init(900, 900)
+
+while not quit_requested() do {
+    if key_pressed("Left") then
+        rect(0,0,300,900, "#f00")
+    if key_pressed("Down") then
+        rect(300,0,300,900, "#0f0")
+    if key_pressed("Right") then
+        rect(600,0,300,900, "#00f")
+    blit()
+}

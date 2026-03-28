@@ -362,6 +362,17 @@ static Value numerobis_builtin_quit_requested(Value *args) {
   return bool__init__(_quit_requested);
 }
 
+/* key_pressed!(key_name: Str): Bool */
+static Value numerobis_builtin_key_pressed(Value *args) {
+  _update_input_state();
+  const gchar *key_name = _str(args[1]);
+  SDL_Scancode code = SDL_GetScancodeFromName(key_name);
+  if (code == SDL_SCANCODE_UNKNOWN) {
+    return bool__init__(FALSE);
+  }
+  return bool__init__(_keys[code]);
+}
+
 /* set_scale!(value: Num, pixels: Num = 1): None */
 static Value numerobis_builtin_set_scale(Value *args) {
   gdouble value = _f64(args[1]);
@@ -398,6 +409,7 @@ __attribute__((constructor)) void numerobis_graphics_register_builtins(void) {
   u_extern_register("mouse_vx", numerobis_builtin_mouse_vx);
   u_extern_register("mouse_vy", numerobis_builtin_mouse_vy);
   u_extern_register("quit_requested", numerobis_builtin_quit_requested);
+  u_extern_register("key_pressed", numerobis_builtin_key_pressed);
   u_extern_register("set_scale", numerobis_builtin_set_scale);
   u_extern_register("set_origin", numerobis_builtin_set_origin);
 }

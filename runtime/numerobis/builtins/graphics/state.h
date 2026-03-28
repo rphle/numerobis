@@ -15,6 +15,7 @@ extern gint32 _mouse_x;
 extern gint32 _mouse_y;
 extern gboolean _mouse_down;
 extern gboolean _quit_requested;
+extern gboolean _keys[SDL_NUM_SCANCODES];
 
 extern gdouble _scale;
 extern gdouble _tx;
