@@ -21,6 +21,14 @@ static inline gint32 _tx_x(gdouble x) { return (gint32)((x + _tx) * _scale); }
 static inline gint32 _tx_y(gdouble y) { return (gint32)((y + _ty) * _scale); }
 static inline gint32 _tx_dim(gdouble dim) { return (gint32)(dim * _scale); }
 
+static inline gboolean _arg_filled(Value v) {
+  return v.type != VALUE_NONE ? _bool(v) : true;
+}
+
+static inline Color _arg_color(Value v) {
+  return v.type != VALUE_NONE ? _parse_color(_str(v)) : COLOR_BLACK;
+}
+
 static gint32 _parse_style_list(Value style_val) {
   if (style_val.type != VALUE_LIST)
     return TTF_STYLE_NORMAL;
@@ -100,10 +108,10 @@ static Value numerobis_builtin_rect(Value *args) {
   _ensure_queue();
   gint32 x = _tx_x(_f64(args[1]));
   DrawCmd cmd = {.kind = CMD_RECT,
-                 .color = _parse_color(_str(args[5])),
+                 .color = _arg_color(args[5]),
                  .rect = {_tx_x(_f64(args[1])), _tx_y(_f64(args[2])),
                           _tx_dim(_f64(args[3])), _tx_dim(_f64(args[4])),
-                          _bool(args[6])}};
+                          _arg_filled(args[6])}};
   g_array_append_val(_queue, cmd);
   return NONE;
 }
@@ -112,10 +120,10 @@ static Value numerobis_builtin_rect(Value *args) {
 static Value numerobis_builtin_rounded_rect(Value *args) {
   _ensure_queue();
   DrawCmd cmd = {.kind = CMD_ROUNDED_RECT,
-                 .color = _parse_color(_str(args[6])),
+                 .color = _arg_color(args[6]),
                  .rrect = {_tx_x(_f64(args[1])), _tx_y(_f64(args[2])),
                            _tx_dim(_f64(args[3])), _tx_dim(_f64(args[4])),
-                           _tx_dim(_f64(args[5])), _bool(args[7])}};
+                           _tx_dim(_f64(args[5])), _arg_filled(args[7])}};
   g_array_append_val(_queue, cmd);
   return NONE;
 }
@@ -124,9 +132,9 @@ static Value numerobis_builtin_rounded_rect(Value *args) {
 static Value numerobis_builtin_circle(Value *args) {
   _ensure_queue();
   DrawCmd cmd = {.kind = CMD_CIRCLE,
-                 .color = _parse_color(_str(args[4])),
+                 .color = _arg_color(args[4]),
                  .circle = {_tx_x(_f64(args[1])), _tx_y(_f64(args[2])),
-                            _tx_dim(_f64(args[3])), _bool(args[5])}};
+                            _tx_dim(_f64(args[3])), _arg_filled(args[5])}};
   g_array_append_val(_queue, cmd);
   return NONE;
 }
@@ -135,10 +143,10 @@ static Value numerobis_builtin_circle(Value *args) {
 static Value numerobis_builtin_ellipse(Value *args) {
   _ensure_queue();
   DrawCmd cmd = {.kind = CMD_ELLIPSE,
-                 .color = _parse_color(_str(args[5])),
+                 .color = _arg_color(args[5]),
                  .ellipse = {_tx_x(_f64(args[1])), _tx_y(_f64(args[2])),
                              _tx_dim(_f64(args[3])), _tx_dim(_f64(args[4])),
-                             _bool(args[6])}};
+                             _arg_filled(args[6])}};
   g_array_append_val(_queue, cmd);
   return NONE;
 }
@@ -146,11 +154,12 @@ static Value numerobis_builtin_ellipse(Value *args) {
 /* line!(x1, y1, x2, y2, color, thickness) */
 static Value numerobis_builtin_line(Value *args) {
   _ensure_queue();
+  gdouble thickness = args[6].type != VALUE_NONE ? _f64(args[6]) : 1.0;
   DrawCmd cmd = {.kind = CMD_LINE,
-                 .color = _parse_color(_str(args[5])),
+                 .color = _arg_color(args[5]),
                  .line = {_tx_x(_f64(args[1])), _tx_y(_f64(args[2])),
                           _tx_x(_f64(args[3])), _tx_y(_f64(args[4])),
-                          _f64(args[6])}}; // Thickness remains unscaled
+                          thickness}};
   g_array_append_val(_queue, cmd);
   return NONE;
 }
@@ -170,8 +179,8 @@ static Value numerobis_builtin_polygon(Value *args) {
   }
 
   DrawCmd cmd = {.kind = CMD_POLYGON,
-                 .color = _parse_color(_str(args[2])),
-                 .polygon = {pts, n, _bool(args[3])}};
+                 .color = _arg_color(args[2]),
+                 .polygon = {pts, n, _arg_filled(args[3])}};
   g_array_append_val(_queue, cmd);
   return NONE;
 }
@@ -180,10 +189,10 @@ static Value numerobis_builtin_polygon(Value *args) {
 static Value numerobis_builtin_arc(Value *args) {
   _ensure_queue();
   DrawCmd cmd = {.kind = CMD_ARC,
-                 .color = _parse_color(_str(args[6])),
+                 .color = _arg_color(args[6]),
                  .arc = {_tx_x(_f64(args[1])), _tx_y(_f64(args[2])),
                          _tx_dim(_f64(args[3])), (gfloat)_f64(args[4]),
-                         (gfloat)_f64(args[5]), _bool(args[7])}};
+                         (gfloat)_f64(args[5]), _arg_filled(args[7])}};
   g_array_append_val(_queue, cmd);
   return NONE;
 }
@@ -192,7 +201,7 @@ static Value numerobis_builtin_arc(Value *args) {
 static Value numerobis_builtin_point(Value *args) {
   _ensure_queue();
   DrawCmd cmd = {.kind = CMD_POINT,
-                 .color = _parse_color(_str(args[3])),
+                 .color = _arg_color(args[3]),
                  .point = {_tx_x(_f64(args[1])), _tx_y(_f64(args[2]))}};
   g_array_append_val(_queue, cmd);
   return NONE;
@@ -202,24 +211,29 @@ static Value numerobis_builtin_point(Value *args) {
 static Value numerobis_builtin_text(Value *args) {
   _ensure_queue();
 
-  const gchar *font_arg = _str(args[7]);
+  const gchar *font_arg = args[7].type != VALUE_NONE ? _str(args[7]) : NULL;
   const gchar *font_path =
-      (font_arg && *font_arg) ? _resolve_font_name(font_arg) : _default_font();
+      font_arg ? _resolve_font_name(font_arg) : _default_font();
   if (!font_path)
     font_path = _default_font();
 
+  gdouble angle_arg = args[8].type != VALUE_NONE ? _f64(args[8]) : 0.0;
+  gint32 style_arg = args[6].type != VALUE_NONE ? _parse_style_list(args[6])
+                                                : TTF_STYLE_NORMAL;
+  gint32 size_arg = args[4].type != VALUE_NONE ? _tx_dim(_f64(args[4])) : 16;
+
   DrawCmd cmd = {
       .kind = CMD_TEXT,
-      .color = _parse_color(_str(args[5])),
+      .color = _arg_color(args[5]),
       .text =
           {
               .x = _tx_x(_f64(args[1])),
               .y = _tx_y(_f64(args[2])),
               .str = GC_STRDUP(_str(args[3])),
-              .size = _tx_dim(_f64(args[4])),
-              .style = _parse_style_list(args[6]),
+              .size = size_arg,
+              .style = style_arg,
               .font_path = font_path ? GC_STRDUP(font_path) : NULL,
-              .angle = _f64(args[8]),
+              .angle = angle_arg,
           },
   };
   g_array_append_val(_queue, cmd);
