@@ -2,10 +2,12 @@
 
 import dataclasses
 import math
+from typing import Optional
 
 from ..classes import Header, ModuleMeta
 from ..nodes.ast import (
     AstNode,
+    Attribute,
     BinOp,
     Block,
     Boolean,
@@ -58,6 +60,8 @@ class Parser(ParserTemplate):
         # flag becomes False as soon as a non-import statement is encountered
         self.imports_allowed = True
         self.header = Header()
+
+        self.module_names: list[str] = []
 
     def start(self) -> list[AstNode]:
         statements = []
@@ -196,6 +200,8 @@ class Parser(ParserTemplate):
 
     def variable(self, declaration: bool = False) -> AstNode:
         name = self._consume("ID")
+        self._check_forbidden(name, "variable")
+
         type_token = None
         if declaration or self._peek().type == "COLON":
             self._consume("COLON")
@@ -322,8 +328,14 @@ class Parser(ParserTemplate):
         self.header.units.append(node)
         return node
 
-    def function(self, anonymous=False, body=True) -> AstNode:
-        name = self._make_id(self._consume("ID")) if not anonymous or not body else None
+    def function(
+        self, anonymous=False, body=True, name: Optional[Identifier] = None
+    ) -> AstNode:
+        if (not anonymous or not body) and not name:
+            _name = self._consume("ID")
+            self._check_forbidden(_name, "function")
+            name = self._make_id(_name)
+
         return_type = None
 
         _bang = self._consume("BANG")
@@ -332,7 +344,9 @@ class Parser(ParserTemplate):
         params = []
         while self._peek().type != "RPAREN":
             p = {}
-            p["name"] = self._make_id(self._consume("ID"))
+            _p_name = self._consume("ID")
+            self._check_forbidden(_p_name, "parameter")
+            p["name"] = self._make_id(_p_name)
 
             if self._peek().type == "COLON":
                 self._consume("COLON")
@@ -402,10 +416,14 @@ class Parser(ParserTemplate):
 
     def forloop(self) -> AstNode:
         _for = self._consume("FOR")
-        iterators = [self._make_id(self._consume("ID"))]
+        _iterator = self._consume("ID")
+        self._check_forbidden(_iterator, "iterator")
+        iterators = [self._make_id(_iterator)]
         while self._peek().type == "COMMA":
             self._consume("COMMA")
-            iterators.append(self._make_id(self._consume("ID")))
+            _iterator = self._consume("ID")
+            self._check_forbidden(_iterator, "iterator")
+            iterators.append(self._make_id(_iterator))
 
         self._consume("IN")
         iterable = self.expression()
@@ -607,18 +625,46 @@ class Parser(ParserTemplate):
         node = Index(iterable=node, index=idx, loc=nodeloc(node, _end))
         return node
 
+    def attribute(self, node: AstNode) -> AstNode:
+        if isinstance(node, Attribute):
+            self.errors.unexpectedToken(
+                self._peek(), help="Attribute names cannot be chained"
+            )
+
+        _tok = self.tok
+        self._consume("PERIOD")
+        name = self._make_id(self._consume("ID"))
+        loc = nodeloc(node, name)
+
+        # self.tok.type == "ID" avoids matching parenthesed identifiers
+        if _tok.type == "ID" and isinstance(node, Identifier):
+            if node.name in self.module_names:
+                return ModuleAccess(module=node, name=name, loc=loc)
+
+            elif self._peek(ignore_whitespace=False).type == "BANG":
+                func_name = Identifier(name=f"{node.name}.{name.name}", loc=loc)
+                return self.function(name=func_name)
+
+        return Attribute(owner=node, name=name, loc=loc)
+
     def postfix(self) -> AstNode:
         """
-        Postfix chaining for calls and indexing/slices.
-        Starts from `range_()` (preserves range precedence) then repeatedly
-        applies `( ... )` or `[ ... ]` as long as either appears immediately after.
+        Postfix chaining for calls and indexing/slices/attribute access.
+        Repeatedly applies `( ... )` or `[ ... ]` or `.` as long as
+        either appears immediately after.
         """
         node = self.atom()
-        while self._peek(ignore_whitespace=False).type in {"LPAREN", "LBRACKET"}:
+        while self._peek(ignore_whitespace=False).type in {
+            "LPAREN",
+            "LBRACKET",
+            "PERIOD",
+        }:
             if self._peek(ignore_whitespace=False).type == "LPAREN":
                 node = self.call(node)
-            else:
+            elif self._peek(ignore_whitespace=False).type == "LBRACKET":
                 node = self.index(node)
+            elif self._peek(ignore_whitespace=False).type == "PERIOD":
+                node = self.attribute(node)
 
         return node
 
@@ -696,11 +742,6 @@ class Parser(ParserTemplate):
             case "TRUE" | "FALSE":
                 return Boolean(value=tok.value == "true", loc=tok.loc)
             case "ID":
-                if (
-                    self._peek(ignore_whitespace=False).type == "PERIOD"
-                    and self._peek(2, ignore_whitespace=False).type == "ID"
-                ):
-                    return self.module_access(tok)
                 return self._make_id(tok)
             case "STRING":
                 return String(value=tok.value, loc=tok.loc)
@@ -734,6 +775,7 @@ class Parser(ParserTemplate):
 
         node = Import(module=module, alias=alias, loc=nodeloc(start, alias or module))
         self.header.imports.append(node)
+        self.module_names.append(module.name if not alias else alias.name)
         return node
 
     def from_import_stmt(self) -> FromImport:
@@ -806,6 +848,7 @@ class Parser(ParserTemplate):
             module=module, names=names, aliases=aliases, loc=nodeloc(start, end)
         )
         self.header.imports.append(node)
+        self.module_names.append(module.name)
         return node
 
     def extern_declaration(self) -> ExternDeclaration:
@@ -818,12 +861,6 @@ class Parser(ParserTemplate):
 
         assert isinstance(value, (Function, VariableDeclaration))
         return ExternDeclaration(value=value, loc=nodeloc(_start, value))
-
-    def module_access(self, tok: Token) -> AstNode:
-        mod = self._make_id(tok)
-        self._consume("PERIOD")
-        name = self._make_id(self._consume("ID"))
-        return ModuleAccess(module=mod, name=name, loc=mod.loc.merge(name.loc))
 
     def type(self) -> Type | FunctionAnnotation | Expression | One:
         if self._peek().type == "BANG":
@@ -862,7 +899,9 @@ class Parser(ParserTemplate):
                 self._consume("DIVIDE")
                 arity.append(arity[0])
             else:
-                param_names.append(self._make_id(self._consume("ID")))
+                param_name = self._consume("ID")
+                self._check_forbidden(param_name, "parameter")
+                param_names.append(self._make_id(param_name))
                 if self._peek().type != "COLON":
                     self.errors.throw(18, self._peek().loc)
                 self._consume("COLON")
@@ -901,3 +940,15 @@ class Parser(ParserTemplate):
             return Num(value=number, exponent=exponent, unit=unit, loc=token.loc)
         else:
             return Integer(value=number, exponent=exponent, unit=unit, loc=token.loc)
+
+    def _check_forbidden(self, name: Token, type_: str) -> None:
+        if name.value in self.module_names:
+            self.errors.throw(
+                606,
+                name=name.value,
+                type=type_,
+                loc=name.loc,
+                help="there is already a module with this name",
+            )
+        elif name.value in ["_"]:
+            self.errors.throw(606, name=name.value, type=type_, loc=name.loc)

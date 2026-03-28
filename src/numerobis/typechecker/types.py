@@ -199,6 +199,7 @@ class FunctionType(UType):
     unresolved: Optional[Literal["recursive", "parameters"]] = None
     extern: bool = False
     _name: Optional[str] = field(default=None, compare=False)
+    _self: Optional[T] = field(default=None)
     _loc: Any = field(default=None)
 
     def __str__(self):
@@ -209,7 +210,8 @@ class FunctionType(UType):
         if self.arity[0] != self.arity[1]:
             args.insert(self.arity[0], "/")
 
-        return f"![\\[{', '.join(args)}], {str(self.return_type).strip('')}]"
+        dot = "·" if self._self else ""
+        return dot + f"![\\[{', '.join(args)}], {str(self.return_type).strip('')}]"
 
     def check_args(self, *args: T) -> "FunctionType | Mismatch | None":
         global varenv
@@ -315,7 +317,7 @@ def unify(a: T, b: T, commutative: bool = False) -> T | Mismatch:
                 else mismatch
             )
         case FunctionType() as a, FunctionType() as b:
-            if a.arity != b.arity:
+            if a.arity != b.arity or a._self != b._self:
                 return mismatch
             parts = [
                 (unify(x, y) if "Any" not in (x.name(), y.name()) else AnyType())

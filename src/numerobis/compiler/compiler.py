@@ -15,6 +15,7 @@ from ..compiler.scoping import get_free_vars
 from ..environment import Namespaces
 from ..exceptions.exceptions import Exceptions
 from ..nodes.ast import (
+    Attribute,
     BinOp,
     Block,
     Boolean,
@@ -58,6 +59,7 @@ from .utils import (
     BUILTINS,
     compile_math,
     ensuresuffix,
+    mangle,
     module_uid,
     mthd,
     strip_parens,
@@ -109,6 +111,15 @@ class Compiler:
 
     # These bypass the full number_binop dispatch for plain dimless integers.
     _FAST_BINOP = {"add": "FAST_ADD", "sub": "FAST_SUB", "mul": "FAST_MUL"}
+
+    def attribute_(self, node: Attribute, link: int) -> tstr:
+        self.include.add("numerobis/closures")
+        out = tstr("__getattr__($func, $self)")
+
+        typ = self._link2type(node.owner).title()
+        out["func"] = self.compile(Identifier(f"{typ}.{self.unlink(node.name)}"))
+        out["self"] = self.compile(node.owner)
+        return out
 
     def bin_op_(self, node: BinOp, link: int) -> tstr:
         operands = [self.compile(node.left), self.compile(node.right)]
@@ -173,6 +184,9 @@ class Compiler:
         }
         if "callee" in node.meta:
             signature: FunctionType = node.meta["callee"]
+            if signature._self:
+                # method
+                args.insert(0, None)
 
             for name in signature.param_names[i:]:
                 args.append(arg_names[name].value if name in arg_names else None)
@@ -247,9 +261,12 @@ class Compiler:
     def extern_declaration_(self, node: ExternDeclaration, link: int) -> tstr:
         self.include.add("numerobis/extern")
 
-        out = tstr('Value und_$uid_$name = *u_extern_lookup("$name")')
+        out = tstr('Value und_$uid_$name = *u_extern_lookup("$extern_name")')
         out["uid"] = self.uid
-        out["name"] = self.unlink(self.unlink(node.value).name).name  # type: ignore
+
+        name = self.unlink(self.unlink(node.value).name).name  # type: ignore
+        out["name"] = mangle(name)
+        out["extern_name"] = name.split(".")[-1]
 
         return out
 
@@ -398,7 +415,8 @@ class Compiler:
 
         params = [str(self.compile(param.name)) for param in _unlinked_params]
         free_vars = [
-            self._imported_names.get(var, f"und_{self.uid}_") + var.split(".")[-1]
+            self._imported_names.get(var, f"und_{self.uid}_")
+            + mangle(var.split(".")[-1])
             for var in get_free_vars(
                 self.env.nodes, node, link=link, defined_addrs=defined_addrs
             )
@@ -443,7 +461,7 @@ class Compiler:
             return tstr("self", meta={"reference": True})
 
         prefix = self._imported_names.get(node.name, f"und_{self.uid}_")
-        return tstr(prefix + node.name, meta={"reference": True})
+        return tstr(prefix + mangle(node.name), meta={"reference": True})
 
     def if_(self, node: If, link: int) -> tstr:
         if node.expression:
@@ -514,7 +532,9 @@ class Compiler:
         out = tstr("$prefix$name", meta={"reference": True})
         mod = self.unlink(node.module).name
         out["prefix"] = "und_" + self._imported_modules[mod] + "_"
-        out["name"] = self.unlink(node.name).name
+
+        name = self.unlink(node.name).name
+        out["name"] = mangle(name)
         self._imported_names[f"{mod}.{out['name']}"] = out["prefix"]
         return out
 

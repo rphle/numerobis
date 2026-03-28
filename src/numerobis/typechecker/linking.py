@@ -15,7 +15,7 @@ from ..nodes.ast import (
 )
 from ..nodes.core import AstNode
 
-T = TypeVar("T", bound=AstNode)
+SameType = TypeVar("SameType", bound=AstNode)
 _exclude = (
     Expression,
     UnitDefinition,
@@ -78,8 +78,8 @@ def link(tree: list[AstNode]) -> tuple[list[Link], dict[int, AstNode]]:
 
 
 def unlink(
-    table: dict[int, AstNode], node: T, attrs: Optional[tuple | list] = None
-) -> T:
+    table: dict[int, AstNode], node: SameType, attrs: Optional[tuple | list] = None
+) -> SameType:
     if isinstance(node, Link):
         return table[node.target]  # type: ignore
 

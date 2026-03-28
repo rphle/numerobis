@@ -1,0 +1,23 @@
+import math
+
+# E606
+math!(x) = x
+
+# E606
+math = 5
+
+# E606
+f!(_) = 1
+
+# E606
+_: Num = 2
+
+# ---
+Str.len!(self: Str) = 4
+echo("test".len())
+
+# E525
+Str.len!(self: Str) = 4
+len!(self: Str) = 4
+
+["test".len, len]

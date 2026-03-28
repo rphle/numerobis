@@ -207,6 +207,9 @@ extern functions must be declared directly
 [E543 / TypeError]
 addends must either be of the same dimension or dimensionless
 
+[E544 / TypeError]
+unknown type '{name}'
+
 
 
 [E601 / NameError]
@@ -224,6 +227,8 @@ undefined {kind} '{name}'
 [E605 / NameError]
 type does not support keyword arguments
 
+[E606 / NameError]
+Invalid {type} name: {name}
 
 
 [E701 / TypeError]

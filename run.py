@@ -102,8 +102,6 @@ def run_single_test(
 
     except SystemExit:
         pass
-    except Exception as e:
-        print(f"\nInternal Compiler Error: {e}", file=output)
 
     out_str = output.getvalue()
     error_match = re.search(r"\[(E\d{3})\]", out_str)

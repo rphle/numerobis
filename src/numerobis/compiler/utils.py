@@ -31,6 +31,10 @@ def strip_parens(s: str, char: Literal["(", "[", "{"]) -> str:
     return s
 
 
+def mangle(name: str) -> str:
+    return name.replace("_", "__").replace(".", "_d")
+
+
 def compile_math(node: UnitNode) -> str:
     match node:
         case Expression():

@@ -180,6 +180,18 @@ class Index(AstNode):
 
 
 @dataclass(kw_only=True, frozen=True)
+class Attribute(AstNode):
+    owner: AstNode
+    name: Identifier
+
+
+@dataclass(kw_only=True, frozen=True)
+class ModuleAccess(AstNode):
+    module: Identifier
+    name: Identifier
+
+
+@dataclass(kw_only=True, frozen=True)
 class Slice(AstNode):
     start: AstNode
     stop: AstNode | None
@@ -205,12 +217,6 @@ class Continue(AstNode):
 @dataclass(kw_only=True, frozen=True)
 class Return(AstNode):
     value: AstNode | None
-
-
-@dataclass(kw_only=True, frozen=True)
-class ModuleAccess(AstNode):
-    module: Identifier
-    name: Identifier
 
 
 @dataclass(kw_only=True, frozen=True)

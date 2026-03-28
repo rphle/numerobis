@@ -5,6 +5,7 @@ Performs type inference, dimensional consistency checking, and program validatio
 
 import uuid
 from decimal import Decimal
+from typing import TypeVar
 
 from ..analysis.dimchecker import Dimchecker
 from ..analysis.simplifier import Simplifier
@@ -13,6 +14,7 @@ from ..environment import Env, Namespaces
 from ..exceptions.exceptions import Exceptions, Mismatch
 from ..nodes.ast import (
     AstNode,
+    Attribute,
     BinOp,
     Block,
     Boolean,
@@ -72,6 +74,8 @@ from .types import (
 )
 from .utils import UnresolvedAnyParam, _check_method, nomismatch
 
+SameType = TypeVar("SameType", bound=AstNode)
+
 
 class Typechecker:
     def __init__(
@@ -90,6 +94,33 @@ class Typechecker:
         self.simplify = self.simplifier.simplify
 
         self.unresolved_funcs: list[FunctionType] = []
+
+    def attribute_(self, node: Attribute, env: Env) -> T:
+        owner = self.check(node.owner, env=env)
+        name = self.unlink(node.name).name
+        value = next(
+            filter(lambda n: n.startswith(owner.name() + "."), env.names), None
+        )
+        if value is None:
+            self.errors.throw(601, name=f"{owner.name()}.{name}", loc=node.loc)
+            raise
+
+        value = env.get("names")(value)
+
+        assert isinstance(value, FunctionType), value
+        if not (mismatch := nomismatch(value.params[0], owner)):
+            self.errors.throw(
+                513,
+                kind=mismatch.kind,
+                expected=mismatch.left,
+                name=value.param_names[0],
+                actual=mismatch.right,
+                loc=node.loc,
+            )
+            raise
+
+        value = value.edit(_self=unify(value.params[0], owner))
+        return value
 
     def bin_op_(self, node: BinOp, env: Env, link: int) -> T:
         """Check dimensional consistency in mathematical operations"""
@@ -273,6 +304,13 @@ class Typechecker:
         node = self.unlink(node, attrs=["args"])
         if not dummy:
             args: dict[str, tuple[T, T, str]] = {}
+            if callee._self is not None:
+                args["self"] = (
+                    callee._self,
+                    callee._self,
+                    callee.param_addrs[0],
+                )
+
             i = 0
             for arg in node.args:
                 arg = self.unlink(arg, attrs=["name"])
@@ -491,7 +529,7 @@ class Typechecker:
         if isinstance(value, Function):
             v_link = node.value.target  # type: ignore
             self.function_(value, env=env, link=v_link, extern=True)
-
+            assert value.name is not None, value
             self.namespaces.externs[self.unlink(value.name).name] = v_link
         else:
             assert isinstance(value, VariableDeclaration)
@@ -545,10 +583,19 @@ class Typechecker:
         link: int,
         extern: bool = False,
     ):
-        name = getattr(self.unlink(node.name), "name", None)
+        name = (
+            getattr(self.unlink(node.name), "name", None)
+            if node.name is not None
+            else None
+        )
 
         if name and name in env.names:
             self.errors.throw(604, name=name, loc=node.loc)
+        if name and "." in name:
+            owner = name.split(".")[0]  # type: ignore
+            if owner not in typetable:
+                self.errors.throw(544, name=owner, loc=node.loc)
+                raise
 
         # verify parameter and default types
         params = [
@@ -633,6 +680,7 @@ class Typechecker:
             raise e
 
         if not (mismatch := nomismatch(return_type, body)):
+            assert node.body is not None, node.body
             self.errors.throw(
                 519,
                 value=mismatch.right,
@@ -1057,5 +1105,5 @@ class Typechecker:
                 dummy=True,
             )
 
-    def unlink(self, node, attrs=None):
+    def unlink(self, node: SameType, attrs=None) -> SameType:
         return linking.unlink(self.namespaces.nodes, node, attrs)

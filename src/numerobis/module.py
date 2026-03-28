@@ -70,6 +70,7 @@ class Module:
     def parse(self):
         lexed = lex(self.meta.source, module=self.meta)
         parser = Parser(lexed, module=self.meta)
+        parser.module_names = list(self.namespaces.imports.keys())
         self.ast = parser.start()
         self.header = parser.header
         del parser

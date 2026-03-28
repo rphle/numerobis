@@ -3,6 +3,8 @@
 
 #include "exceptions/throw.h"
 #include "types/methods.h"
+
+#include <assert.h>
 #include <glib.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -37,6 +39,7 @@ typedef struct {
 typedef struct {
   Value (*func)(void *env, Value *args);
   void *env;
+  Value *first_arg;
 } Closure;
 
 typedef struct Value {
@@ -126,6 +129,14 @@ static inline Value __getslice__(Value _self, Value _start, Value _stop,
                                                      _step);
 }
 
+extern Value closure__init__(Value (*func)(void *, Value *), void *env,
+                             Value *first_arg);
+
+static inline Value __getattr__(Value func, Value self) {
+  g_assert(func.type == VALUE_CLOSURE);
+  return closure__init__(func.closure->func, func.closure->env, &self);
+}
+
 static inline Value __str__(Value self, LocRef loc) {
   return NUMEROBIS_METHODS[self.type]->__str__(self);
 }
@@ -146,8 +157,14 @@ static inline Value __call__(Value self, Value *args) {
   switch (self.type) {
   case VALUE_EXTERN_FN:
     return self.extern_fn(args);
-  default:
-    return self.closure->func(self.closure->env, args);
+  default: {
+    Closure *cl = self.closure;
+    // Overwrite the first argument slot if a bound argument exists
+    if (__builtin_expect(cl->first_arg != NULL, 0)) {
+      args[0] = *cl->first_arg;
+    }
+    return cl->func(cl->env, args);
+  }
   }
 }
 
