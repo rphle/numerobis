@@ -368,10 +368,8 @@ unit century: Time = 100 * year
 unit millennium: Time = 1000 * year
 
 # Temperature units
-unit celsius: ThermodynamicTemperature = kelvin  # Note: offset not handled
+unit celsius: ThermodynamicTemperature = _ kelvin + 273.15;
 unit °C = celsius
-unit fahrenheit = kelvin  # Note: offset and scale not handled
-unit °F = fahrenheit
 
 # Angle units
 unit degree: Angle = 3.14159265359/180 * radian

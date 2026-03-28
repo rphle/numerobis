@@ -1,5 +1,5 @@
 from si import @Length, @Mass, @Time, @Volume
-from si import @metre, @kilogram, @second, @cubic_metre  # Assuming cubic_metre is available
+from si import @metre, @kilogram, @second, @kelvin
 
 unit inch = 0.0254 * metre
 unit foot = 12 * inch
@@ -16,5 +16,8 @@ unit yd = yard
 unit ounce = pound / 16
 unit oz = ounce
 
-unit gallon = 0.00378541 * cubic_metre  # US gallon (1 US gallon ≈ 0.00378541 cubic meters)
+unit gallon = 0.00378541 * metre^3  # US gallon (1 US gallon ≈ 0.00378541 cubic meters)
 unit gal = gallon
+
+unit fahrenheit = (5/9) * (_ kelvin + 459.67);
+unit °F = fahrenheit
