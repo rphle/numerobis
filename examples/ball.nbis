@@ -9,8 +9,8 @@ set_title("Bouncing Ball")
 # Ball state
 bx = 400.0
 by = 300.0
-vx = 2.0
-vy = 3.0
+vx = random() * 10 - 5
+vy = random() * 10 - 5
 radius = 30
 
 while not quit_requested() do {
@@ -24,8 +24,8 @@ while not quit_requested() do {
     }
 
     # Bounce off walls
-    if bx - radius < 0 or bx + radius > 800 then { vx = vx * (-1.5 + random()) }
-    if by - radius < 0 or by + radius > 600 then { vy = vy * (-1.5 + random()) }
+    if bx - radius < 0 or bx + radius > 800 then { vx = vx * -1 }
+    if by - radius < 0 or by + radius > 600 then { vy = vy * -1 }
 
     # Background panel
     rounded_rect(10, 10, 780, 580, 16, "#161b22", true)
