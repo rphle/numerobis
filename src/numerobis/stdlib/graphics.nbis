@@ -19,6 +19,8 @@ extern blit!(): None;
 extern mouse_down!(): Bool;
 extern mouse_x!(): Num;
 extern mouse_y!(): Num;
+extern mouse_vx!(): Num;
+extern mouse_vy!(): Num;
 extern quit_requested!(): Bool;
 
 extern set_scale!(scale: Num, pixels: Num = 1): None;

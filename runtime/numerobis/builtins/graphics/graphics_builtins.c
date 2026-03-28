@@ -395,6 +395,8 @@ __attribute__((constructor)) void numerobis_graphics_register_builtins(void) {
   u_extern_register("mouse_down", numerobis_builtin_mouse_down);
   u_extern_register("mouse_x", numerobis_builtin_mouse_x);
   u_extern_register("mouse_y", numerobis_builtin_mouse_y);
+  u_extern_register("mouse_vx", numerobis_builtin_mouse_vx);
+  u_extern_register("mouse_vy", numerobis_builtin_mouse_vy);
   u_extern_register("quit_requested", numerobis_builtin_quit_requested);
   u_extern_register("set_scale", numerobis_builtin_set_scale);
   u_extern_register("set_origin", numerobis_builtin_set_origin);
