@@ -97,6 +97,8 @@ static inline Value __dsub__(Value self, Value other) {
   return NUMEROBIS_METHODS[self.type]->__dsub__(self, other);
 }
 
+extern Value bool__init__(bool x);
+
 static inline Value __lt__(Value a, Value b) {
   return NUMEROBIS_METHODS[a.type]->__lt__(a, b);
 }
@@ -110,6 +112,8 @@ static inline Value __ge__(Value a, Value b) {
   return NUMEROBIS_METHODS[a.type]->__ge__(a, b);
 }
 static inline Value __eq__(Value a, Value b) {
+  if (a.type != b.type)
+    return bool__init__(false);
   return NUMEROBIS_METHODS[a.type]->__eq__(a, b);
 }
 
