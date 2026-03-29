@@ -69,6 +69,7 @@ class LexTokens:
         "COLON",
         "AT",
         "BANG",
+        "QMARK",
         # Hacks
         "WHITESPACE",
     )
@@ -110,6 +111,7 @@ class LexTokens:
     t_COLON = r":"
     t_AT = r"@"
     t_BANG = r"!"
+    t_QMARK = r"\?"
 
     def t_WHITESPACE(self, t):
         r"[\n\s]+"

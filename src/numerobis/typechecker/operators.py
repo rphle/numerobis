@@ -50,6 +50,7 @@ _eq = {
 
 typetable: dict[str, Struct] = {
     "Any": Struct({}),
+    "Var": Struct({}),
     "Int": Struct(
         {
             **_conv("Int", "Bool", "Str", "Num"),

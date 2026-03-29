@@ -21,9 +21,6 @@ class VarEnv:
         return self.__getattribute__(key)
 
 
-varenv = VarEnv()
-
-
 T = Union[
     "NoneType",
     "VarType",
@@ -61,8 +58,13 @@ class UType:
             kwargs["_meta"] = dict(self._meta)
         return replace(self, **kwargs)
 
-    def complete(self, value: Optional[T] = None):
-        """Complete anonymous types ?T"""
+    def complete(
+        self,
+        varenv: VarEnv,
+        value: Optional[T] = None,
+        fingerprint: Optional[int] = None,
+    ):
+        """Complete/fingerprint anonymous types ?T"""
         return self
 
     def meta(self, key, value=None):
@@ -118,13 +120,26 @@ class StrType(UType):
 class VarType(UType):
     _name: str
     kind: str = "types"
+    fingerprint: int = -1
+    last_env: Optional[VarEnv] = None
 
     def __str__(self) -> str:
-        if self._name not in varenv[self.kind]:
-            return "?" + self._name
-        return str(varenv[self.kind][self._name])
+        completion = ""
+        if self.last_env is not None and self._name in self.last_env[self.kind]:
+            completion = f"[{str(self.last_env[self.kind][self._name])}]"
+            completion = completion.replace("'", "")
+        return f"'?{self._name}{completion}'"
 
-    def complete(self, value: Optional[T] = None):
+    def complete(
+        self,
+        varenv: VarEnv,
+        value: Optional[T] = None,
+        fingerprint: Optional[int] = None,
+    ):
+        if fingerprint is not None:
+            object.__setattr__(self, "fingerprint", fingerprint)
+        object.__setattr__(self, "last_env", varenv)
+
         if value is None:
             return varenv[self.kind].get(self._name, self)
         if self._name not in varenv[self.kind]:
@@ -165,8 +180,17 @@ class ListType(UType):
     def __str__(self) -> str:
         return f"'List[{str(self.content).strip("'")}]'"
 
-    def complete(self, value: Optional[T] = None):
-        return self.edit(content=self.content.complete(getattr(value, "content", None)))
+    def complete(
+        self,
+        varenv: VarEnv,
+        value: Optional[T] = None,
+        fingerprint: Optional[int] = None,
+    ):
+        return self.edit(
+            content=self.content.complete(
+                varenv, getattr(value, "content", None), fingerprint=fingerprint
+            )
+        )
 
 
 @dataclass(kw_only=True, frozen=True)
@@ -214,10 +238,11 @@ class FunctionType(UType):
         return dot + f"![\\[{', '.join(args)}], {str(self.return_type).strip('')}]"
 
     def check_args(self, *args: T) -> "FunctionType | Mismatch | None":
-        global varenv
-        varenv.clear()
+        varenv = VarEnv()
         params = [
-            param.complete(arg) if not isinstance(param, AnyType) else NeverType()
+            param.complete(varenv, arg)
+            if not isinstance(param, AnyType)
+            else NeverType()
             for param, arg in zip(self.params, args)
         ]
 
@@ -230,7 +255,7 @@ class FunctionType(UType):
             elif not dim:
                 return dim
 
-        return self.edit(return_type=self.return_type.complete())
+        return self.edit(return_type=self.return_type.complete(varenv))
 
 
 @dataclass(kw_only=True, frozen=True)
@@ -334,6 +359,10 @@ def unify(a: T, b: T, commutative: bool = False) -> T | Mismatch:
                 for x, y in checkzip
             ]
             return a if all(parts) else mismatch
+        case VarType() as a, VarType() as b:
+            return (
+                a if a._name == b._name and a.fingerprint == b.fingerprint else mismatch
+            )
 
     return a if a == b else mismatch
 

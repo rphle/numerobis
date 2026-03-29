@@ -69,6 +69,8 @@ from .types import (
     StrType,
     T,
     UndefinedType,
+    VarEnv,
+    VarType,
     dimcheck,
     unify,
 )
@@ -312,6 +314,8 @@ class Typechecker:
                 loc=callee._loc,
             )
 
+        varenv = VarEnv()
+
         node = self.unlink(node, attrs=["args"])
         if not dummy:
             args: dict[str, tuple[T, T, str]] = {}
@@ -358,6 +362,9 @@ class Typechecker:
 
                 if param.name("Any"):
                     param = typ
+                else:
+                    # complete var types
+                    param = param.complete(varenv, typ)
 
                 if not (mismatch := nomismatch(param, typ)):
                     self.errors.throw(
@@ -436,7 +443,7 @@ class Typechecker:
             )
             self.errors.stack.pop()
         else:
-            return_type = callee.return_type
+            return_type = callee.return_type.complete(varenv)
 
         return return_type
 
@@ -608,16 +615,19 @@ class Typechecker:
                 self.errors.throw(544, name=owner, loc=node.loc)
                 raise
 
+        varenv = VarEnv()
+
         # verify parameter and default types
-        params = [
-            self.type_(_p.type, env=env)
-            if (_p := self.unlink(p)).type is not None
-            else AnyType(unresolved=link)
-            for p in node.params
-        ]
+        params = []
         defaults = []
         node = self.unlink(node, attrs=["params"])
-        for i, param in enumerate(node.params):
+        # iterate in reverse to properly complete var types
+        for i, param in enumerate(node.params[::-1]):
+            if (p := self.unlink(param)).type is not None:
+                params.append(self.type_(p.type, env=env))
+            else:
+                params.append(AnyType(unresolved=link))
+
             if param.default is not None:
                 default = self.check(param.default, env=env)
                 defaults.append(default)
@@ -625,6 +635,8 @@ class Typechecker:
                 if params[i].name("Any"):
                     params[i] = default
                     continue
+
+                params[i] = params[i].complete(varenv, default, fingerprint=link)
 
                 if not (mismatch := nomismatch(params[i], default)):
                     self.errors.throw(
@@ -635,10 +647,16 @@ class Typechecker:
                         actual=mismatch.right,
                         loc=param.loc,
                     )
+            else:
+                params[i] = params[i].complete(varenv, fingerprint=link)
+
+        params, defaults = params[::-1], defaults[::-1]
 
         return_type = (
             self.type_(node.return_type, env=env) if node.return_type else NeverType()
         )
+        return_type = return_type.complete(varenv, fingerprint=link)
+
         arity = (sum(1 for p in node.params if p.default is None), len(params))
         param_names = [self.unlink(param.name).name for param in node.params]
         param_addrs = [f"{param}-{uuid.uuid4()}" for param in param_names]
@@ -942,6 +960,8 @@ class Typechecker:
                     case _:
                         if node.name.name in typetable:
                             return AnyType(node.name.name)
+                        elif node.name.name.startswith("?"):
+                            return VarType(node.name.name[1:])
                         self.errors.throw(504, name=node.name.name, loc=node.name.loc)
                         raise
 

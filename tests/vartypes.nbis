@@ -1,0 +1,361 @@
+# E519
+evilget!(l: List[?T], i: Int): ?T = false
+
+# E502
+double!(x: ?T): ?T = x * 2
+
+# ---
+id!(x: ?T): ?T = x
+id(1) + 2
+id("hello") + "!"
+
+# ---
+get!(l: List[?T], i: Int): ?T = l[i]
+
+get([1, 2, 3], 1) + 1
+get(["1", "2", "3"], 2) + "!"
+
+# E519
+id!(x: ?T): ?T = x
+inject!(l: List[?T]): ?T = id(true)
+
+# E518
+default!(a: ?T = 1, b: ?T = true): ?T = a + b
+
+# ---
+default!(a: ?T, b: ?T = 1): ?T = a + b
+
+# E519
+weird!(x: ?T): ?T = 123
+
+# E519
+weird!(x: ?T): ?T = "hello"
+
+# E521
+branch!(x: ?T): ?T =
+  if true then x else 0
+
+# ---
+pair_same!(a: ?T, b: ?T): ?T = a
+pair_same(1, 2) + 3
+
+# E513
+pair_same!(a: ?T, b: ?T): ?T = a
+pair_same(1, "hello")
+
+# ---
+id!(x: ?T): ?T = x
+
+id(1) + 2
+id("hello") + "!"
+
+# ---
+head!(l: List[List[?T]]): List[?T] = l[0]
+
+head([[1], [2]])[0] + 1
+
+# E525
+head!(l: List[List[?T]]): List[?T] = l[0]
+
+head([[1], ["x"]])
+
+# E519
+mystery!(): ?T = 1
+
+# E519
+mystery!(x: Int): ?T = x
+
+# ---
+ignore!(x: ?T): Int = 42
+
+ignore(true) + 1
+ignore("abc") + 1
+
+# ---
+id!(x: ?T): ?T = x
+
+id2!(x: ?T): ?T = id(x)
+
+id2(1) + 1
+id2("a") + "b"
+
+# ---
+choose!(cond: Bool, a: ?T, b: ?T): ?T =
+  if cond then a else b
+
+choose(true, 1, 2) + 1
+choose(false, "a", "b") + "!"
+
+# E513
+choose!(cond: Bool, a: ?T, b: ?T): ?T =
+  if cond then a else b
+
+choose(true, 1, "a")
+
+# ---
+wrap!(x: ?T): List[?T] = [x]
+
+wrap(1)[0] + 1
+wrap("a")[0] + "b"
+
+# E519
+wrap!(x: ?T): List[?T] = [1]
+
+# E521
+conflict!(x: ?T): ?T =
+  if true then x else true
+
+# ---
+dup!(x: ?T): List[?T] = [x, x]
+
+dup(1)[0] + 1
+dup("a")[1] + "!"
+
+# ---
+id!(x: ?T): ?T = x
+
+compose!(x: ?T): ?T =
+  id(id(id(x)))
+
+compose(1) + 1
+compose("a") + "!"
+
+# ---
+default!(x: ?T = 1): ?T = x
+
+default() + 1
+default(5) + 1
+
+# E519
+default!(x: ?T = 1): ?T = true
+
+# E502
+default!(x: ?T = 1): ?T = x + true
+
+# ---
+id!(x: ?T): ?T = x
+
+use!(x: ?T): ?T =
+  id(x)
+
+use(1) + 1
+use("a") + "!"
+
+# ---
+get!(l: List[?T], i: Int): ?T = l[i]
+
+get([true, false], 0)
+
+# E525
+get!(l: List[?T], i: Int): ?T = l[i]
+
+get([1, "a"], 0)
+
+# ---
+merge!(a: List[?T], b: List[?T]): List[?T] =
+  [a[0], b[0]]
+
+merge([1], [2])[0] + 1
+merge(["a"], ["b"])[0] + "!"
+
+# E513
+merge!(a: List[?T], b: List[?T]): List[?T] =
+  [a[0], b[0]]
+
+merge([1], ["b"])
+
+# ---
+id!(x: ?T): ?T = x
+
+outer!(x: ?T): ?T =
+  id(x)
+
+outer(1) + 1
+outer("a") + "!"
+
+# E519
+force_int!(x: ?T): ?T = 1
+
+force_int(true)
+
+# ---
+f!(x: ?T = 1): ?T = x
+
+f() + 1
+f(5) + 1
+
+# E519
+f!(x: ?T = 1): ?T = true
+
+# E513
+f!(x: ?T = 1): ?T = x
+
+f(true)
+
+# ---
+f!(a: ?T = 1, b: ?T = 2): ?T = a + b
+
+f() + 1
+
+# E518
+f!(a: ?T = 1, b: ?T = true): ?T = a
+
+# ---
+f!(a: ?T, b: ?T = 1): ?T = a
+
+f(3) + 1
+
+# E513
+f!(a: ?T, b: ?T = 1): ?T = a
+
+f(true)
+
+# E513
+f!(x: ?T = 1): Int = 42
+
+f()
+f(true)
+
+# ---
+f!(x: List[?T] = [1]): List[?T] = x
+
+f()[0] + 1
+f([5])[0] + 1
+
+# E513
+f!(x: List[?T] = [1]): List[?T] = x
+
+f(["hello"])
+
+# ---
+f!(x: ?T = 1): ?T = x + 1
+
+f() + 1
+f(5) + 1
+
+# E502
+f!(x: ?T = true): ?T = x + 1
+
+# ---
+f!(x: ?T = 1, y: ?T = 2): ?T = x + y
+
+f() + 1
+
+# E519
+id!(x: ?T): ?T = x
+
+f!(x: ?T = id(true)): ?T = 1
+
+# E518
+f!(x: ?T = 1, y: ?T = true): ?T = x + y
+
+# ---
+f!(x: ?T, y: ?T = 1): ?T = y
+
+f(1, 2) + 1
+
+# E513
+f!(x: ?T , y: ?T = 1): ?T = y
+
+f(1, true)
+
+# ---
+f!(x: List[?T] = [1], y: ?T = 2): ?T = y
+
+f() + 1
+f([5], 6) + 1
+
+# E513
+f!(x: List[?T] = [1], y: ?T = 2): ?T = y
+
+f(["a"], 2)
+
+# E519
+id!(x: ?T): ?T = x
+
+f!(x: ?T = id(true)): ?T = 1
+
+# ---
+f!(x: ?T = 1): ?T = x
+
+f(5) + 1
+
+# ---
+pair!(a: ?A = 1, b: ?B = true): ?A = a
+
+pair() + 1
+
+# ---
+f!(x: ?T = 1): ?T =
+  if true then x else x
+
+f() + 1
+
+# E521
+f!(x: ?T = 1): ?T =
+  if true then x else true
+
+# ---
+f!(x: ?T = 1): List[?T] = [x]
+
+f()[0] + 1
+
+# ---
+pair!(a: ?T = 1, b: ?TEST = true): ?T = a
+
+pair() + 1
+pair(5, false) + 1
+
+# ---
+pair!(a: ?T = 1, b: ?P = true): ?P = b
+
+pair()
+
+# ---
+f!(a: ?T = 1, b: ?lol = 2): ?T = a
+
+f() + 1
+
+# ---
+f!(a: ?T = 1, b: ?P = 2): ?P = b
+
+f() + 1
+
+# ---
+f!(a: ?T = 1, b: ?P = true): ?T = a
+
+f(5, true) + 1
+
+# ---
+f!(a: ?T = 1, b: ?P = true): ?P = b
+
+f(5, false)
+
+# E519
+f!(a: ?T = 1, b: ?P = true): ?T = b
+
+# ---
+f!(x: ?T = 1, y: ?P = true): ?P = y
+
+f()
+
+# ---
+f!(a: ?beep, b: ?P): ?beep = a
+
+f(1, true) + 1
+
+# E502
+f!(a: ?T = 1, b: ?P = true): ?T = a + b
+
+# ---
+f!(x: ?T = 1, y: ?P = true): ?T = x
+
+f() + 1
+
+# E518
+f!(a: ?T = 1, b: ?P = true, c: ?T = true): ?T = a
+
+# ---
+f!(a: ?T = 1, b: ?P = true): List[?T] = [a]
+
+f()[0] + 1

@@ -341,6 +341,8 @@ class Parser(ParserTemplate):
         _bang = self._consume("BANG")
         self._consume("LPAREN")
 
+        expect_default = False
+
         params = []
         while self._peek().type != "RPAREN":
             p = {}
@@ -355,6 +357,9 @@ class Parser(ParserTemplate):
             if self._peek().type == "ASSIGN":
                 self._consume("ASSIGN")
                 p["default"] = self.expression()  # type: ignore
+                expect_default = True
+            elif expect_default:
+                self.errors.throw(25, loc=p["name"].loc)
 
             params.append(
                 Param(
@@ -891,6 +896,11 @@ class Parser(ParserTemplate):
                     raise
             else:
                 return Type(name=name, param=None, loc=name.loc)
+        elif self._peek().type == "QMARK":
+            _qmark = self._consume("QMARK")
+            token = self._consume("ID", ignore_whitespace=False)
+            name = Identifier(name="?" + token.value, loc=nodeloc(_qmark, token))
+            return Type(name=name, param=None, loc=name.loc)
         else:
             return self.unit(standalone=True)
 

@@ -379,3 +379,9 @@ greet(greeting="Hi")
 # E509
 add!(a: Int, b: Int) = a + b
 add(5, a=10)
+
+# E025
+f!(a = 1, b) = a + b
+
+# E025
+g!(a, b = 1, c) = a + b + c

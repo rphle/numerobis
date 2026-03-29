@@ -58,6 +58,9 @@ break statement not within loop
 [E024 / SyntaxError]
 continue statement not within loop
 
+[E025 / SyntaxError]
+parameter without a default follows parameter with a default
+
 
 
 [E101 / ValueError]
