@@ -23,7 +23,6 @@ typedef struct {
   Value (*__ge__)(Value self, Value other);
   Value (*__eq__)(Value self, Value other);
   Value (*__neg__)(Value self);
-  Value (*len)(Value self);
   Value (*__getitem__)(Value self, Value index);
   Value (*__setitem__)(Value self, Value index, Value value);
   Value (*__getslice__)(Value _self, Value _start, Value _stop, Value _step);

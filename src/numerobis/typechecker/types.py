@@ -317,12 +317,21 @@ def unify(a: T, b: T, commutative: bool = False) -> T | Mismatch:
                 else mismatch
             )
         case FunctionType() as a, FunctionType() as b:
-            if a.arity != b.arity or a._self != b._self:
+            if a.arity != b.arity or bool(a._self) != bool(b._self):
+                # since methods only appear bound, we don't need to check for the exact self type
                 return mismatch
+            is_method = int(
+                bool(a._self or b._self)
+            )  # 1 if a or b is a method, 0 otherwise
+
+            checkzip = zip(
+                a.params[is_method:] + [a.return_type],
+                b.params[is_method:] + [b.return_type],
+            )
             parts = [
                 (unify(x, y) if "Any" not in (x.name(), y.name()) else AnyType())
                 and dimcheck(x, y)
-                for x, y in zip(a.params + [a.return_type], b.params + [b.return_type])
+                for x, y in checkzip
             ]
             return a if all(parts) else mismatch
 

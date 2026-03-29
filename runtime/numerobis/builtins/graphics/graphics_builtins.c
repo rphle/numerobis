@@ -390,11 +390,11 @@ static Value numerobis_builtin_set_origin(Value *args) {
 
 __attribute__((constructor)) void numerobis_graphics_register_builtins(void) {
   u_extern_register("init", numerobis_builtin_graphics_init);
-  u_extern_register("set_bg", numerobis_builtin_set_bg);
-  u_extern_register("set_title", numerobis_builtin_set_title);
-  u_extern_register("set_font", numerobis_builtin_set_font);
+  u_extern_register("set__bg", numerobis_builtin_set_bg);
+  u_extern_register("set__title", numerobis_builtin_set_title);
+  u_extern_register("set__font", numerobis_builtin_set_font);
   u_extern_register("rect", numerobis_builtin_rect);
-  u_extern_register("rounded_rect", numerobis_builtin_rounded_rect);
+  u_extern_register("rounded__rect", numerobis_builtin_rounded_rect);
   u_extern_register("circle", numerobis_builtin_circle);
   u_extern_register("ellipse", numerobis_builtin_ellipse);
   u_extern_register("line", numerobis_builtin_line);
@@ -403,15 +403,15 @@ __attribute__((constructor)) void numerobis_graphics_register_builtins(void) {
   u_extern_register("point", numerobis_builtin_point);
   u_extern_register("text", numerobis_builtin_text);
   u_extern_register("blit", numerobis_builtin_blit);
-  u_extern_register("mouse_down", numerobis_builtin_mouse_down);
-  u_extern_register("mouse_x", numerobis_builtin_mouse_x);
-  u_extern_register("mouse_y", numerobis_builtin_mouse_y);
-  u_extern_register("mouse_vx", numerobis_builtin_mouse_vx);
-  u_extern_register("mouse_vy", numerobis_builtin_mouse_vy);
-  u_extern_register("quit_requested", numerobis_builtin_quit_requested);
-  u_extern_register("key_pressed", numerobis_builtin_key_pressed);
-  u_extern_register("set_scale", numerobis_builtin_set_scale);
-  u_extern_register("set_origin", numerobis_builtin_set_origin);
+  u_extern_register("mouse__down", numerobis_builtin_mouse_down);
+  u_extern_register("mouse__x", numerobis_builtin_mouse_x);
+  u_extern_register("mouse__y", numerobis_builtin_mouse_y);
+  u_extern_register("mouse__vx", numerobis_builtin_mouse_vx);
+  u_extern_register("mouse__vy", numerobis_builtin_mouse_vy);
+  u_extern_register("quit__requested", numerobis_builtin_quit_requested);
+  u_extern_register("key__pressed", numerobis_builtin_key_pressed);
+  u_extern_register("set__scale", numerobis_builtin_set_scale);
+  u_extern_register("set__origin", numerobis_builtin_set_origin);
 }
 
 __attribute__((destructor)) void numerobis_graphics_cleanup(void) {

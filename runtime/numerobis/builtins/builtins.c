@@ -89,6 +89,14 @@ static Value numerobis_builtin_split(Value *args) {
   return list__init__(result_arr);
 }
 
+static inline Value numerobis_builtin_list_len(Value *args) {
+  return int__init__((gint64)_list_len(args[1].list), U_ONE);
+}
+
+static inline Value numerobis_builtin_str_len(Value *args) {
+  return int__init__(args[1].str ? _str_len(args[1].str) : 0, U_ONE);
+}
+
 static Value numerobis_builtin_exit(Value *args) {
   int exit_code = args[1].type == VALUE_NONE ? 0 : _i64(args[1]);
   exit(exit_code);
@@ -100,6 +108,8 @@ void u_register_builtin_externs(void) {
   u_extern_register("input", numerobis_builtin_input);
   u_extern_register("indexof", numerobis_builtin_indexof);
   u_extern_register("split", numerobis_builtin_split);
+  u_extern_register("Str_dlen", numerobis_builtin_str_len);
+  u_extern_register("List_dlen", numerobis_builtin_list_len);
   u_extern_register("exit", numerobis_builtin_exit);
 
   numerobis_math_register_builtins();

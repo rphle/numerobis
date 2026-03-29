@@ -8,6 +8,7 @@
 #include <glib.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include <stdio.h>
 
 typedef enum {
   VALUE_NUMBER,
@@ -22,6 +23,7 @@ typedef enum {
 typedef enum { NUM_INT64, NUM_DOUBLE } NumberKind;
 
 struct Value;
+struct Closure;
 typedef struct Range Range;
 typedef struct Value Value;
 
@@ -36,12 +38,6 @@ typedef struct {
   };
 } Number;
 
-typedef struct {
-  Value (*func)(void *env, Value *args);
-  void *env;
-  Value *first_arg;
-} Closure;
-
 typedef struct Value {
   ValueType type;
   union {
@@ -49,12 +45,25 @@ typedef struct Value {
     bool boolean;
     GString *str;
     GArray *list;
-    Range *range;
-    Closure *closure;
-    Value (*extern_fn)(Value *args);
+    struct Range *range;
+    struct Closure *closure;
+    struct Value (*extern_fn)(struct Value *args);
     void *none;
   };
 } Value;
+
+typedef struct Closure {
+  Value (*func)(void *env, Value *args);
+  void *env;
+  Value bound_arg;
+} Closure;
+
+// Helper to tag/untag pointers using the LSB
+#define EXTERN_TAG (uintptr_t)0x1
+#define TAG_EXTERN(ptr) ((void *)((uintptr_t)(ptr) | EXTERN_TAG))
+#define UNTAG_EXTERN(ptr) ((void *)((uintptr_t)(ptr) & ~EXTERN_TAG))
+#define IS_EXTERN_CLOSURE(ptr) ((uintptr_t)(ptr) & EXTERN_TAG)
+// -------
 
 static inline Value __bool__(Value a) {
   return NUMEROBIS_METHODS[a.type]->__bool__(a);
@@ -108,8 +117,6 @@ static inline Value __neg__(Value x) {
   return NUMEROBIS_METHODS[x.type]->__neg__(x);
 }
 
-static inline Value len(Value a) { return NUMEROBIS_METHODS[a.type]->len(a); }
-
 static inline Value __getitem__(Value self, Value index, LocRef loc) {
   Value r = NUMEROBIS_METHODS[self.type]->__getitem__(self, index);
   if (r.type == VALUE_NONE)
@@ -130,11 +137,21 @@ static inline Value __getslice__(Value _self, Value _start, Value _stop,
 }
 
 extern Value closure__init__(Value (*func)(void *, Value *), void *env,
-                             Value *first_arg);
+                             Value bound_arg);
 
 static inline Value __getattr__(Value func, Value self) {
-  g_assert(func.type == VALUE_CLOSURE);
-  return closure__init__(func.closure->func, func.closure->env, &self);
+  switch (func.type) {
+  case VALUE_CLOSURE:
+    // Bind 'self' to a new closure
+    return closure__init__(func.closure->func, func.closure->env, self);
+  case VALUE_EXTERN_FN:
+    // Wrap the extern_fn. NULL for the func pointer because
+    // the actual logic will be intercepted by __call__ via the tagged env.
+    return closure__init__(NULL, TAG_EXTERN(func.extern_fn), self);
+  default:
+    g_error("__getattr__: not a closure or extern fn!");
+    return (Value){.type = VALUE_NONE};
+  }
 }
 
 static inline Value __str__(Value self, LocRef loc) {
@@ -154,18 +171,22 @@ static inline Value __num__(Value self, LocRef loc) {
 }
 
 static inline Value __call__(Value self, Value *args) {
-  switch (self.type) {
-  case VALUE_EXTERN_FN:
+  if (__builtin_expect(self.type == VALUE_EXTERN_FN, 0)) {
     return self.extern_fn(args);
-  default: {
-    Closure *cl = self.closure;
-    // Overwrite the first argument slot if a bound argument exists
-    if (__builtin_expect(cl->first_arg != NULL, 0)) {
-      args[0] = *cl->first_arg;
-    }
-    return cl->func(cl->env, args);
   }
+  Closure *cl = self.closure;
+
+  // Overwrite the second argument slot if a bound argument exists (first is
+  // the function itself)
+  if (__builtin_expect(cl->bound_arg.type != VALUE_NONE, 0)) {
+    args[1] = cl->bound_arg;
   }
+
+  if (IS_EXTERN_CLOSURE(cl->env)) {
+    Value (*raw_ext)(Value *) = (Value (*)(Value *))UNTAG_EXTERN(cl->env);
+    return raw_ext(args);
+  }
+  return cl->func(cl->env, args);
 }
 
 #endif

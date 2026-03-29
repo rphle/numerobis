@@ -3,6 +3,7 @@
 
 #include "units/units.h"
 #include "values.h"
+
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
@@ -36,11 +37,11 @@ static inline Closure *closure_slab_alloc(void) {
 void *closure_capture(size_t size, void *stack_env);
 
 Value closure__init__(Value (*func)(void *, Value *), void *env,
-                      Value *first_arg);
+                      Value bound_arg);
 
 #define U_NEW_CLOSURE(impl, env_type, ...)                                     \
   closure__init__(                                                             \
-      impl, closure_capture(sizeof(env_type), &(env_type){__VA_ARGS__}), NULL)
+      impl, closure_capture(sizeof(env_type), &(env_type){__VA_ARGS__}), NONE)
 
 static inline bool _is_plain_int(Value v) {
   return v.type == VALUE_NUMBER && v.number.kind == NUM_INT64 &&

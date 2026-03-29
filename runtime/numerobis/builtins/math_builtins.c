@@ -272,6 +272,6 @@ void numerobis_math_register_builtins(void) {
   u_extern_register("atanh", numerobis_builtin_atanh);
 
   /* Angle conversion */
-  u_extern_register("deg_to_rad", numerobis_builtin_deg_to_rad);
-  u_extern_register("rad_to_deg", numerobis_builtin_rad_to_deg);
+  u_extern_register("deg__to__rad", numerobis_builtin_deg_to_rad);
+  u_extern_register("rad__to__deg", numerobis_builtin_rad_to_deg);
 }

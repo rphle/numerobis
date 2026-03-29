@@ -198,15 +198,17 @@ class Module:
             use_ccache=use_ccache,
         )
 
-    def run(self, path: str = "output/output"):
+    def run(self, path: str = "output/output") -> int:
         try:
             proc = cmake.run(path=path)
             print(proc.stdout.rstrip("\n"))
             if proc.returncode != 0:
                 print(proc.stderr, file=sys.stderr)
                 sys.exit(proc.returncode)
+            return proc.returncode
         except subprocess.CalledProcessError as e:
             self.errors.throw(201, command=" ".join(map(str, e.cmd)), help=e.stderr)
+            raise
 
 
 class ModuleResolver:

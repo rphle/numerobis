@@ -98,16 +98,27 @@ class Typechecker:
     def attribute_(self, node: Attribute, env: Env) -> T:
         owner = self.check(node.owner, env=env)
         name = self.unlink(node.name).name
-        value = next(
-            filter(lambda n: n.startswith(owner.name() + "."), env.names), None
-        )
+
+        actual_name = f"{owner.name()}.{name}"
+        value = next((n for n in env.names if n == actual_name), None)
         if value is None:
-            self.errors.throw(601, name=f"{owner.name()}.{name}", loc=node.loc)
+            self.errors.throw(601, name=actual_name, loc=node.loc)
             raise
 
         value = env.get("names")(value)
 
         assert isinstance(value, FunctionType), value
+
+        if len(value.params) == 0:
+            self.errors.throw(
+                512,
+                name=actual_name,
+                n_params=len(value.params),
+                plural="1" if len(value.params) == 1 else "s",
+                n_args="1",
+                loc=node.loc,
+            )
+            raise
         if not (mismatch := nomismatch(value.params[0], owner)):
             self.errors.throw(
                 513,

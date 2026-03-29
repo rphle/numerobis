@@ -98,7 +98,17 @@ def run_single_test(
                     use_ccache=use_ccache,
                 )
             )
-            times["Execution"] = timeit(lambda: mod.run(path=output_bin))
+
+            def run():
+                code = 0
+                try:
+                    code = mod.run(path=output_bin)
+                except SystemExit as e:
+                    code = e.code
+                if code != 0:
+                    print(f"[E303]: {code}")
+
+            times["Execution"] = timeit(run)
 
     except SystemExit:
         pass

@@ -47,5 +47,10 @@ void u_extern_register(const char *name, Value (*fn)(Value *args)) {
 
 Value *u_extern_lookup(const char *name) {
   UExternEntry *e = g_hash_table_lookup(NUMEROBIS_EXTERNS, name);
-  return e ? e->fn : NULL;
+  if (e) {
+    return e->fn;
+  }
+  g_error("Extern function not found: %s", name);
+  exit(1);
+  return NULL;
 }

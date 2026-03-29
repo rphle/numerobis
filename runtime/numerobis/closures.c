@@ -7,11 +7,12 @@
 _Thread_local ClosureFreeNode *_closure_free_list = NULL;
 
 Value closure__init__(Value (*func)(void *, Value *), void *env,
-                      Value *first_arg) {
+                      Value bound_arg) {
   Closure *c = closure_slab_alloc();
   c->func = func;
   c->env = env;
-  c->first_arg = first_arg;
+  c->bound_arg = bound_arg;
+
   Value v;
   v.type = VALUE_CLOSURE;
   v.closure = c;

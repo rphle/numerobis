@@ -1,11 +1,10 @@
 #include "list.h"
 #include "../constants.h"
-#include "../units/units.h"
 #include "../utils/utils.h"
 #include "../values.h"
 #include "bool.h"
+#include "list.h"
 #include "methods.h"
-#include "number.h"
 #include "str.h"
 
 #include <glib.h>
@@ -21,14 +20,6 @@ Value list__init__(GArray *x) {
   v.type = VALUE_LIST;
   v.list = x;
   return v;
-}
-
-static inline size_t _list_len(const GArray *self) {
-  return self ? self->len : 0;
-}
-
-static Value list_len(Value self) {
-  return int__init__((gint64)_list_len(self.list), U_ONE);
 }
 
 Value list_of(Value first, ...) {
@@ -330,7 +321,6 @@ static const ValueMethods _list_methods = {
     .__gt__ = list__gt__,
     .__ge__ = list__ge__,
     .__eq__ = list__eq__,
-    .len = list_len,
     .__getitem__ = list__getitem__,
     .__setitem__ = list__setitem__,
     .__getslice__ = list__getslice__,

@@ -266,7 +266,7 @@ class Compiler:
 
         name = self.unlink(self.unlink(node.value).name).name  # type: ignore
         out["name"] = mangle(name)
-        out["extern_name"] = name.split(".")[-1]
+        out["extern_name"] = mangle(name)
 
         return out
 
@@ -276,9 +276,9 @@ class Compiler:
             return self.for_loop_range_(node, link)
 
         if "value" not in node.meta:
-            return tstr("// empty loop")
+            return tstr("/* empty loop */")
 
-        loop = tstr("""for (size_t $iterator = 0; $iterator < len($iterable).number.i64; $iterator++) {
+        loop = tstr("""for (size_t $iterator = 0; $iterator < $iterable_type_len($iterable).number.i64; $iterator++) {
             $iterator_defs
             $body
         }""")
@@ -291,6 +291,8 @@ class Compiler:
         iterable_name = f"__iterable_{abs(link)}"
         loop["iterator"], loop["iterable"] = iterator_name, iterable_name
         loop["iterable_type"] = iterable_type
+
+        self.include.add(f"numerobis/types/{iterable_type}")
 
         iterators = [self.unlink(iterator) for iterator in node.iterators]
 

@@ -856,6 +856,15 @@ class Parser(ParserTemplate):
 
         if self._peek(2).type == "BANG":
             value = self.function(body=False)
+        elif self._peek(2).type == "PERIOD":
+            _typ = self._consume("ID")
+            self._consume("PERIOD", ignore_whitespace=False)
+            name = self._make_id(self._consume("ID", ignore_whitespace=False))
+
+            func_name = Identifier(
+                name=f"{_typ.value}.{name.name}", loc=nodeloc(_typ, name)
+            )
+            value = self.function(name=func_name, body=False)
         else:
             value = self.variable(declaration=True)
 

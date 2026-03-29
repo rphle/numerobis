@@ -3,5 +3,7 @@ extern input!(prompt: Str = ""): Str;
 
 extern indexof!(lst: List, item): Int;
 extern split!(s: Str, sep: Str): List[Str];
+extern Str.len!(self: Str): Int;
+extern List.len!(self: List): Int;
 
 extern exit!(code: Int = 0): None;

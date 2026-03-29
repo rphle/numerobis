@@ -1,3 +1,4 @@
+#include "str.h"
 #include "../constants.h"
 #include "../units/units.h"
 #include "../utils/utils.h"
@@ -17,14 +18,6 @@ Value str__init__(GString *x) {
   v.type = VALUE_STR;
   v.str = x;
   return v;
-}
-
-static inline size_t _str_len(const GString *self) {
-  return self ? g_utf8_strlen(self->str, self->len) : 0;
-}
-
-static inline Value str_len(Value self) {
-  return int__init__(self.str ? _str_len(self.str) : 0, U_ONE);
 }
 
 static const char **build_char_positions(const GString *self, size_t len) {
@@ -272,7 +265,6 @@ static const ValueMethods _str_methods = {
     .__gt__ = str__gt__,
     .__ge__ = str__ge__,
     .__eq__ = str__eq__,
-    .len = str_len,
     .__getitem__ = str__getitem__,
     .__setitem__ = str__setitem__,
     .__getslice__ = str__getslice__,

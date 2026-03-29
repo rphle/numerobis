@@ -13,11 +13,24 @@ f!(_) = 1
 _: Num = 2
 
 # ---
-Str.len!(self: Str) = 4
-echo("test".len())
+Str.length!(self: Str) = 4
+echo("test".length())
+
+# E512
+Str.test!() = true
+"test".test
 
 # E525
-Str.len!(self: Str) = 4
-len!(self: Str) = 4
+Str.length!(self: Str) = 4
+length!(self: Str) = 4
 
-["test".len, len]
+["test".length, length]
+
+# ---
+echo([1,2,3].len())
+echo("123".len())
+
+# ---
+lst = ["test".len, ["t", "e", "s", "t"].len]
+for fn in lst do
+    echo(fn())
