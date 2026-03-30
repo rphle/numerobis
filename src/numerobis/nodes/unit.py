@@ -10,7 +10,44 @@ from decimal import Decimal
 from math import prod
 from typing import Optional
 
-from .core import Identifier, UnitNode
+from .core import Identifier, UnitNode, VarEnv
+
+
+@dataclass(frozen=True)
+class VarDim(UnitNode):
+    _name: str
+    kind: str = "dims"
+    fingerprint: int = -1
+    last_env: Optional[VarEnv] = field(default=None, compare=False, hash=False)
+
+    def __str__(self) -> str:
+        completion = ""
+        if self.last_env is not None and self._name in self.last_env[self.kind]:
+            completion = f"[{str(self.last_env[self.kind][self._name])}]"
+            completion = completion.replace("'", "")
+        return f"?{self._name}{completion}"
+
+    def complete(
+        self,
+        varenv: VarEnv,
+        value: Optional[UnitNode] = None,
+        fingerprint: Optional[int] = None,
+    ):
+        if fingerprint is not None:
+            object.__setattr__(self, "fingerprint", fingerprint)
+        object.__setattr__(self, "last_env", varenv)
+
+        if value is None:
+            return varenv[self.kind].get(self._name, self)
+
+        if isinstance(value, Expression):
+            value = value.value
+
+        if self._name not in varenv[self.kind]:
+            varenv[self.kind][self._name] = value
+        elif not value == varenv[self.kind][self._name]:
+            return self
+        return value
 
 
 @dataclass(frozen=True)
@@ -54,6 +91,16 @@ class Product(UnitNode):
     def apply(values):
         return prod(values)
 
+    def complete(
+        self,
+        varenv: VarEnv,
+        value: Optional[UnitNode] = None,
+        fingerprint: Optional[int] = None,
+    ):
+        return self.edit(
+            values=[v.complete(varenv, value, fingerprint) for v in self.values]
+        )
+
 
 @dataclass(frozen=True)
 class Sum(UnitNode):
@@ -96,6 +143,16 @@ class Sum(UnitNode):
     def apply(values):
         return sum(values)
 
+    def complete(
+        self,
+        varenv: VarEnv,
+        value: Optional[UnitNode] = None,
+        fingerprint: Optional[int] = None,
+    ):
+        return self.edit(
+            values=[v.complete(varenv, value, fingerprint) for v in self.values]
+        )
+
 
 @dataclass(frozen=True)
 class Expression(UnitNode):
@@ -123,6 +180,14 @@ class Expression(UnitNode):
 
     def __bool__(self) -> bool:
         return bool(self.value)
+
+    def complete(
+        self,
+        varenv: VarEnv,
+        value: Optional[UnitNode] = None,
+        fingerprint: Optional[int] = None,
+    ):
+        return self.edit(value=self.value.complete(varenv, value, fingerprint))
 
 
 @dataclass(frozen=True)
@@ -179,6 +244,14 @@ class Neg(UnitNode):
             return False
         return self.value == other.value
 
+    def complete(
+        self,
+        varenv: VarEnv,
+        value: Optional[UnitNode] = None,
+        fingerprint: Optional[int] = None,
+    ):
+        return self.edit(value=self.value.complete(varenv, value, fingerprint))
+
 
 @dataclass(frozen=True)
 class Power(UnitNode):
@@ -202,6 +275,14 @@ class Power(UnitNode):
         if not isinstance(other, Power):
             return False
         return self.base == other.base and self.exponent == other.exponent
+
+    def complete(
+        self,
+        varenv: VarEnv,
+        value: Optional[UnitNode] = None,
+        fingerprint: Optional[int] = None,
+    ):
+        return self.edit(value=self.base.complete(varenv, value, fingerprint))
 
 
 @dataclass(frozen=True)

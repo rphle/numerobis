@@ -4,12 +4,23 @@ from dataclasses import replace
 from decimal import Decimal
 from typing import Optional, TypeVar
 
+
 from ..classes import Header, ModuleMeta
 from ..environment import Namespaces
 from ..exceptions.exceptions import Exceptions
 from ..nodes.ast import Integer, Num, UnitDefinition
 from ..nodes.core import Identifier
-from ..nodes.unit import Expression, Neg, One, Power, Product, Scalar, Sum, UnitNode
+from ..nodes.unit import (
+    AnyDim,
+    Expression,
+    Neg,
+    One,
+    Power,
+    Product,
+    Scalar,
+    Sum,
+    UnitNode,
+)
 from ..typechecker.linking import Link
 from .invert import _to_x, invert
 from .simplifier import Simplifier, cancel, cancel_
@@ -75,6 +86,8 @@ class Preprocessor:
 
         if isinstance(inverted, One):
             inverted = Expression(Identifier("x"))
+
+        assert not isinstance(inverted, AnyDim), inverted
 
         self.units[name] = expr
         self.inverted[name] = inverted

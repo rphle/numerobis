@@ -4,6 +4,8 @@ import re
 from dataclasses import replace
 from typing import Literal, Optional
 
+from numerobis.nodes.unit import VarDim
+
 from ..classes import Header
 from ..environment import Namespaces
 from ..exceptions.exceptions import Exceptions, ModuleMeta
@@ -210,3 +212,6 @@ class Dimchecker:
             else:
                 values.append(value)
         return Sum(values=values)
+
+    def var_dim_(self, node: VarDim, mode: modes = "dimension") -> VarDim:
+        return node

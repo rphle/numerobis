@@ -1,7 +1,8 @@
 """Core AST node base classes, tokens, and location tracking."""
 
 import random
-from dataclasses import dataclass, field, fields
+from dataclasses import dataclass, field, fields, replace
+from typing import Optional
 
 import mmh3
 
@@ -67,6 +68,19 @@ class Location:
         )
 
 
+class VarEnv:
+    def __init__(self):
+        self.types = {}
+        self.dims = {}
+
+    def clear(self):
+        self.types.clear()
+        self.dims.clear()
+
+    def __getitem__(self, key):
+        return self.__getattribute__(key)
+
+
 @dataclass
 class Token:
     type: str
@@ -109,6 +123,18 @@ class AstNode:
 @dataclass(kw_only=True, frozen=True)
 class UnitNode:
     loc: Location = field(default_factory=lambda: Location(), repr=False, compare=False)
+
+    def edit(self, **kwargs):
+        return replace(self, **kwargs)
+
+    def complete(
+        self,
+        varenv: VarEnv,
+        value: Optional["UnitNode"] = None,
+        fingerprint: Optional[int] = None,
+    ):
+        """Complete/fingerprint anonymous dimensions ?D"""
+        return self
 
 
 @dataclass(frozen=True)

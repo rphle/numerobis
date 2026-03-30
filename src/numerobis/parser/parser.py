@@ -4,6 +4,8 @@ import dataclasses
 import math
 from typing import Optional
 
+from numerobis.nodes.unit import VarDim
+
 from ..classes import Header, ModuleMeta
 from ..nodes.ast import (
     AstNode,
@@ -895,6 +897,16 @@ class Parser(ParserTemplate):
                     ):
                         self._consume("ID")
                         param = AnyDim()
+                    elif name.name in ["Int", "Num"] and self._peek().type == "QMARK":
+                        if not vartypes:
+                            self.errors.unexpectedToken(
+                                self._peek(),
+                                help="Dimension variables may only appear in function signatures",
+                            )
+                        _qmark = self._consume("QMARK")
+                        token = self._consume("ID", ignore_whitespace=False)
+                        vardim = VarDim(token.value, loc=nodeloc(_qmark, token))
+                        param = Expression(value=vardim, loc=vardim.loc)
                     else:
                         param = self.type(vartypes)
 

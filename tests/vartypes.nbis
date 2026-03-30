@@ -1,3 +1,5 @@
+from si import @(m, kg, Length)
+
 # E519
 evilget!(l: List[?T], i: Int): ?T = false
 
@@ -365,3 +367,59 @@ f!(a: ?T = 1, b: ?P = true, c: ?T = true): ?T = a
 f!(a: ?T = 1, b: ?P = true): List[?T] = [a]
 
 f()[0] + 1
+
+
+
+
+# E703
+unit sheep;
+dimid!(x: Num?): Num? = x
+echo(dimid(1 sheep) + 2 sheep)
+
+# ---
+unit sheep;
+dimid!(x: Num[?D]): Num[?D] = x
+echo(dimid(1 sheep) + 2 sheep)
+
+# E703
+unit sheep;
+unit cow;
+dimid!(x: Num[?D]): Num[?D] = x
+echo(dimid(1 sheep) + 2 cow)
+
+# E519
+evilget!(l: Num[?D]): Num[?D] = 5
+
+# E519
+double!(x: Num[?D]): Num[?D] = x * 2kg
+
+# E703
+plus!(x: Num[?D], y: Num[?E]): Num[?D] = x + y
+
+# E703
+plus!(x: Num[?D]): Num[?D] = x + 1
+
+# ---
+get!(l: List[Num[?D]], i: Int): Num[?D] = l[i]
+get([1, 2, 3], 1) + 1
+
+# E513
+get!(l: List[Num[?D]], i: Int): Num[?D] = l[i]
+get(["1", "2", "3"], 2) + "!"
+
+# E519
+id!(x: Num[?D]): Num[?D] = x
+inject!(l: Num[?D]): Num[?D] = id(5kg)
+
+# E519
+default!(a: Int[?D], b: Int[?D] = 5kg): Int[?D] = a + b
+
+# E513
+default!(a: Num[?D], b: Num[?D] = 5kg): Num[?D] = a + b
+default(5m)
+
+# E001
+f!()= {
+    x: Num[?D] = 5
+    return x
+}

@@ -4,22 +4,9 @@ from dataclasses import dataclass, field, replace
 from typing import Any, Literal, Optional, Union, overload
 
 from ..exceptions.exceptions import Mismatch
+from ..nodes.core import VarEnv
 from ..nodes.unit import AnyDim, Expression, One
 from ..utils import isallofinstance, isanyofinstance
-
-
-class VarEnv:
-    def __init__(self):
-        self.types = {}
-        self.dims = {}
-
-    def clear(self):
-        self.types.clear()
-        self.dims.clear()
-
-    def __getitem__(self, key):
-        return self.__getattribute__(key)
-
 
 T = Union[
     "NoneType",
@@ -39,7 +26,7 @@ T = Union[
 
 @dataclass(kw_only=True, frozen=True)
 class UType:
-    _meta: dict = field(default_factory=dict)
+    _meta: dict = field(default_factory=dict, hash=False)
     node: Optional[int] = None
     dim: Expression | One | AnyDim = AnyDim()
 
@@ -90,7 +77,10 @@ class NumberType(UType):
     value: float | int = 0
 
     def __str__(self) -> str:
-        d = str(self.dim) if self.dim else "[[bold]1[/bold]]"
+        if isinstance(self.dim, AnyDim):
+            d = "[[bold]Any[/bold]]"
+        else:
+            d = str(self.dim) if self.dim else "[[bold]1[/bold]]"
         return f"'{self.typ}{d}'"
 
     @overload
@@ -102,6 +92,16 @@ class NumberType(UType):
         if names:
             return n in names
         return n
+
+    def complete(
+        self,
+        varenv: VarEnv,
+        value: Optional[T] = None,
+        fingerprint: Optional[int] = None,
+    ):
+        return self.edit(
+            dim=self.dim.complete(varenv, value.dim if value else None, fingerprint)
+        )
 
 
 @dataclass(kw_only=True, frozen=True)
@@ -121,7 +121,7 @@ class VarType(UType):
     _name: str
     kind: str = "types"
     fingerprint: int = -1
-    last_env: Optional[VarEnv] = None
+    last_env: Optional[VarEnv] = field(default=None, compare=False, hash=False)
 
     def __str__(self) -> str:
         completion = ""
@@ -149,12 +149,6 @@ class VarType(UType):
         ):
             return self
         return value
-
-
-@dataclass(frozen=True)
-class VarDim(VarType):
-    _name: str
-    kind: str = "dims"
 
 
 @dataclass(kw_only=True, frozen=True)
@@ -188,11 +182,10 @@ class ListType(UType):
         value: Optional[T] = None,
         fingerprint: Optional[int] = None,
     ):
-        return self.edit(
-            content=self.content.complete(
-                varenv, getattr(value, "content", None), fingerprint=fingerprint
-            )
+        completed = self.content.complete(
+            varenv, getattr(value, "content", None), fingerprint=fingerprint
         )
+        return self.edit(content=completed, dim=completed.dim)
 
 
 @dataclass(kw_only=True, frozen=True)
@@ -370,14 +363,21 @@ def unify(a: T, b: T, commutative: bool = False) -> T | Mismatch:
 
 
 def dimcheck(a: T, b: T, any_dim: bool = False) -> Literal[True] | Mismatch:
+    if a.name("Never", "Any") or b.name("Never", "Any"):
+        return True
+
+    ad, bd = a.dim, b.dim
+    if isinstance(ad, Expression):
+        ad = ad.value
+    if isinstance(bd, Expression):
+        bd = bd.value
+
     if (
-        a.name("Never", "Any")
-        or b.name("Never", "Any")
-        or (any_dim and isinstance(a.dim, AnyDim))
-        or (any_dim and isinstance(b.dim, AnyDim))
-        or (isinstance(a.dim, AnyDim) and a.dim.never)
-        or (isinstance(b.dim, AnyDim) and b.dim.never)
-        or a.dim == b.dim
+        (any_dim and isinstance(ad, AnyDim))
+        or (any_dim and isinstance(bd, AnyDim))
+        or (isinstance(ad, AnyDim) and ad.never)
+        or (isinstance(bd, AnyDim) and bd.never)
+        or ad == bd
     ):
         return True
     return Mismatch("dimension", a.dim, b.dim)

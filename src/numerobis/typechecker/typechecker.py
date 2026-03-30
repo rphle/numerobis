@@ -50,6 +50,7 @@ from ..nodes.ast import (
     VariableDeclaration,
     WhileLoop,
 )
+from ..nodes.core import VarEnv
 from ..nodes.unit import AnyDim, Expression, One, Power, Product, Scalar
 from ..utils import camel2snake_pattern
 from . import linking
@@ -69,7 +70,6 @@ from .types import (
     StrType,
     T,
     UndefinedType,
-    VarEnv,
     VarType,
     dimcheck,
     unify,
