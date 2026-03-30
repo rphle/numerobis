@@ -48,7 +48,7 @@ from ..nodes.ast import (
     WhileLoop,
 )
 from ..nodes.core import Location, Token, nodeloc
-from ..nodes.unit import Expression, One
+from ..nodes.unit import AnyDim, Expression, One
 from ..typechecker.operators import typetable
 from .template import ParserTemplate
 from .units.unitparser import UnitParser, UnitParserConfig
@@ -882,18 +882,35 @@ class Parser(ParserTemplate):
         elif self._peek().type == "ID" and self._peek().value in list(typetable.keys()):
             token = self._consume("ID")
             name = Identifier(name=token.value, loc=token.loc)
-            if self._peek(ignore_whitespace=True).type == "LBRACKET":
+            if self._peek(ignore_whitespace=False).type == "LBRACKET":
                 if name.name in ["Int", "Num", "List"]:
                     self._consume("LBRACKET")
-                    param = self.type()
-                    self._consume("RBRACKET")
-                    return Type(name=name, param=param, loc=name.loc.merge(param.loc))
+
+                    if (
+                        name.name in ["Int", "Num"]
+                        and self._peek().type == "ID"
+                        and self._peek().value == "Any"
+                    ):
+                        self._consume("ID")
+                        param = AnyDim()
+                    else:
+                        param = self.type()
+
+                    _rbracket = self._consume("RBRACKET")
+                    return Type(name=name, param=param, loc=nodeloc(name, _rbracket))
                 else:
                     self.errors.unexpectedToken(
                         self._peek(ignore_whitespace=True),
                         help=f"Type '{name.name}' cannot be parameterized",
                     )
                     raise
+            elif (
+                name.name in ["Int", "Num"]
+                and self._peek(ignore_whitespace=True).type == "QMARK"
+            ):
+                # AnyDim shortcut
+                _qmark = self._consume("QMARK")
+                return Type(name=name, param=AnyDim(), loc=nodeloc(name, _qmark))
             else:
                 return Type(name=name, param=None, loc=name.loc)
         elif self._peek().type == "QMARK":

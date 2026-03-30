@@ -9,6 +9,8 @@ from typing import Any, Literal
 import rich.console
 import rich.markup
 
+from numerobis.nodes.unit import AnyDim, One
+
 from ..classes import ModuleMeta
 from ..nodes.ast import BinOp, BoolOp, Identifier
 from ..nodes.core import Location, Token
@@ -177,6 +179,11 @@ class Exceptions:
             message = dataclasses.replace(self.codes[f"E{code:03d}"])  # copy
         except KeyError:
             raise ValueError(f"Unknown error code: {code}")
+
+        kwargs = {
+            k: f"\\[[bold]{v}[/bold]]" if isinstance(v, (One, AnyDim)) else v
+            for k, v in kwargs.items()
+        }
 
         message.message = message.message.format(**kwargs)
         if help:

@@ -1,6 +1,5 @@
 from si import @(kg, m, s, N)
 
-unit N = kg*m/s^2
 unit lbf = 4.4482216152605 N
 
 expected_impulse = 100 N * 1 s

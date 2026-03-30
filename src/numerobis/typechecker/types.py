@@ -4,7 +4,7 @@ from dataclasses import dataclass, field, replace
 from typing import Any, Literal, Optional, Union, overload
 
 from ..exceptions.exceptions import Mismatch
-from ..nodes.unit import Expression, One
+from ..nodes.unit import AnyDim, Expression, One
 from ..utils import isallofinstance, isanyofinstance
 
 
@@ -41,7 +41,7 @@ T = Union[
 class UType:
     _meta: dict = field(default_factory=dict)
     node: Optional[int] = None
-    dim: Optional[Expression | One] = None
+    dim: Expression | One | AnyDim = AnyDim()
 
     @overload
     def name(self) -> str: ...
@@ -86,7 +86,7 @@ class NoneType(UType):
 @dataclass(kw_only=True, frozen=True)
 class NumberType(UType):
     typ: Literal["Int", "Num"] = "Num"
-    dim: Optional[Expression | One] = None
+    dim: Expression | One | AnyDim = AnyDim()
     value: float | int = 0
 
     def __str__(self) -> str:
@@ -159,6 +159,8 @@ class VarDim(VarType):
 
 @dataclass(kw_only=True, frozen=True)
 class NeverType(UType):
+    dim: AnyDim = AnyDim(never=True)
+
     def __eq__(self, other) -> bool:
         return True
 
@@ -171,7 +173,7 @@ class UndefinedType(UType):
 @dataclass(kw_only=True, frozen=True)
 class ListType(UType):
     content: T = NeverType()
-    dim: Optional[Expression | One] = content.dim
+    dim: Expression | One | AnyDim = content.dim
 
     def __post_init__(self):
         if self.dim is None:
@@ -201,7 +203,7 @@ class SliceType(UType):
 
 @dataclass(kw_only=True, frozen=True)
 class RangeType(UType):
-    value: NumberType = NumberType(typ="Int")
+    value: NumberType = NumberType(typ="Int", dim=One())
 
     def __str__(self):
         return f"'Range[{self.value}]'"
@@ -249,7 +251,7 @@ class FunctionType(UType):
         if len(args) != len(self.params):
             return
         for param, arg in zip(params, args):
-            typ, dim = unify(param, arg), dimcheck(param, arg)
+            typ, dim = unify(param, arg), dimcheck(param, arg, any_dim=True)
             if not typ:
                 return typ
             elif not dim:
@@ -265,7 +267,7 @@ class Constant(UType):
 
 @dataclass(frozen=True)
 class DimensionType(UType):
-    dim: Optional[Expression | One] = None
+    dim: Expression | One | AnyDim = AnyDim()
 
 
 class AnyType(UType):
@@ -367,12 +369,14 @@ def unify(a: T, b: T, commutative: bool = False) -> T | Mismatch:
     return a if a == b else mismatch
 
 
-def dimcheck(a: T, b: T) -> Literal[True] | Mismatch:
+def dimcheck(a: T, b: T, any_dim: bool = False) -> Literal[True] | Mismatch:
     if (
         a.name("Never", "Any")
         or b.name("Never", "Any")
-        or a.dim is None
-        or b.dim is None
+        or (any_dim and isinstance(a.dim, AnyDim))
+        or (any_dim and isinstance(b.dim, AnyDim))
+        or (isinstance(a.dim, AnyDim) and a.dim.never)
+        or (isinstance(b.dim, AnyDim) and b.dim.never)
         or a.dim == b.dim
     ):
         return True

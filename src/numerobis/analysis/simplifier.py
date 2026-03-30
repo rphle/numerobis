@@ -8,6 +8,7 @@ from typing import Type
 from ..classes import ModuleMeta
 from ..exceptions.exceptions import Exceptions
 from ..nodes.unit import (
+    AnyDim,
     Call,
     Expression,
     Neg,
@@ -53,12 +54,16 @@ class Simplifier:
         """Initialize simplifier with module-bound error handler."""
         self.errors = Exceptions(module)
 
-    def simplify(self, node: UnitNode, do_cancel: bool = True) -> Expression | One:
+    def simplify(
+        self, node: UnitNode, do_cancel: bool = True
+    ) -> Expression | One | AnyDim:
         """Fully simplify a node and optionally cancel neutral elements."""
         res = self._simplify(node)
         if do_cancel:
             res = cancel(res)
-        return res if isinstance(res, (Expression, One)) else Expression(value=res)
+        return (
+            res if isinstance(res, (Expression, One, AnyDim)) else Expression(value=res)
+        )
 
     def _simplify(self, node: UnitNode):
         """Dispatch to type-specific simplify handler if available."""
@@ -160,6 +165,7 @@ class Simplifier:
         terms = self._flatten(node.values, Product)
 
         scalar_acc = Decimal(1)
+        any_dims = []
         groups = defaultdict(list)  # Base -> List[Exponents]
 
         for term in terms:
@@ -167,10 +173,12 @@ class Simplifier:
                 scalar_acc *= term.value
             elif isinstance(term, Power):
                 groups[term.base].append(term.exponent)
+            elif isinstance(term, AnyDim):
+                any_dims.append(term)
             else:
                 groups[term].append(Scalar(Decimal(1)))
 
-        new_values = []
+        new_values = any_dims
         if scalar_acc != 1:
             new_values.append(Scalar(scalar_acc))
 

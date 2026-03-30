@@ -50,7 +50,7 @@ from ..nodes.ast import (
     VariableDeclaration,
     WhileLoop,
 )
-from ..nodes.unit import Expression, One, Power, Product, Scalar
+from ..nodes.unit import AnyDim, Expression, One, Power, Product, Scalar
 from ..utils import camel2snake_pattern
 from . import linking
 from .operators import typetable
@@ -121,7 +121,7 @@ class Typechecker:
                 loc=node.loc,
             )
             raise
-        if not (mismatch := nomismatch(value.params[0], owner)):
+        if not (mismatch := nomismatch(value.params[0], owner, any_dim=True)):
             self.errors.throw(
                 513,
                 kind=mismatch.kind,
@@ -180,6 +180,11 @@ class Typechecker:
                 if not (mismatch := dimcheck(left, right)):
                     self.errors.binOpMismatch(node, mismatch)
 
+                if isinstance(left.dim, AnyDim) and isinstance(right.dim, AnyDim):
+                    self.errors.binOpMismatch(
+                        node, Mismatch(kind="dimension", left=left, right=right)
+                    )
+
                 return NumberType(typ=return_typ, dim=left.dim)
             case "mul" | "div":
                 if not right.dim:
@@ -202,10 +207,8 @@ class Typechecker:
                 dimension = self.simplify(Product([left.dim, r]))
 
                 if isinstance(left, NumberType):
-                    return left.edit(
-                        typ=return_typ, dim=dimension if dimension else None
-                    )
-                return left.edit(dim=dimension if dimension else None)
+                    return left.edit(typ=return_typ, dim=dimension)
+                return left.edit(dim=dimension)
             case "pow":
                 if right.dim:
                     self.errors.throw(
@@ -366,7 +369,7 @@ class Typechecker:
                     # complete var types
                     param = param.complete(varenv, typ)
 
-                if not (mismatch := nomismatch(param, typ)):
+                if not (mismatch := nomismatch(param, typ, any_dim=True)):
                     self.errors.throw(
                         513,
                         kind=mismatch.kind,
@@ -516,9 +519,20 @@ class Typechecker:
                 and typ != value.name()
             ):
                 self.errors.throw(515, left=value, right=typ, loc=node.loc)
-            if typ in {"Int", "Num"} and isinstance(value, NumberType):
-                # don't erase dimension
-                return value.edit(typ=typ)
+            if typ in {"Int", "Num"} and node.target.param:
+                self.errors.throw(
+                    515,
+                    left=value,
+                    right=typ,
+                    loc=node.loc,
+                    help="please directly convert to the desired unit",
+                )
+            if typ in {"Int", "Num"}:
+                if isinstance(value, NumberType):
+                    # don't erase dimension
+                    return value.edit(typ=typ)
+                else:
+                    return NumberType(typ=typ, dim=One())  # type: ignore
             return AnyType(typ)
 
         assert isinstance(node.target, Expression)
@@ -638,7 +652,7 @@ class Typechecker:
 
                 params[i] = params[i].complete(varenv, default, fingerprint=link)
 
-                if not (mismatch := nomismatch(params[i], default)):
+                if not (mismatch := nomismatch(params[i], default, any_dim=True)):
                     self.errors.throw(
                         518,
                         param=self.unlink(param.name).name,
@@ -708,7 +722,7 @@ class Typechecker:
                 return signature
             raise e
 
-        if not (mismatch := nomismatch(return_type, body)):
+        if not (mismatch := nomismatch(return_type, body, any_dim=True)):
             assert node.body is not None, node.body
             self.errors.throw(
                 519,
@@ -775,7 +789,7 @@ class Typechecker:
         value = self.check(node.iterable, env=env)
         index = self.check(node.index, env=env)
 
-        if index.dim:
+        if isinstance(index, NumberType) and index.dim:
             self.errors.throw(
                 537,
                 dimension=index.dim,
@@ -834,13 +848,13 @@ class Typechecker:
             if element_type.name("Any"):
                 self.errors.throw(524, loc=self.unlink(element, ["loc"]).loc)
 
-            if not (mismatch := nomismatch(content, element_type)):
+            if not (mismatch := nomismatch(content, element_type, any_dim=True)):
                 self.errors.throw(
                     525, kind=mismatch.kind, loc=self.unlink(element, ["loc"]).loc
                 )
 
             content = unify(content, element_type)  # type: ignore
-        return ListType(content=content)
+        return ListType(content=content, dim=content.dim)
 
     def module_access_(self, node: ModuleAccess, env: Env) -> T:
         node_ = self.unlink(node)
@@ -856,15 +870,15 @@ class Typechecker:
 
     def number_(self, node: Integer | Num, env: Env) -> NumberType:
         dimension = self.simplify(self.dimchecker.dimensionize(node.unit, mode="unit"))
-        assert dimension is None or isinstance(dimension, (Expression, One)), node
+        assert isinstance(dimension, (Expression, One, AnyDim)), repr(node)
         return NumberType(
             typ=type(node).__name__.removesuffix("eger"),  # type: ignore ; 'Integer' to 'Int'
-            dim=dimension if dimension is not None else One(),
+            dim=dimension,
             value=float(node.value) ** float(node.exponent if node.exponent else 1),
         )
 
     def range_(self, node: Range, env: Env):
-        value = NumberType(typ="Int")
+        value = NumberType(typ="Int", dim=One())
         for part in [node.start, node.end]:
             checked = self.check(part, env=env)
             if not checked.name("Int"):
@@ -882,7 +896,7 @@ class Typechecker:
                 self.errors.throw(529, loc=self.unlink(node.step, ["loc"]).loc)
 
         assert isinstance(value, NumberType)
-        return RangeType(value=NumberType(typ=value.typ))
+        return RangeType(value=NumberType(typ=value.typ, dim=One()))
 
     def return_(self, node: Return, env: Env):
         if "#function" not in env.meta:
@@ -933,7 +947,7 @@ class Typechecker:
                 match node.name.name:
                     case "Num" | "Int":
                         if node.param:
-                            if not isinstance(node.param, (One, Expression)):
+                            if not isinstance(node.param, (One, Expression, AnyDim)):
                                 self.errors.throw(
                                     503,
                                     node="parameter",
@@ -945,17 +959,19 @@ class Typechecker:
                                 self.dimchecker.dimensionize(node.param)
                             )
                         else:
-                            dim = None
+                            dim = One()
 
                         return NumberType(
                             typ=node.name.name,
                             dim=dim,
                         )
                     case "List":
+                        content = NeverType()
+                        if node.param:
+                            content = self.type_(node.param, env=env)  # type: ignore
                         return ListType(
-                            content=self.type_(node.param, env=env)
-                            if node.param
-                            else NeverType()
+                            content=content,
+                            dim=content.dim,
                         )
                     case _:
                         if node.name.name in typetable:
@@ -1001,7 +1017,9 @@ class Typechecker:
         if name.name in env.names:
             if node.type:
                 self.errors.throw(604, name=name.name, loc=node.loc)
-            if not (mismatch := nomismatch(env.get("names")(name.name), value)):
+            if not (
+                mismatch := nomismatch(env.get("names")(name.name), value, any_dim=True)
+            ):
                 self.errors.throw(
                     535,
                     name=name.name,
@@ -1023,7 +1041,7 @@ class Typechecker:
             ):
                 annotation = annotation.edit(content=value.content)
 
-            if not (mismatch := nomismatch(annotation, value)):
+            if not (mismatch := nomismatch(annotation, value, any_dim=True)):
                 self.errors.throw(
                     536,
                     name=self.unlink(node.name).name,

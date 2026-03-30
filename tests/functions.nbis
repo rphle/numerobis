@@ -316,7 +316,7 @@ inconsistent_default!(): Int = {
 }
 
 # ---
-weird_return!(x: Int): Mass = x
+weird_return!(x: Int[Mass]): Mass = x
 
 # E519
 return_wrong_type!(): Length = 5 kilogram

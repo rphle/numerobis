@@ -91,7 +91,7 @@ result = first_or_default([1, 2, 3], 0)
 first_or_default!(lst: List[Int], default) = if lst == [] then default else lst[0]
 result = first_or_default([], 5)
 
-# ---
+# E521
 first_or_default!(lst: List[Int], default) = if lst == [] then default else lst[0]
 mass = first_or_default([], 5 kilogram)
 
@@ -168,9 +168,9 @@ result = twice(add_five, 10)
 
 # ---
 chain!(f, g, h) = !(x) = f(g(h(x)))
-a!(n) = n + 1
-b!(n) = n * 2
-c!(n) = n - 3
+a!(n: Int) = n + 1
+b!(n: Int) = n * 2
+c!(n: Int) = n - 3
 combined = chain(a, b, c)
 result = combined(10)
 

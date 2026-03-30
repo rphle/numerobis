@@ -85,7 +85,7 @@ total = total + 10
 total = total * 2
 
 # ---
-m: Num = 5 kilogram
+m: Num[Mass] = 5 kilogram
 m = m + 3 kilogram
 m = m * 2
 

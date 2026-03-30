@@ -38,7 +38,7 @@ def get_free_vars(
                 return
             case Variable() | VariableDeclaration():
                 var_name = unlink(n.name).name
-                if n.meta["address"] in defined_addrs:
+                if "address" in n.meta and n.meta["address"] in defined_addrs:
                     used.add(defined_addrs[n.meta["address"]])
                     return
                 current_defined.add(var_name)

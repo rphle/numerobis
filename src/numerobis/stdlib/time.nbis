@@ -1,2 +1,2 @@
-extern now!(): Num;
-extern sleep!(secs: Num): None;
+extern now!(): Int;
+extern sleep!(secs: Num?): None;

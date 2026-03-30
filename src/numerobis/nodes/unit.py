@@ -3,6 +3,7 @@
 Represents algebraic expressions of units and dimensions as trees.
 """
 
+import uuid
 from collections import Counter
 from dataclasses import dataclass, field
 from decimal import Decimal
@@ -107,6 +108,8 @@ class Expression(UnitNode):
             object.__setattr__(self, "loc", self.value.loc)
 
     def __str__(self):
+        if isinstance(self.value, (One, AnyDim)):
+            return str(self.value)
         return f"\\[[bold]{self.value}[/bold]]"
 
     def __eq__(self, other):
@@ -185,7 +188,7 @@ class Power(UnitNode):
     def __str__(self):
         base = (
             f"({self.base})"
-            if not isinstance(self.base, (Scalar, Identifier))
+            if not isinstance(self.base, (Scalar, Identifier, AnyDim))
             else self.base
         )
         exponent = (
@@ -232,3 +235,16 @@ class One(UnitNode):
 
     def __bool__(self):
         return False
+
+
+@dataclass(frozen=True)
+class AnyDim(UnitNode):
+    # fingerprint to avoid simplifying unrelated AnyDim nodes
+    fingerprint: str = field(default_factory=lambda: uuid.uuid4().hex, repr=False)
+    never: bool = field(default=False)
+
+    def __str__(self):
+        return "Any"
+
+    def __eq__(self, other):
+        return isinstance(other, AnyDim)

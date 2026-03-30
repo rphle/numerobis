@@ -92,9 +92,9 @@ while z < 5 do {
 z
 
 # ---
-outer!(x) = {
-    inner!(y) = {
-        deepest!(z) = x + y + z
+outer!(x: Num) = {
+    inner!(y: Num) = {
+        deepest!(z: Num) = x + y + z
         deepest(1)
     }
     inner(2)
@@ -132,7 +132,7 @@ if true then {
 distance
 
 # ---
-mass: Num = 10 kilogram
+mass: Num[Mass] = 10 kilogram
 for i in [1, 2, 3] do {
     mass = mass + 1 kilogram
 }

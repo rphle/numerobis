@@ -66,9 +66,9 @@ value = if true then (if false then 1 else 2) * 3 else (if true then 4 else 5) +
 computed = if (10 > 5) then 5 kilogram * 2 + 3 kilogram else 1 kilogram
 
 # ---
-f!(x) = x * 2 + 5
-g!(y) = y - 3
-h!(z) = f(g(z)) + g(f(z))
+f!(x: Int) = x * 2 + 5
+g!(y: Int) = y - 3
+h!(z: Int) = f(g(z)) + g(f(z))
 h(10)
 
 # ---

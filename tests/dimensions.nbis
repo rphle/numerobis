@@ -256,3 +256,113 @@ unit @bad_unit: Length
 # ---
 # dimension Length1
 # @Length
+
+# E703
+id!(x: Num?): Num? = x
+echo(id(1 m) + 2 kg)
+
+# E703
+id!(x: Num): Num = x + 2kg
+echo(id(1 m) + 2 kg)
+
+# E703
+id!(a: Num, b: Num[Length]): Num = a + b
+echo(id(2kg, 1 m))
+
+# E521
+id!(a: Num, b: Num[Length]): Num = if true then a else b
+echo(id(2kg, 1 m))
+
+# ---
+5 < 10
+
+# E703
+x = 5m +5m
+x + 5kg
+
+# E703
+x: Num? = 5m + 5m
+x + 5m
+
+# ---
+5m < 3m
+
+# E536
+x: Num = 5kg
+
+# ---
+x: Num? = 5kg
+
+# ---
+x: Num[Any] = 5kg
+
+# E703
+x: Num? = 5kg
+x = x * 3m
+x + 1
+
+# E703
+x: Num? = 5kg
+x = x * 3m
+x/x + 1
+
+# E703
+(5kg / 5kg) + 2m
+
+# E536
+x: Num[1] = 5kg
+
+# E536
+x: Num = 5 * 8kg
+
+# ---
+x: Num? = 5
+y: Num? = x
+
+# E703
+x: Num? = 5
+x + 5
+
+# E703
+x: Num? = 5
+y: Num? = 5
+x + y
+
+# E525
+[[1 kg, 2 kg], [3 m, 4 m]]
+
+# E536
+l: List[Length] = [1kg, 2kg]
+
+# E536
+l: List[Num[Length]] = [1kg, 2kg]
+
+# E519
+f!(): Length = {
+    x: Num? = 5kg
+    return x
+}
+
+# E513
+v: Num? = 5kg
+f!(x: Length) = x
+f(v)
+
+# ---
+f!(x: Num?) = x
+f(5kg)
+
+# E519
+weird_return!(x: Int?): Length = x
+
+# E703
+area = (5 m)^2
+area + 2 m
+
+# ---
+id!(x: ?T): ?T = x
+val: Num[Length] = id(10 m)
+
+# E536
+id!(x: ?T): ?T = x
+wrong: Num[Mass] = id(10 m)

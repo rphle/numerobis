@@ -1,7 +1,7 @@
 from si import *
 import math
 
-unit AE = 1.49598e11 m
+unit AU = 1.49598e11 m
 unit ly = 9.4607e15 m
 unit days = day
 
@@ -14,26 +14,26 @@ dt = 0.5 days
 steps = 2000
 
 # Initial Conditions
-dist_input = input("Enter perihelion distance in AE (Earth: 0.9833): ")
+dist_input = input("Enter perihelion distance in AU (Earth: 0.9833): ")
 _dist = if dist_input == "" then 0.9833 else dist_input -> Num
 vel_input = input("Enter initial velocity in km/s (Earth: 30.290): ")
 _vel = if vel_input == "" then 30.290 else vel_input -> Num
 
 echo("----------")
 
-x = _dist * 1.0 AE
-y = 0.0 AE
+x = _dist * 1.0 AU
+y = 0.0 AU
 vx = 0.0 m/s
 vy = _vel * 1.0 km/s
 
 # Tracking Variables
-perihelion = 100.0 AE
-aphelion = 0.0 AE
+perihelion = 100.0 AU
+aphelion = 0.0 AU
 min_v = 1000000.0 km/s
 max_v = 0.0 km/s
 
-distance_total = 0.0 AE
-area_total = 0.0 AE^2
+distance_total = 0.0 AU
+area_total = 0.0 AU^2
 
 prev_x = x
 prev_y = y
@@ -46,7 +46,7 @@ is_escaping = false
 period_steps = 0
 
 for step in 1..steps do {
-    r_mag = math.sqrt(x^2 + y^2) -> AE
+    r_mag = math.sqrt(x^2 + y^2) -> AU
     v_mag = math.sqrt(vx^2 + vy^2) -> km/s
 
     # Escape Detection
@@ -85,7 +85,7 @@ for step in 1..steps do {
     }
 
     # Statistics
-    r_ae = r_mag -> AE
+    r_ae = r_mag -> AU
     if r_ae < perihelion then { perihelion = r_ae }
     if r_ae > aphelion then { aphelion = r_ae }
 
@@ -93,7 +93,7 @@ for step in 1..steps do {
     if v_km_s < min_v then { min_v = v_km_s }
     if v_km_s > max_v then { max_v = v_km_s }
 
-    ds = math.sqrt((x-prev_x)^2 + (y-prev_y)^2)
+    ds = math.sqrt((x-prev_x)^2 + (y-prev_y)^2) -> AU
     distance_total = distance_total + ds
 
     # Kepler 2nd Law: Area = 0.5 * |r x v| * dt
@@ -122,6 +122,6 @@ if period_found then {
 echo("Perihelion: " + (perihelion -> Str))
 echo("Aphelion: " + (aphelion -> Str))
 echo("Eccentricity: " + (eccentricity -> Str))
-echo("Travelled distance: " + ((distance_total -> AE) -> Str))
-echo("Total swept area: " + ((area_total -> AE^2) -> Str))
+echo("Travelled distance: " + ((distance_total -> AU) -> Str))
+echo("Total swept area: " + ((area_total -> AU^2) -> Str))
 }

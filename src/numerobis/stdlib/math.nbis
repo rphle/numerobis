@@ -5,60 +5,60 @@ e       = 2.71828182845904523536
 phi     = 1.61803398874989484820   # golden ratio
 
 # Rounding
-extern floor!(value: Num): Int;
-extern ceil!(value: Num): Int;
-extern round!(value: Num): Int;
-extern trunc!(value: Num): Int;
+extern floor!(value: Num?): Int;
+extern ceil!(value: Num?): Int;
+extern round!(value: Num?): Int;
+extern trunc!(value: Num?): Int;
 
 # Basic math
-extern sqrt!(value: Num): Num;
-extern cbrt!(value: Num): Num;
-extern abs!(value: Num): Num;
-extern pow!(base: Num, exponent: Num): Num;
-extern exp!(value: Num): Num;
-extern exp2!(value: Num): Num;
-extern hypot!(x: Num, y: Num): Num;
-extern sign!(value: Num): Num;
-extern clamp!(value: Num, lo: Num, hi: Num): Num;
-extern min!(a: Num, b: Num): Num;
-extern max!(a: Num, b: Num): Num;
+extern sqrt!(value: Num?): Int;
+extern cbrt!(value: Num?): Int;
+extern abs!(value: Num?): Int;
+extern pow!(base: Num?, exponent: Num?): Int;
+extern exp!(value: Num?): Int;
+extern exp2!(value: Num?): Int;
+extern hypot!(x: Num?, y: Num?): Int;
+extern sign!(value: Num?): Int;
+extern clamp!(value: Num?, lo: Num?, hi: Num?): Int;
+extern min!(a: Num?, b: Num?): Int;
+extern max!(a: Num?, b: Num?): Int;
 
 # Logarithms
-extern log!(value: Num): Num;
-extern log2!(value: Num): Num;
-extern log10!(value: Num): Num;
-extern logn!(x: Num, base: Num): Num;
+extern log!(value: Num?): Int;
+extern log2!(value: Num?): Int;
+extern log10!(value: Num?): Int;
+extern logn!(x: Num?, base: Num?): Int;
 
 # Trigonometry (radians)
-extern sin!(value: Num): Num;
-extern cos!(value: Num): Num;
-extern tan!(value: Num): Num;
-extern asin!(value: Num): Num;
-extern acos!(value: Num): Num;
-extern atan!(value: Num): Num;
-extern atan2!(y: Num, x: Num): Num;
+extern sin!(value: Num?): Int;
+extern cos!(value: Num?): Int;
+extern tan!(value: Num?): Int;
+extern asin!(value: Num?): Int;
+extern acos!(value: Num?): Int;
+extern atan!(value: Num?): Int;
+extern atan2!(y: Num?, x: Num?): Int;
 
 # Trigonometry (degrees)
-extern sind!(value: Num): Num;
-extern cosd!(value: Num): Num;
-extern tand!(value: Num): Num;
-extern asind!(value: Num): Num;
-extern acosd!(value: Num): Num;
-extern atand!(value: Num): Num;
-extern atan2d!(y: Num, x: Num): Num;
+extern sind!(value: Num?): Int;
+extern cosd!(value: Num?): Int;
+extern tand!(value: Num?): Int;
+extern asind!(value: Num?): Int;
+extern acosd!(value: Num?): Int;
+extern atand!(value: Num?): Int;
+extern atan2d!(y: Num?, x: Num?): Int;
 
 # Hyperbolic
-extern sinh!(value: Num): Num;
-extern cosh!(value: Num): Num;
-extern tanh!(value: Num): Num;
-extern asinh!(value: Num): Num;
-extern acosh!(value: Num): Num;
-extern atanh!(value: Num): Num;
+extern sinh!(value: Num?): Int;
+extern cosh!(value: Num?): Int;
+extern tanh!(value: Num?): Int;
+extern asinh!(value: Num?): Int;
+extern acosh!(value: Num?): Int;
+extern atanh!(value: Num?): Int;
 
 # Angle conversion
-extern deg_to_rad!(value: Num): Num;
-extern rad_to_deg!(value: Num): Num;
+extern deg_to_rad!(value: Num?): Int;
+extern rad_to_deg!(value: Num?): Int;
 
 # Random
-extern random!(): Num;
-extern randint!(lo: Int, hi: Int): Int;
+extern random!(): Int;
+extern randint!(lo: Int?, hi: Int?): Int;

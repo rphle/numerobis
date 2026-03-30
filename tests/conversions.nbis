@@ -155,3 +155,9 @@ true -> Num
 
 # E515
 "test" -> kilogram
+
+# E515
+x = 5 -> Num[Mass]
+
+# E515
+"5" -> Int[Length]

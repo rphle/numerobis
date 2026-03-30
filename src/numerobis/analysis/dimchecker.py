@@ -9,6 +9,7 @@ from ..environment import Namespaces
 from ..exceptions.exceptions import Exceptions, ModuleMeta
 from ..nodes.ast import DimensionDefinition, UnitDefinition
 from ..nodes.unit import (
+    AnyDim,
     Expression,
     Identifier,
     Neg,
@@ -71,7 +72,7 @@ class Dimchecker:
         ):
             self.errors.throw(603, name=node.name.name, loc=node.name.loc)
 
-        dimension = None
+        dimension = AnyDim()
         if node.dimension:
             if node.dimension.name != "1":
                 if node.dimension.name not in self.env.dimensions:
@@ -104,7 +105,7 @@ class Dimchecker:
             elif not node.dimension:
                 dimension = value
 
-        assert dimension is None or isinstance(dimension, (Expression, One))
+        assert isinstance(dimension, (Expression, One, AnyDim))
         if node.dimension is None and node.value is None:
             # Independent units without dimension annotation are automatically assigned to a dimension of their Titled name,
             # as long as such a name is not already defined
@@ -131,8 +132,11 @@ class Dimchecker:
                 f"Unit type {type(node).__name__} not implemented"
             )
 
+    def any_dim_(self, node: AnyDim, mode: modes = "dimension") -> AnyDim:
+        return node
+
     def expression_(self, node: Expression, mode: modes = "dimension") -> Expression:
-        if node.value is None or isinstance(node.value, One):
+        if node.value is None or isinstance(node.value, (One, AnyDim)):
             return node
         return Expression(value=self.dimensionize(node.value, mode=mode))
 

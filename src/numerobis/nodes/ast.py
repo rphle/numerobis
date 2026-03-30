@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from typing import Optional
 
 from .core import AstNode, Identifier
-from .unit import Expression, One
+from .unit import AnyDim, Expression, One
 
 
 @dataclass(kw_only=True, frozen=True)
@@ -235,7 +235,7 @@ class FromImport(AstNode):
 @dataclass(kw_only=True, frozen=True)
 class Type(AstNode):
     name: Identifier
-    param: Optional["Type | FunctionAnnotation | Expression | One"]
+    param: Optional["Type | FunctionAnnotation | Expression | One | AnyDim"]
 
 
 @dataclass(kw_only=True, frozen=True)

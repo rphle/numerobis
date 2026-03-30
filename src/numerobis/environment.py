@@ -5,7 +5,7 @@ from difflib import get_close_matches
 from typing import Any, Callable, Literal, Optional, overload
 
 from .nodes.core import AstNode
-from .nodes.unit import Expression, One
+from .nodes.unit import AnyDim, Expression, One
 from .typechecker.types import T
 
 namespace_names = Literal[
@@ -17,8 +17,8 @@ class Namespaces:
     def __init__(
         self,
         names: dict[str, T] | None = None,
-        dimensions: dict[str, Expression | One | None] | None = None,
-        dimensionized: dict[str, Expression | One | None] | None = None,
+        dimensions: dict[str, Expression | One | AnyDim] | None = None,
+        dimensionized: dict[str, Expression | One | AnyDim] | None = None,
         units: dict[str, Expression] | None = None,
         imports: dict[str, "Namespaces"] | None = None,
         nodes: dict[int, AstNode] | None = None,
