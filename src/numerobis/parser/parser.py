@@ -352,7 +352,7 @@ class Parser(ParserTemplate):
 
             if self._peek().type == "COLON":
                 self._consume("COLON")
-                p["type"] = self.type()
+                p["type"] = self.type(True)
 
             if self._peek().type == "ASSIGN":
                 self._consume("ASSIGN")
@@ -377,7 +377,7 @@ class Parser(ParserTemplate):
         _rparen = self._consume("RPAREN")
         _assign = self._consume("COLON", "ASSIGN" if body else "/")
         if self.tok.type == "COLON":
-            return_type = self.type()
+            return_type = self.type(True)
             if body:
                 _assign = self._consume("ASSIGN")
 
@@ -876,7 +876,9 @@ class Parser(ParserTemplate):
         assert isinstance(value, (Function, VariableDeclaration))
         return ExternDeclaration(value=value, loc=nodeloc(_start, value))
 
-    def type(self) -> Type | FunctionAnnotation | Expression | One:
+    def type(
+        self, vartypes: bool = False
+    ) -> Type | FunctionAnnotation | Expression | One:
         if self._peek().type == "BANG":
             return self.function_annotation()
         elif self._peek().type == "ID" and self._peek().value in list(typetable.keys()):
@@ -894,7 +896,7 @@ class Parser(ParserTemplate):
                         self._consume("ID")
                         param = AnyDim()
                     else:
-                        param = self.type()
+                        param = self.type(vartypes)
 
                     _rbracket = self._consume("RBRACKET")
                     return Type(name=name, param=param, loc=nodeloc(name, _rbracket))
@@ -914,6 +916,11 @@ class Parser(ParserTemplate):
             else:
                 return Type(name=name, param=None, loc=name.loc)
         elif self._peek().type == "QMARK":
+            if not vartypes:
+                self.errors.unexpectedToken(
+                    self._peek(),
+                    help="Type variables may only appear in function signatures",
+                )
             _qmark = self._consume("QMARK")
             token = self._consume("ID", ignore_whitespace=False)
             name = Identifier(name="?" + token.value, loc=nodeloc(_qmark, token))
@@ -941,7 +948,7 @@ class Parser(ParserTemplate):
                 if self._peek().type != "COLON":
                     self.errors.throw(18, self._peek().loc)
                 self._consume("COLON")
-                params.append(self.type())
+                params.append(self.type(True))
                 arity[-1] += 1
 
             if self._peek().type != "RBRACKET":
@@ -950,7 +957,7 @@ class Parser(ParserTemplate):
         self._consume("RBRACKET")
         self._consume("COMMA")
 
-        return_type = self.type()
+        return_type = self.type(True)
         _end = self._consume("RBRACKET")
 
         if len(arity) == 1:

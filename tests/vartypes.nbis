@@ -25,6 +25,12 @@ default!(a: ?T = 1, b: ?T = true): ?T = a + b
 # ---
 default!(a: ?T, b: ?T = 1): ?T = a + b
 
+# E001
+f!()= {
+    x: ?T = 5
+    return x
+}
+
 # E519
 weird!(x: ?T): ?T = 123
 
