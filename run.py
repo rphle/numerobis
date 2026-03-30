@@ -59,6 +59,7 @@ def run_single_test(
     format_code,
     use_cmake,
     use_ccache,
+    run_exec=True,
 ):
     output = StringIO()
     times = {}
@@ -99,16 +100,18 @@ def run_single_test(
                 )
             )
 
-            def run():
-                code = 0
-                try:
-                    code = mod.run(path=output_bin)
-                except SystemExit as e:
-                    code = e.code
-                if code != 0:
-                    print(f"[E303]: {code}")
+            if run_exec:
 
-            times["Execution"] = timeit(run)
+                def run():
+                    code = 0
+                    try:
+                        code = mod.run(path=output_bin)
+                    except SystemExit as e:
+                        code = e.code
+                    if code != 0:
+                        print(f"[E303]: {code}")
+
+                times["Execution"] = timeit(run)
 
     except SystemExit:
         pass
@@ -184,9 +187,14 @@ def main():
         print()
 
     tests_dir = Path("tests")
+    examples_dir = Path("examples")
+
     files = sorted([f for f in os.listdir(tests_dir) if f.endswith(".nbis")])
+    example_files = sorted([f for f in os.listdir(examples_dir) if f.endswith(".nbis")])
+
     if args.tests:
         files = [f for f in files if f.removesuffix(".nbis") in args.tests]
+        example_files = example_files if "examples" in args.tests else []
 
     console.print(
         "[bold]Running tests[/bold] "
@@ -206,6 +214,7 @@ def main():
     actual_time = time.time()
 
     test_queue = []
+    # standard tests
     for file in files:
         path = tests_dir / file
         lines = open(path, "r", encoding="utf-8").readlines()
@@ -217,7 +226,7 @@ def main():
                     header_src, first = chunk_src, False
                 else:
                     test_queue.append(
-                        (path, header_src, chunk_src, curr_line, curr_throws)
+                        (path, header_src, chunk_src, curr_line, curr_throws, True)
                     )
                 curr_throws = (
                     match.group(1) if not match.group(1).startswith("-") else None
@@ -225,7 +234,13 @@ def main():
                 chunk_src, curr_line = "", i + 2
             else:
                 chunk_src += line
-        test_queue.append((path, header_src, chunk_src, curr_line, curr_throws))
+        test_queue.append((path, header_src, chunk_src, curr_line, curr_throws, True))
+
+    # example files
+    for file in example_files:
+        path = examples_dir / file
+        with open(path, "r", encoding="utf-8") as f:
+            test_queue.append((path, "", f.read(), 1, None, False))
 
     results: list[TestResult] = []
     fail_count = 0
@@ -244,8 +259,9 @@ def main():
                 args.format,
                 args.use_cmake,
                 args.use_ccache,
+                run_exec,
             )
-            for p, h, c, ll, t in test_queue
+            for p, h, c, ll, t, run_exec in test_queue
         ]
 
         with tqdm(total=len(futures), leave=False) as pbar:
