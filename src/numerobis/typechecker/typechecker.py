@@ -121,7 +121,10 @@ class Typechecker:
                 loc=node.loc,
             )
             raise
-        if not (mismatch := nomismatch(value.params[0], owner, any_dim=True)):
+
+        varenv = VarEnv()
+        first_param = value.params[0].complete(varenv, owner)
+        if not (mismatch := nomismatch(first_param, owner, any_dim=True)):
             self.errors.throw(
                 513,
                 kind=mismatch.kind,
@@ -132,7 +135,9 @@ class Typechecker:
             )
             raise
 
-        value = value.edit(_self=unify(value.params[0], owner))
+        value = value.edit(
+            _self=unify(value.params[0], owner), _meta=value._meta | {"#varenv": varenv}
+        )
         return value
 
     def bin_op_(self, node: BinOp, env: Env, link: int) -> T:
@@ -322,14 +327,17 @@ class Typechecker:
         node = self.unlink(node, attrs=["args"])
         if not dummy:
             args: dict[str, tuple[T, T, str]] = {}
+            i = 0
+
             if callee._self is not None:
                 args["self"] = (
                     callee._self,
                     callee._self,
                     callee.param_addrs[0],
                 )
+                varenv = callee._meta["#varenv"]
+                i = 1
 
-            i = 0
             for arg in node.args:
                 arg = self.unlink(arg, attrs=["name"])
                 if arg.name:
