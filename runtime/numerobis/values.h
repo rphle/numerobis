@@ -174,16 +174,18 @@ static inline Value __num__(Value self, LocRef loc) {
   return r;
 }
 
-static inline Value __call__(Value self, Value *args) {
+static inline Value __call__(Value self, Value *args, size_t argc) {
   if (__builtin_expect(self.type == VALUE_EXTERN_FN, 0)) {
     return self.extern_fn(args);
   }
+
   Closure *cl = self.closure;
 
-  // Overwrite the second argument slot if a bound argument exists (first is
-  // the function itself)
+  // Append bound argument if present
   if (__builtin_expect(cl->bound_arg.type != VALUE_NONE, 0)) {
-    args[1] = cl->bound_arg;
+    args[argc] = cl->bound_arg;
+    // args[argc + 1] = (Value){.type = VALUE_NONE};
+    argc++;
   }
 
   if (IS_EXTERN_CLOSURE(cl->env)) {

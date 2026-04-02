@@ -116,7 +116,7 @@ class Compiler:
         self.include.add("numerobis/closures")
         out = tstr("__getattr__($func, $self)")
 
-        typ = self._link2type(node.owner).title()
+        typ = node.meta["#type"]
         out["func"] = self.compile(Identifier(f"{typ}.{self.unlink(node.name)}"))
         out["self"] = self.compile(node.owner)
         return out
@@ -182,21 +182,25 @@ class Compiler:
             self.unlink(arg.name).name: arg  # type: ignore
             for arg in unlinked_args[i:]
         }
+        argc = len(args)
         if "callee" in node.meta:
             signature: FunctionType = node.meta["callee"]
             if signature._self:
                 # method
-                args.insert(0, None)
+                i += 1
 
             for name in signature.param_names[i:]:
                 args.append(arg_names[name].value if name in arg_names else None)
+            argc = len(signature.params)
         else:
             args = [arg.value for arg in arg_names.values()]
 
-        args = [str(self.compile(arg)) if arg else "NONE" for arg in args]
+        args = [
+            str(self.compile(arg)) if arg is not None else "NONE" for arg in args
+        ] + ["NONE"]
 
         str_args = f"(Value[]){{{callee}, {', '.join(args)}}}"
-        out = tstr(f"__call__({callee}, {str_args})")
+        out = tstr(f"__call__({callee}, {str_args}, {argc})")
 
         return out
 
@@ -266,7 +270,7 @@ class Compiler:
 
         name = self.unlink(self.unlink(node.value).name).name  # type: ignore
         out["name"] = mangle(name)
-        out["extern_name"] = mangle(name)
+        out["extern_name"] = name.replace("_", "__")
 
         return out
 
@@ -414,15 +418,21 @@ class Compiler:
         self._defined_addrs = old_defined_addrs
 
         _unlinked_params = [self.unlink(param) for param in node.params]
-
         params = [str(self.compile(param.name)) for param in _unlinked_params]
+
+        # If there's a bound arg, move it to the end
+        if node.name and "." in self.unlink(node.name).name:
+            _unlinked_params.append(_unlinked_params.pop(0))
+            params.append(params.pop(0))
+
         free_vars = [
             self._imported_names.get(var, f"und_{self.uid}_")
-            + mangle(var.split(".")[-1])
+            + mangle(var.split("::")[-1])
             for var in get_free_vars(
                 self.env.nodes, node, link=link, defined_addrs=defined_addrs
             )
         ]
+
         env_type = f"__Env_{self.uid}_{abs(link)}"
         name = self.compile(node.name) if node.name is not None else None
 
@@ -537,7 +547,7 @@ class Compiler:
 
         name = self.unlink(node.name).name
         out["name"] = mangle(name)
-        self._imported_names[f"{mod}.{out['name']}"] = out["prefix"]
+        self._imported_names[f"{mod}::{out['name']}"] = out["prefix"]
         return out
 
     def number_(self, node: Integer | Num, *, init: bool = True) -> tstr:

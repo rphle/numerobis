@@ -124,7 +124,11 @@ class VarType(UType):
 
     def __str__(self) -> str:
         completion = ""
-        if self.last_env is not None and self._name in self.last_env[self.kind]:
+        if (
+            self.last_env is not None
+            and self._name in self.last_env[self.kind]
+            and not isinstance(self.last_env[self.kind][self._name], VarType)
+        ):
             completion = f"[{str(self.last_env[self.kind][self._name])}]"
             completion = completion.replace("'", "")
         return f"'?{self._name}{completion}'"
@@ -344,6 +348,8 @@ def unify(a: T, b: T) -> T | Mismatch:
 
 
 def unify_never(a: T, b: T) -> T:
+    if isanyofinstance((a, b), VarType):
+        return a if isinstance(a, NeverType) else b
     if isinstance(a, NeverType):
         a.unify(b)
         return b

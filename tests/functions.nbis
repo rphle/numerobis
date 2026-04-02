@@ -1,4 +1,5 @@
 from si import @(metre, kilogram, second, Mass, Length, Time)
+import math
 
 # ---
 identity!(x: Int) = x
@@ -385,3 +386,7 @@ f!(a: Int = 1, b: Int) = a + b
 
 # E025
 g!(a: Int, b: Int = 1, c: Int) = a + b + c
+
+# ---
+f!(x: Num?) = math.floor(x)
+f(3.14)

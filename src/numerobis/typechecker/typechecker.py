@@ -138,6 +138,7 @@ class Typechecker:
         value = value.edit(
             _self=unify(value.params[0], owner), _meta=value._meta | {"#varenv": varenv}
         )
+        node.meta["#type"] = owner.name()
         return value
 
     def bin_op_(self, node: BinOp, env: Env, link: int) -> T:
@@ -352,7 +353,7 @@ class Typechecker:
                             name=callee._name,
                             n_params=len(callee.param_names),
                             plural="s" if len(callee.param_names) != 1 else "",
-                            n_args=len(node.args),
+                            n_args=i + 1,
                             loc=node.loc,
                         )
                     name = callee.param_names[i]
@@ -388,25 +389,22 @@ class Typechecker:
                     name=callee._name,
                     n_params=len(callee.param_names),
                     plural="s" if len(callee.param_names) != 1 else "",
-                    n_args=len(node.args),
+                    n_args=i,
                     loc=node.loc,
                 )
         else:
             args = {name: (AnyType(), AnyType(), "") for name in callee.param_names}
 
+        return_type = callee.return_type.complete(varenv)
         if not dummy:
             self.namespaces.nodes[link].meta["callee"] = callee
         if callee.extern and not dummy:
             self.namespaces.nodes[link].meta["extern"] = callee.extern
-        if callee.node is None or callee.extern:
-            return callee.return_type
 
         # Check if constraints can be updated and the function body re-checked for better inference
-        recheck = callee.unresolved == "parameters" or any(
+        _recheck = callee.unresolved == "parameters" or any(
             a != b for a, b, _ in list(args.values())
         )
-
-        return_type = callee.return_type.complete(varenv)
 
         return return_type
 
@@ -807,11 +805,15 @@ class Typechecker:
         return NoneType()
 
     def list_(self, node: List, env: Env) -> ListType:
-        content = NeverType()
+        content = None
         for element in node.items:
             element_type = self.check(element, env=env)
             if element_type.name("Any"):
                 self.errors.throw(524, loc=self.unlink(element, ["loc"]).loc)
+
+            if content is None:
+                content = element_type
+                continue
 
             if not (mismatch := nomismatch(content, element_type, unify=True)):
                 self.errors.throw(
@@ -821,6 +823,8 @@ class Typechecker:
             content = unify(content, element_type)  # type: ignore
             assert not isinstance(content, Mismatch)
 
+        if content is None:
+            content = NeverType()
         return ListType(content=content, dim=content.dim)
 
     def module_access_(self, node: ModuleAccess, env: Env) -> T:

@@ -39,8 +39,8 @@ static Value numerobis_builtin_input(Value *args) {
 }
 
 static Value numerobis_builtin_indexof(Value *args) {
-  GArray *self = args[1].list;
-  Value target = args[2];
+  GArray *self = args[2].list;
+  Value target = args[1];
 
   for (guint i = 0; i < self->len; i++) {
     Value *item = g_array_index(self, Value *, i);
@@ -55,8 +55,8 @@ static Value numerobis_builtin_indexof(Value *args) {
 }
 
 static Value numerobis_builtin_split(Value *args) {
-  GString *self = args[1].str;
-  GString *sep = args[2].str;
+  GString *self = args[2].str;
+  GString *sep = args[1].type == VALUE_NONE ? g_string_new(" ") : args[1].str;
 
   GArray *result_arr = g_array_new(FALSE, FALSE, sizeof(Value *));
 
@@ -106,12 +106,15 @@ static Value numerobis_builtin_exit(Value *args) {
 void u_register_builtin_externs(void) {
   u_extern_register("echo", echo);
   u_extern_register("input", numerobis_builtin_input);
-  u_extern_register("indexof", numerobis_builtin_indexof);
-  u_extern_register("split", numerobis_builtin_split);
-  u_extern_register("Str_dlen", numerobis_builtin_str_len);
-  u_extern_register("List_dlen", numerobis_builtin_list_len);
+  u_extern_register("List.indexof", numerobis_builtin_indexof);
+  u_extern_register("Str.split", numerobis_builtin_split);
+
+  u_extern_register("Str.len", numerobis_builtin_str_len);
+  u_extern_register("List.len", numerobis_builtin_list_len);
+
   u_extern_register("exit", numerobis_builtin_exit);
 
   numerobis_math_register_builtins();
   numerobis_time_register_builtins();
+  numerobis_list_register_externs();
 }

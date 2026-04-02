@@ -5,7 +5,14 @@ from typing import Any
 
 from numerobis.nodes.unit import Expression
 
-from ..nodes.ast import ForLoop, Function, ModuleAccess, Variable, VariableDeclaration
+from ..nodes.ast import (
+    Attribute,
+    ForLoop,
+    Function,
+    ModuleAccess,
+    Variable,
+    VariableDeclaration,
+)
 from ..nodes.core import AstNode, Identifier
 from ..typechecker.linking import Link
 from ..typechecker.linking import unlink as _unlink
@@ -59,15 +66,19 @@ def get_free_vars(
                     current_defined.add(unlink(iterator).name)
             case ModuleAccess():
                 mod = table[n.module.target].name  # type: ignore
-                name = f"{mod}.{table[n.name.target].name}"  # type: ignore
+                name = f"{mod}::{table[n.name.target].name}"  # type: ignore
                 if name not in current_defined:
                     used.add(name)
                 return
+            case Attribute():
+                name = n.meta["#type"] + "." + unlink(n.name).name
+                if name not in current_defined:
+                    used.add(name)
             case Expression():
                 return
 
         for field in fields:
-            if field.name in ("name", "annotation", "unit"):
+            if field.name in ("name", "annotation", "unit", "meta", "_meta"):
                 continue
 
             val = getattr(n, field.name)

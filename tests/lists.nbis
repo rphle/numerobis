@@ -335,3 +335,80 @@ l[2] = 6
 # E903
 lst = [2,3]
 lst[4] = 2
+
+
+# ---
+append!(self: List[?T], item: ?T): List[?T] = {
+    lst = self + [item]
+    return lst
+}
+echo(append([1, 2, 3], 4))
+
+
+# ---
+List.push!(self: List[?T], item: ?T): List[?T] = {
+    echo(item)
+    lst = self + [item]
+    return lst
+}
+echo([1, 2, 3].push(4))
+
+# E513
+List.push!(self: List[?T], item: ?T): List[?T] = {
+    echo(item)
+    lst = self + [item]
+    return lst
+}
+x = [1, 2, 3].push
+x("4")
+
+# ---
+append!(self: List[?T], item: ?T): List[?T] = self
+lst = [[1,2].append, append]
+
+# ---
+lst = [1, 2, 3]
+lst.append(4)
+echo(lst)
+
+# E513
+f!(l: List) = {
+    l.append(4)
+}
+f([1, 2, 3])
+
+# E512
+[1,2,3].len(1)
+
+# E512
+[1,2,3].append()
+
+# E513
+lst = ["5"]
+lst.append(5)
+
+# ---
+lst = []
+lst.append(5)
+
+# E513
+lst = []
+lst.append(5)
+lst.append("5")
+
+# ---
+wrap!(x: ?T): List[?T] = [x]
+
+wrap(1)[0] + 1
+wrap("a")[0] + "b"
+
+# ---
+lst = []
+f!(l: List[?T], item: ?T): List[?T] = l + [item]
+f(lst, 5)
+
+# E513
+lst = []
+f!(l: List[?T], item: ?T): List[?T] = l + [item]
+f(lst, 5)
+f(lst, "5")

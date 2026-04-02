@@ -190,3 +190,22 @@ sieve!(limit: Int): List[Int] = {
 
 primes = sieve(100)
 echo("Primes ≤ 100: " + (primes -> Str))
+
+# ---
+f!(l: List[Int]) = {
+    l.append(4)
+}
+lst = [1, 2, 3]
+f(lst)
+echo(lst)
+
+# ---
+lst = ["Four", "One", "Two", "Three"]
+lst.append(lst.pop(0))
+echo(lst)
+
+lst.extend(lst[::-1])
+echo(lst)
+
+lst.insert(0, "42")
+echo(lst)

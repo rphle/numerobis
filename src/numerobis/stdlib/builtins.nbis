@@ -1,9 +1,14 @@
-extern echo!(value, end: Str = "\n"): None;
+extern echo!(value: Any, end: Str = "\n"): None;
 extern input!(prompt: Str = ""): Str;
 
-extern indexof!(lst: List, item): Int;
-extern split!(s: Str, sep: Str): List[Str];
+extern Str.split!(s: Str, sep: Str = " "): List[Str];
 extern Str.len!(self: Str): Int;
+
 extern List.len!(self: List): Int;
+extern List.append!(self: List[?T], item: ?T): None;
+extern List.extend!(self: List[?T], items: List[?T]): None;
+extern List.pop!(self: List[?T], index: Int = -1): ?T;
+extern List.insert!(self: List[?T], index: Int, item: ?T): None;
+extern List.indexof!(lst: List[?T], item: ?T): Int;
 
 extern exit!(code: Int = 0): None;

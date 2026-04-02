@@ -1,5 +1,6 @@
 #include "list.h"
 #include "../constants.h"
+#include "../extern.h"
 #include "../utils/utils.h"
 #include "../values.h"
 #include "bool.h"
@@ -139,7 +140,9 @@ static Value list__mul__(Value _self, Value _n) {
 
 // Mutation
 
-Value list_append(Value _self, Value val) {
+static Value list_append(Value *args) {
+  Value _self = args[2];
+  Value val = args[1];
   if (_self.type == VALUE_LIST && _self.list) {
     Value *heap_val = g_new(Value, 1);
     *heap_val = val;
@@ -148,7 +151,10 @@ Value list_append(Value _self, Value val) {
   return NONE;
 }
 
-Value list_extend(Value _self, Value _other) {
+static Value list_extend(Value *args) {
+  Value _self = args[2];
+  Value _other = args[1];
+
   if (_self.type != VALUE_LIST || !_self.list || _other.type != VALUE_LIST ||
       !_other.list)
     return NONE;
@@ -157,13 +163,18 @@ Value list_extend(Value _self, Value _other) {
   GArray *other = _other.list;
 
   for (guint i = 0; i < other->len; i++) {
-    Value *val = g_array_index(other, Value *, i);
-    g_array_append_val(self, val);
+    Value *original_val = g_array_index(other, Value *, i);
+    Value *heap_val = g_new(Value, 1);
+    *heap_val = *original_val;
+    g_array_append_val(self, heap_val);
   }
   return NONE;
 }
 
-Value list_insert(Value _self, Value _index, Value val) {
+static Value list_insert(Value *args) {
+  Value _self = args[3];
+  Value _index = args[1];
+  Value val = args[2];
   if (_self.type != VALUE_LIST || !_self.list)
     return NONE;
 
@@ -223,7 +234,9 @@ Value list__delitem__(Value _self, Value _index) {
   return NONE;
 }
 
-Value list_pop(Value _self, Value _index) {
+static Value list_pop(Value *args) {
+  Value _self = args[2];
+  Value _index = args[1];
   if (_self.type != VALUE_LIST || !_self.list || _self.list->len == 0)
     return NONE;
 
@@ -330,3 +343,10 @@ static const ValueMethods _list_methods = {
 };
 
 void list_methods_init(void) { NUMEROBIS_METHODS[VALUE_LIST] = &_list_methods; }
+
+void numerobis_list_register_externs(void) {
+  u_extern_register("List.append", list_append);
+  u_extern_register("List.extend", list_extend);
+  u_extern_register("List.insert", list_insert);
+  u_extern_register("List.pop", list_pop);
+}

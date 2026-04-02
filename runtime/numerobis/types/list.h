@@ -22,11 +22,8 @@ static inline Value list_len(Value self) {
   return int__init__((gint64)_list_len(self.list), U_ONE);
 }
 
-Value list_append(Value self, Value val);
-Value list_extend(Value self, Value other);
-Value list_insert(Value self, Value index, Value val);
-Value list_pop(Value self, Value index);
-
 void list_methods_init(void);
+
+void numerobis_list_register_externs(void);
 
 #endif

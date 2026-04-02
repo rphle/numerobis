@@ -1,10 +1,10 @@
-alphabet = split("ABCDEFGHIJKLMNOPQRSTUVWXYZ" * 2, sep="")
+alphabet = ("ABCDEFGHIJKLMNOPQRSTUVWXYZ" * 2).split(sep="")
 
 word = input("Enter a word: ")
 key = input("Enter a key: ") -> Int
 
 for char in word do {
-    i = indexof(alphabet, char) + key
+    i = alphabet.indexof(char) + key
     echo(alphabet[i], end="")
 }
 echo("")
