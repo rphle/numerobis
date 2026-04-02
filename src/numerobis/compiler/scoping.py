@@ -3,6 +3,8 @@
 import dataclasses
 from typing import Any
 
+from numerobis.nodes.unit import Expression
+
 from ..nodes.ast import ForLoop, Function, ModuleAccess, Variable, VariableDeclaration
 from ..nodes.core import AstNode, Identifier
 from ..typechecker.linking import Link
@@ -38,7 +40,11 @@ def get_free_vars(
                 return
             case Variable() | VariableDeclaration():
                 var_name = unlink(n.name).name
-                if "address" in n.meta and n.meta["address"] in defined_addrs:
+                if (
+                    "address" in n.meta
+                    and n.meta["address"] in defined_addrs
+                    and var_name not in current_defined
+                ):
                     used.add(defined_addrs[n.meta["address"]])
                     return
                 current_defined.add(var_name)
@@ -56,6 +62,8 @@ def get_free_vars(
                 name = f"{mod}.{table[n.name.target].name}"  # type: ignore
                 if name not in current_defined:
                     used.add(name)
+                return
+            case Expression():
                 return
 
         for field in fields:

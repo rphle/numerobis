@@ -39,7 +39,7 @@ while counter < 5 do {
 }
 
 # ---
-f!(x) = {
+f!(x: Num) = {
     y = x * 2
     z = y + 10
     z
@@ -47,16 +47,16 @@ f!(x) = {
 f(5)
 
 # ---
-outer_func!(a) = {
-    inner_func!(b) = a + b
+outer_func!(a: Num) = {
+    inner_func!(b: Num) = a + b
     inner_func(10)
 }
 outer_func(5)
 
 # ---
 make_counter!() = {
-    count = 0
-    !(increment) = {
+    count = 0.0
+    !(increment: Num) = {
         count = count + increment
         count
     }
@@ -102,7 +102,7 @@ outer!(x: Num) = {
 outer(3)
 
 # ---
-f!(a) = !(b) = !(c) = a + b + c
+f!(a: Int) = !(b: Int) = !(c: Int) = a + b + c
 
 func = f(1)(2)
 func(3)
@@ -139,14 +139,14 @@ for i in [1, 2, 3] do {
 mass
 
 # ---
-param_func!(x) = {
+param_func!(x: Int) = {
     x = x * 2
     return x
 }
 param_func(5)
 
 # ---
-shadow_test!(x) = {
+shadow_test!(x: Num) = {
     y = x + 5
     {
         y = x + 10
@@ -180,7 +180,7 @@ while true do {
 while_var
 
 # E601
-f!(x) = {
+f!(x: Num) = {
     inner_var = x * 2
 }
 inner_var

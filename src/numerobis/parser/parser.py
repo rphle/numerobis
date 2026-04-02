@@ -355,6 +355,8 @@ class Parser(ParserTemplate):
             if self._peek().type == "COLON":
                 self._consume("COLON")
                 p["type"] = self.type(True)
+            else:
+                self.errors.throw(26, loc=_p_name.loc)
 
             if self._peek().type == "ASSIGN":
                 self._consume("ASSIGN")

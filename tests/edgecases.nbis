@@ -144,7 +144,7 @@ m = 10.0 kilogram
 m = m + 0 kilogram
 
 # ---
-identity!(x) = x
+identity!(x: Int) = x
 identity(identity(identity(5)))
 
 # ---
@@ -155,18 +155,12 @@ mutual_a!(n) = if n <= 0 then 0 else mutual_b(n - 1)
 mutual_b!(n) = if n <= 0 then 1 else mutual_a(n - 1)
 mutual_a(5)
 
-# E601
+# ///
 f!(x) = g(x)
-g!(y) = f(y)
+g!(x) = f(x)
 
-# ---
+# E026
 make_func!() = !(x) = make_func()
-
-# Empty_string = ""
-
-# Empty_list: List = []
-
-# Empty_block = {}
 
 # E001
 just_zero = { 0 }

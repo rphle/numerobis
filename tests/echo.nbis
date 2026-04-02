@@ -100,9 +100,9 @@ sum_list!(lst: List[Int]): Int = if lst == [] then 0 else lst[0] + sum_list(lst[
 echo(sum_list([1, 2, 3, 4, 5]))
 
 # ---
-f!(x) = x * 2
-g!(y) = y + 3
-h!(z) = g(f(z))
+f!(x: Int) = x * 2
+g!(y: Int) = y + 3
+h!(z: Int) = g(f(z))
 echo(h(5))
 
 # ---
@@ -114,8 +114,8 @@ echo(return_early(5))
 echo(return_early(-5))
 
 # ---
-curry!(f, a) = !(b) = f(a, b)
-add!(x, y) = x + y
+curry!(f: ![[x: Int, y: Int], Int], a: Int) = !(b: Int) = f(a, b)
+add!(x: Int, y: Int) = x + y
 add_five = curry(add, 5)
 echo(add_five(10))
 
@@ -133,7 +133,7 @@ x = 20
 outer("Hello")
 
 # ---
-map_func!(f, lst: List): List[Int] = {
+map_func!(f: ![[value: Num], Num], lst: List[Num]): List[Num] = {
     r = []
     for item in lst do {
         r = r + [f(item)]
@@ -141,13 +141,13 @@ map_func!(f, lst: List): List[Int] = {
     return r
 }
 
-double!(x) = x * 2
+double!(value: Num) = value * 2
 mapped = map_func(double, [1, 2, 3])
 
 echo(mapped)
 echo(map_func(math.floor, [1.2, 2.7, 3.4]))
 
-echo_emoji!(v) = echo(v, end=" " + [":)", ":D", ":(", ":|"][math.floor(math.random()*4)] + " ")
+echo_emoji!(value: Num) = echo(value, end=" " + [":)", ":D", ":(", ":|"][math.floor(math.random()*4)] + " ")
 map_func(echo_emoji, [1.2, 2.7, 3.4])
 
 echo("")

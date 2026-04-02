@@ -282,7 +282,10 @@ class Power(UnitNode):
         value: Optional[UnitNode] = None,
         fingerprint: Optional[int] = None,
     ):
-        return self.edit(value=self.base.complete(varenv, value, fingerprint))
+        return self.edit(
+            base=self.base.complete(varenv, value, fingerprint),
+            exponent=self.exponent.complete(varenv, value, fingerprint),
+        )
 
 
 @dataclass(frozen=True)
@@ -322,7 +325,6 @@ class One(UnitNode):
 class AnyDim(UnitNode):
     # fingerprint to avoid simplifying unrelated AnyDim nodes
     fingerprint: str = field(default_factory=lambda: uuid.uuid4().hex, repr=False)
-    never: bool = field(default=False)
 
     def __str__(self):
         return "Any"

@@ -58,7 +58,6 @@ from .operators import typetable
 from .types import (
     AnyType,
     BoolType,
-    DimensionType,
     FunctionType,
     ListType,
     NeverType,
@@ -71,10 +70,11 @@ from .types import (
     T,
     UndefinedType,
     VarType,
-    dimcheck,
+    match_dim,
+    nomismatch,
     unify,
 )
-from .utils import UnresolvedAnyParam, _check_method, nomismatch
+from .utils import UnresolvedAnyParam, _check_method
 
 SameType = TypeVar("SameType", bound=AstNode)
 
@@ -124,7 +124,7 @@ class Typechecker:
 
         varenv = VarEnv()
         first_param = value.params[0].complete(varenv, owner)
-        if not (mismatch := nomismatch(first_param, owner, any_dim=True)):
+        if not (mismatch := nomismatch(first_param, owner, unify=True)):
             self.errors.throw(
                 513,
                 kind=mismatch.kind,
@@ -144,10 +144,7 @@ class Typechecker:
         """Check dimensional consistency in mathematical operations"""
         left, right = [self.check(side, env=env) for side in (node.left, node.right)]
 
-        if not (
-            isinstance(left, (NumberType, DimensionType))
-            and isinstance(right, (NumberType, DimensionType))
-        ):
+        if not (isinstance(left, NumberType) and isinstance(right, NumberType)):
             definition = None
             methods = [
                 (left, f"__{node.op.name}__"),
@@ -182,7 +179,7 @@ class Typechecker:
 
         match node.op.name:
             case "add" | "sub" | "dadd" | "dsub":
-                if not (mismatch := dimcheck(left, right)):
+                if not (mismatch := match_dim(left, right)):
                     self.errors.binOpMismatch(node, mismatch)
 
                 if isinstance(left.dim, AnyDim) and isinstance(right.dim, AnyDim):
@@ -246,7 +243,7 @@ class Typechecker:
                     else left.edit(dim=dimension)
                 )
             case "mod":
-                if not (mismatch := dimcheck(left, right)):
+                if not (mismatch := match_dim(left, right)):
                     self.errors.binOpMismatch(node, mismatch)
 
                 return left
@@ -257,9 +254,7 @@ class Typechecker:
         returns = None
 
         def check_return(returns: T | None, checked: T):
-            if returns is not None and not nomismatch(
-                returns, checked, commutative=True
-            ):
+            if returns is not None and not nomismatch(returns, checked, unify=True):
                 self.errors.throw(505, loc=node.loc)
             return checked
 
@@ -302,10 +297,6 @@ class Typechecker:
             self.namespaces.nodes[link].meta["callee"] = env.meta["#function"]
             raise e
 
-        if callee.name("Never"):
-            for arg in node.args:
-                self.check(self.unlink(arg).value, env=env)
-            return NeverType()
         if not callee.name("Function"):
             self.errors.throw(506, type=callee, loc=node.loc)
 
@@ -377,7 +368,7 @@ class Typechecker:
                     # complete var types
                     param = param.complete(varenv, typ)
 
-                if not (mismatch := nomismatch(param, typ, any_dim=True)):
+                if not (mismatch := nomismatch(param, typ, unify=True)):
                     self.errors.throw(
                         513,
                         kind=mismatch.kind,
@@ -401,7 +392,7 @@ class Typechecker:
                     loc=node.loc,
                 )
         else:
-            args = {name: (NeverType(), NeverType(), "") for name in callee.param_names}
+            args = {name: (AnyType(), AnyType(), "") for name in callee.param_names}
 
         if not dummy:
             self.namespaces.nodes[link].meta["callee"] = callee
@@ -414,47 +405,8 @@ class Typechecker:
         recheck = callee.unresolved == "parameters" or any(
             a != b for a, b, _ in list(args.values())
         )
-        if recheck:
-            # Prevent re-entering the same function body being currently typechecked.
-            visited = env.meta.get("#visited", set())
-            if (
-                "#function" in env.meta and env.meta["#function"].node == callee.node
-            ) or (callee.node is not None and callee.node in visited):
-                if callee.unresolved:
-                    _name = f"{callee._name}() " if callee._name else ""
-                    self.errors.throw(
-                        508 if callee.unresolved == "recursive" else 507,
-                        name=_name,
-                        loc=callee._loc,
-                    )
-                return callee.return_type
 
-            new_env = env.copy()
-            if callee.node is not None:
-                new_env.meta["#visited"] = visited | {callee.node}
-
-            for name, arg in args.items():
-                new_env.set("names")(name, arg[1], address=arg[2])
-            for i, default in enumerate(callee.param_defaults):
-                idx = callee.arity[0] + i
-                name = callee.param_names[idx]
-                if name not in args:
-                    new_env.set("names")(name, default, address=callee.param_addrs[idx])
-            new_env.meta["#function"] = callee
-
-            if callee.meta("#curried"):
-                keep = set(callee._meta["#curried"].keys()) | set(callee.param_names)
-                new_env.names = {k: v for k, v in new_env.names.items() if k in keep}
-                new_env.names.update(callee._meta["#curried"])
-
-            self.errors.stack.append(node.loc)
-            return_type = self.check(
-                self.namespaces.nodes[callee.node].body,  # type:ignore
-                env=new_env,
-            )
-            self.errors.stack.pop()
-        else:
-            return_type = callee.return_type.complete(varenv)
+        return_type = callee.return_type.complete(varenv)
 
         return return_type
 
@@ -660,7 +612,7 @@ class Typechecker:
 
                 params[i] = params[i].complete(varenv, default, fingerprint=link)
 
-                if not (mismatch := nomismatch(params[i], default, any_dim=True)):
+                if not (mismatch := nomismatch(params[i], default, unify=True)):
                     self.errors.throw(
                         518,
                         param=self.unlink(param.name).name,
@@ -730,7 +682,7 @@ class Typechecker:
                 return signature
             raise e
 
-        if not (mismatch := nomismatch(return_type, body, any_dim=True)):
+        if not (mismatch := nomismatch(return_type, body, unify=True)):
             assert node.body is not None, node.body
             self.errors.throw(
                 519,
@@ -782,16 +734,20 @@ class Typechecker:
         if len(branches) == 1:
             return branches[0]
 
-        if not (mismatch := nomismatch(*branches, commutative=True)):
+        unified = unify(*branches)
+        if isinstance(unified, Mismatch):
+            unified = unify(*branches[::-1])
+
+        if isinstance(unified, Mismatch):
             self.errors.throw(
                 521,
-                kind=mismatch.kind,
-                then=mismatch.left,
-                else_=mismatch.right,
+                kind=unified.kind,
+                then=unified.left,
+                else_=unified.right,
                 loc=node.loc,
             )
 
-        return unify(*branches, commutative=True)
+        return unified
 
     def index_(self, node: Index, env: Env):
         value = self.check(node.iterable, env=env)
@@ -850,18 +806,21 @@ class Typechecker:
 
         return NoneType()
 
-    def list_(self, node: List, env: Env, content: T = NeverType()) -> ListType:
+    def list_(self, node: List, env: Env) -> ListType:
+        content = NeverType()
         for element in node.items:
             element_type = self.check(element, env=env)
             if element_type.name("Any"):
                 self.errors.throw(524, loc=self.unlink(element, ["loc"]).loc)
 
-            if not (mismatch := nomismatch(content, element_type, any_dim=True)):
+            if not (mismatch := nomismatch(content, element_type, unify=True)):
                 self.errors.throw(
                     525, kind=mismatch.kind, loc=self.unlink(element, ["loc"]).loc
                 )
 
             content = unify(content, element_type)  # type: ignore
+            assert not isinstance(content, Mismatch)
+
         return ListType(content=content, dim=content.dim)
 
     def module_access_(self, node: ModuleAccess, env: Env) -> T:
@@ -913,7 +872,9 @@ class Typechecker:
 
         value = self.check(node.value, env=env) if node.value else NoneType()
 
-        if return_type and (not (mismatch := nomismatch(return_type, value))):
+        if return_type and (
+            not (mismatch := nomismatch(return_type, value, unify=True))
+        ):
             self.errors.throw(
                 519,
                 value=mismatch.right,
@@ -974,7 +935,7 @@ class Typechecker:
                             dim=dim,
                         )
                     case "List":
-                        content = NeverType()
+                        content = AnyType()
                         if node.param:
                             content = self.type_(node.param, env=env)  # type: ignore
                         return ListType(
@@ -992,10 +953,10 @@ class Typechecker:
             case Expression():
                 dim = self.simplify(self.dimchecker.dimensionize(node))
                 assert isinstance(dim, Expression)
-                return DimensionType(dim)
+                return NumberType(dim=dim)
 
             case One():
-                return DimensionType(node)
+                return NumberType(dim=node)
 
     def unary_op_(self, node: UnaryOp, env: Env):
         if node.op.name == "sub":
@@ -1026,7 +987,7 @@ class Typechecker:
             if node.type:
                 self.errors.throw(604, name=name.name, loc=node.loc)
             if not (
-                mismatch := nomismatch(env.get("names")(name.name), value, any_dim=True)
+                mismatch := nomismatch(env.get("names")(name.name), value, unify=True)
             ):
                 self.errors.throw(
                     535,
@@ -1049,7 +1010,7 @@ class Typechecker:
             ):
                 annotation = annotation.edit(content=value.content)
 
-            if not (mismatch := nomismatch(annotation, value, any_dim=True)):
+            if not (mismatch := nomismatch(annotation, value, unify=True)):
                 self.errors.throw(
                     536,
                     name=self.unlink(node.name).name,

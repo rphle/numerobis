@@ -1,7 +1,5 @@
-from typing import Literal
-
 from ..exceptions.exceptions import Mismatch
-from .types import FunctionType, Overload, T, dimcheck, unify
+from .types import FunctionType, Overload
 
 
 class UnresolvedAnyParam(Exception):
@@ -21,14 +19,3 @@ def _check_method(method, *args) -> FunctionType | Mismatch | None:
             None,
         )
     raise ValueError()
-
-
-def nomismatch(
-    a: T, b: T, commutative: bool = False, any_dim: bool = False
-) -> Mismatch | Literal[True]:
-    if not (mismatch := unify(a, b, commutative)):
-        assert isinstance(mismatch, Mismatch)
-        return mismatch
-    elif not (mismatch := dimcheck(a, b, any_dim)):
-        return mismatch
-    return True

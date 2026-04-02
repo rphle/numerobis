@@ -72,16 +72,16 @@ h!(z: Int) = f(g(z)) + g(f(z))
 h(10)
 
 # ---
-compose!(a, b, c, x) = a(b(c(x)))
-add_one!(n) = n + 1
-double!(n) = n * 2
-square!(n) = n * n
+compose!(a: ![[n: Int], Int], b: ![[n: Int], Int], c: ![[n: Int], Int], x: Int) = a(b(c(x)))
+add_one!(n: Int) = n + 1
+double!(n: Int) = n * 2
+square!(n: Int) = n * n
 compose(add_one, double, square, 3)
 
 # ---
 map!(f: ![[x: Int], Int], lst: List[Int]): List[Int] =
     if lst == [] then [] else [f(lst[0])] + map(f, lst[1:])
-transform!(x) = x * 2 + 1
+transform!(x: Int) = x * 2 + 1
 map(transform, [1, 2, 3, 4, 5])
 
 # ---
@@ -144,8 +144,8 @@ while counter < 10 do {
 }
 
 # ---
-make_processor!(scale) =
-    !(x) = {
+make_processor!(scale: Int) =
+    !(x: Int) = {
         temp = x * scale
         temp + 10
     }
@@ -161,12 +161,12 @@ apply_ops!(
     if ops == [] then x
     else apply_ops(ops[0](x), ops[1:])
 
-add_one!(n) = n + 1
-double!(n) = n * 2
+add_one!(n: Int) = n + 1
+double!(n: Int) = n * 2
 apply_ops(5, [add_one, double, add_one])
 
 # ---
-pipeline = !(x) = (x + 5) * 2 - 3
+pipeline = !(x: Int) = (x + 5) * 2 - 3
 nested_call = pipeline(pipeline(pipeline(1)))
 
 # ---
@@ -230,10 +230,10 @@ for row in data do {
 total
 
 # ---
-apply!(f, x) = f(x)
-twice!(f, x) = f(f(x))
-inc!(n) = n + 1
-result = twice(!(x) = apply(inc, x), 5)
+apply!(f: ![[n: Int], Int], x: Int) = f(x)
+twice!(f: ![[x: Int], Int], x: Int) = f(f(x))
+inc!(n: Int) = n + 1
+result = twice(!(x: Int) = apply(inc, x), 5)
 result
 
 # ---

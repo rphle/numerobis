@@ -54,7 +54,7 @@ range_step: Range = 0..100..5
 func: ![[x: Int], Int] = !(x: Int): Int = x + 1
 
 # ---
-generic_func: ![[x: Any], Int] = !(x) = 42
+generic_func: ![[x: Any], Int] = !(x: Int) = 42
 
 # ---
 mass_func: ![[m: Mass], Mass] = !(m: Mass): Mass = m * 2
@@ -223,6 +223,11 @@ f!(): Num = {
 
 # E519
 f!(): Int = {
+    return 2.1
+}
+
+# E519
+f!(): Int = {
     return 2.2
 }
 
@@ -231,3 +236,32 @@ x: Num = 2
 
 # E536
 x: Int = 2.2
+
+# E502
+f!(lst: List) = lst[0] + 1
+f([1,2,3])
+
+# E602
+f!(x: Int): Never = x
+
+# E508
+f!(x: Int) = f(x)
+
+# E502
+l = []
+l = l + [1]
+l = l + ["2"]
+
+# E513
+f!(x: Num) = x
+y: Num? = 5
+f(y)
+
+# E536
+x: Int = 2/3
+
+# ---
+unit test;
+x: Test = 2 test
+# => x is Num?
+x = 5.5 test

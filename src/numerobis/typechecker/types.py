@@ -1,12 +1,12 @@
 """Type system definitions and type variable environment management."""
 
 from dataclasses import dataclass, field, replace
-from typing import Any, Literal, Optional, Union, overload
+from typing import Any, Callable, Literal, Optional, Union, overload
 
 from ..exceptions.exceptions import Mismatch
 from ..nodes.core import VarEnv
 from ..nodes.unit import AnyDim, Expression, One
-from ..utils import isallofinstance, isanyofinstance
+from ..utils import isanyofinstance
 
 T = Union[
     "NoneType",
@@ -20,7 +20,6 @@ T = Union[
     "SliceType",
     "ListType",
     "FunctionType",
-    "DimensionType",
 ]
 
 
@@ -144,19 +143,14 @@ class VarType(UType):
             return varenv[self.kind].get(self._name, self)
         if self._name not in varenv[self.kind]:
             varenv[self.kind][self._name] = value
-        elif not unify(value, varenv[self.kind][self._name]) or not dimcheck(
-            value, varenv[self.kind][self._name]
-        ):
+            return value
+
+        unified = unify(value, varenv[self.kind][self._name])
+        if isinstance(unified, Mismatch):
             return self
-        return value
 
-
-@dataclass(kw_only=True, frozen=True)
-class NeverType(UType):
-    dim: AnyDim = AnyDim(never=True)
-
-    def __eq__(self, other) -> bool:
-        return True
+        varenv[self.kind][self._name] = unified
+        return unified
 
 
 @dataclass(kw_only=True, frozen=True)
@@ -166,8 +160,10 @@ class UndefinedType(UType):
 
 @dataclass(kw_only=True, frozen=True)
 class ListType(UType):
-    content: T = NeverType()
-    dim: Expression | One | AnyDim = content.dim
+    content: T = field(default_factory=lambda: AnyType())
+    dim: Expression | One | AnyDim = field(
+        default_factory=lambda: AnyDim(), compare=False
+    )
 
     def __post_init__(self):
         if self.dim is None:
@@ -234,21 +230,13 @@ class FunctionType(UType):
 
     def check_args(self, *args: T) -> "FunctionType | Mismatch | None":
         varenv = VarEnv()
-        params = [
-            param.complete(varenv, arg)
-            if not isinstance(param, AnyType)
-            else NeverType()
-            for param, arg in zip(self.params, args)
-        ]
+        params = [param.complete(varenv, arg) for param, arg in zip(self.params, args)]
 
         if len(args) != len(self.params):
             return
         for param, arg in zip(params, args):
-            typ, dim = unify(param, arg), dimcheck(param, arg, any_dim=True)
-            if not typ:
-                return typ
-            elif not dim:
-                return dim
+            if not (mismatch := nomismatch(param, arg, unify=True)):
+                return mismatch
 
         return self.edit(return_type=self.return_type.complete(varenv))
 
@@ -256,11 +244,6 @@ class FunctionType(UType):
 @dataclass(kw_only=True, frozen=True)
 class Constant(UType):
     value: T
-
-
-@dataclass(frozen=True)
-class DimensionType(UType):
-    dim: Expression | One | AnyDim = AnyDim()
 
 
 class AnyType(UType):
@@ -294,95 +277,6 @@ class AnyType(UType):
         super().__init__()
 
 
-def unify(a: T, b: T, commutative: bool = False) -> T | Mismatch:
-    mismatch = Mismatch("type", a, b)
-
-    if isanyofinstance((a, b), NeverType):
-        return [a, b][isinstance(a, NeverType)]
-
-    if isanyofinstance((a, b), AnyType):
-        return mismatch
-
-    if isanyofinstance((a, b), DimensionType):
-        ab = [a, b]
-        dimidx = int(isinstance(b, DimensionType))
-        if not (isallofinstance(ab, DimensionType) or isanyofinstance(ab, NumberType)):
-            ab[dimidx] = NumberType(
-                typ="Number",  # type: ignore
-                dim=ab[dimidx].dim,
-            )
-            return Mismatch("type", *ab)
-        elif isanyofinstance(ab, NumberType):
-            numidx = int(not dimidx)
-            if not (mismatch := dimcheck(a, b)):
-                return mismatch
-            return ab[numidx].edit(dim=ab[dimidx].dim)
-        else:
-            return a
-
-    match a, b:
-        case NumberType() as a, NumberType() as b:
-            if a.typ == "Num":
-                return a
-            elif commutative and b.typ == "Num":
-                return b
-            return a if a.typ == b.typ else mismatch
-        case ListType() as a, ListType() as b:
-            content = unify(a.content, b.content)
-            if isinstance(content, Mismatch):
-                return content
-            return (
-                ListType(content=content, _meta=a._meta | b._meta)
-                if content
-                else mismatch
-            )
-        case FunctionType() as a, FunctionType() as b:
-            if a.arity != b.arity or bool(a._self) != bool(b._self):
-                # since methods only appear bound, we don't need to check for the exact self type
-                return mismatch
-            is_method = int(
-                bool(a._self or b._self)
-            )  # 1 if a or b is a method, 0 otherwise
-
-            checkzip = zip(
-                a.params[is_method:] + [a.return_type],
-                b.params[is_method:] + [b.return_type],
-            )
-            parts = [
-                (unify(x, y) if "Any" not in (x.name(), y.name()) else AnyType())
-                and dimcheck(x, y)
-                for x, y in checkzip
-            ]
-            return a if all(parts) else mismatch
-        case VarType() as a, VarType() as b:
-            return (
-                a if a._name == b._name and a.fingerprint == b.fingerprint else mismatch
-            )
-
-    return a if a == b else mismatch
-
-
-def dimcheck(a: T, b: T, any_dim: bool = False) -> Literal[True] | Mismatch:
-    if a.name("Never", "Any") or b.name("Never", "Any"):
-        return True
-
-    ad, bd = a.dim, b.dim
-    if isinstance(ad, Expression):
-        ad = ad.value
-    if isinstance(bd, Expression):
-        bd = bd.value
-
-    if (
-        (any_dim and isinstance(ad, AnyDim))
-        or (any_dim and isinstance(bd, AnyDim))
-        or (isinstance(ad, AnyDim) and ad.never)
-        or (isinstance(bd, AnyDim) and bd.never)
-        or ad == bd
-    ):
-        return True
-    return Mismatch("dimension", a.dim, b.dim)
-
-
 class Overload:
     def __init__(self, *functions: "FunctionType|Overload"):
         self.functions: list[FunctionType] = []
@@ -408,3 +302,192 @@ class IntType:
 class NumType:
     def __new__(cls) -> NumberType:
         return NumberType(typ="Num")
+
+
+@dataclass(kw_only=True, frozen=True)
+class NeverType(UType):
+    dim: AnyDim = AnyDim()
+
+    def __eq__(self, other) -> bool:
+        return True
+
+    def unify(self, other: UType) -> UType:
+        object.__setattr__(self, "__class__", type(other))
+        self.__init__(**other.__dict__)
+        return self
+
+
+# -------------------------------------------------- I CAN NOT RESOLVE THE CIRCULAR DEPENDENCY BETWEEN THESE TWO MODULES -----------------------------------------------------
+
+
+def nomismatch(a: T, b: T, unify: bool = False) -> Mismatch | Literal[True]:
+    tmode = unify_type if unify else match_type
+    dmode = unify_dim if unify else match_dim
+
+    if not (mismatch := tmode(a, b)):
+        assert isinstance(mismatch, Mismatch)
+        return mismatch
+
+    elif not (mismatch := dmode(a, b)):
+        assert isinstance(mismatch, Mismatch)
+        return mismatch
+
+    return True
+
+
+def unify(a: T, b: T) -> T | Mismatch:
+    value = unify_type(a, b)
+    if isinstance(value, Mismatch):
+        return value
+    value = unify_dim(a, b)
+    return value
+
+
+def unify_never(a: T, b: T) -> T:
+    if isinstance(a, NeverType):
+        a.unify(b)
+        return b
+    elif isinstance(b, NeverType):
+        b.unify(a)
+        return a
+    return a
+
+
+# -------------------------
+
+
+def _check_func(
+    a: FunctionType, b: FunctionType, test: Callable, mismatch: Mismatch
+) -> list | Mismatch:
+    if a.arity != b.arity or bool(a._self) != bool(b._self):
+        # since methods only appear bound, we don't need to check for the exact self type
+        return mismatch
+    is_method = int(bool(a._self or b._self))  # 1 if a or b is a method, 0 otherwise
+
+    checkzip = zip(
+        a.params[is_method:] + [a.return_type],
+        b.params[is_method:] + [b.return_type],
+    )
+    parts = [test(a, b) for a, b in checkzip]
+    return parts
+
+
+def match_type(a: T, b: T) -> Literal[True] | Mismatch:
+    mismatch = Mismatch("type", a, b)
+
+    if isanyofinstance((a, b), AnyType):
+        return mismatch
+
+    if isanyofinstance((a, b), NeverType):
+        unify_never(a, b)
+        return True
+
+    match a, b:
+        case NumberType() as a, NumberType() as b:
+            if a.typ != b.typ:
+                return mismatch
+        case ListType() as a, ListType() as b:
+            if not match_type(a.content, b.content):
+                return mismatch
+        case FunctionType() as a, FunctionType() as b:
+            checked = _check_func(a, b, match_type, mismatch)
+            if isinstance(checked, Mismatch):
+                return checked
+            return True if all(checked) else mismatch
+        case VarType() as a, VarType() as b:
+            if a._name != b._name or a.fingerprint != b.fingerprint:
+                return mismatch
+        case _:
+            if a != b:
+                return mismatch
+
+    return True
+
+
+def unify_type(a: T, b: T) -> T | Mismatch:
+    mismatch = Mismatch("type", a, b)
+
+    if isinstance(a, AnyType):
+        return AnyType()
+
+    if isanyofinstance((a, b), NeverType):
+        return unify_never(a, b)
+
+    match a, b:
+        case NumberType() as a, NumberType() as b:
+            if b.typ == "Num" and a.typ == "Int":
+                return mismatch
+            return a
+        case ListType() as a, ListType() as b:
+            content = unify_type(a.content, b.content)
+            if not content:
+                return mismatch
+            return ListType(content=content, _meta=a._meta | b._meta)
+        case FunctionType() as a, FunctionType() as b:
+            checked = _check_func(a, b, unify_type, mismatch)
+            if isinstance(checked, Mismatch):
+                return checked
+
+            is_method = int(bool(a._self or b._self))
+            return a.edit(
+                params=a.params[:is_method] + checked[:-1], return_type=checked[-1]
+            )
+        case _:
+            matched = match_type(a, b)
+            if not matched:
+                return mismatch
+            return a
+
+
+def match_dim(a: T, b: T) -> Literal[True] | Mismatch:
+    """This function should only be called if 'match_type' has already been used successfully."""
+    mismatch = Mismatch("dimension", a, b)
+
+    if isanyofinstance((a, b), NeverType):
+        unify_never(a, b)
+        return True
+
+    match a, b:
+        case ListType() as a, ListType() as b:
+            if not match_dim(a.content, b.content):
+                return mismatch
+        case FunctionType() as a, FunctionType() as b:
+            checked = _check_func(a, b, match_dim, mismatch)
+            if isinstance(checked, Mismatch):
+                return checked
+            return True if all(checked) else mismatch
+        case _:
+            ad = a.dim.value if isinstance(a.dim, Expression) else a.dim
+            bd = b.dim.value if isinstance(b.dim, Expression) else b.dim
+            return mismatch if ad != bd else True
+    return True
+
+
+def unify_dim(a: T, b: T) -> T | Mismatch:
+    """This function should only be called if 'unify_type' has already been used successfully."""
+    mismatch = Mismatch("dimension", a, b)
+
+    if isanyofinstance((a, b), NeverType):
+        return unify_never(a, b)
+
+    match a, b:
+        case ListType() as a, ListType() as b:
+            content = unify_dim(a.content, b.content)
+            if not content:
+                return mismatch
+            return ListType(content=content, _meta=a._meta | b._meta, dim=content.dim)
+        case FunctionType() as a, FunctionType() as b:
+            checked = _check_func(a, b, unify_dim, mismatch)
+            if isinstance(checked, Mismatch):
+                return checked
+
+            is_method = int(bool(a._self or b._self))
+            return a.edit(
+                params=a.params[:is_method] + checked[:-1], return_type=checked[-1]
+            )
+        case _:
+            ad = a.dim.value if isinstance(a.dim, Expression) else a.dim
+            bd = b.dim.value if isinstance(b.dim, Expression) else b.dim
+            if isinstance(ad, AnyDim):
+                return a
+            return mismatch if ad != bd else a

@@ -61,6 +61,9 @@ continue statement not within loop
 [E025 / SyntaxError]
 parameter without a default follows parameter with a default
 
+[E026 / SyntaxError]
+Function parameters must have type annotations
+
 
 
 [E101 / ValueError]
@@ -151,7 +154,7 @@ both branches must return the same {kind}: {then} vs {else_}
 {type} is not subscriptable
 
 [E523 / TypeError]
-invalid index type '{index}' for {type}
+invalid index type {index} for {type}
 
 [E524 / TypeError]
 list elements may not be type 'Any'

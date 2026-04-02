@@ -45,54 +45,59 @@ untyped = []
 typed = untyped + [1 kilogram]
 
 # ---
-identity!(x) = x
+identity!(x: Any) = x
 result = identity(5)
 
 # ---
-double!(x) = x * 2
+double!(x: Int) = x * 2
 result = double(10)
 
 # ---
-add!(a, b) = a + b
+add!(a: Num, b: Num) = a + b
 sum = add(5, 10)
 
 # ---
-process!(x) = x + (5 kilogram)
+process!(x: Mass) = x + (5 kilogram)
 result = process(10 kilogram)
 
-# ---
-f!(x) = x * 2
-g!(y) = f(y) + 3
+# E513
+f!(x: Int) = x * 2
+g!(y: Num) = f(y) + 3
 result = g(5)
 
 # ---
-make_adder!(n) = !(x) = x + n
+f!(x: Num) = x * 2
+g!(y: Int) = f(y) + 3
+result = g(5)
+
+# ---
+make_adder!(n: Int) = !(x: Num) = x + n
 add_ten = make_adder(10)
 result = add_ten(5)
 
 # ---
-poly!(x) = x * x
+poly!(x: Int[Any]) = x * x
 int_result = poly(5)
 
 # ---
-poly!(x) = x * x
+poly!(x: Num?) = x * x
 mass_result = poly(5 kilogram)
 
-either!(flag, a, b) = if flag then a else b
+either!(flag: Bool, a: Int?, b: Int[Any]) = if flag then a else b
 result = either(true, 5, 10)
 
 mass = either(false, 5 kilogram, 10 kilogram)
 
 # ---
-first_or_default!(lst, default) = if lst == [] then default else lst[0]
+first_or_default!(lst: List[Int], default: Int) = if lst == [] then default else lst[0]
 result = first_or_default([1, 2, 3], 0)
 
 # ---
-first_or_default!(lst: List[Int], default) = if lst == [] then default else lst[0]
+first_or_default!(lst: List[Int], default: Int) = if lst == [] then default else lst[0]
 result = first_or_default([], 5)
 
 # E521
-first_or_default!(lst: List[Int], default) = if lst == [] then default else lst[0]
+first_or_default!(lst: List[Int], default: Mass) = if lst == [] then default else lst[0]
 mass = first_or_default([], 5 kilogram)
 
 # ---
@@ -140,34 +145,34 @@ for i in [1, 2, 3] do {
 # ---
 map!(f: ![[x: Int], Int], lst: List[Int]): List[Int] =
     if lst == [] then [] else [f(lst[0])] + map(f, lst[1:])
-double!(x) = x * 2
+double!(x: Int) = x * 2
 result = map(double, [1, 2, 3])
 
 # ---
 fold!(f: ![[a: Int, b: Int], Int], acc: Int, lst: List[Int]): Int =
     if lst == [] then acc else fold(f, f(acc, lst[0]), lst[1:])
-add!(a, b) = a + b
+add!(a: Int, b: Int) = a + b
 result = fold(add, 0, [1, 2, 3, 4, 5])
 
 # ---
-compose!(f, g) = !(x) = f(g(x))
-add_one!(n) = n + 1
-double!(n) = n * 2
+compose!(f: ![[n: Int], Int], g: ![[n: Int], Int]) = !(x: Int) = f(g(x))
+add_one!(n: Int) = n + 1
+double!(n: Int) = n * 2
 combined = compose(double, add_one)
 result = combined(5)
 
 # ---
-apply!(f, x) = f(x)
-increment!(n) = n + 1
+apply!(f: ![[n: Int], Int], x: Int) = f(x)
+increment!(n: Int) = n + 1
 result = apply(increment, 10)
 
 # ---
-twice!(f, x) = f(f(x))
-add_five!(n) = n + 5
+twice!(f: ![[n: Int], Int], x: Int) = f(f(x))
+add_five!(n: Int) = n + 5
 result = twice(add_five, 10)
 
 # ---
-chain!(f, g, h) = !(x) = f(g(h(x)))
+chain!(f: ![[n: Int], Int], g: ![[n: Int], Int], h: ![[n: Int], Int]) = !(x: Int) = f(g(h(x)))
 a!(n: Int) = n + 1
 b!(n: Int) = n * 2
 c!(n: Int) = n - 3
@@ -199,7 +204,7 @@ value = inner[1]
 result = value * 3
 
 # ---
-func = !(x) = x * 2 + 5
+func = !(x: Int) = x * 2 + 5
 result = func(10)
 
 # E535
@@ -234,9 +239,9 @@ b = ["x", "y"]
 combined = a + b
 
 # E703
-add_wrong!(x) = x + 5 kilogram
+add_wrong!(x: Length) = x + 5 kilogram
 add_wrong(10 metre)
 
 # E703
-process!(a, b) = a + b
+process!(a: Mass, b: Length) = a + b
 process(5 kilogram, 10 metre)

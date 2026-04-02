@@ -1,27 +1,27 @@
 from si import @(metre, kilogram, second, Mass, Length, Time)
 
 # ---
-identity!(x) = x
+identity!(x: Int) = x
 identity(5)
 
 # ---
-double!(x) = x * 2
+double!(x: Int) = x * 2
 double(10)
 
 # ---
-add!(a, b) = a + b
+add!(a: Int, b: Int) = a + b
 add(5, 3)
 
 # ---
-greet!(name) = "Hello, " + name
+greet!(name: Str) = "Hello, " + name
 greet("World")
 
 # ---
-add_mass!(m) = m + 5 kilogram
+add_mass!(m: Mass) = m + 5 kilogram
 add_mass(10 kilogram)
 
 # ---
-speed!(d, t) = d / t
+speed!(d: Length, t: Time) = d / t
 speed(100 metre, 10 second)
 
 # ---
@@ -32,8 +32,8 @@ identity(5)
 double!(x: Num) = x * 2.0
 double(5.5)
 
-# ---
-add!(a: Int, b: Int) = a + b
+# E026
+add!(a: Int, b) = a + b
 add(5, 3)
 
 # ---
@@ -69,15 +69,15 @@ force!(m: Mass, a: Length/Time^2): Mass*Length/Time^2 = m * a
 force(10 kilogram, 9.8 metre/second^2)
 
 # ---
-default_add!(x, y=10) = x + y
+default_add!(x: Int, y: Num =10) = x + y
 default_add(5)
 
 # ---
-greet!(name, greeting="Hello") = greeting + ", " + name
+greet!(name: Str, greeting: Str = "Hello") = greeting + ", " + name
 greet("World")
 
 # ---
-scale_mass!(m, factor=2) = m * factor
+scale_mass!(m: Mass, factor: Int = 2) = m * factor
 scale_mass(5 kilogram)
 
 # ---
@@ -89,15 +89,15 @@ scale!(value: Mass, factor: Int = 2): Mass = value * factor
 scale(5 kilogram)
 
 # ---
-default_add!(x, y=10) = x + y
+default_add!(x: Int, y: Int =10) = x + y
 default_add(5, 20)
 
 # ---
-greet!(name, greeting="Hello") = greeting + ", " + name
+greet!(name: Str, greeting: Str = "Hello"): Str = greeting + ", " + name
 greet("World", "Hi")
 
 # ---
-scale_mass!(m, factor=2) = m * factor
+scale_mass!(m: Num[Mass], factor: Int = 2) = m * factor
 scale_mass(5 kilogram, 3)
 
 # ---
@@ -137,35 +137,35 @@ countdown!(n: Int): Int = if n <= 0 then 0 else countdown(n - 1)
 countdown(5)
 
 # ---
-identity!(x) = x
-double!(y) = identity(y) * 2
+identity!(x: Int) = x
+double!(y: Int) = identity(y) * 2
 double(5)
 
 # ---
-add_five!(x) = x + 5
-scale!(y) = add_five(y) * 2
+add_five!(x: Int) = x + 5
+scale!(y: Int) = add_five(y) * 2
 scale(10)
 
 # ---
-add_mass!(m) = m + 5 kilogram
-double_mass!(m) = add_mass(m) * 2
+add_mass!(m: Mass) = m + 5 kilogram
+double_mass!(m: Mass) = add_mass(m) * 2
 double_mass(10 kilogram)
 
 # ---
-f!(x) = x * 2
-g!(y) = y + 3
-h!(z) = g(f(z))
+f!(x: Int) = x * 2
+g!(y: Int) = y + 3
+h!(z: Int) = g(f(z))
 h(5)
 
 # ---
-outer!(x) = {
-    inner!(y) = x + y
+outer!(x: Int) = {
+    inner!(y: Int) = x + y
     inner(10)
 }
 outer(5)
 
 # E018
-make_adder!(n): ![[Int], Int] = {
+make_adder!(n: Int): ![[Int], Int] = {
     !(x) = x + n
 }
 add_five = make_adder(5)
@@ -174,15 +174,15 @@ add_five(10)
 # ---
 counter!() = {
     x = 0
-    !(increment) = {
+    !(increment: Int) = {
         x = x + increment
         x
     }
 }
 
 # ---
-apply!(f, x) = f(x)
-double!(n) = n * 2
+apply!(f: ![[n: Int], Int], x: Int) = f(x)
+double!(n: Int) = n * 2
 apply(double, 5)
 
 # ---
@@ -190,13 +190,13 @@ map_func!(f: ![[x: Int], Int], lst: List[Int]): List[Int] =
     if lst == [] then []
     else [f(lst[0])] + map_func(f, lst[1:])
 
-double!(x) = x * 2
+double!(x: Int) = x * 2
 map_func(double, [1, 2, 3])
 
 # ---
-compose!(f, g) = !(x) = f(g(x))
-add_one!(n) = n + 1
-double!(n) = n * 2
+compose!(f: ![[n: Int], Int], g: ![[n: Int], Int]) = !(x: Int) = f(g(x))
+add_one!(n: Int) = n + 1
+double!(n: Int) = n * 2
 add_then_double = compose(double, add_one)
 add_then_double(5)
 
@@ -381,7 +381,7 @@ add!(a: Int, b: Int) = a + b
 add(5, a=10)
 
 # E025
-f!(a = 1, b) = a + b
+f!(a: Int = 1, b: Int) = a + b
 
 # E025
-g!(a, b = 1, c) = a + b + c
+g!(a: Int, b: Int = 1, c: Int) = a + b + c
