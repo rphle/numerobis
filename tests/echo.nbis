@@ -1,4 +1,6 @@
 import math
+import random
+
 # ---
 greeting: Str = "Hello"
 echo(greeting[-2::-1])
@@ -147,7 +149,7 @@ mapped = map_func(double, [1, 2, 3])
 echo(mapped)
 echo(map_func(math.floor, [1.2, 2.7, 3.4]))
 
-echo_emoji!(value: Num) = echo(value, end=" " + [":)", ":D", ":(", ":|"][math.floor(math.random()*4)] + " ")
+echo_emoji!(value: Num) = echo(value, end=" " + [":)", ":D", ":(", ":|"][math.floor(random.random()*4)] + " ")
 map_func(echo_emoji, [1.2, 2.7, 3.4])
 
 echo("")

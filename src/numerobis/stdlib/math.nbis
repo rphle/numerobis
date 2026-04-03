@@ -58,7 +58,3 @@ extern atanh!(value: Num?): Int;
 # Angle conversion
 extern deg_to_rad!(value: Num?): Int;
 extern rad_to_deg!(value: Num?): Int;
-
-# Random
-extern random!(): Int;
-extern randint!(lo: Int?, hi: Int?): Int;

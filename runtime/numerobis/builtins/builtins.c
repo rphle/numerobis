@@ -8,6 +8,7 @@
 #include "../values.h"
 #include "echo.h"
 #include "math_builtins.h"
+#include "random_builtins.h"
 #include "time_builtins.h"
 
 #include <glib.h>
@@ -115,6 +116,7 @@ void u_register_builtin_externs(void) {
   u_extern_register("exit", numerobis_builtin_exit);
 
   numerobis_math_register_builtins();
+  numerobis_random_register_builtins();
   numerobis_time_register_builtins();
   numerobis_list_register_externs();
 }

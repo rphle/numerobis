@@ -1,5 +1,5 @@
 # Number guessing game
-from math import randint
+from random import randint
 
 echo("Try to guess the number between 0 and 100!")
 x = randint(0, 100)

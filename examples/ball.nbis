@@ -1,5 +1,7 @@
 from graphics import *;
-from math import abs, random, round;
+from math import abs, round;
+from random import random;
+
 
 # Window setup
 init(800, 600)

@@ -1,0 +1,61 @@
+from graphics import init, set_bg, set_title, polygon, line, text, blit, quit_requested;
+from random import gaussian;
+from math import round, clamp;
+from time import now;
+
+init(1000, 1000)
+set_bg("#fff")
+set_title("Stochastic Distribution & Smoothing")
+
+bins = 100
+width = 1000 / bins
+
+# Initialize points: [x, y, x, y...]
+points: List[Int] = []
+for i in 0..bins do {
+    points.append(i * width)
+    points.append(1000)
+}
+# Footer points to close the polygon shape
+points.extend([1000, 1000, 0, 1000])
+
+last_t = now()
+samples = 0
+
+while not quit_requested() do {
+    t = now()
+    fps = round(1 / (t - last_t))
+    last_t = t
+    samples = samples + 1
+
+    # Generate a normal distribution sample and map to bin index
+    raw_n = round(gaussian(mean=0.5, stddev=0.12) * bins)
+    n = (clamp(raw_n, 0, bins - 1)) -> Int
+
+    idx = (n * 2 + 1) -> Int
+    points[idx] = points[idx] - 10
+
+    # Render base histogram
+    polygon(points, color="#c2c2c2")
+
+    # Smooth Interpolation: Gaussian Kernel [1, 4, 6, 4, 1]
+    # This approximates the theoretical curve using actual live data points
+    get_y = !(v: Int) = points[(clamp(v, 0, bins - 1) -> Int) * 2 + 1]
+
+    for i in 0..(bins - 1) do {
+        # Current smoothed point
+        y_c = (get_y(i-2)*1 + get_y(i-1)*4 + get_y(i)*6 + get_y(i+1)*4 + get_y(i+2)*1) / 16
+
+        # Next smoothed point
+        ni = i + 1
+        y_n = (get_y(ni-2)*1 + get_y(ni-1)*4 + get_y(ni)*6 + get_y(ni+1)*4 + get_y(ni+2)*1) / 16
+
+        line(i * width, y_c, ni * width, y_n, color="#2ecc71", thickness=3)
+    }
+
+    text(20, 20, (fps -> Str) + " FPS – " + (samples -> Str) + " samples", font="monospace", size=24)
+    blit()
+
+    # Termination check
+    if points[idx] <= 10 then { break }
+}

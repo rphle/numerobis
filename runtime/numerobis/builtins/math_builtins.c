@@ -8,7 +8,6 @@
 
 #include <glib.h>
 #include <math.h>
-#include <stdio.h>
 
 /* Helpers */
 
@@ -19,27 +18,6 @@ static inline Value _round_op(Value *args, double (*fn)(double)) {
   Value val = args[1];
   Number *n = &val.number;
   gint64 result = (n->kind == NUM_INT64) ? n->i64 : (gint64)fn(n->f64);
-  return int__init__(result, U_ONE);
-}
-
-static GRand *_rng(void) {
-  static GRand *rng = NULL;
-  if (G_UNLIKELY(rng == NULL))
-    rng = g_rand_new();
-  return rng;
-}
-
-/* Random */
-
-static Value numerobis_builtin_random(Value *args) {
-  return num__init__(g_rand_double(_rng()), U_ONE);
-}
-
-static Value numerobis_builtin_randint(Value *args) {
-  gint64 lo = args[1].number.i64;
-  gint64 hi = args[2].number.i64;
-  gint64 result =
-      (gint64)g_rand_int_range(_rng(), (gint32)lo, (gint32)(hi + 1));
   return int__init__(result, U_ONE);
 }
 
@@ -215,10 +193,6 @@ static Value numerobis_builtin_rad_to_deg(Value *args) {
 /* Registration */
 
 void numerobis_math_register_builtins(void) {
-  /* Random */
-  u_extern_register("random", numerobis_builtin_random);
-  u_extern_register("randint", numerobis_builtin_randint);
-
   /* Rounding */
   u_extern_register("floor", numerobis_builtin_floor);
   u_extern_register("ceil", numerobis_builtin_ceil);
