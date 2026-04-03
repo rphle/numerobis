@@ -30,6 +30,7 @@ from ..nodes.ast import (
     FromImport,
     Function,
     FunctionAnnotation,
+    Global,
     Identifier,
     If,
     Import,
@@ -698,6 +699,10 @@ class Typechecker:
             node.meta["address"] = address
 
         return signature
+
+    def global_(self, node: Global, env: Env):
+        for name in node.names:
+            self.check(name, env=env)
 
     def identifier_(self, node: Identifier, env: Env, link: int):
         try:

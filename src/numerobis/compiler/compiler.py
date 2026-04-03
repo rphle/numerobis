@@ -31,6 +31,7 @@ from ..nodes.ast import (
     ForLoop,
     FromImport,
     Function,
+    Global,
     If,
     Import,
     Index,
@@ -106,6 +107,8 @@ class Compiler:
         self._imported_names = {}
         self._imported_units = {}
         self._imported_modules = {}
+
+        self._globals: list[list[str]] = [[]]  # queue of globals of nested functions
 
         self.units: CompiledUnits = CompiledUnits()
 
@@ -410,9 +413,23 @@ class Compiler:
         self._defined_addrs.update(self.env.nodes[link].meta["addrs"])
         defined_addrs = {addr: name for name, addr in self._defined_addrs.items()}
 
-        body = self.compile(self._make_block(node.body, rtrn=True))
         body_node = self.unlink(node.body)
-        if isinstance(body_node, Block) and not isinstance(body_node.body[-1], Return):
+
+        globals = []
+        if isinstance(body_node, Block) and isinstance(
+            self.unlink(body_node.body[0]), Global
+        ):
+            globals_node = self.unlink(body_node.body[0])
+            assert isinstance(globals_node, Global)
+            globals = [self.unlink(var).name for var in globals_node.names]
+
+        self._globals.append(globals)
+        body = self.compile(self._make_block(node.body, rtrn=True))
+        self._globals.pop()
+
+        if isinstance(body_node, Block) and isinstance(
+            self.unlink(body_node.body[-1]), Return
+        ):
             body = str(body)[:-1] + "\nreturn NONE;\n}"
 
         self._defined_addrs = old_defined_addrs
@@ -432,6 +449,10 @@ class Compiler:
                 self.env.nodes, node, link=link, defined_addrs=defined_addrs
             )
         ]
+        mangled_globals = [
+            self._imported_names.get(var, f"und_{self.uid}_") + mangle(var)
+            for var in globals
+        ]
 
         env_type = f"__Env_{self.uid}_{abs(link)}"
         name = self.compile(node.name) if node.name is not None else None
@@ -444,7 +465,8 @@ class Compiler:
         definition["env"] = env_type
 
         definition["shadow_vars"] = "\n".join(
-            f"U_SHADOW_VAR({var})" for var in free_vars
+            f"U_SHADOW_PTR({var})" if var in mangled_globals else f"U_SHADOW_VAR({var})"
+            for var in free_vars
         )
         definition["args"] = "\n".join(
             f"U_UNPACK_ARG({param}, {i + 1})"
@@ -455,17 +477,25 @@ class Compiler:
 
         self.functions.append(str(definition))
 
-        out = f"U_NEW_CLOSURE({definition['name']}, {env_type} {', ' + ', '.join([] + free_vars) if free_vars else ''})"
+        env_creation = [f"&{v}" if v in mangled_globals else v for v in free_vars]
+        out = f"U_NEW_CLOSURE({definition['name']}, {env_type} {', ' + ', '.join(env_creation) if env_creation else ''})"
+
         if name is not None:
             out = f"Value {name} = {out}"
 
         self.typedefs.append(
             "typedef struct { "
-            + "".join(f"Value {v}; " for v in free_vars)
+            + "".join(
+                f"Value {v}; " if v not in mangled_globals else f"Value *{v}; "
+                for v in free_vars
+            )
             + f"}} {env_type};"
         )
 
         return tstr(out)
+
+    def global_(self, node: Global, link: int) -> tstr:
+        return tstr("")
 
     def identifier_(self, node: Identifier, link: int) -> tstr:
         if "link" in node.meta:
@@ -473,7 +503,8 @@ class Compiler:
             return tstr("self", meta={"reference": True})
 
         prefix = self._imported_names.get(node.name, f"und_{self.uid}_")
-        return tstr(prefix + mangle(node.name), meta={"reference": True})
+        star = "*" if node.name in self._globals[-1] else ""
+        return tstr(star + prefix + mangle(node.name), meta={"reference": True})
 
     def if_(self, node: If, link: int) -> tstr:
         if node.expression:

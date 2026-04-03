@@ -34,3 +34,68 @@ echo("123".len())
 lst = ["test".len, ["t", "e", "s", "t"].len]
 for fn in lst do
     echo(fn())
+
+# E027
+global x
+
+# E027
+f!() = {
+    x = x * 2
+    global x
+}
+
+# E001
+f!() = {
+    global;
+    x = x * 2
+}
+
+# E601
+f!() = {
+    global lol
+    x = x * 2
+}
+
+# ---
+x = 5
+y = 5
+z = 5
+
+f!() = {
+    global x, y
+    x = x * 2
+    y = y * 3
+    z = z * 4
+    echo(x)
+    echo(y)
+    echo(z)
+}
+
+f()
+echo(x)
+echo(y)
+echo(z)
+
+# ---
+x = 5
+
+plus!(n: Int) = {n = n + 1}
+
+f!() = {
+    global x
+    x = x * 2
+    plus(x)
+}
+
+f()
+echo(x)
+
+# ---
+lst = [1,2,3]
+f!() = {
+    global lst
+    for x in lst do
+        echo(x + 1)
+}
+f()
+echo(lst)

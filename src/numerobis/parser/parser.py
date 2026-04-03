@@ -26,6 +26,7 @@ from ..nodes.ast import (
     FromImport,
     Function,
     FunctionAnnotation,
+    Global,
     Identifier,
     If,
     Import,
@@ -126,15 +127,21 @@ class Parser(ParserTemplate):
         elif first.type == "EXTERN":
             """Extern declaration"""
             return self.extern_declaration()
+        elif first.type == "GLOBAL":
+            """Globals declaration"""
+            return self.globals(legal=False)
         return self.block()
 
-    def block(self) -> AstNode:
+    def block(self, function: bool = False) -> AstNode:
         """
         Blocks are a mix of statements and expressions, mostly to allow cleaner control structure syntax
         """
         if self._peek().type == "LBRACE":
             start = self._consume("LBRACE")
             body = []
+            if function and self._peek().type == "GLOBAL":
+                body.append(self.globals(legal=True))
+
             while self.tokens and self._peek().type != "RBRACE":
                 body.append(self.statement())
                 if self._peek().type == "SEMICOLON":
@@ -385,7 +392,7 @@ class Parser(ParserTemplate):
             if body:
                 _assign = self._consume("ASSIGN")
 
-        body = self.block() if body else None
+        body = self.block(function=True) if body else None
 
         loc = dataclasses.replace(
             nodeloc(
@@ -879,6 +886,26 @@ class Parser(ParserTemplate):
 
         assert isinstance(value, (Function, VariableDeclaration))
         return ExternDeclaration(value=value, loc=nodeloc(_start, value))
+
+    def globals(self, legal: bool = False) -> Global:
+        _start = self._consume("GLOBAL")
+
+        if not legal:
+            self.errors.throw(27, loc=_start.loc)
+
+        names = []
+        i = 0
+        while self._peek().type == "ID" or i < 1:
+            names.append(self._make_id(self._consume("ID")))
+
+            if self._peek().type != "COMMA":
+                break
+
+            self._consume("COMMA")
+            self._clear()
+            i += 1
+
+        return Global(names=names)
 
     def type(
         self, vartypes: bool = False

@@ -249,3 +249,8 @@ class FunctionAnnotation(AstNode):
 @dataclass(kw_only=True, frozen=True)
 class ExternDeclaration(AstNode):
     value: VariableDeclaration | Function
+
+
+@dataclass(kw_only=True, frozen=True)
+class Global(AstNode):
+    names: list[Identifier]

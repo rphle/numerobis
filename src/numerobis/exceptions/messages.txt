@@ -64,6 +64,8 @@ parameter without a default follows parameter with a default
 [E026 / SyntaxError]
 Function parameters must have type annotations
 
+[E027 / SyntaxError]
+'global' is only allowed at the beginning of a function body
 
 
 [E101 / ValueError]

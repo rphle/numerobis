@@ -10,6 +10,7 @@
 
 #define U_UNPACK_ENV(type) type *_e = (type *)__env;
 #define U_SHADOW_VAR(name) Value name = _e->name;
+#define U_SHADOW_PTR(name) Value *name = _e->name;
 #define U_UNPACK_ARG(name, i) Value name = __args[i];
 #define U_UNPACK_OPT_ARG(name, i, def)                                         \
   Value name = (__args[i].type != VALUE_NONE ? __args[i] : (def));

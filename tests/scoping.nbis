@@ -63,10 +63,10 @@ make_counter!() = {
 }
 
 # ---
-global = 100
+glob = 100
 modify_global!() = {
-    global = 200
-    global
+    glob = 200
+    glob
 }
 modify_global()
 

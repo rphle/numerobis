@@ -29,6 +29,7 @@ class LexTokens:
         "IMPORT",
         "FROM",
         "EXTERN",
+        "GLOBAL",
     )
 
     tokens = reserved + (
