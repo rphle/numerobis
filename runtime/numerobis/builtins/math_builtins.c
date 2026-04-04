@@ -35,6 +35,16 @@ static Value numerobis_builtin_round(Value *args) {
 static Value numerobis_builtin_trunc(Value *args) {
   return _round_op(args, trunc);
 }
+static Value numerobis_builtin_roundn(Value *args) {
+  Number *n = &args[1].number;
+  if (n->kind == NUM_INT64)
+    return args[1];
+
+  gint64 places = args[2].type == VALUE_NONE ? 0 : args[2].number.i64;
+  double factor = pow(10.0, places);
+  gdouble result = round(n->f64 * factor) / factor;
+  return num__init__(result, n->unit);
+}
 
 /* Basic math */
 
@@ -198,6 +208,7 @@ void numerobis_math_register_builtins(void) {
   u_extern_register("ceil", numerobis_builtin_ceil);
   u_extern_register("round", numerobis_builtin_round);
   u_extern_register("trunc", numerobis_builtin_trunc);
+  u_extern_register("roundn", numerobis_builtin_roundn);
 
   /* Basic math */
   u_extern_register("sqrt", numerobis_builtin_sqrt);

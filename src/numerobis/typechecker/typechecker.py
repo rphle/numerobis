@@ -961,7 +961,6 @@ class Typechecker:
 
             case Expression():
                 dim = self.simplify(self.dimchecker.dimensionize(node))
-                assert isinstance(dim, Expression)
                 return NumberType(dim=dim)
 
             case One():

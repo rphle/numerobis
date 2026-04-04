@@ -11,4 +11,4 @@ extern List.pop!(self: List[?T], index: Int = -1): ?T;
 extern List.insert!(self: List[?T], index: Int, item: ?T): None;
 extern List.indexof!(lst: List[?T], item: ?T): Int;
 
-extern exit!(code: Int = 0): None;
+extern exit!(code: Int = 0, restart: Bool = false): None;

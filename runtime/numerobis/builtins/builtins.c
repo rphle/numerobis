@@ -1,5 +1,6 @@
 #include "../constants.h"
 #include "../extern.h"
+#include "../runtime.h"
 #include "../types/list.h"
 #include "../types/number.h"
 #include "../types/str.h"
@@ -14,6 +15,7 @@
 #include <glib.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 static Value numerobis_builtin_input(Value *args) {
   if (args[1].type != VALUE_NONE) {
@@ -99,6 +101,8 @@ static inline Value numerobis_builtin_str_len(Value *args) {
 }
 
 static Value numerobis_builtin_exit(Value *args) {
+  if (args[2].type != VALUE_NONE && args[2].boolean)
+    execv(NUMEROBIS__ARGV__[0], NUMEROBIS__ARGV__);
   int exit_code = args[1].type == VALUE_NONE ? 0 : _i64(args[1]);
   exit(exit_code);
   return NONE;

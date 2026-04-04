@@ -9,6 +9,8 @@ extern floor!(value: Num?): Int;
 extern ceil!(value: Num?): Int;
 extern round!(value: Num?): Int;
 extern trunc!(value: Num?): Int;
+extern roundn!(value: Num[?D], places: Int = 0): Num[?D];
+
 
 # Basic math
 extern sqrt!(value: Num?): Int;

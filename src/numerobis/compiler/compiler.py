@@ -578,7 +578,7 @@ class Compiler:
 
         name = self.unlink(node.name).name
         out["name"] = mangle(name)
-        self._imported_names[f"{mod}::{out['name']}"] = out["prefix"]
+        self._imported_names[f"{mod}::{name}"] = out["prefix"]
         return out
 
     def number_(self, node: Integer | Num, *, init: bool = True) -> tstr:
@@ -625,6 +625,8 @@ class Compiler:
         )
 
     def return_(self, node: Return, link: int) -> tstr:
+        if self.unlink(node.value) is None:
+            return tstr("return NONE")
         return tstr(f"return {self.compile(node.value)}")
 
     def slice_(self, node: Index, link: int) -> tstr:

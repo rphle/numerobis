@@ -71,12 +71,14 @@ class Linker:
                     const char* NUMEROBIS__FILES__[] = {
                         $filenames
                     };
+                    char **NUMEROBIS__ARGV__;
 
                     extern void u_init_module_registry(void);
 
                     $functions
 
-                    int main() {
+                    int main(int argc, char **argv) {
+                        NUMEROBIS__ARGV__ = argv;
                         u_init_module_registry();
 
                         $output

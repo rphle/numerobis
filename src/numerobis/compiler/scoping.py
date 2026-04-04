@@ -53,8 +53,8 @@ def get_free_vars(
                     and var_name not in current_defined
                 ):
                     used.add(defined_addrs[n.meta["address"]])
-                    return
-                current_defined.add(var_name)
+                else:
+                    current_defined.add(var_name)
             case Function():
                 if n.name is not None:
                     var_name = unlink(n.name).name

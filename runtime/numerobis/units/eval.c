@@ -28,7 +28,10 @@ gdouble eval_unit(const Unit *u, gdouble number, EvalMode mode) {
     else /* EVAL_NORMAL */
       base_val = unit_id_eval_normal(id, number);
 
-    result *= pow(base_val, (gdouble)exp);
+    if (base_val == 0.0)
+      result = 0.0;
+    else
+      result *= pow(base_val, (gdouble)exp);
   }
 
   result *= u->scalar;
@@ -54,6 +57,8 @@ gdouble eval_number(Number *n, const uint64_t *_unit_hash) {
   if (!(is_one(u) && u->scalar == 1.0)) {
     gdouble base = eval_unit(u, value, EVAL_BASE);
     gdouble target = eval_unit(u, value, EVAL_INVERTED);
+    if (base == 0.0)
+      return 0.0;
     gdouble res = target / base;
     value = unit_is_logarithmic(u) ? res : value * res;
   }

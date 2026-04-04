@@ -1,4 +1,4 @@
 extern random!(): Int;
 extern randint!(lo: Int?, hi: Int?): Int;
-extern uniform!(lo: Num?, hi: Num?): Int;
+extern uniform!(lo: Num?, hi: Num?): Num;
 extern gaussian!(mean: Num? = 0.0, stddev: Num? = 1.0): Num;
