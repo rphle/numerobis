@@ -418,7 +418,10 @@ class Parser(ParserTemplate):
         else_branch = None
         if self._peek().type == "ELSE":
             self._consume("ELSE")
-            else_branch = self.block() if not expression else self.expression()
+            if self._peek().type == "IF":
+                else_branch = self.conditional(expression)
+            else:
+                else_branch = self.block() if not expression else self.expression()
         elif expression:
             self.errors.throw(14, loc=nodeloc(_if, then_branch))
 
