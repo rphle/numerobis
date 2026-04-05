@@ -4,7 +4,6 @@ from dataclasses import replace
 from decimal import Decimal
 from typing import Optional, TypeVar
 
-
 from ..classes import Header, ModuleMeta
 from ..environment import Namespaces
 from ..exceptions.exceptions import Exceptions
@@ -64,10 +63,12 @@ class Preprocessor:
         self.env.nodes[link] = val
 
     def unit_def_(self, unit: UnitDefinition):
+        """Processes a unit definition, calculating its base units, inversion, and other data needed for compilation"""
         if unit.value is None or isinstance(unit.value, One):
             expr = Expression(Identifier("_"))
         else:
             expr = unit.value
+            expr = self.product_to_unit(expr)
             expr = self.resolve(expr, Identifier("_"))  # type: ignore
             if is_linear(expr.value, True) and not contains_sum(expr.value):
                 val = expr.value
@@ -133,6 +134,7 @@ class Preprocessor:
         return resolved
 
     def resolve_(self, node: UnitNode, n: Scalar | Identifier) -> UnitNode:
+        """Recursively resolves unit references and placeholders"""
         match node:
             case Neg():
                 return replace(node, value=self.resolve_(node.value, n))
@@ -209,3 +211,75 @@ class Preprocessor:
                 return self.to_base(value)
 
         return node
+
+    def product_to_unit(self, node: UnitNode) -> UnitNode:
+        """Rewrite coefficient * unit into Scalar(value=..., unit=...) form"""
+        match node:
+            case Neg():
+                return replace(node, value=self.product_to_unit(node.value))
+            case Expression():
+                return replace(node, value=self.product_to_unit(node.value))
+            case Sum():
+                return replace(
+                    node, values=[self.product_to_unit(v) for v in node.values]
+                )
+            case Power():
+                return replace(node, base=self.product_to_unit(node.base))
+            case Product():
+                simplified = self.simplify(node, do_cancel=False)
+                if isinstance(simplified, (One, AnyDim)):
+                    return node
+                if not isinstance(simplified.value, Product):
+                    return self.product_to_unit(simplified.value)
+
+                prod = simplified.value
+                scalar_value = Decimal("1")
+                unit_parts: list[UnitNode] = []
+                nonlinear_parts: list[UnitNode] = []
+
+                for item in prod.values:
+                    rewritten = self.product_to_unit(item)
+
+                    if isinstance(rewritten, Scalar):
+                        scalar_value *= rewritten.value
+                        if rewritten.unit is not None:
+                            scalar_value *= rewritten.value
+                            u = (
+                                rewritten.unit.value
+                                if isinstance(rewritten.unit, Expression)
+                                else rewritten.unit
+                            )
+                            unit_parts.append(u)
+                    else:
+                        # Non-scalar part
+                        if contains_sum(rewritten) or not is_linear(rewritten):
+                            nonlinear_parts.append(rewritten)
+                        else:
+                            unit_parts.append(rewritten)
+
+                if not unit_parts and not nonlinear_parts:
+                    return Scalar(value=scalar_value)
+
+                unit = self.simplify(Product(values=unit_parts), do_cancel=False)
+                unit_expr = unit if isinstance(unit, Expression) else Expression(unit)
+
+                scalar_node = Scalar(value=scalar_value, unit=unit_expr)
+
+                if nonlinear_parts:
+                    return Product(values=nonlinear_parts + [scalar_node])
+
+                return scalar_node
+
+            case Scalar() if node.unit is not None:
+                new_unit = self.product_to_unit(node.unit)
+                return replace(
+                    node,
+                    unit=(
+                        new_unit
+                        if isinstance(new_unit, Expression)
+                        else Expression(new_unit)
+                    ),
+                )
+
+            case _:
+                return node

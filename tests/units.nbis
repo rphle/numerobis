@@ -99,3 +99,28 @@ echo(0C |+| 32F)
 # E543
 from si import @K
 unit t = 5 W + 3 W + 2 K
+
+# ---
+dimension Length
+unit m: Length;
+unit km = 1000m
+unit km1 = 1000*m
+unit L: Volume = (0.1m)^3;
+unit L1: Volume = (0.1*m)^3;
+unit L2: Volume = 0.001 * (m^3);
+unit L3: Volume = 0.001(m^3);
+
+F = 6000.0 kg
+D = 0.81 kg/L
+D2 = 0.81 kg/L2
+
+echo(5 L)
+echo(5 L1)
+echo(5 L2)
+echo(5 L3)
+
+echo(5 km)
+echo(5 km1)
+
+echo(F / D)
+echo(F / D2)
