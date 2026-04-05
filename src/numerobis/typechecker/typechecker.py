@@ -7,6 +7,8 @@ import uuid
 from decimal import Decimal
 from typing import TypeVar
 
+import rich
+
 from ..analysis.dimchecker import Dimchecker
 from ..analysis.simplifier import Simplifier
 from ..classes import ModuleMeta
@@ -24,6 +26,7 @@ from ..nodes.ast import (
     Compare,
     Continue,
     Conversion,
+    Debug,
     DimensionDefinition,
     ExternDeclaration,
     ForLoop,
@@ -91,6 +94,7 @@ class Typechecker:
         self.module = module
         self.errors = Exceptions(module=module)
         self.namespaces = namespaces
+        self.console = rich.console.Console(highlight=False)
 
         self.dimchecker = Dimchecker(module=module, namespaces=namespaces)
         self.simplifier = Simplifier(module=module)
@@ -514,6 +518,10 @@ class Typechecker:
             right=target,
             loc=node.loc,
         )
+
+    def debug_(self, node: Debug, env: Env):
+        expr = self.check(node.expr, env=env)
+        self.console.print(f"[dim][DEBUG {node.loc.line}:{node.loc.col}][/dim] {expr}")
 
     def extern_declaration_(self, node: ExternDeclaration, env: Env, link: int):
         value = self.unlink(node.value)

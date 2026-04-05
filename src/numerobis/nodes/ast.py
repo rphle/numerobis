@@ -254,3 +254,8 @@ class ExternDeclaration(AstNode):
 @dataclass(kw_only=True, frozen=True)
 class Global(AstNode):
     names: list[Identifier]
+
+
+@dataclass(kw_only=True, frozen=True)
+class Debug(AstNode):
+    expr: AstNode

@@ -26,6 +26,7 @@ from ..nodes.ast import (
     Compare,
     Continue,
     Conversion,
+    Debug,
     DimensionDefinition,
     ExternDeclaration,
     ForLoop,
@@ -790,7 +791,13 @@ class Compiler:
         match node:
             case Integer() | Num():
                 return self.number_(node)
-            case Import() | FromImport() | DimensionDefinition() | UnitDefinition():
+            case (
+                Import()
+                | FromImport()
+                | DimensionDefinition()
+                | UnitDefinition()
+                | Debug()
+            ):
                 return tstr("")
             case _:
                 name = camel2snake_pattern.sub("_", type(node).__name__).lower() + "_"

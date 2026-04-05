@@ -20,6 +20,7 @@ from ..nodes.ast import (
     Compare,
     Continue,
     Conversion,
+    Debug,
     DimensionDefinition,
     ExternDeclaration,
     ForLoop,
@@ -130,6 +131,10 @@ class Parser(ParserTemplate):
         elif first.type == "GLOBAL":
             """Globals declaration"""
             return self.globals(legal=False)
+        elif first.type == "DEBUG":
+            """Debug statement"""
+            return self.debug()
+
         return self.block()
 
     def block(self, function: bool = False) -> AstNode:
@@ -909,6 +914,16 @@ class Parser(ParserTemplate):
             i += 1
 
         return Global(names=names)
+
+    def debug(self) -> Debug:
+        _start = self._consume("DEBUG")
+        _paren = None
+        if self._peek().type == "LPAREN":
+            _paren = self._consume("LPAREN")
+        expr = self.expression()
+        if _paren:
+            self._consume("RPAREN")
+        return Debug(expr=expr, loc=nodeloc(_start, expr))
 
     def type(
         self, vartypes: bool = False
