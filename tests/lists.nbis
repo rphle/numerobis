@@ -412,3 +412,9 @@ lst = []
 f!(l: List[?T], item: ?T): List[?T] = l + [item]
 f(lst, 5)
 f(lst, "5")
+
+# ---
+a = [1]
+b = a
+b.append(2)
+echo(a)

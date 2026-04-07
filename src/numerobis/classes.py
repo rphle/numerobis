@@ -4,6 +4,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
 
+
 from .nodes.ast import DimensionDefinition, FromImport, Import, UnitDefinition
 
 
@@ -36,7 +37,7 @@ class CompiledUnits:
     names: dict[str, str] = field(default_factory=dict)
 
 
-@dataclass
+@dataclass(kw_only=True)
 class CompiledModule:
     meta: ModuleMeta
     imports: list[str]
@@ -44,5 +45,6 @@ class CompiledModule:
     code: str
     functions: list[str]
     typedefs: list[str]
+    structs: list
     units: CompiledUnits
     namespaces: Optional["Namespaces"] = None  # type: ignore # noqa

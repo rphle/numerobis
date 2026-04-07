@@ -6,6 +6,7 @@
 #include "types/number.h"
 #include "types/range.h"
 #include "types/str.h"
+#include "types/struct.h"
 #include "units/units.h"
 #include <locale.h>
 
@@ -24,6 +25,7 @@ __attribute__((constructor)) static void numerobis_runtime_ctor(void) {
   number_methods_init();
   range_methods_init();
   str_methods_init();
+  struct_methods_init();
 }
 
 __attribute__((destructor)) static void numerobis_runtime_dtor(void) {

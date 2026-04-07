@@ -23,6 +23,7 @@ from ..nodes.ast import (
     Debug,
     DimensionDefinition,
     ExternDeclaration,
+    Field,
     ForLoop,
     FromImport,
     Function,
@@ -42,6 +43,9 @@ from ..nodes.ast import (
     Return,
     Slice,
     String,
+    Struct,
+    StructAssignment,
+    StructInit,
     Tuple,
     Type,
     UnaryOp,
@@ -66,6 +70,7 @@ class Parser(ParserTemplate):
         self.header = Header()
 
         self.module_names: list[str] = []
+        self.struct_names: list[str] = []
 
     def start(self) -> list[AstNode]:
         statements = []
@@ -108,6 +113,9 @@ class Parser(ParserTemplate):
         elif first.type == "WHILE":
             """While loop"""
             return self.whileloop()
+        elif first.type == "STRUCT":
+            """Struct declaration"""
+            return self.struct()
         elif first.type == "BREAK":
             """Break statement"""
             self._consume("BREAK")
@@ -177,13 +185,17 @@ class Parser(ParserTemplate):
             self._consume("ASSIGN")
             value = self.expression()
 
-            if not isinstance(left, Index):
+            if isinstance(left, Index):
+                return IndexAssignment(
+                    target=left, value=value, loc=left.loc.merge(value.loc)
+                )
+            elif isinstance(left, Attribute):
+                return StructAssignment(
+                    target=left, value=value, loc=left.loc.merge(value.loc)
+                )
+            else:
                 self.errors.throw(21, loc=left.loc)
                 raise
-
-            return IndexAssignment(
-                target=left, value=value, loc=left.loc.merge(value.loc)
-            )
 
         return left
 
@@ -473,6 +485,51 @@ class Parser(ParserTemplate):
             loc=nodeloc(_while, body),
         )
 
+    def struct(self) -> AstNode:
+        _struct = self._consume("STRUCT")
+        name = self._make_id(self._consume("ID"))
+        self.struct_names.append(name.name)
+
+        self._consume("LBRACE")
+
+        expect_default = False
+        fields = []
+        while self._peek().type != "RBRACE":
+            field = {}
+            _p_name = self._consume("ID")
+            self._check_forbidden(_p_name, "parameter")
+            field["name"] = self._make_id(_p_name)
+
+            self._consume("COLON")
+            field["type"] = self.type(True)
+
+            if self._peek().type == "ASSIGN":
+                self._consume("ASSIGN")
+                field["default"] = self.expression()
+                expect_default = True
+            elif expect_default:
+                self.errors.throw(28, loc=field["name"].loc)
+
+            fields.append(
+                Field(
+                    name=field["name"],
+                    type=field["type"],
+                    default=field.get("default"),
+                    loc=nodeloc(
+                        field["name"],
+                        field.get("default", field.get("type", field["name"])),
+                    ),
+                )
+            )
+
+            if self._peek().type == "RBRACE":
+                break
+            self._consume("COMMA")
+
+        _rbrace = self._consume("RBRACE")
+
+        return Struct(name=name, fields=fields, loc=nodeloc(_struct, _rbrace))
+
     def range_(self) -> AstNode:
         parts = [self.conversion(), None, None]
 
@@ -615,6 +672,9 @@ class Parser(ParserTemplate):
                 break
             self._consume("COMMA")
         _end = self._consume("RPAREN")
+
+        if isinstance(node, Identifier) and node.name in self.struct_names:
+            return StructInit(name=node, args=args, loc=nodeloc(node, _end))
         return Call(callee=node, args=args, loc=nodeloc(node, _end))
 
     def index(self, node: AstNode) -> AstNode:
@@ -984,6 +1044,17 @@ class Parser(ParserTemplate):
             token = self._consume("ID", ignore_whitespace=False)
             name = Identifier(name="?" + token.value, loc=nodeloc(_qmark, token))
             return Type(name=name, param=None, loc=name.loc)
+        elif self._peek().type == "LBRACE":
+            _lbrace = self._consume("LBRACE")
+            _name = self._consume("ID", ignore_whitespace=False)
+            _rbrace = self._consume("RBRACE")
+            name = Identifier(name=_name.value, loc=nodeloc(_lbrace, _rbrace))
+            struct = Type(name=name, param=None, loc=name.loc)
+            return Type(
+                name=Identifier(name="Struct"),
+                param=struct,
+                loc=struct.loc,
+            )
         else:
             return self.unit(standalone=True)
 
@@ -1051,6 +1122,14 @@ class Parser(ParserTemplate):
                 type=type_,
                 loc=name.loc,
                 help="there is already a module with this name",
+            )
+        elif name.value in self.struct_names:
+            self.errors.throw(
+                606,
+                name=name.value,
+                type=type_,
+                loc=name.loc,
+                help="there is already a struct with this name",
             )
         elif name.value in ["_"]:
             self.errors.throw(606, name=name.value, type=type_, loc=name.loc)

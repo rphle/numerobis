@@ -1,5 +1,6 @@
 """Type system definitions and type variable environment management."""
 
+import uuid
 from dataclasses import dataclass, field, replace
 from typing import Any, Callable, Literal, Optional, Union, overload
 
@@ -20,6 +21,7 @@ T = Union[
     "SliceType",
     "ListType",
     "FunctionType",
+    "StructInstance",
 ]
 
 
@@ -246,6 +248,29 @@ class FunctionType(UType):
 
 
 @dataclass(kw_only=True, frozen=True)
+class StructType(UType):
+    name_: Optional[str] = field(default=None, compare=False)
+    fields: list[T] = field(default_factory=list)
+    names: list[str] = field(default_factory=list)
+    defaults: list = field(default_factory=list)
+    arity: tuple[int, int] = (0, 0)
+    _fingerprint: str = field(default_factory=lambda: uuid.uuid4().hex, repr=False)
+
+    def __str__(self):
+        return f"Struct[{self.name_}]"
+
+
+@dataclass(kw_only=True, frozen=True)
+class StructInstance(UType):
+    name_: Optional[str] = field(default=None, compare=False)
+    _fingerprint: str = field(default_factory=lambda: uuid.uuid4().hex, repr=False)
+    struct: StructType = field(default_factory=StructType)
+
+    def __str__(self):
+        return f"{{{self.name_}}}"
+
+
+@dataclass(kw_only=True, frozen=True)
 class Constant(UType):
     value: T
 
@@ -291,7 +316,7 @@ class Overload:
 
 
 @dataclass(frozen=True)
-class Struct:
+class MethodStruct:
     fields: dict[str, T | Overload]
 
     def __getitem__(self, key: str) -> T | Overload | None:
@@ -403,6 +428,9 @@ def match_type(a: T, b: T) -> Literal[True] | Mismatch:
         case VarType() as a, VarType() as b:
             if a._name != b._name or a.fingerprint != b.fingerprint:
                 return mismatch
+        case StructInstance() as a, StructInstance() as b:
+            if a._fingerprint != b._fingerprint:
+                return mismatch
         case _:
             if a != b:
                 return mismatch
@@ -438,6 +466,10 @@ def unify_type(a: T, b: T) -> T | Mismatch:
             return a.edit(
                 params=a.params[:is_method] + checked[:-1], return_type=checked[-1]
             )
+        case StructInstance() as a, StructInstance() as b:
+            if a._fingerprint != b._fingerprint:
+                return mismatch
+            return a
         case _:
             matched = match_type(a, b)
             if not matched:

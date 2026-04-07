@@ -10,6 +10,7 @@ from ..nodes.ast import (
     ForLoop,
     Function,
     ModuleAccess,
+    StructInit,
     Variable,
     VariableDeclaration,
 )
@@ -71,9 +72,19 @@ def get_free_vars(
                     used.add(name)
                 return
             case Attribute():
-                name = n.meta["#type"] + "." + unlink(n.name).name
-                if name not in current_defined:
-                    used.add(name)
+                if "#struct" in n.meta:
+                    owner = unlink(n.owner)
+                    if isinstance(unlink(n.owner), Identifier):
+                        if owner.name not in current_defined:
+                            used.add(owner.name)
+                else:
+                    name = n.meta["#type"] + "." + unlink(n.name).name
+                    if name not in current_defined:
+                        used.add(name)
+            case StructInit():
+                defaults = n.meta["#struct"].defaults
+                for default in defaults:
+                    visit(default, current_defined)
             case Expression():
                 return
 
@@ -89,5 +100,7 @@ def get_free_vars(
                 visit(val, current_defined)
 
     visit(node.body, defined)
+    for param in node.params:
+        visit(unlink(param).default, defined)
 
     return sorted(list(used))

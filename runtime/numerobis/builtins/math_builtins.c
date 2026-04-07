@@ -40,7 +40,7 @@ static Value numerobis_builtin_roundn(Value *args) {
   if (n->kind == NUM_INT64)
     return args[1];
 
-  gint64 places = args[2].type == VALUE_NONE ? 0 : args[2].number.i64;
+  gint64 places = args[2].type == VALUE_EMPTY ? 0 : args[2].number.i64;
   double factor = pow(10.0, places);
   gdouble result = round(n->f64 * factor) / factor;
   return num__init__(result, n->unit);

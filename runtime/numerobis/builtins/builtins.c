@@ -19,7 +19,7 @@
 
 static Value numerobis_builtin_input(Value *args) {
   if (args[1].type != VALUE_NONE) {
-    Value echo_args[] = {NONE, args[1], EMPTY_STR};
+    Value echo_args[] = {EMPTY, args[1], EMPTY_STR};
     echo(echo_args);
     fflush(stdout);
   }
@@ -59,7 +59,7 @@ static Value numerobis_builtin_indexof(Value *args) {
 
 static Value numerobis_builtin_split(Value *args) {
   GString *self = args[2].str;
-  GString *sep = args[1].type == VALUE_NONE ? g_string_new(" ") : args[1].str;
+  GString *sep = args[1].type == VALUE_EMPTY ? g_string_new(" ") : args[1].str;
 
   GArray *result_arr = g_array_new(FALSE, FALSE, sizeof(Value *));
 
@@ -101,9 +101,9 @@ static inline Value numerobis_builtin_str_len(Value *args) {
 }
 
 static Value numerobis_builtin_exit(Value *args) {
-  if (args[2].type != VALUE_NONE && args[2].boolean)
+  if (args[2].type != VALUE_EMPTY && args[2].boolean)
     execv(NUMEROBIS__ARGV__[0], NUMEROBIS__ARGV__);
-  int exit_code = args[1].type == VALUE_NONE ? 0 : _i64(args[1]);
+  int exit_code = args[1].type == VALUE_EMPTY ? 0 : _i64(args[1]);
   exit(exit_code);
   return NONE;
 }

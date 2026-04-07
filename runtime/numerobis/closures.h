@@ -13,7 +13,7 @@
 #define U_SHADOW_PTR(name) Value *name = _e->name;
 #define U_UNPACK_ARG(name, i) Value name = __args[i];
 #define U_UNPACK_OPT_ARG(name, i, def)                                         \
-  Value name = (__args[i].type != VALUE_NONE ? __args[i] : (def));
+  Value name = (__args[i].type != VALUE_EMPTY ? __args[i] : (def));
 
 #define CLOSURE_SLAB_CHUNK 256
 
@@ -41,8 +41,9 @@ Value closure__init__(Value (*func)(void *, Value *), void *env,
                       Value bound_arg);
 
 #define U_NEW_CLOSURE(impl, env_type, ...)                                     \
-  closure__init__(                                                             \
-      impl, closure_capture(sizeof(env_type), &(env_type){__VA_ARGS__}), NONE)
+  closure__init__(impl,                                                        \
+                  closure_capture(sizeof(env_type), &(env_type){__VA_ARGS__}), \
+                  EMPTY)
 
 static inline bool _is_plain_int(Value v) {
   return v.type == VALUE_NUMBER && v.number.kind == NUM_INT64 &&

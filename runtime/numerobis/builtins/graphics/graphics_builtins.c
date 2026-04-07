@@ -22,11 +22,11 @@ static inline gint32 _tx_y(gdouble y) { return (gint32)((y + _ty) * _scale); }
 static inline gint32 _tx_dim(gdouble dim) { return (gint32)(dim * _scale); }
 
 static inline gboolean _arg_filled(Value v) {
-  return v.type != VALUE_NONE ? _bool(v) : true;
+  return v.type != VALUE_EMPTY ? _bool(v) : true;
 }
 
 static inline Color _arg_color(Value v) {
-  return v.type != VALUE_NONE ? _parse_color(_str(v)) : COLOR_BLACK;
+  return v.type != VALUE_EMPTY ? _parse_color(_str(v)) : COLOR_BLACK;
 }
 
 static gint32 _parse_style_list(Value style_val) {
@@ -154,7 +154,7 @@ static Value numerobis_builtin_ellipse(Value *args) {
 /* line!(x1, y1, x2, y2, color, thickness) */
 static Value numerobis_builtin_line(Value *args) {
   _ensure_queue();
-  gdouble thickness = args[6].type != VALUE_NONE ? _f64(args[6]) : 1.0;
+  gdouble thickness = args[6].type != VALUE_EMPTY ? _f64(args[6]) : 1.0;
   DrawCmd cmd = {.kind = CMD_LINE,
                  .color = _arg_color(args[5]),
                  .line = {_tx_x(_f64(args[1])), _tx_y(_f64(args[2])),
@@ -172,8 +172,8 @@ static Value numerobis_builtin_polygon(Value *args) {
   SDL_Point *pts = GC_MALLOC(n * sizeof(SDL_Point));
 
   for (gint32 i = 0; i < n; i++) {
-    gdouble px = _f64(*g_array_index(arr, Value *, i * 2));
-    gdouble py = _f64(*g_array_index(arr, Value *, i * 2 + 1));
+    gdouble px = _f64(g_array_index(arr, Value, i * 2));
+    gdouble py = _f64(g_array_index(arr, Value, i * 2 + 1));
     pts[i].x = _tx_x(px);
     pts[i].y = _tx_y(py);
   }
@@ -211,16 +211,16 @@ static Value numerobis_builtin_point(Value *args) {
 static Value numerobis_builtin_text(Value *args) {
   _ensure_queue();
 
-  const gchar *font_arg = args[7].type != VALUE_NONE ? _str(args[7]) : NULL;
+  const gchar *font_arg = args[7].type != VALUE_EMPTY ? _str(args[7]) : NULL;
   const gchar *font_path =
       font_arg ? _resolve_font_name(font_arg) : _default_font();
   if (!font_path)
     font_path = _default_font();
 
-  gdouble angle_arg = args[8].type != VALUE_NONE ? _f64(args[8]) : 0.0;
-  gint32 style_arg = args[6].type != VALUE_NONE ? _parse_style_list(args[6])
-                                                : TTF_STYLE_NORMAL;
-  gint32 size_arg = args[4].type != VALUE_NONE ? _tx_dim(_f64(args[4])) : 16;
+  gdouble angle_arg = args[8].type != VALUE_EMPTY ? _f64(args[8]) : 0.0;
+  gint32 style_arg = args[6].type != VALUE_EMPTY ? _parse_style_list(args[6])
+                                                 : TTF_STYLE_NORMAL;
+  gint32 size_arg = args[4].type != VALUE_EMPTY ? _tx_dim(_f64(args[4])) : 16;
 
   DrawCmd cmd = {
       .kind = CMD_TEXT,
@@ -376,7 +376,7 @@ static Value numerobis_builtin_key_pressed(Value *args) {
 /* set_scale!(value: Num, pixels: Num = 1): None */
 static Value numerobis_builtin_set_scale(Value *args) {
   gdouble value = _f64(args[1]);
-  gdouble pixels = args[2].type != VALUE_NONE ? _f64(args[2]) : 1;
+  gdouble pixels = args[2].type != VALUE_EMPTY ? _f64(args[2]) : 1;
   _scale = pixels / value;
   return NONE;
 }

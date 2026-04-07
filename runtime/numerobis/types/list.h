@@ -12,7 +12,7 @@
 
 Value list__init__(GArray *x);
 
-Value list_of(Value first, ...);
+Value list_of(const Value *items, size_t len);
 
 static inline size_t _list_len(const GArray *self) {
   return self ? self->len : 0;

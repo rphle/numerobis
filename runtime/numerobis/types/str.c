@@ -43,13 +43,13 @@ static Value str__getitem__(Value _self, Value _index) {
   gint64 index = _index.number.i64;
 
   if (!self)
-    return NONE;
+    return EMPTY;
 
   ssize_t len = (ssize_t)_str_len(self);
   ssize_t nidx = normalize_index(index, len);
 
   if (nidx < 0 || nidx >= len)
-    return NONE;
+    return EMPTY;
 
   const char *p = self->str;
   for (ssize_t i = 0; i < nidx; i++)
@@ -109,13 +109,13 @@ static Value str__setitem__(Value _self, Value _index, Value _value) {
   GString *value = _value.str;
 
   if (!self || !value)
-    return NONE;
+    return EMPTY;
 
   ssize_t len = (ssize_t)_str_len(self);
   ssize_t nidx = normalize_index(index, len);
 
   if (nidx < 0 || nidx >= len)
-    return NONE;
+    return EMPTY;
 
   const char *p = self->str;
   for (ssize_t i = 0; i < nidx; i++)
@@ -213,7 +213,7 @@ static Value str__int__(Value self) {
   }
 
   if (*str == '\0') {
-    return NONE;
+    return EMPTY;
   }
 
   gint64 result = g_ascii_strtoll(str, &endptr, 10);
@@ -223,7 +223,7 @@ static Value str__int__(Value self) {
   }
 
   if (*endptr != '\0') {
-    return NONE;
+    return EMPTY;
   }
 
   return int__init__(result, U_ONE);
@@ -231,7 +231,7 @@ static Value str__int__(Value self) {
 
 static Value str__num__(Value self) {
   if (!self.str)
-    return NONE;
+    return EMPTY;
 
   const gchar *str = self.str->str;
   gchar *endptr = NULL;
@@ -241,7 +241,7 @@ static Value str__num__(Value self) {
   }
 
   if (*str == '\0') {
-    return NONE;
+    return EMPTY;
   }
 
   gdouble result = g_ascii_strtod(str, &endptr);
@@ -251,7 +251,7 @@ static Value str__num__(Value self) {
   }
 
   if (*endptr != '\0') {
-    return NONE;
+    return EMPTY;
   }
 
   return num__init__(result, U_ONE);

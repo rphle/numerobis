@@ -7,13 +7,13 @@ from .types import (
     FunctionType,
     IntType,
     ListType,
+    MethodStruct,
     NoneType,
     NumberType,
     NumType,
     Overload,
     SliceType,
     StrType,
-    Struct,
     VarType,
 )
 
@@ -47,10 +47,10 @@ _eq = {
     for typ in ["eq", "ne"]
 }
 
-typetable: dict[str, Struct] = {
-    "Any": Struct({}),
-    "Var": Struct({}),
-    "Int": Struct(
+typetable: dict[str, MethodStruct] = {
+    "Any": MethodStruct({}),
+    "Var": MethodStruct({}),
+    "Int": MethodStruct(
         {
             **_conv("Int", "Bool", "Str", "Num"),
             **{f"__{op}__": _numberoverload for op in _ops},
@@ -58,7 +58,7 @@ typetable: dict[str, Struct] = {
             **_eq,
         }
     ),
-    "Num": Struct(
+    "Num": MethodStruct(
         {
             **_conv("Num", "Bool", "Str", "Int"),
             **{f"__{op}__": _numberoverload for op in _ops},
@@ -66,8 +66,8 @@ typetable: dict[str, Struct] = {
             **_eq,
         }
     ),
-    "Bool": Struct({**_conv("Bool", "Bool", "Str", "Int", "Num"), **_eq}),
-    "Str": Struct(
+    "Bool": MethodStruct({**_conv("Bool", "Bool", "Str", "Int", "Num"), **_eq}),
+    "Str": MethodStruct(
         {
             **_conv("Str", "Bool", "Int", "Num"),
             "__add__": FunctionType(
@@ -100,7 +100,7 @@ typetable: dict[str, Struct] = {
             **_eq,
         },
     ),
-    "List": Struct(
+    "List": MethodStruct(
         {
             **_conv("List", "Bool", "Str"),
             "__add__": FunctionType(
@@ -137,8 +137,8 @@ typetable: dict[str, Struct] = {
             **_eq,
         },
     ),
-    "Range": Struct({**_eq}),
-    "Function": Struct({**_eq}),
-    "Dimension": Struct({}),
-    "None": Struct({**_eq}),
+    "Range": MethodStruct({**_eq}),
+    "Function": MethodStruct({**_eq}),
+    "Dimension": MethodStruct({}),
+    "None": MethodStruct({**_eq}),
 }

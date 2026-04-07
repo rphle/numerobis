@@ -67,6 +67,9 @@ Function parameters must have type annotations
 [E027 / SyntaxError]
 'global' is only allowed at the beginning of a function body
 
+[E028 / SyntaxError]
+field without a default follows field with a default
+
 
 [E101 / ValueError]
 Exponent must be a dimensionless scalar, not {value}
@@ -114,16 +117,16 @@ recursive function {name} requires parameter type annotations
 recursive function {name} requires a return type annotation
 
 [E509 / TypeError]
-{name}() got multiple values for argument '{arg}'
+{name} got multiple values for argument '{arg}'
 
 [E510 / TypeError]
-{name}() got an unexpected keyword argument '{arg}'
+{name} got an unexpected keyword argument '{arg}'
 
 [E511 / TypeError]
 positional argument follows keyword argument
 
 [E512 / TypeError]
-{name}() takes {n_params} argument{plural} but {n_args} were given
+{name} takes {n_params} argument{plural} but {n_args} were given
 
 [E513 / TypeError]
 Expected parameter of {kind} {expected} for argument '{name}', but got {actual}
@@ -218,6 +221,12 @@ addends must either be of the same dimension or dimensionless
 [E544 / TypeError]
 unknown type '{name}'
 
+[E545 / TypeError]
+Field '{field}' declared as {kind} {expected} but defaults to {actual}
+
+[E546 / TypeError]
+Struct fields may not be type 'Any'
+
 
 
 [E601 / NameError]
@@ -237,6 +246,7 @@ type does not support keyword arguments
 
 [E606 / NameError]
 Invalid {type} name: {name}
+
 
 
 [E701 / TypeError]

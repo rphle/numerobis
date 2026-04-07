@@ -8,6 +8,8 @@ from typing import Optional
 import rich
 import rich.syntax
 
+from numerobis.typechecker.types import StructType
+
 from ..classes import CompiledModule, CompiledUnits
 from ..exceptions.exceptions import Exceptions
 from ..utils import STDLIB_PATH
@@ -57,6 +59,43 @@ class Linker:
         )
         return uses
 
+    def _structs(self, structs: list[StructType]) -> tuple[list[str], str]:
+        if not structs:
+            return [], "const StructInfo STRUCT_REGISTRY[0] = {};"
+
+        fieldcounts = {len(node.fields) for node in structs}
+        funcs = []
+        ids = []
+        entries = []
+
+        for fieldc in fieldcounts:
+            # Generic struct init function for structs with `fieldc` fields
+            init = tstr("""static inline Value struct__init__$n(gint64 id, $args)
+{
+    Value v = struct__init__(id, $n);
+    $fields
+    return v;
+}""")
+            init["n"] = str(fieldc)
+            init["args"] = ", ".join(f"Value a{i}" for i in range(fieldc))
+            init["fields"] = "\n".join(
+                f"v.strukt[{i + 1}] = a{i};" for i in range(fieldc)
+            )
+            funcs.append(str(init))
+
+        # Struct registry entry
+        for struct in structs:
+            id = f"STRUCT_{struct.name_}_{struct._fingerprint}"
+            ids.append(id)
+            entries.append(
+                f'[{id}]  = {{"{struct.name_}",  (const char*[]){{"{'","'.join(struct.names)}"}}, {len(struct.fields)}}}'
+            )
+
+        macros = "\n".join(f"#define {id} {i}" for i, id in enumerate(ids))
+        out = f"{macros}\nconst StructInfo STRUCT_REGISTRY[{len(structs)}] = {{\n    {',\n    '.join(entries)}\n}};"
+
+        return funcs, out
+
     def link(self, print_: bool = False, format: bool = False):
         self.process_module(self.modules[str(self.main)])
 
@@ -74,6 +113,8 @@ class Linker:
                     char **NUMEROBIS__ARGV__;
 
                     extern void u_init_module_registry(void);
+
+                    $structs
 
                     $functions
 
@@ -94,6 +135,7 @@ class Linker:
         output = []
         functions = []
         typedefs = []
+        structs = []
         for file, uid in zip(*self.order):
             module = self.modules[file]
             module.meta.path = Path(self._path(file))
@@ -102,12 +144,17 @@ class Linker:
             )
             functions.extend(module.functions)
             typedefs.extend(module.typedefs)
+            structs.extend(module.structs)
 
         self.order[0] = [self._path(file) for file in self.order[0]]
+
+        struct_funcs, struct_defs = self._structs(structs)
+        functions = struct_funcs + functions
 
         code["output"] = "\n\n".join(output)
         code["functions"] = "\n\n".join(functions)
         code["typedefs"] = "\n\n".join(typedefs)
+        code["structs"] = struct_defs
 
         code = str(code).strip()
         if format:

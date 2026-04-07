@@ -1,6 +1,7 @@
 #include "echo.h"
 #include "../constants.h"
 #include "../types/str.h"
+#include "../types/struct.h"
 #include "../units/eval.h"
 #include "../values.h"
 #include <glib.h>
@@ -21,8 +22,8 @@ static inline void echo_garray(GArray *arr) {
   for (size_t i = 0; i < arr->len; i++) {
     if (i > 0)
       g_print(", ");
-    Value *elem = g_array_index(arr, Value *, i);
-    Value args[] = {NONE, *elem, EMPTY_STR};
+    Value elem = g_array_index(arr, Value, i);
+    Value args[] = {EMPTY, elem, EMPTY_STR};
     echo(args);
   }
   g_print("]");
@@ -63,7 +64,11 @@ Value echo(Value *args) {
   case VALUE_EXTERN_FN:
     g_print("<Extern Function %p>", val.extern_fn);
     break;
+  case VALUE_STRUCT:
+    g_print("%s", struct__cstr__(val)->str);
+    break;
   case VALUE_NONE:
+  case VALUE_EMPTY:
     g_print("None");
     break;
   }

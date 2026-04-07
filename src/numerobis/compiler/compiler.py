@@ -45,6 +45,9 @@ from ..nodes.ast import (
     Return,
     Slice,
     String,
+    Struct,
+    StructAssignment,
+    StructInit,
     Type,
     UnaryOp,
     UnitDefinition,
@@ -54,7 +57,7 @@ from ..nodes.ast import (
 from ..nodes.core import AstNode, Identifier, UnitNode
 from ..nodes.unit import Expression, Neg, One, Power, Product, Scalar
 from ..typechecker.linking import Link
-from ..typechecker.types import FunctionType, T
+from ..typechecker.types import FunctionType, StructInstance, StructType, T
 from ..utils import camel2snake_pattern
 from .tstr import tstr
 from .utils import (
@@ -97,6 +100,7 @@ class Compiler:
                 "numerobis/utils/utils",
                 "numerobis/values",
                 "numerobis/types/bool",
+                "numerobis/types/struct",
                 "numerobis/exceptions/throw",
                 "numerobis/builtins/builtins",
                 "numerobis/units/units",
@@ -104,6 +108,7 @@ class Compiler:
         )
         self.functions: list[str] = []
         self.typedefs: list[str] = []
+        self.structs: list[StructType] = []
         self._defined_addrs: dict[str, str] = {}
         self._imported_names = {}
         self._imported_units = {}
@@ -118,8 +123,14 @@ class Compiler:
 
     def attribute_(self, node: Attribute, link: int) -> tstr:
         self.include.add("numerobis/closures")
-        out = tstr("__getattr__($func, $self)")
+        if "#struct" in node.meta:
+            struct = node.meta["#struct"]
+            out = tstr("$struct.strukt[$i]")
+            out["struct"] = self.compile(node.owner)
+            out["i"] = struct.names.index(self.unlink(node.name).name) + 1
+            return out
 
+        out = tstr("__getattr__($func, $self)")
         typ = node.meta["#type"]
         out["func"] = self.compile(Identifier(f"{typ}.{self.unlink(node.name)}"))
         out["self"] = self.compile(node.owner)
@@ -143,8 +154,12 @@ class Compiler:
     def block_(self, node: Block, link: int) -> tstr:
         out = []
 
+        old_defined_addrs = self._defined_addrs.copy()
+
         for stmt in node.body:
             out.append(str(self.compile(stmt)) + ";")
+
+        self._defined_addrs = old_defined_addrs
 
         return tstr("{\n" + "\n".join(out) + "\n}")
 
@@ -200,8 +215,8 @@ class Compiler:
             args = [arg.value for arg in arg_names.values()]
 
         args = [
-            str(self.compile(arg)) if arg is not None else "NONE" for arg in args
-        ] + ["NONE"]
+            str(self.compile(arg)) if arg is not None else "EMPTY" for arg in args
+        ] + ["EMPTY"]
 
         str_args = f"(Value[]){{{callee}, {', '.join(args)}}}"
         out = tstr(f"__call__({callee}, {str_args}, {argc})")
@@ -286,7 +301,7 @@ class Compiler:
         if "value" not in node.meta:
             return tstr("/* empty loop */")
 
-        loop = tstr("""for (size_t $iterator = 0; $iterator < $iterable_type_len($iterable).number.i64; $iterator++) {
+        loop = tstr("""for (size_t $iterator = 0, $limit = $iterable_type_len($iterable).number.i64; $iterator < $limit; $iterator++) {
             $iterator_defs
             $body
         }""")
@@ -297,7 +312,13 @@ class Compiler:
         iterable_type = self._link2type(node.iterable)
         iterator_name = f"__iterator_{abs(link)}"
         iterable_name = f"__iterable_{abs(link)}"
-        loop["iterator"], loop["iterable"] = iterator_name, iterable_name
+        limit_name = f"__limit_{abs(link)}"
+
+        loop["iterator"], loop["iterable"], loop["limit"] = (
+            iterator_name,
+            iterable_name,
+            limit_name,
+        )
         loop["iterable_type"] = iterable_type
 
         self.include.add(f"numerobis/types/{iterable_type}")
@@ -308,22 +329,22 @@ class Compiler:
             iterator = iterators[0]
             loop["iterator_defs"] = (
                 f"Value und_{self.uid}_{iterator.name} = "
-                + "__getitem__("
-                + "$iterable, int__init__($iterator, U_ONE), LOC(0, 0, 0, 0))"
+                + mthd("__getitem__", "$iterable", "int__init__($iterator, U_ONE)")
                 + ";"
             )
         else:
             # if there are >1 iterators, it is guaranteed that the iterable is a list of lists
             iterrow_name = f"__iterrow_{abs(link)}"
-            iterator_defs = f"Value {iterrow_name} = {mthd('__getitem__', '$iterable', 'int__init__($iterator, U_ONE)')};"
-            iterator_defs += "\n".join(
-                f"Value und_{self.uid}_{iterator.name} = "
-                + f"__getitem__({iterrow_name}, "
-                f"int__init__({i}, U_ONE), "
-                f"LOC(0, 0, 0, 0));"
-                for i, iterator in enumerate(iterators)
-            )
-            loop["iterator_defs"] = iterator_defs
+
+            defs = [
+                f"Value {iterrow_name} = {mthd('__getitem__', '$iterable', 'int__init__($iterator, U_ONE)')};"
+            ]
+            for i, iterator in enumerate(iterators):
+                defs.append(
+                    f"Value und_{self.uid}_{iterator.name} = "
+                    f"__getitem__({iterrow_name}, int__init__({i}, U_ONE), LOC(0, 0, 0, 0));"
+                )
+            loop["iterator_defs"] = "\n".join(defs)
 
         iterable = self.compile(node.iterable)
         if "reference" not in iterable.meta:
@@ -428,7 +449,7 @@ class Compiler:
         body = self.compile(self._make_block(node.body, rtrn=True))
         self._globals.pop()
 
-        if isinstance(body_node, Block) and isinstance(
+        if isinstance(body_node, Block) and not isinstance(
             self.unlink(body_node.body[-1]), Return
         ):
             body = str(body)[:-1] + "\nreturn NONE;\n}"
@@ -437,6 +458,14 @@ class Compiler:
 
         _unlinked_params = [self.unlink(param) for param in node.params]
         params = [str(self.compile(param.name)) for param in _unlinked_params]
+
+        # compile default args before scoping
+        definition["args"] = "\n".join(
+            f"U_UNPACK_ARG({param}, {i + 1})"
+            if not _unlinked_params[i].default
+            else f"U_UNPACK_OPT_ARG({param}, {i + 1}, {self.compile(_unlinked_params[i].default)})"
+            for i, param in enumerate(params)
+        )
 
         # If there's a bound arg, move it to the end
         if node.name and "." in self.unlink(node.name).name:
@@ -469,12 +498,6 @@ class Compiler:
             f"U_SHADOW_PTR({var})" if var in mangled_globals else f"U_SHADOW_VAR({var})"
             for var in free_vars
         )
-        definition["args"] = "\n".join(
-            f"U_UNPACK_ARG({param}, {i + 1})"
-            if not _unlinked_params[i].default
-            else f"U_UNPACK_OPT_ARG({param}, {i + 1}, {self.compile(_unlinked_params[i].default)})"
-            for i, param in enumerate(params)
-        )
 
         self.functions.append(str(definition))
 
@@ -504,8 +527,11 @@ class Compiler:
             return tstr("self", meta={"reference": True})
 
         prefix = self._imported_names.get(node.name, f"und_{self.uid}_")
-        star = "*" if node.name in self._globals[-1] else ""
-        return tstr(star + prefix + mangle(node.name), meta={"reference": True})
+        star = "(*" if node.name in self._globals[-1] else ""
+        suffix = ")" if star else ""
+        return tstr(
+            star + prefix + mangle(node.name) + suffix, meta={"reference": True}
+        )
 
     def if_(self, node: If, link: int) -> tstr:
         if node.expression:
@@ -558,17 +584,16 @@ class Compiler:
 
     def list_(self, node: List, link: int) -> tstr:
         self.include.add("numerobis/types/list")
-        self.include.add("numerobis/types/number")  # list.c includes number.h
+        self.include.add("numerobis/types/number")
 
         if not node.items:
-            # Empty list - just call list_of with NONE
-            return tstr("list_of(NONE)")
+            return tstr("list_of(NULL, 0)")
 
-        out = tstr("list_of($items)")
+        out = tstr("list_of((Value[])$items, $len)")
 
-        out["items"] = ", ".join(
-            [str(self.compile(item)) for item in node.items] + ["NONE"]
-        )
+        out["len"] = str(len(node.items))
+        items = ", ".join([str(self.compile(item)) for item in node.items])
+        out["items"] = "{" + items + "}"
 
         return out
 
@@ -649,6 +674,66 @@ class Compiler:
         self.include.add("numerobis/types/str")
         self.include.add("numerobis/types/number")  # str.c includes number.h
         return tstr(f"str__init__(g_string_new({node.value}))")
+
+    def struct_(self, node: Struct, link: int) -> tstr:
+        fingerprint = f"{self.uid}_{node.meta['#struct']._fingerprint[:8]}"
+        self.structs.append(node.meta["#struct"].edit(_fingerprint=fingerprint))
+        return tstr("")
+
+    def struct_assignment_(self, node: StructAssignment, link: int) -> tstr:
+        out = tstr("$name.strukt[$index] = $value")
+
+        node = self.unlink(node)
+        target = self.unlink(node.target)
+        struct = node.meta["#struct"]
+        assert isinstance(struct, StructInstance)
+
+        name = self.unlink(target.name).name
+
+        out["index"] = str(struct.struct.names.index(name) + 1)
+        out["name"] = self.compile(target.owner)
+        out["value"] = self.compile(node.value)
+
+        return out
+
+    def struct_init_(self, node: StructInit, link: int) -> tstr:
+        out = tstr("struct__init__$argc($id, $args)")
+
+        name = self.unlink(node.name)
+        out["name"] = str(name)
+
+        struct = node.meta["#struct"]
+        id_ = f"STRUCT_{name}_{self.uid}_{node.meta['#struct']._fingerprint[:8]}"
+        out["id"] = id_
+
+        unlinked_args: list[CallArg] = [self.unlink(arg) for arg in node.args]  # type: ignore
+        args = []
+
+        # positional args
+        i = 0
+        for arg in unlinked_args:
+            if arg.name:
+                break
+            args.append(arg.value)
+            i += 1
+
+        # order arguments
+        keyword_args = {
+            self.unlink(arg.name).name: arg  # type: ignore
+            for arg in unlinked_args[i:]
+        }
+        for j, name in enumerate(struct.names[i:]):
+            args.append(
+                keyword_args[name].value
+                if name in keyword_args
+                else struct.defaults[j + i]
+            )
+
+        args = [str(self.compile(arg)) for arg in args]
+        out["argc"] = str(len(args))
+        out["args"] = ",".join(args)
+
+        return out
 
     def unary_op_(self, node: UnaryOp, link: int) -> tstr:
         self.include.add("numerobis/types/bool")
@@ -830,6 +915,7 @@ class Compiler:
             code=code,
             functions=self.functions,
             typedefs=self.typedefs,
+            structs=self.structs,
             units=self.units,
         )
 

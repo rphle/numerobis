@@ -47,6 +47,9 @@ from ..nodes.ast import (
     Return,
     Slice,
     String,
+    Struct,
+    StructAssignment,
+    StructInit,
     Type,
     UnaryOp,
     UnitDefinition,
@@ -71,6 +74,8 @@ from .types import (
     RangeType,
     SliceType,
     StrType,
+    StructInstance,
+    StructType,
     T,
     UndefinedType,
     VarType,
@@ -106,6 +111,13 @@ class Typechecker:
         owner = self.check(node.owner, env=env)
         name = self.unlink(node.name).name
 
+        if isinstance(owner, StructInstance):
+            if name in owner.struct.names:
+                node.meta["#struct"] = owner.struct
+                return owner.struct.fields[owner.struct.names.index(name)]
+            self.errors.throw(601, name=name, loc=node.loc)
+            raise
+
         actual_name = f"{owner.name()}.{name}"
         value = next((n for n in env.names if n == actual_name), None)
         if value is None:
@@ -119,7 +131,7 @@ class Typechecker:
         if len(value.params) == 0:
             self.errors.throw(
                 512,
-                name=actual_name,
+                name=f"{actual_name}()",
                 n_params=len(value.params),
                 plural="1" if len(value.params) == 1 else "s",
                 n_args="1",
@@ -340,11 +352,17 @@ class Typechecker:
                 if arg.name:
                     if arg.name.name in args:
                         self.errors.throw(
-                            509, name=callee._name, arg=arg.name.name, loc=arg.loc
+                            509,
+                            name=f"{callee._name}()",
+                            arg=arg.name.name,
+                            loc=arg.loc,
                         )
                     if arg.name.name not in callee.param_names:
                         self.errors.throw(
-                            510, name=callee._name, arg=arg.name.name, loc=arg.loc
+                            510,
+                            name=f"{callee._name}()",
+                            arg=arg.name.name,
+                            loc=arg.loc,
                         )
 
                     name = arg.name.name
@@ -355,7 +373,7 @@ class Typechecker:
                     if i >= len(callee.param_names):
                         self.errors.throw(
                             512,
-                            name=callee._name,
+                            name=f"{callee._name}()",
                             n_params=len(callee.param_names),
                             plural="s" if len(callee.param_names) != 1 else "",
                             n_args=i + 1,
@@ -391,7 +409,7 @@ class Typechecker:
             if len(args) < callee.arity[0]:
                 self.errors.throw(
                     512,
-                    name=callee._name,
+                    name=f"{callee._name}()",
                     n_params=len(callee.param_names),
                     plural="s" if len(callee.param_names) != 1 else "",
                     n_args=i,
@@ -414,12 +432,11 @@ class Typechecker:
         return return_type
 
     def compare_(self, node: Compare, env: Env, link: int):
-        node = self.unlink(node, attrs=["comparators", "ops"])
-        comparators = [node.left] + node.comparators
+        comparators = [node.left] + list(node.comparators)
         self.namespaces.nodes[link].meta["side"] = []
         self.namespaces.nodes[link].meta["types"] = []
         for i in range(len(comparators) - 1):
-            op, sides = node.ops[i], (comparators[i], comparators[i + 1])
+            op, sides = self.unlink(node.ops[i]), (comparators[i], comparators[i + 1])
 
             left, right = [self.check(side, env=env) for side in sides]
 
@@ -729,6 +746,8 @@ class Typechecker:
 
         if isinstance(item, UndefinedType):
             self.errors.nameError(node)
+        elif isinstance(item, StructType):
+            self.errors.nameError(node, help=f"'{node.name}' is a struct")
 
         return item
 
@@ -911,6 +930,144 @@ class Typechecker:
                 self.errors.throw(532, type=checked, loc=part.loc)
         return SliceType()
 
+    def struct_(self, node: Struct, env: Env, link: int):
+        name = self.unlink(node.name).name
+
+        if name and name in env.names:
+            self.errors.throw(604, name=name, loc=node.loc)
+
+        fields = []
+        defaults = []
+        node = self.unlink(node, attrs=["fields"])
+
+        for i, field in enumerate(node.fields):
+            fields.append(self.type_(field.type, env=env))
+
+            if isinstance(fields[-1], AnyType):
+                self.errors.throw(
+                    546, field=self.unlink(field.name).name, loc=field.loc
+                )
+
+            if field.default is not None:
+                default = self.check(field.default, env=env)
+                defaults.append(field.default)
+
+                if not (mismatch := nomismatch(fields[i], default, unify=True)):
+                    self.errors.throw(
+                        545,
+                        field=self.unlink(field.name).name,
+                        kind=mismatch.kind,
+                        expected=mismatch.left,
+                        actual=mismatch.right,
+                        loc=field.loc,
+                    )
+            else:
+                defaults.append(None)
+
+        field_names = [self.unlink(field.name).name for field in node.fields]
+        arity = (sum(1 for f in node.fields if f.default is None), len(fields))
+
+        struct = StructType(
+            name_=name,
+            fields=fields,
+            names=field_names,
+            defaults=defaults,
+            arity=arity,
+            node=link,
+        )
+        env.set("names")(name, struct)
+        self.namespaces.nodes[link].meta["#struct"] = struct
+
+    def struct_assignment_(self, node: StructAssignment, env: Env):
+        target = self.unlink(node.target)
+        struct = self.check(target.owner, env=env)
+        name = self.unlink(target.name).name
+        if not isinstance(struct, StructInstance):
+            self.errors.throw(21, loc=target.loc)
+            raise
+
+        field = struct.struct.fields[struct.struct.names.index(name)]
+        value = self.check(node.value, env=env)
+
+        if not (mismatch := nomismatch(field, value, unify=True)):
+            self.errors.throw(
+                535,
+                name=f"{struct.name_}.{name}",
+                kind=mismatch.kind,
+                value=mismatch.right,
+                declared=mismatch.left,
+                loc=node.loc,
+            )
+
+        node.meta["#struct"] = struct
+        target.meta["#struct"] = struct.struct
+
+    def struct_init_(self, node: StructInit, env: Env, link: int):
+        node = self.unlink(node, attrs=["args"])
+        name = self.unlink(node.name).name
+        struct = env.get("names")(name)
+        assert isinstance(struct, StructType)
+
+        self.namespaces.nodes[link].meta["#struct"] = struct
+
+        args = set()
+        fieldc = len(struct.fields)
+        i = 0
+
+        for arg in node.args:
+            arg = self.unlink(arg, attrs=["name"])
+            if arg.name:
+                if arg.name.name in args:
+                    self.errors.throw(509, name=name, arg=arg.name.name, loc=arg.loc)
+                if arg.name.name not in struct.names:
+                    self.errors.throw(510, name=name, arg=arg.name.name, loc=arg.loc)
+
+                argname = arg.name.name
+                i = -1
+            else:
+                if i < 0:
+                    self.errors.throw(511, loc=arg.loc)
+                if i >= fieldc:
+                    self.errors.throw(
+                        512,
+                        name=name,
+                        n_params=fieldc,
+                        plural="s" if fieldc != 1 else "",
+                        n_args=i + 1,
+                        loc=node.loc,
+                    )
+                argname = struct.names[i]
+                i += 1
+
+            typ = self.check(arg.value, env=env)
+            field = struct.fields[struct.names.index(argname)]
+
+            if not (mismatch := nomismatch(field, typ, unify=True)):
+                self.errors.throw(
+                    513,
+                    kind=mismatch.kind,
+                    expected=mismatch.left,
+                    name=name,
+                    actual=mismatch.right,
+                    loc=arg.loc,
+                )
+
+            args.add(argname)
+
+        if len(args) < struct.arity[0]:
+            self.errors.throw(
+                512,
+                name=struct.name_,
+                n_params=fieldc,
+                plural="s" if fieldc != 1 else "",
+                n_args=i,
+                loc=node.loc,
+            )
+
+        return StructInstance(
+            name_=name, _fingerprint=struct._fingerprint, struct=struct
+        )
+
     def type_(self, node: Type | Expression | FunctionAnnotation | One, env: Env):
         if isinstance(node, linking.Link):
             node = self.unlink(node)
@@ -958,6 +1115,14 @@ class Typechecker:
                         return ListType(
                             content=content,
                             dim=content.dim,
+                        )
+                    case "Struct":
+                        assert isinstance(node.param, Type)
+                        name = node.param.name.name
+                        struct = env.get("names")(name)
+                        assert isinstance(struct, StructType)
+                        return StructInstance(
+                            name_=name, _fingerprint=struct._fingerprint, struct=struct
                         )
                     case _:
                         if node.name.name in typetable:
@@ -1084,6 +1249,8 @@ class Typechecker:
                 | BinOp()
                 | Compare()
                 | Function()
+                | Struct()
+                | StructInit()
                 | ForLoop()
                 | Call()
                 | Identifier()

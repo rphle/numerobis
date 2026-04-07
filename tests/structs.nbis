@@ -1,0 +1,103 @@
+from si import @(m, cm, Length)
+import random
+
+# E028
+struct Fruit {
+    name: Str,
+    size: Length = 10cm,
+    edible: Bool
+}
+
+# ---
+f!() = {
+    struct Human {
+        name: Str,
+        age: Int
+    }
+}
+
+# ---
+struct Human {
+    name: Str,
+    age: Int
+}
+
+h = Human(age=42, name="John")
+echo(h)
+
+# E001
+f!() = {
+    h = struct Human {name: Str, age: Int}
+}
+
+# E546
+struct Thing {
+    field: Any
+}
+
+# E545
+struct Fruit {
+    name: Str = 42
+}
+
+# E602
+struct Car {
+    weight: Mass
+}
+
+# E601
+struct Fruit {
+    name: Str
+}
+f = Fruit
+
+# E506
+struct Fruit {
+    name: Str
+}
+Fruit("Apple")("Plum")
+
+# E536
+struct Fruit {name: Str}
+struct Car {brand: Str}
+
+f: {Fruit} = Car(brand="Ford")
+
+# ---
+struct Car {brand: Str}
+c: {Car} = Car(brand="Ford")
+
+# E535
+struct Car {brand: Str}
+c: {Car} = Car(brand="Ford")
+c.brand = 42
+
+# ---
+struct Item {name: Str}
+struct Box {contents: List[{Item}]}
+
+f: {Box} = Box(contents=[Item(name="Apple"), Item(name="Book")])
+echo(f)
+
+# ---
+struct s {
+    n: Num = random.random()
+}
+s()
+
+# ---
+struct Fruit {
+    name: Str,
+    size: Length,
+    edible: Bool = false
+}
+
+apple = Fruit("Apple", 10cm, true)
+ananas = Fruit("Ananas", 30cm)
+
+echo(apple)
+echo(ananas)
+echo(apple.name)
+echo(apple.size -> m)
+apple.size = 2m
+echo(apple.size+10cm)

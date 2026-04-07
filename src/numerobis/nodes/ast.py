@@ -174,6 +174,12 @@ class Call(AstNode):
 
 
 @dataclass(kw_only=True, frozen=True)
+class StructInit(AstNode):
+    name: Identifier
+    args: list[CallArg]
+
+
+@dataclass(kw_only=True, frozen=True)
 class Index(AstNode):
     iterable: AstNode
     index: AstNode
@@ -201,6 +207,12 @@ class Slice(AstNode):
 @dataclass(kw_only=True, frozen=True)
 class IndexAssignment(AstNode):
     target: Index
+    value: AstNode
+
+
+@dataclass(kw_only=True, frozen=True)
+class StructAssignment(AstNode):
+    target: Attribute
     value: AstNode
 
 
@@ -259,3 +271,16 @@ class Global(AstNode):
 @dataclass(kw_only=True, frozen=True)
 class Debug(AstNode):
     expr: AstNode
+
+
+@dataclass(kw_only=True, frozen=True)
+class Field(AstNode):
+    name: Identifier
+    type: "Type | FunctionAnnotation | Expression | One"
+    default: AstNode | None
+
+
+@dataclass(kw_only=True, frozen=True)
+class Struct(AstNode):
+    name: Identifier
+    fields: list[Field]

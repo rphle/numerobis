@@ -166,8 +166,8 @@ class Exceptions:
             }.get(node.op.name, node.op.name)
             self.throw(502, operation=operation, left=left, right=right, loc=node.loc)
 
-    def nameError(self, name: Identifier):
-        self.throw(601, name=name.name, loc=name.loc)
+    def nameError(self, name: Identifier, help: str | None = None):
+        self.throw(601, name=name.name, loc=name.loc, help=help)
 
     def invalidParameterNumber(self, node):
         self.throw(701, callee=node.callee.name, loc=node.loc)

@@ -39,9 +39,9 @@ static Value numerobis_builtin_gaussian(Value *args) {
   double mean = 0.0;
   double stddev = 1.0;
 
-  if (args[1].type != VALUE_NONE)
+  if (args[1].type != VALUE_EMPTY)
     mean = args[1].number.f64;
-  if (args[2].type != VALUE_NONE)
+  if (args[2].type != VALUE_EMPTY)
     stddev = args[2].number.f64;
 
   double u1 = g_rand_double(_rng());

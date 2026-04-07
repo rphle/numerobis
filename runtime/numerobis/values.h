@@ -18,7 +18,9 @@ typedef enum {
   VALUE_RANGE,
   VALUE_CLOSURE,
   VALUE_EXTERN_FN,
-  VALUE_NONE
+  VALUE_STRUCT,
+  VALUE_NONE,
+  VALUE_EMPTY
 } ValueType;
 typedef enum { NUM_INT64, NUM_DOUBLE } NumberKind;
 
@@ -48,6 +50,7 @@ typedef struct Value {
     struct Range *range;
     struct Closure *closure;
     struct Value (*extern_fn)(struct Value *args);
+    struct Value *strukt;
     void *none;
   };
 } Value;
@@ -123,14 +126,14 @@ static inline Value __neg__(Value x) {
 
 static inline Value __getitem__(Value self, Value index, LocRef loc) {
   Value r = NUMEROBIS_METHODS[self.type]->__getitem__(self, index);
-  if (r.type == VALUE_NONE)
+  if (r.type == VALUE_EMPTY)
     u_throw(self.type == VALUE_LIST ? 901 : 902, NULL, loc);
   return r;
 }
 static inline Value __setitem__(Value self, Value index, Value value,
                                 LocRef loc) {
   Value r = NUMEROBIS_METHODS[self.type]->__setitem__(self, index, value);
-  if (r.type == VALUE_NONE)
+  if (r.type == VALUE_EMPTY)
     u_throw(self.type == VALUE_LIST ? 903 : 904, NULL, loc);
   return r;
 }
@@ -163,13 +166,13 @@ static inline Value __str__(Value self, LocRef loc) {
 }
 static inline Value __int__(Value self, LocRef loc) {
   Value r = NUMEROBIS_METHODS[self.type]->__int__(self);
-  if (r.type == VALUE_NONE)
+  if (r.type == VALUE_EMPTY)
     u_throw(301, NULL, loc);
   return r;
 }
 static inline Value __num__(Value self, LocRef loc) {
   Value r = NUMEROBIS_METHODS[self.type]->__num__(self);
-  if (r.type == VALUE_NONE)
+  if (r.type == VALUE_EMPTY)
     u_throw(302, NULL, loc);
   return r;
 }
@@ -182,7 +185,7 @@ static inline Value __call__(Value self, Value *args, size_t argc) {
   Closure *cl = self.closure;
 
   // Append bound argument if present
-  if (__builtin_expect(cl->bound_arg.type != VALUE_NONE, 0)) {
+  if (__builtin_expect(cl->bound_arg.type != VALUE_EMPTY, 0)) {
     args[argc] = cl->bound_arg;
     // args[argc + 1] = (Value){.type = VALUE_NONE};
     argc++;

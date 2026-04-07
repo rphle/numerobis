@@ -390,3 +390,7 @@ g!(a: Int, b: Int = 1, c: Int) = a + b + c
 # ---
 f!(x: Num?) = math.floor(x)
 f(3.14)
+
+# ---
+f!(n: Num = math.floor(3.14)) = n
+f()

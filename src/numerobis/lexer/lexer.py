@@ -23,6 +23,7 @@ class LexTokens:
         "XOR",
         "UNIT",
         "DIMENSION",
+        "STRUCT",
         "BREAK",
         "CONTINUE",
         "RETURN",

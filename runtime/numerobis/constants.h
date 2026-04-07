@@ -7,5 +7,6 @@
 #define SLICE_NONE ((ssize_t)(-999999999))
 
 #define NONE ((Value){.type = VALUE_NONE})
+#define EMPTY ((Value){.type = VALUE_EMPTY})
 
 #endif
