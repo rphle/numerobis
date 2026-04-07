@@ -26,7 +26,8 @@ graph:
 	pyreverse -ASmy -o png -d assets src/numerobis
 
 highlight:
-	cp -r highlighting/numerobis-vscode ~/.vscode/extensions
+	cd highlighting/numerobis-vscode && npx @vscode/vsce package
+	code --install-extension highlighting/numerobis-vscode/numerobis-0.1.0.vsix
 
 clean:
 	echo "Removing .o, .a, and __pycache__ files..."
