@@ -106,6 +106,7 @@ class Typechecker:
         self.simplify = self.simplifier.simplify
 
         self.unresolved_funcs: list[FunctionType] = []
+        self._globals: list[list[str]] = [[]]  # queue of globals of nested functions
 
     def attribute_(self, node: Attribute, env: Env) -> T:
         owner = self.check(node.owner, env=env)
@@ -208,17 +209,9 @@ class Typechecker:
                 return NumberType(typ=return_typ, dim=left.dim)
             case "mul" | "div":
                 if not right.dim:
-                    return (
-                        left.edit(typ=return_typ)
-                        if isinstance(left, NumberType)
-                        else left
-                    )
-                elif not left.dim:
-                    return (
-                        right.edit(typ=return_typ)
-                        if isinstance(right, NumberType)
-                        else right
-                    )
+                    return left.edit(typ=return_typ)
+                elif not left.dim and not node.op.name == "div":
+                    return right.edit(typ=return_typ)
 
                 r = right.dim
                 if node.op.name == "div":
@@ -226,9 +219,7 @@ class Typechecker:
 
                 dimension = self.simplify(Product([left.dim, r]))
 
-                if isinstance(left, NumberType):
-                    return left.edit(typ=return_typ, dim=dimension)
-                return left.edit(dim=dimension)
+                return left.edit(typ=return_typ, dim=dimension)
             case "pow":
                 if right.dim:
                     self.errors.throw(
@@ -1206,7 +1197,8 @@ class Typechecker:
 
         if not isinstance(value, FunctionType):
             value = value.edit(node=link)
-        address = env.set("names")(name=name.name, value=value, address=address)
+        if address is None:
+            address = env.set("names")(name=name.name, value=value, address=address)
         node.meta["address"] = address
         return NoneType()
 

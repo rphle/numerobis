@@ -127,8 +127,13 @@ static guint _fk_hash(gconstpointer k) {
 }
 static gboolean _fk_equal(gconstpointer a, gconstpointer b) {
   const FontKey *fa = a, *fb = b;
-  return fa->size == fb->size && fa->style == fb->style &&
-         strcmp(fa->path, fb->path) == 0;
+  if (fa->size != fb->size || fa->style != fb->style)
+    return FALSE;
+  if (fa->path == fb->path)
+    return TRUE;
+  if (!fa->path || !fb->path)
+    return FALSE;
+  return strcmp(fa->path, fb->path) == 0;
 }
 
 TTF_Font *_get_font(const gchar *path, gint32 size, gint32 style) {
