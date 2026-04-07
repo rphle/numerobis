@@ -25,6 +25,9 @@ benchmark:
 graph:
 	pyreverse -ASmy -o png -d assets src/numerobis
 
+highlight:
+	cp -r highlighting/numerobis-vscode ~/.vscode/extensions
+
 clean:
 	echo "Removing .o, .a, and __pycache__ files..."
 	find . -type f -name "*.o" -delete

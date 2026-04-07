@@ -1,0 +1,35 @@
+{
+  "name": "numerobis",
+  "displayName": "Numerobis",
+  "description": "Syntax highlighting for the Numerobis programming language",
+  "version": "0.1.0",
+  "publisher": "rphle",
+  "engines": {
+    "vscode": "^1.75.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "contributes": {
+    "languages": [
+      {
+        "id": "numerobis",
+        "aliases": [
+          "Numerobis",
+          "nbis"
+        ],
+        "extensions": [
+          ".nbis"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "numerobis",
+        "scopeName": "source.nbis",
+        "path": "./syntaxes/numerobis.tmLanguage.json"
+      }
+    ]
+  }
+}
