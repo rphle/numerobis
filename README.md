@@ -1,11 +1,11 @@
 # Numerobis
 
-A compiled, statically-typed programming language that treats physical units and dimensions as first-class citizens of the type system. Dimension and unit errors are caught **before execution** — and unit conversions happen **automatically**.
+A modern, compiled, statically-typed programming language that treats physical units and dimensions as first-class citizens of the type system. Dimension and unit errors are caught **before execution** — and unit conversions happen **automatically**.
 
 > [!WARNING]
 > The language and its documentation are unfinished. While usable, Numerobis is not recommended for production code yet. Only Linux is supported at the moment.
 
----
+-----
 
 ## Why?
 
@@ -19,7 +19,7 @@ Numerobis integrates units and dimensions directly into its type system:
 
 Numerobis compiles to C99, giving it a significant performance advantage over interpreted languages.
 
----
+-----
 
 ## Installation
 
@@ -91,11 +91,22 @@ To run benchmarks, install `hyperfine` for statistically robust timing:
 sudo apt install hyperfine
 ```
 
----
+### Editor Support
+
+Numerobis provides syntax highlighting for VSCode. You can install the extension locally into your editor by running:
+
+```bash
+make highlight
+```
+
+This copies the syntax configuration directly into your `~/.vscode/extensions` directory
+
+-----
 
 ## CLI Reference
 
 ### `nbis build`
+
 **Usage:** `nbis build SOURCE [OPTIONS]`
 
 | Flag | Default | Description |
@@ -111,29 +122,33 @@ sudo apt install hyperfine
 | `--ccache` / `--no-ccache`| `--no-ccache`| Use `ccache` to speed up recompilation. |
 
 ### `nbis view`
+
 **Usage:** `nbis view SOURCE [OPTIONS]`
 
 | Flag | Default | Description |
 | :--- | :--- | :--- |
-| `-o`, `--output` | _(stdout)_ | Write generated C code to a file instead of printing. |
+| `-o`, `--output` | *(stdout)* | Write generated C code to a file instead of printing. |
 | `--theme` | `monokai` | Rich syntax highlighting theme. |
 | `--line-numbers` / `--no-line-numbers` | On | Toggle line numbers in terminal output. |
 
----
+-----
 
 ## Running Tests
 
 Tests are executed via `run.py` (or `make test`). The runner parses `.nbis` files, checks for expected error codes, and measures performance.
+The test suite currently contains 1,333 unit tests (all of which maintain a 100% pass rate).
 
 **Usage:** `python3 run.py [TEST_NAMES...] [OPTIONS]` or `make test -- [TEST_NAMES...] [OPTIONS]`
 
 ### Output Options
-* `-v`, `--verbose`: Show output for failed tests (default mode).
-* `-f`, `--full`: Show output for **all** tests (passed and failed).
-* `-p`, `--print`: Print the generated C code during the test run.
-* `-F`, `--format`: Print C code with formatting applied.
+
+- `-v`, `--verbose`: Show output for failed tests (default mode).
+- `-f`, `--full`: Show output for **all** tests (passed and failed).
+- `-p`, `--print`: Print the generated C code during the test run.
+- `-F`, `--format`: Print C code with formatting applied.
 
 ### Execution Options
+
 | Flag | Default | Description |
 | :--- | :--- | :--- |
 | `-j`, `--jobs` | `CPU Count` | Number of parallel jobs for test execution. |
@@ -144,13 +159,15 @@ Tests are executed via `run.py` (or `make test`). The runner parses `.nbis` file
 | `--ccache` | Off | Enable `ccache` for test compilation. |
 
 ### Targeted Testing
+
 You can run specific test files by providing their names without the `.nbis` extension:
+
 ```bash
 # Run only the echo and logic tests
 make test -- echo logic
 ```
 
----
+-----
 
 ## Language Reference
 
@@ -178,6 +195,7 @@ f: Num   = 3.14
 m: Int[Length] = 10 m
 s: Str  = "hello"
 b: Bool = true
+n: Num = 42          # 'Int' is a subtype of 'Num'!
 l0: List        = [1, 2, 3]
 l1: List[Int]   = [1, 2, 3]
 l2: List[Mass]  = [1 kg, 2 kg, 3 kg]
@@ -186,7 +204,7 @@ fn: ![[s: Str, n: Int], Str] = !(s: Str, n: Int): Str = s * n
 
 ### Functions
 
-Functions support default arguments and optional type annotations. The body can be a single expression or a block.
+Functions support default arguments. The body can be a single expression or a block.
 
 ```python
 greet!(name: Str, times: Int = 1): Str = name * times
@@ -200,6 +218,23 @@ fibonacci!(n: Int): Int = {
 echo(fibonacci(20))
 ```
 
+### Global Variables
+
+You can reference and modify variables in the outer scope from within functions using the `global` keyword.
+
+```python
+x = 5
+
+f!() = {
+    global x
+    x = x * 2
+}
+
+f()
+echo(x) # 10
+```
+
+
 ### Control Flow
 
 ```python
@@ -208,6 +243,11 @@ if a < b then echo("small")
 else {
     if a > 15 then echo("large") else echo("medium")
 }
+
+# else if chains
+if a < b then echo("small")
+else if a == b then echo("equal")
+else echo("large")
 
 # for over a range
 for i in 0..10 do echo(i)
@@ -221,6 +261,14 @@ while i < 10 do {
     echo(i)
     i = i + 1
 }
+
+# loops with break and continue
+while true do {
+    i = i + 1
+    if i >= 11 then {break}
+    if i % 2 == 0 then {continue}
+    echo(i)
+}
 ```
 
 ### Lists & Indexing
@@ -232,9 +280,59 @@ lst = [10, 20, 30]
 lst[0]   # 10
 lst[-1]  # 30
 lst[1:]  # [20, 30]
+
+# Built-in list methods
+lst.append(40)
+lst.pop(0)
+lst.insert(0, 42)
+lst.extend([50, 60])
 ```
 
----
+### Structs
+
+Numerobis supports custom data structures. You can define fields, provide default values, and instantiate them using keyword arguments.
+
+```python
+struct Fruit {
+    name: Str,
+    size: Length = 10cm,
+    edible: Bool = false
+}
+
+apple = Fruit("Apple", 10cm, true)
+ananas = Fruit("Ananas", 30cm)
+
+echo(apple.name)
+echo(apple.size -> m)
+```
+
+### Methods
+
+You can bind functions as methods directly to types via dot-syntax.
+
+```python
+Str.length!(self: Str) = 42
+echo("test".length())
+
+lst = ["test".len, ["t", "e", "s", "t"].len]
+for fn in lst do
+    echo(fn())
+```
+
+### Generics
+
+Functions can accept generic type variables using the `?` prefix, allowing you to write flexible operations that enforce input-output relationships. Generics work for normal types and variables dimensions.
+
+```python
+id!(x: ?T): ?T = x
+id(1) + 2
+id("hello") + "!"
+
+# Generic dimension enforcement
+dimid!(x: Num[?D]): Num[?D] = x
+```
+
+-----
 
 ## Units & Dimensions
 
@@ -320,19 +418,27 @@ Conversions between incompatible dimensions are caught at compile time.
 
 ### Imports
 
-Import with the `@` prefix to distinguish units/dimensions from regular names:
+Import with the `@` prefix to distinguish units/dimensions from regular names. You can also import native standard library modules using standard dot-syntax.
 
 ```python
 from mymodule import name, @myunit, @MyDimension
 from imperial import @gallon
 
 # grouped import shorthand
-from si       import @(kg, m, km, s, K, J, kJ, kW, h)
+from si import @(kg, m, km, s, K, J, kJ, kW, h, rad)
+
+# dot-syntax module imports
+import math
+import random
+
+echo(math.sin(1 rad))
 ```
 
----
+-----
 
 ## Type System
+
+`Int` is a subtype of `Num`. Values of type `Int` can be assigned to variables of type `Num` and are automatically promoted. The inverse assignment requires an explicit conversion.
 
 ### Dimension Annotations
 
@@ -362,7 +468,7 @@ External C functions can be declared and called from Numerobis using the `extern
 extern echo!(value, end: Str = "\n"): None;
 ```
 
----
+-----
 
 ## Examples
 
@@ -410,17 +516,32 @@ echo(0°C |-| 32°F)  # 0 °C
 
 ---
 
-## Running Tests
+### Graphics and Simulations
 
-```bash
-make test
-# or
-python3 run.py --verbose
-```
+The standard library provides a `graphics` module for creating windows, drawing shapes, and handling user input. It is well suited for interactive visualizations, small games, and physics simulations.
 
-Tests are `.nbis` files under `tests/`. The runner executes them and checks outputs and expected error codes. The test suite currently contains 1,128 unit tests.
+A good starting point is the example collection, especially [ball.nbis](examples/ball.nbis) and [scaling.nbis](examples/scaling.nbis), which demonstrate animation, coordinate transformations, and real-time rendering.
 
 ---
+
+## Standard Library
+
+The standard library is still evolving and does not yet have complete reference documentation. For now, the best overview of available functionality is the source itself: [src/numerobis/stdlib/](src/numerobis/stdlib/).
+
+### Modules
+
+- `builtins` – core functions and methods available in every program
+- `constants` – physical and mathematical constants (planned to grow)
+- `graphics` – SDL2-based rendering and input handling, similar in spirit to pygame
+- `imperial` – imperial units of measurement
+- `information` – units for digital information (bit, byte, etc.)
+- `math` – mathematical functions
+- `random` – random number generators and probability distributions
+- `si` – SI units and dimensions
+- `time` – timing utilities
+
+
+-----
 
 ## Project Layout
 
@@ -437,6 +558,7 @@ src/numerobis/
 runtime/         — C runtime sources, built into libruntime.a
 tests/           — language tests, benchmarking
 examples/        — small example programs
+highlighting/    – VS Code syntax highlighting extension
 scripts/         — build helpers
 assets/          — generated diagrams
 ```
