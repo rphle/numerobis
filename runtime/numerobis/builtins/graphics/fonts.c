@@ -3,11 +3,12 @@
 #include <dirent.h>
 #include <gc.h>
 #include <glib.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
 #include <sys/stat.h>
 
-const gchar *_font_path = NULL;
+const char *_font_path = NULL;
 
 static GHashTable *_fc_cache = NULL;
 
@@ -23,28 +24,28 @@ static const char *linux_font_dirs[] = {"/usr/share/fonts",
                                         "~/.fonts",
                                         NULL};
 
-static const gchar *PREFERRED_FONTS[] = {"Roboto-Regular.ttf",
-                                         "Ubuntu-R.ttf",
-                                         "DejaVuSans.ttf",
-                                         "FreeSans.ttf",
-                                         "LiberationSans-Regular.ttf",
-                                         NULL};
+static const char *PREFERRED_FONTS[] = {"Roboto-Regular.ttf",
+                                        "Ubuntu-R.ttf",
+                                        "DejaVuSans.ttf",
+                                        "FreeSans.ttf",
+                                        "LiberationSans-Regular.ttf",
+                                        NULL};
 
-static gboolean is_preferred(const gchar *name) {
+static bool is_preferred(const char *name) {
   for (int i = 0; PREFERRED_FONTS[i]; i++)
     if (g_ascii_strcasecmp(name, PREFERRED_FONTS[i]) == 0)
       return TRUE;
   return FALSE;
 }
 
-static void scan_dir(const gchar *path) {
+static void scan_dir(const char *path) {
   GDir *dir = g_dir_open(path, 0, NULL);
   if (!dir || _font_path)
     return;
 
-  const gchar *name;
+  const char *name;
   while ((name = g_dir_read_name(dir)) && !_font_path) {
-    gchar *full = g_build_filename(path, name, NULL);
+    char *full = g_build_filename(path, name, NULL);
 
     if (g_file_test(full, G_FILE_TEST_IS_DIR)) {
       scan_dir(full);
@@ -57,7 +58,7 @@ static void scan_dir(const gchar *path) {
   g_dir_close(dir);
 }
 
-const gchar *_default_font(void) {
+const char *_default_font(void) {
   if (_font_path)
     return _font_path;
 
@@ -69,7 +70,7 @@ const gchar *_default_font(void) {
   for (int i = 0; linux_font_dirs[i]; i++)
     g_ptr_array_add(paths, g_strdup(linux_font_dirs[i]));
 
-  for (guint i = 0; i < paths->len && !_font_path; i++) {
+  for (unsigned int i = 0; i < paths->len && !_font_path; i++) {
     scan_dir(g_ptr_array_index(paths, i));
   }
 
@@ -77,20 +78,20 @@ const gchar *_default_font(void) {
   return _font_path;
 }
 
-const gchar *_resolve_font_name(const gchar *name) {
+const char *_resolve_font_name(const char *name) {
   if (!name || *name == '\0')
     return NULL;
   if (!_fc_cache)
     _fc_cache = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, g_free);
 
-  gchar *cached = g_hash_table_lookup(_fc_cache, name);
+  char *cached = g_hash_table_lookup(_fc_cache, name);
   if (cached)
     return cached;
 
-  gchar *cmd = g_strdup_printf("fc-match --format='%%{file}' '%s'", name);
-  gchar *output = NULL;
+  char *cmd = g_strdup_printf("fc-match --format='%%{file}' '%s'", name);
+  char *output = NULL;
   GError *err = NULL;
-  gboolean ok = g_spawn_command_line_sync(cmd, &output, NULL, NULL, &err);
+  bool ok = g_spawn_command_line_sync(cmd, &output, NULL, NULL, &err);
   g_free(cmd);
 
   if (!ok || !output || *output == '\0') {
@@ -108,24 +109,25 @@ const gchar *_resolve_font_name(const gchar *name) {
   if (olen > 0 && output[olen - 1] == '\'')
     output[olen - 1] = '\0';
 
-  gchar *path = g_strdup(output);
+  char *path = g_strdup(output);
   g_free(output);
   g_hash_table_insert(_fc_cache, g_strdup(name), path);
   return path;
 }
 
 typedef struct {
-  const gchar *path;
-  gint32 size;
-  gint32 style;
+  const char *path;
+  int size;
+  int style;
 } FontKey;
 static GHashTable *_font_cache = NULL;
 
-static guint _fk_hash(gconstpointer k) {
+static unsigned int _fk_hash(gconstpointer k) {
   const FontKey *f = k;
-  return g_str_hash(f->path) ^ (guint)(f->size * 31) ^ (guint)(f->style << 16);
+  return g_str_hash(f->path) ^ (unsigned int)(f->size * 31) ^
+         (unsigned int)(f->style << 16);
 }
-static gboolean _fk_equal(gconstpointer a, gconstpointer b) {
+static int _fk_equal(gconstpointer a, gconstpointer b) {
   const FontKey *fa = a, *fb = b;
   if (fa->size != fb->size || fa->style != fb->style)
     return FALSE;
@@ -136,7 +138,7 @@ static gboolean _fk_equal(gconstpointer a, gconstpointer b) {
   return strcmp(fa->path, fb->path) == 0;
 }
 
-TTF_Font *_get_font(const gchar *path, gint32 size, gint32 style) {
+TTF_Font *_get_font(const char *path, int size, int style) {
   if (!path)
     return NULL;
   if (!_font_cache)
@@ -166,7 +168,7 @@ TTF_Font *_get_font(const gchar *path, gint32 size, gint32 style) {
 void _cleanup_fonts(void) {
   if (_font_cache) {
     GHashTableIter iter;
-    gpointer key, value;
+    void *key, *value;
     g_hash_table_iter_init(&iter, _font_cache);
     while (g_hash_table_iter_next(&iter, &key, &value)) {
       TTF_CloseFont((TTF_Font *)value);

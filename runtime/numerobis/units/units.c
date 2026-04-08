@@ -16,7 +16,7 @@ _Thread_local UnitCacheSlot _unit_tls_cache[UNIT_CACHE_SIZE];
 /* FNV-1a over sorted factors, then fold in the scalar's bit pattern so that
  * 1000*m and 1*m hash differently. */
 static uint64_t hash_factors(const UnitFactor *data, uint16_t len,
-                             gdouble scalar) {
+                             double scalar) {
   uint64_t h = 0xcbf29ce484222325ULL;
   for (uint16_t i = 0; i < len; i++) {
     h ^= (uint64_t)data[i].id;
@@ -75,7 +75,7 @@ void units_shutdown(void) {
 }
 
 UnitFactorList unit_simplify(const UnitFactor *data, uint16_t len,
-                             gdouble scalar) {
+                             double scalar) {
   if (scalar == 0.0)
     scalar = 1.0;
 
@@ -109,7 +109,7 @@ UnitFactorList unit_simplify(const UnitFactor *data, uint16_t len,
   return (UnitFactorList){.data = tmp, .len = final, .scalar = scalar};
 }
 
-uint64_t unit_new(uint16_t count, const UnitFactor *factors, gdouble scalar) {
+uint64_t unit_new(uint16_t count, const UnitFactor *factors, double scalar) {
   assert(NUMEROBIS_UNITS.slots != NULL && "call units_init first");
 
   if (scalar == 0.0)
@@ -177,7 +177,7 @@ uint64_t unit_mul(const Unit *a, const Unit *b, bool invert) {
   }
 
   /* Combine scalars. */
-  gdouble result_scalar =
+  double result_scalar =
       invert ? (a->scalar / b->scalar) : (a->scalar * b->scalar);
 
   /* Merge factor lists. */
@@ -203,18 +203,18 @@ uint64_t unit_mul(const Unit *a, const Unit *b, bool invert) {
   return result_hash;
 }
 
-uint64_t unit_pow(const Unit *u, gdouble exp) {
+uint64_t unit_pow(const Unit *u, double exp) {
   assert(NUMEROBIS_UNITS.slots != NULL && "call units_init first");
 
   if (is_one(u) && u->scalar == 1.0)
     return NUMEROBIS_UNIT_ONE_HASH;
 
-  gdouble new_scalar = pow(u->scalar, exp);
+  double new_scalar = pow(u->scalar, exp);
 
   UnitFactor *factors = (UnitFactor *)g_malloc(u->len * sizeof *factors);
   for (uint16_t i = 0; i < u->len; i++) {
-    gdouble raw = (gdouble)u->data[i].exp * exp;
-    gdouble rounded = round(raw);
+    double raw = (double)u->data[i].exp * exp;
+    double rounded = round(raw);
     assert(fabs(raw - rounded) < 1e-9 &&
            "unit_pow: result exponent is not integral");
     assert(rounded >= INT16_MIN && rounded <= INT16_MAX &&

@@ -1,11 +1,12 @@
 #include "color.h"
 
 #include <glib.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 
 /* Color  (#RGB / #RRGGBB / #RRGGBBAA, leading '#' optional) */
-Color _parse_color(const gchar *s) {
+Color _parse_color(const char *s) {
   if (!s || *s == '\0')
     return COLOR_BLACK;
   if (*s == '#')
@@ -20,11 +21,11 @@ Color _parse_color(const gchar *s) {
     }
   }
 
-  guint32 v = 0;
+  uint32_t v = 0;
   if (len == 3) {
-    guint8 rv = g_ascii_xdigit_value(s[0]);
-    guint8 gv = g_ascii_xdigit_value(s[1]);
-    guint8 bv = g_ascii_xdigit_value(s[2]);
+    uint8_t rv = g_ascii_xdigit_value(s[0]);
+    uint8_t gv = g_ascii_xdigit_value(s[1]);
+    uint8_t bv = g_ascii_xdigit_value(s[2]);
     return (Color){rv | (rv << 4), gv | (gv << 4), bv | (bv << 4), 255};
   }
   if (len == 6) {

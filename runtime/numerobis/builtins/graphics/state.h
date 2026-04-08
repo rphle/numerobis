@@ -5,21 +5,22 @@
 
 #include <SDL2/SDL.h>
 #include <glib.h>
+#include <stdbool.h>
 
 extern SDL_Window *_window;
 extern SDL_Renderer *_renderer;
 extern GArray *_queue;
 extern Color _bg;
 
-extern gint32 _mouse_x;
-extern gint32 _mouse_y;
-extern gboolean _mouse_down;
-extern gboolean _quit_requested;
-extern gboolean _keys[SDL_NUM_SCANCODES];
+extern int _mouse_x;
+extern int _mouse_y;
+extern bool _mouse_down;
+extern bool _quit_requested;
+extern bool _keys[SDL_NUM_SCANCODES];
 
-extern gdouble _scale;
-extern gdouble _tx;
-extern gdouble _ty;
+extern double _scale;
+extern double _tx;
+extern double _ty;
 
 typedef enum {
   CMD_RECT,
@@ -38,42 +39,42 @@ typedef struct {
   Color color;
   union {
     struct {
-      gint32 x, y, w, h;
-      gboolean filled;
+      int x, y, w, h;
+      bool filled;
     } rect;
     struct {
-      gint32 x, y, w, h, radius;
-      gboolean filled;
+      int x, y, w, h, radius;
+      bool filled;
     } rrect;
     struct {
-      gint32 x, y, radius;
-      gboolean filled;
+      int x, y, radius;
+      bool filled;
     } circle;
     struct {
-      gint32 x, y, rx, ry;
-      gboolean filled;
+      int x, y, rx, ry;
+      bool filled;
     } ellipse;
     struct {
-      gint32 x1, y1, x2, y2;
-      gdouble thickness;
+      int x1, y1, x2, y2;
+      double thickness;
     } line;
     struct {
       SDL_Point *pts;
-      gint32 n;
-      gboolean filled;
+      int n;
+      bool filled;
     } polygon;
     struct {
-      gint32 x, y, radius;
-      gfloat start, end;
-      gboolean filled;
+      int x, y, radius;
+      float start, end;
+      bool filled;
     } arc;
     struct {
-      gint32 x, y;
+      int x, y;
     } point;
     struct {
-      gint32 x, y, size, style;
-      gchar *str, *font_path;
-      gdouble angle;
+      int x, y, size, style;
+      char *str, *font_path;
+      double angle;
     } text;
   };
 } DrawCmd;

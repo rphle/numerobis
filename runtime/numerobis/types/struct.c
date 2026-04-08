@@ -10,7 +10,7 @@
 
 static const ValueMethods _struct_methods;
 
-Value struct__init__(gint64 id, gint64 fieldc) {
+Value struct__init__(long id, long fieldc) {
   const StructInfo *meta = &STRUCT_REGISTRY[id];
   Value v;
   v.type = VALUE_STRUCT;
@@ -27,7 +27,7 @@ static inline Value struct__eq__(Value _self, Value _other) {
   Value *self = _self.strukt;
   Value *other = _other.strukt;
 
-  gint64 id = self[0].number.i64;
+  long id = self[0].number.i64;
 
   if (id != other[0].number.i64)
     return VFALSE;

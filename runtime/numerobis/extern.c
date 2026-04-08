@@ -20,7 +20,7 @@ Value *extern_fn__init__(Value (*fn)(Value *args)) {
   return v;
 }
 
-void u_extern_entry_free(gpointer data) {
+void u_extern_entry_free(void *data) {
   if (data) {
     UExternEntry *e = (UExternEntry *)data;
     GC_FREE(e);

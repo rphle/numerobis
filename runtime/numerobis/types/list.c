@@ -50,7 +50,7 @@ static Value list__getitem__(Value _self, Value _index) {
   if (nidx < 0 || nidx >= len)
     return EMPTY;
 
-  return g_array_index(self, Value, (guint)nidx);
+  return g_array_index(self, Value, (unsigned int)nidx);
 }
 
 static Value list__getslice__(Value _self, Value _start, Value _stop,
@@ -72,7 +72,7 @@ static Value list__getslice__(Value _self, Value _start, Value _stop,
   normalize_slice(len, &start, &end, &step);
 
   for (ssize_t i = start; step > 0 ? i < end : i > end; i += step) {
-    Value val = g_array_index(self, Value, (guint)i);
+    Value val = g_array_index(self, Value, (unsigned int)i);
     g_array_append_val(result, val);
   }
 
@@ -85,15 +85,15 @@ static Value list__add__(Value _self, Value _other) {
 
   size_t a_len = _list_len(self);
   size_t b_len = _list_len(other);
-  GArray *result =
-      g_array_sized_new(FALSE, FALSE, sizeof(Value), (guint)(a_len + b_len));
+  GArray *result = g_array_sized_new(FALSE, FALSE, sizeof(Value),
+                                     (unsigned int)(a_len + b_len));
 
-  for (guint i = 0; i < (guint)a_len; i++) {
+  for (unsigned int i = 0; i < (unsigned int)a_len; i++) {
     Value val = g_array_index(self, Value, i);
     g_array_append_val(result, val);
   }
 
-  for (guint i = 0; i < (guint)b_len; i++) {
+  for (unsigned int i = 0; i < (unsigned int)b_len; i++) {
     Value val = g_array_index(other, Value, i);
     g_array_append_val(result, val);
   }
@@ -111,11 +111,11 @@ static Value list__mul__(Value _self, Value _n) {
     return list__init__(g_array_new(FALSE, FALSE, sizeof(Value)));
 
   unsigned long long total = (unsigned long long)len * (unsigned long long)n;
-  guint reserve = (total > G_MAXUINT) ? G_MAXUINT : (guint)total;
+  unsigned int reserve = (total > G_MAXUINT) ? G_MAXUINT : (unsigned int)total;
   GArray *result = g_array_sized_new(FALSE, FALSE, sizeof(Value), reserve);
 
   for (ssize_t r = 0; r < n; r++) {
-    for (guint i = 0; i < (guint)len; i++) {
+    for (unsigned int i = 0; i < (unsigned int)len; i++) {
       Value original = g_array_index(self, Value, i);
       g_array_append_val(result, original);
     }
@@ -146,7 +146,7 @@ static Value list_extend(Value *args) {
   GArray *self = _self.list;
   GArray *other = _other.list;
 
-  for (guint i = 0; i < other->len; i++) {
+  for (unsigned int i = 0; i < other->len; i++) {
     Value original_val = g_array_index(other, Value, i);
     g_array_append_val(self, original_val);
   }
@@ -162,7 +162,7 @@ static Value list_insert(Value *args) {
 
   GArray *self = _self.list;
 
-  gint64 idx_raw = (_index.type == VALUE_NUMBER) ? _index.number.i64 : 0;
+  long idx_raw = (_index.type == VALUE_NUMBER) ? _index.number.i64 : 0;
   ssize_t index = (ssize_t)idx_raw;
   ssize_t len = (ssize_t)self->len;
 
@@ -174,7 +174,7 @@ static Value list_insert(Value *args) {
   if (index > len)
     index = len;
 
-  g_array_insert_val(self, (guint)index, val);
+  g_array_insert_val(self, (unsigned int)index, val);
   return NONE;
 }
 
@@ -191,7 +191,7 @@ Value list__setitem__(Value _self, Value _index, Value val) {
   if (nidx < 0 || nidx >= len)
     return EMPTY;
 
-  g_array_index(self, Value, (guint)nidx) = val;
+  g_array_index(self, Value, (unsigned int)nidx) = val;
   return val;
 }
 
@@ -208,7 +208,7 @@ Value list__delitem__(Value _self, Value _index) {
   if (nidx < 0 || nidx >= len)
     return EMPTY;
 
-  g_array_remove_index(self, (guint)nidx);
+  g_array_remove_index(self, (unsigned int)nidx);
   return NONE;
 }
 
@@ -233,8 +233,8 @@ static Value list_pop(Value *args) {
   if (nidx < 0 || nidx >= len)
     return EMPTY;
 
-  Value result = g_array_index(self, Value, (guint)nidx);
-  g_array_remove_index(self, (guint)nidx);
+  Value result = g_array_index(self, Value, (unsigned int)nidx);
+  g_array_remove_index(self, (unsigned int)nidx);
   return result;
 }
 
@@ -252,7 +252,7 @@ static Value list__eq__(Value a, Value b) {
   if (al->len != bl->len)
     return VFALSE;
 
-  for (guint i = 0; i < al->len; i++) {
+  for (unsigned int i = 0; i < al->len; i++) {
     Value val_a = g_array_index(al, Value, i);
     Value val_b = g_array_index(bl, Value, i);
 

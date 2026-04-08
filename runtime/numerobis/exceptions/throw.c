@@ -10,7 +10,7 @@ GHashTable *NUMEROBIS_MODULE_REGISTRY = NULL;
 extern int NUMEROBIS__FILE__;
 extern char *NUMEROBIS__FILES__[];
 
-static size_t _strlen(const gchar *s) { return g_utf8_strlen(s, -1); }
+static size_t _strlen(const char *s) { return g_utf8_strlen(s, -1); }
 
 static Location *_location_split(const Location *self, size_t *out_len) {
   int start = self->line;
@@ -51,7 +51,7 @@ static void print_preview(const Location *span) {
   g_printerr("\n");
   for (size_t i = 0; i < n; i++) {
     const Location *line = &lines[i];
-    const gchar *src = program->source[line->line - 1];
+    const char *src = program->source[line->line - 1];
     size_t src_len = _strlen(src);
 
     int end_line = (line->end_line > 0) ? (line->end_line) : program->n_lines;
@@ -61,22 +61,21 @@ static void print_preview(const Location *span) {
     int col_start = MAX(1, MIN(line->col, (int)src_len + 1));
     int col_end = MAX(col_start, MIN(end_col, (int)src_len + 1)) + 1;
 
-    gchar *src_ptr = (gchar *)src;
-    gchar *col_start_ptr = g_utf8_offset_to_pointer(src_ptr, col_start - 1);
-    gchar *col_end_ptr = g_utf8_offset_to_pointer(src_ptr, col_end - 1);
+    char *src_ptr = (char *)src;
+    char *col_start_ptr = g_utf8_offset_to_pointer(src_ptr, col_start - 1);
+    char *col_end_ptr = g_utf8_offset_to_pointer(src_ptr, col_end - 1);
 
     int window_start_offset = MAX(0, col_start - 1 - 30);
     int window_end_offset = MIN((int)src_len, col_end - 1 + 30);
 
-    gchar *window_start_ptr =
+    char *window_start_ptr =
         g_utf8_offset_to_pointer(src_ptr, window_start_offset);
-    gchar *window_end_ptr =
-        g_utf8_offset_to_pointer(src_ptr, window_end_offset);
+    char *window_end_ptr = g_utf8_offset_to_pointer(src_ptr, window_end_offset);
 
-    gchar *before =
+    char *before =
         g_strndup(window_start_ptr, col_start_ptr - window_start_ptr);
-    gchar *highlight = g_strndup(col_start_ptr, col_end_ptr - col_start_ptr);
-    gchar *after = g_strndup(col_end_ptr, window_end_ptr - col_end_ptr);
+    char *highlight = g_strndup(col_start_ptr, col_end_ptr - col_start_ptr);
+    char *after = g_strndup(col_end_ptr, window_end_ptr - col_end_ptr);
 
     // line number and prefix
     const char *prefix = (window_start_offset > 0) ? "..." : "";
@@ -139,6 +138,6 @@ void u_throw(const int code, const RuntimeMessage *msg, const Location *span) {
   exit(EXIT_FAILURE);
 }
 
-void rt_err(const gchar *message, const gchar *help, const Location *span) {
+void rt_err(const char *message, const char *help, const Location *span) {
   u_throw(303, &(RuntimeMessage){303, "RuntimeError", message, help}, span);
 }

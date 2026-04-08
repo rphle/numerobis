@@ -4,9 +4,9 @@
 #include <glib.h>
 
 typedef struct {
-    const gchar *path;
-    const int n_lines;
-    const gchar **source;
+  const char *path;
+  const int n_lines;
+  const char **source;
 } NumerobisProgram;
 
 extern GHashTable *NUMEROBIS_MODULE_REGISTRY;

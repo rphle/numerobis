@@ -6,11 +6,11 @@
 #include <gc.h>
 #include <glib.h>
 
-extern const gchar *_font_path;
+extern const char *_font_path;
 
-const gchar *_default_font(void);
-const gchar *_resolve_font_name(const gchar *name);
-TTF_Font *_get_font(const gchar *path, gint32 size, gint32 style);
+const char *_default_font(void);
+const char *_resolve_font_name(const char *name);
+TTF_Font *_get_font(const char *path, int size, int style);
 
 void _cleanup_fonts(void);
 

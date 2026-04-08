@@ -15,12 +15,12 @@ typedef struct {
 
 extern const StructInfo STRUCT_REGISTRY[];
 
-Value struct__init__(gint64 id, gint64 fieldc);
+Value struct__init__(long id, long fieldc);
 void struct_methods_init(void);
 
 static GString *struct__cstr__(Value self) {
   Value *fields = self.strukt;
-  gint64 id = fields[0].number.i64;
+  long id = fields[0].number.i64;
 
   const StructInfo *meta = &STRUCT_REGISTRY[id];
 

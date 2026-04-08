@@ -21,10 +21,9 @@ static Value numerobis_builtin_random(Value *args) {
 }
 
 static Value numerobis_builtin_randint(Value *args) {
-  gint64 lo = args[1].number.i64;
-  gint64 hi = args[2].number.i64;
-  gint64 result =
-      (gint64)g_rand_int_range(_rng(), (gint32)lo, (gint32)(hi + 1));
+  long lo = args[1].number.i64;
+  long hi = args[2].number.i64;
+  long result = (long)g_rand_int_range(_rng(), (int)lo, (int)(hi + 1));
   return int__init__(result, U_ONE);
 }
 

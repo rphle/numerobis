@@ -17,7 +17,7 @@
 static inline Value _round_op(Value *args, double (*fn)(double)) {
   Value val = args[1];
   Number *n = &val.number;
-  gint64 result = (n->kind == NUM_INT64) ? n->i64 : (gint64)fn(n->f64);
+  long result = (n->kind == NUM_INT64) ? n->i64 : (long)fn(n->f64);
   return int__init__(result, U_ONE);
 }
 
@@ -40,9 +40,9 @@ static Value numerobis_builtin_roundn(Value *args) {
   if (n->kind == NUM_INT64)
     return args[1];
 
-  gint64 places = args[2].type == VALUE_EMPTY ? 0 : args[2].number.i64;
+  long places = args[2].type == VALUE_EMPTY ? 0 : args[2].number.i64;
   double factor = pow(10.0, places);
-  gdouble result = round(n->f64 * factor) / factor;
+  double result = round(n->f64 * factor) / factor;
   return num__init__(result, n->unit);
 }
 

@@ -2,21 +2,22 @@
 #include "glibconfig.h"
 
 #include <gc.h>
+#include <stdbool.h>
 
 SDL_Window *_window = NULL;
 SDL_Renderer *_renderer = NULL;
 GArray *_queue = NULL;
 Color _bg = {0, 0, 0, 255};
 
-gint32 _mouse_x = 0;
-gint32 _mouse_y = 0;
-gboolean _mouse_down = FALSE;
-gboolean _quit_requested = FALSE;
-gboolean _keys[SDL_NUM_SCANCODES] = {FALSE};
+int _mouse_x = 0;
+int _mouse_y = 0;
+bool _mouse_down = FALSE;
+bool _quit_requested = FALSE;
+bool _keys[SDL_NUM_SCANCODES] = {FALSE};
 
-gdouble _scale = 1.0;
-gdouble _tx = 0.0;
-gdouble _ty = 0.0;
+double _scale = 1.0;
+double _tx = 0.0;
+double _ty = 0.0;
 
 void _ensure_queue(void) {
   if (!_queue)

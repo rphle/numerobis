@@ -7,17 +7,18 @@
 #include <SDL2/SDL.h>
 #include <glib.h>
 #include <math.h>
+#include <stdbool.h>
 
-static inline void hline(gint32 x0, gint32 x1, gint32 y) {
+static inline void hline(int x0, int x1, int y) {
   if (x0 > x1) {
-    gint32 t = x0;
+    int t = x0;
     x0 = x1;
     x1 = t;
   }
   SDL_RenderDrawLine(_renderer, x0, y, x1, y);
 }
 
-static inline void sym4(gint32 cx, gint32 cy, gint32 x, gint32 y) {
+static inline void sym4(int cx, int cy, int x, int y) {
   SDL_RenderDrawPoint(_renderer, cx + x, cy + y);
   SDL_RenderDrawPoint(_renderer, cx - x, cy + y);
   SDL_RenderDrawPoint(_renderer, cx + x, cy - y);
@@ -31,14 +32,14 @@ static inline void sym4(gint32 cx, gint32 cy, gint32 x, gint32 y) {
     (b) = _t;                                                                  \
   } while (0)
 
-void _prim_circle(gint32 cx, gint32 cy, gint32 r, gboolean filled) {
+void _prim_circle(int cx, int cy, int r, bool filled) {
   if (r <= 0) {
     if (filled)
       SDL_RenderDrawPoint(_renderer, cx, cy);
     return;
   }
 
-  gint32 x = r, y = 0, err = 1 - r;
+  int x = r, y = 0, err = 1 - r;
   while (x >= y) {
     if (filled) {
       hline(cx - x, cx + x, cy + y);
@@ -54,8 +55,7 @@ void _prim_circle(gint32 cx, gint32 cy, gint32 r, gboolean filled) {
   }
 }
 
-void _prim_ellipse(gint32 cx, gint32 cy, gint32 rx, gint32 ry,
-                   gboolean filled) {
+void _prim_ellipse(int cx, int cy, int rx, int ry, bool filled) {
   if (rx <= 0 || ry <= 0)
     return;
   if (rx == ry) {
@@ -63,9 +63,9 @@ void _prim_ellipse(gint32 cx, gint32 cy, gint32 rx, gint32 ry,
     return;
   }
 
-  gint64 rx2 = (gint64)rx * rx, ry2 = (gint64)ry * ry;
-  gint32 x = 0, y = ry;
-  gint64 dx = 0, dy = 2LL * rx2 * y, p = ry2 - rx2 * ry + rx2 / 4;
+  long rx2 = (long)rx * rx, ry2 = (long)ry * ry;
+  int x = 0, y = ry;
+  long dx = 0, dy = 2LL * rx2 * y, p = ry2 - rx2 * ry + rx2 / 4;
 
   /* Region 1 */
   while (dx < dy) {
@@ -86,8 +86,8 @@ void _prim_ellipse(gint32 cx, gint32 cy, gint32 rx, gint32 ry,
   }
 
   /* Region 2 */
-  p = ry2 * ((gint64)x * x + x) + rx2 * ((gint64)(y - 1) * (y - 1)) -
-      (gint64)rx2 * ry2;
+  p = ry2 * ((long)x * x + x) + rx2 * ((long)(y - 1) * (y - 1)) -
+      (long)rx2 * ry2;
   while (y >= 0) {
     if (filled) {
       hline(cx - x, cx + x, cy + y);
@@ -106,52 +106,51 @@ void _prim_ellipse(gint32 cx, gint32 cy, gint32 rx, gint32 ry,
   }
 }
 
-void _prim_arc(gint32 cx, gint32 cy, gint32 r, gfloat deg0, gfloat deg1,
-               gboolean filled) {
+void _prim_arc(int cx, int cy, int r, float deg0, float deg1, bool filled) {
   if (r <= 0)
     return;
   if (deg1 < deg0)
     SWAP(deg0, deg1);
 
-  gfloat rad0 = deg0 * (gfloat)M_PI / 180.f;
-  gfloat rad1 = deg1 * (gfloat)M_PI / 180.f;
+  float rad0 = deg0 * (float)M_PI / 180.f;
+  float rad1 = deg1 * (float)M_PI / 180.f;
   int segs = (int)fmaxf(16.f, (deg1 - deg0) / 2.f);
-  gfloat step = (rad1 - rad0) / segs;
+  float step = (rad1 - rad0) / segs;
 
   if (!filled) {
     for (int s = 0; s < segs; s++) {
-      gfloat a0 = rad0 + step * s, a1 = a0 + step;
-      SDL_RenderDrawLine(
-          _renderer, cx + (gint32)(r * cosf(a0)), cy + (gint32)(r * sinf(a0)),
-          cx + (gint32)(r * cosf(a1)), cy + (gint32)(r * sinf(a1)));
+      float a0 = rad0 + step * s, a1 = a0 + step;
+      SDL_RenderDrawLine(_renderer, cx + (int)(r * cosf(a0)),
+                         cy + (int)(r * sinf(a0)), cx + (int)(r * cosf(a1)),
+                         cy + (int)(r * sinf(a1)));
     }
     return;
   }
 
   /* Filled sector: per-pixel angular test */
-  gint32 r2 = r * r;
-  gfloat sweep = deg1 - deg0;
-  gfloat ex0 = cosf(rad0), ey0 = sinf(rad0);
-  gfloat ex1 = cosf(rad1), ey1 = sinf(rad1);
+  int r2 = r * r;
+  float sweep = deg1 - deg0;
+  float ex0 = cosf(rad0), ey0 = sinf(rad0);
+  float ex1 = cosf(rad1), ey1 = sinf(rad1);
 
-  for (gint32 dy = -r; dy <= r; dy++) {
-    gint32 rowY = cy + dy;
-    gfloat fdy = (gfloat)dy;
-    gfloat half = sqrtf(fmaxf(0.f, (gfloat)r2 - fdy * fdy));
-    gint32 xl = (gint32)ceilf(-half), xr = (gint32)floorf(half);
+  for (int dy = -r; dy <= r; dy++) {
+    int rowY = cy + dy;
+    float fdy = (float)dy;
+    float half = sqrtf(fmaxf(0.f, (float)r2 - fdy * fdy));
+    int xl = (int)ceilf(-half), xr = (int)floorf(half);
 
     if (sweep >= 360.f) {
       hline(cx + xl, cx + xr, rowY);
       continue;
     }
 
-    gint32 span_l = cx + xr + 1, span_r = cx + xl - 1;
-    for (gint32 dx = xl; dx <= xr; dx++) {
-      gfloat fdx = (gfloat)dx;
-      gfloat cross0 = ex0 * fdy - ey0 * fdx;
-      gfloat cross1 = ex1 * fdy - ey1 * fdx;
-      gboolean inside = (sweep <= 180.f) ? (cross0 >= 0.f && cross1 <= 0.f)
-                                         : (cross0 >= 0.f || cross1 <= 0.f);
+    int span_l = cx + xr + 1, span_r = cx + xl - 1;
+    for (int dx = xl; dx <= xr; dx++) {
+      float fdx = (float)dx;
+      float cross0 = ex0 * fdy - ey0 * fdx;
+      float cross1 = ex1 * fdy - ey1 * fdx;
+      bool inside = (sweep <= 180.f) ? (cross0 >= 0.f && cross1 <= 0.f)
+                                     : (cross0 >= 0.f || cross1 <= 0.f);
       if (inside && dx * dx + dy * dy <= r2) {
         if (cx + dx < span_l)
           span_l = cx + dx;
@@ -169,8 +168,7 @@ void _prim_arc(gint32 cx, gint32 cy, gint32 r, gfloat deg0, gfloat deg1,
   }
 }
 
-void _prim_rounded_rect(gint32 x, gint32 y, gint32 w, gint32 h, gint32 r,
-                        gboolean filled) {
+void _prim_rounded_rect(int x, int y, int w, int h, int r, bool filled) {
   if (r > w / 2)
     r = w / 2;
   if (r > h / 2)
@@ -196,12 +194,12 @@ void _prim_rounded_rect(gint32 x, gint32 y, gint32 w, gint32 h, gint32 r,
   SDL_RenderFillRects(_renderer, rects, 3);
 
   /* Corner centres */
-  const gint32 ccx[] = {x + r, x + w - r, x + r, x + w - r};
-  const gint32 ccy[] = {y + r, y + r, y + h - r, y + h - r};
-  const gint32 sx[] = {-1, 1, -1, 1};
-  const gint32 sy[] = {-1, -1, 1, 1};
+  const int ccx[] = {x + r, x + w - r, x + r, x + w - r};
+  const int ccy[] = {y + r, y + r, y + h - r, y + h - r};
+  const int sx[] = {-1, 1, -1, 1};
+  const int sy[] = {-1, -1, 1, 1};
 
-  gint32 px = r, py = 0, err = 1 - r;
+  int px = r, py = 0, err = 1 - r;
   while (px >= py) {
     for (int c = 0; c < 4; c++) {
       hline(ccx[c], ccx[c] + sx[c] * px, ccy[c] + sy[c] * py);
@@ -212,7 +210,7 @@ void _prim_rounded_rect(gint32 x, gint32 y, gint32 w, gint32 h, gint32 r,
   }
 }
 
-void _prim_thick_line(gint32 x1, gint32 y1, gint32 x2, gint32 y2, gdouble t) {
+void _prim_thick_line(int x1, int y1, int x2, int y2, double t) {
   if (t <= 1.0) {
     SDL_RenderDrawLine(_renderer, x1, y1, x2, y2);
     return;
@@ -220,7 +218,7 @@ void _prim_thick_line(gint32 x1, gint32 y1, gint32 x2, gint32 y2, gdouble t) {
 
   double dx = x2 - x1, dy = y2 - y1, len = sqrt(dx * dx + dy * dy);
   if (len < 0.5) {
-    _prim_circle(x1, y1, (gint32)(t / 2.0), TRUE);
+    _prim_circle(x1, y1, (int)(t / 2.0), TRUE);
     return;
   }
 
@@ -234,18 +232,18 @@ void _prim_thick_line(gint32 x1, gint32 y1, gint32 x2, gint32 y2, gdouble t) {
   _prim_polygon(pts, 4, TRUE);
 }
 
-void _prim_polygon(SDL_Point *pts, gint32 n, gboolean filled) {
+void _prim_polygon(SDL_Point *pts, int n, bool filled) {
   if (n < 2)
     return;
 
-  for (gint32 i = 0; i < n; i++)
+  for (int i = 0; i < n; i++)
     SDL_RenderDrawLine(_renderer, pts[i].x, pts[i].y, pts[(i + 1) % n].x,
                        pts[(i + 1) % n].y);
   if (!filled || n < 3)
     return;
 
-  gint32 ymin = pts[0].y, ymax = pts[0].y;
-  for (gint32 i = 1; i < n; i++) {
+  int ymin = pts[0].y, ymax = pts[0].y;
+  for (int i = 1; i < n; i++) {
     if (pts[i].y < ymin)
       ymin = pts[i].y;
     if (pts[i].y > ymax)
@@ -254,29 +252,29 @@ void _prim_polygon(SDL_Point *pts, gint32 n, gboolean filled) {
   if (ymin == ymax)
     return;
 
-  gint32 *xs = g_malloc(n * sizeof(gint32));
+  int *xs = g_malloc(n * sizeof(int));
   if (!xs)
     return;
 
-  for (gint32 scanY = ymin; scanY <= ymax; scanY++) {
-    gint32 cnt = 0;
-    for (gint32 i = 0, j = n - 1; i < n; j = i++) {
-      gint32 yi = pts[i].y, yj = pts[j].y;
+  for (int scanY = ymin; scanY <= ymax; scanY++) {
+    int cnt = 0;
+    for (int i = 0, j = n - 1; i < n; j = i++) {
+      int yi = pts[i].y, yj = pts[j].y;
       if ((yi <= scanY && yj > scanY) || (yj <= scanY && yi > scanY))
         xs[cnt++] =
-            pts[i].x + (gint32)(((gint64)(scanY - yi) * (pts[j].x - pts[i].x)) /
-                                (yj - yi));
+            pts[i].x +
+            (int)(((long)(scanY - yi) * (pts[j].x - pts[i].x)) / (yj - yi));
     }
     /* Insertion sort */
-    for (gint32 a = 1; a < cnt; a++) {
-      gint32 v = xs[a], b = a;
+    for (int a = 1; a < cnt; a++) {
+      int v = xs[a], b = a;
       while (b > 0 && xs[b - 1] > v) {
         xs[b] = xs[b - 1];
         b--;
       }
       xs[b] = v;
     }
-    for (gint32 a = 0; a + 1 < cnt; a += 2)
+    for (int a = 0; a + 1 < cnt; a += 2)
       hline(xs[a], xs[a + 1], scanY);
   }
   g_free(xs);

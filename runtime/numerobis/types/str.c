@@ -40,7 +40,7 @@ static bool str__cbool__(Value self) { return self.str->len > 0; }
 static Value str__getitem__(Value _self, Value _index) {
   GString *self = _self.str;
   g_assert(_index.type == VALUE_NUMBER && _index.number.kind == NUM_INT64);
-  gint64 index = _index.number.i64;
+  long index = _index.number.i64;
 
   if (!self)
     return EMPTY;
@@ -56,8 +56,8 @@ static Value str__getitem__(Value _self, Value _index) {
     p = g_utf8_next_char(p);
 
   gunichar ch = g_utf8_get_char(p);
-  gchar buf[8];
-  gint utf8_len = g_unichar_to_utf8(ch, buf);
+  char buf[8];
+  int utf8_len = g_unichar_to_utf8(ch, buf);
   buf[utf8_len] = '\0';
 
   return str__init__(g_string_new(buf));
@@ -105,7 +105,7 @@ static Value str__setitem__(Value _self, Value _index, Value _value) {
   g_assert(_index.type == VALUE_NUMBER && _index.number.kind == NUM_INT64);
   g_assert(_value.type == VALUE_STR);
 
-  gint64 index = _index.number.i64;
+  long index = _index.number.i64;
   GString *value = _value.str;
 
   if (!self || !value)
@@ -122,14 +122,14 @@ static Value str__setitem__(Value _self, Value _index, Value _value) {
     p = g_utf8_next_char(p);
 
   const char *next = g_utf8_next_char(p);
-  gint old_char_len = next - p;
+  int old_char_len = next - p;
 
   // get the new char (first character of value str)
   gunichar new_ch = g_utf8_get_char(value->str);
-  gchar buf[8];
-  gint new_char_len = g_unichar_to_utf8(new_ch, buf);
+  char buf[8];
+  int new_char_len = g_unichar_to_utf8(new_ch, buf);
 
-  gint offset = p - self->str;
+  int offset = p - self->str;
 
   g_string_erase(self, offset, old_char_len);
   g_string_insert_len(self, offset, buf, new_char_len);
@@ -153,7 +153,7 @@ static Value str__add__(Value _self, Value _other) {
 
 static Value str__mul__(Value _self, Value _n) {
   GString *self = _self.str;
-  gint64 n = _n.number.i64;
+  long n = _n.number.i64;
 
   if (!self || n <= 0)
     return str__init__(g_string_new(""));
@@ -205,8 +205,8 @@ static Value str__ge__(Value self, Value other) {
 static inline Value str__str__(Value self) { return self; }
 
 static Value str__int__(Value self) {
-  const gchar *str = self.str->str;
-  gchar *endptr = NULL;
+  const char *str = self.str->str;
+  char *endptr = NULL;
 
   while (g_ascii_isspace(*str)) {
     str++;
@@ -216,7 +216,7 @@ static Value str__int__(Value self) {
     return EMPTY;
   }
 
-  gint64 result = g_ascii_strtoll(str, &endptr, 10);
+  long result = g_ascii_strtoll(str, &endptr, 10);
 
   while (g_ascii_isspace(*endptr)) {
     endptr++;
@@ -233,8 +233,8 @@ static Value str__num__(Value self) {
   if (!self.str)
     return EMPTY;
 
-  const gchar *str = self.str->str;
-  gchar *endptr = NULL;
+  const char *str = self.str->str;
+  char *endptr = NULL;
 
   while (g_ascii_isspace(*str)) {
     str++;
@@ -244,7 +244,7 @@ static Value str__num__(Value self) {
     return EMPTY;
   }
 
-  gdouble result = g_ascii_strtod(str, &endptr);
+  double result = g_ascii_strtod(str, &endptr);
 
   while (g_ascii_isspace(*endptr)) {
     endptr++;

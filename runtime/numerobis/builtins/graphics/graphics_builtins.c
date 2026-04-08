@@ -17,11 +17,11 @@
 #include <stdio.h>
 #include <string.h>
 
-static inline gint32 _tx_x(gdouble x) { return (gint32)((x + _tx) * _scale); }
-static inline gint32 _tx_y(gdouble y) { return (gint32)((y + _ty) * _scale); }
-static inline gint32 _tx_dim(gdouble dim) { return (gint32)(dim * _scale); }
+static inline int _tx_x(double x) { return (int)((x + _tx) * _scale); }
+static inline int _tx_y(double y) { return (int)((y + _ty) * _scale); }
+static inline int _tx_dim(double dim) { return (int)(dim * _scale); }
 
-static inline gboolean _arg_filled(Value v) {
+static inline bool _arg_filled(Value v) {
   return v.type != VALUE_EMPTY ? _bool(v) : true;
 }
 
@@ -29,16 +29,16 @@ static inline Color _arg_color(Value v) {
   return v.type != VALUE_EMPTY ? _parse_color(_str(v)) : COLOR_BLACK;
 }
 
-static gint32 _parse_style_list(Value style_val) {
+static int _parse_style_list(Value style_val) {
   if (style_val.type != VALUE_LIST)
     return TTF_STYLE_NORMAL;
   GArray *arr = style_val.list;
-  gint32 flags = TTF_STYLE_NORMAL;
-  for (guint i = 0; i < arr->len; i++) {
+  int flags = TTF_STYLE_NORMAL;
+  for (unsigned int i = 0; i < arr->len; i++) {
     Value item = g_array_index(arr, Value, i);
     if (item.type != VALUE_STR || !item.str)
       continue;
-    const gchar *s = item.str->str;
+    const char *s = item.str->str;
     if (strcmp(s, "bold") == 0)
       flags |= TTF_STYLE_BOLD;
     if (strcmp(s, "italic") == 0)
@@ -53,8 +53,8 @@ static gint32 _parse_style_list(Value style_val) {
 
 /* init!(width: Int, height: Int): Int */
 static Value numerobis_builtin_graphics_init(Value *args) {
-  gint32 w = (gint32)_i64(args[1]);
-  gint32 h = (gint32)_i64(args[2]);
+  int w = (int)_i64(args[1]);
+  int h = (int)_i64(args[2]);
 
   if (SDL_Init(SDL_INIT_VIDEO) != 0) {
     fprintf(stderr, "graphics: SDL_Init: %s\n", SDL_GetError());
@@ -96,7 +96,7 @@ static Value numerobis_builtin_set_title(Value *args) {
 
 /* set_font!(name: Str) — e.g. "Arial", "DejaVu Sans" */
 static Value numerobis_builtin_set_font(Value *args) {
-  const gchar *path = _resolve_font_name(_str(args[1]));
+  const char *path = _resolve_font_name(_str(args[1]));
   if (!path)
     return int__init__(0, U_ONE);
   _font_path = path;
@@ -106,7 +106,7 @@ static Value numerobis_builtin_set_font(Value *args) {
 /* rect!(x, y, w, h, color, filled) */
 static Value numerobis_builtin_rect(Value *args) {
   _ensure_queue();
-  gint32 x = _tx_x(_f64(args[1]));
+  int x = _tx_x(_f64(args[1]));
   DrawCmd cmd = {.kind = CMD_RECT,
                  .color = _arg_color(args[5]),
                  .rect = {_tx_x(_f64(args[1])), _tx_y(_f64(args[2])),
@@ -154,7 +154,7 @@ static Value numerobis_builtin_ellipse(Value *args) {
 /* line!(x1, y1, x2, y2, color, thickness) */
 static Value numerobis_builtin_line(Value *args) {
   _ensure_queue();
-  gdouble thickness = args[6].type != VALUE_EMPTY ? _f64(args[6]) : 1.0;
+  double thickness = args[6].type != VALUE_EMPTY ? _f64(args[6]) : 1.0;
   DrawCmd cmd = {.kind = CMD_LINE,
                  .color = _arg_color(args[5]),
                  .line = {_tx_x(_f64(args[1])), _tx_y(_f64(args[2])),
@@ -168,12 +168,12 @@ static Value numerobis_builtin_line(Value *args) {
 static Value numerobis_builtin_polygon(Value *args) {
   _ensure_queue();
   GArray *arr = args[1].list;
-  gint32 n = (gint32)(arr->len / 2);
+  int n = (int)(arr->len / 2);
   SDL_Point *pts = GC_MALLOC(n * sizeof(SDL_Point));
 
-  for (gint32 i = 0; i < n; i++) {
-    gdouble px = _f64(g_array_index(arr, Value, i * 2));
-    gdouble py = _f64(g_array_index(arr, Value, i * 2 + 1));
+  for (int i = 0; i < n; i++) {
+    double px = _f64(g_array_index(arr, Value, i * 2));
+    double py = _f64(g_array_index(arr, Value, i * 2 + 1));
     pts[i].x = _tx_x(px);
     pts[i].y = _tx_y(py);
   }
@@ -191,8 +191,8 @@ static Value numerobis_builtin_arc(Value *args) {
   DrawCmd cmd = {.kind = CMD_ARC,
                  .color = _arg_color(args[6]),
                  .arc = {_tx_x(_f64(args[1])), _tx_y(_f64(args[2])),
-                         _tx_dim(_f64(args[3])), (gfloat)_f64(args[4]),
-                         (gfloat)_f64(args[5]), _arg_filled(args[7])}};
+                         _tx_dim(_f64(args[3])), (float)_f64(args[4]),
+                         (float)_f64(args[5]), _arg_filled(args[7])}};
   g_array_append_val(_queue, cmd);
   return NONE;
 }
@@ -211,16 +211,16 @@ static Value numerobis_builtin_point(Value *args) {
 static Value numerobis_builtin_text(Value *args) {
   _ensure_queue();
 
-  const gchar *font_arg = args[7].type != VALUE_EMPTY ? _str(args[7]) : NULL;
-  const gchar *font_path =
+  const char *font_arg = args[7].type != VALUE_EMPTY ? _str(args[7]) : NULL;
+  const char *font_path =
       font_arg ? _resolve_font_name(font_arg) : _default_font();
   if (!font_path)
     font_path = _default_font();
 
-  gdouble angle_arg = args[8].type != VALUE_EMPTY ? _f64(args[8]) : 0.0;
-  gint32 style_arg = args[6].type != VALUE_EMPTY ? _parse_style_list(args[6])
-                                                 : TTF_STYLE_NORMAL;
-  gint32 size_arg = args[4].type != VALUE_EMPTY ? _tx_dim(_f64(args[4])) : 16;
+  double angle_arg = args[8].type != VALUE_EMPTY ? _f64(args[8]) : 0.0;
+  int style_arg = args[6].type != VALUE_EMPTY ? _parse_style_list(args[6])
+                                              : TTF_STYLE_NORMAL;
+  int size_arg = args[4].type != VALUE_EMPTY ? _tx_dim(_f64(args[4])) : 16;
 
   DrawCmd cmd = {
       .kind = CMD_TEXT,
@@ -248,7 +248,7 @@ static Value numerobis_builtin_blit(Value *args) {
   _set_color(_bg);
   SDL_RenderClear(_renderer);
 
-  for (guint qi = 0; qi < _queue->len; qi++) {
+  for (unsigned int qi = 0; qi < _queue->len; qi++) {
     DrawCmd *c = &g_array_index(_queue, DrawCmd, qi);
     _set_color(c->color);
 
@@ -367,7 +367,7 @@ static Value numerobis_builtin_quit_requested(Value *args) {
 /* key_pressed!(key_name: Str): Bool */
 static Value numerobis_builtin_key_pressed(Value *args) {
   _update_input_state();
-  const gchar *key_name = _str(args[1]);
+  const char *key_name = _str(args[1]);
   SDL_Scancode code = SDL_GetScancodeFromName(key_name);
   if (code == SDL_SCANCODE_UNKNOWN) {
     return bool__init__(FALSE);
@@ -377,8 +377,8 @@ static Value numerobis_builtin_key_pressed(Value *args) {
 
 /* set_scale!(value: Num, pixels: Num = 1): None */
 static Value numerobis_builtin_set_scale(Value *args) {
-  gdouble value = _f64(args[1]);
-  gdouble pixels = args[2].type != VALUE_EMPTY ? _f64(args[2]) : 1;
+  double value = _f64(args[1]);
+  double pixels = args[2].type != VALUE_EMPTY ? _f64(args[2]) : 1;
   _scale = pixels / value;
   return NONE;
 }

@@ -24,7 +24,7 @@ static Value numerobis_builtin_input(Value *args) {
     fflush(stdout);
   }
 
-  gchar *line = NULL;
+  char *line = NULL;
   size_t n = 0;
 
   if (getline((char **)&line, &n, stdin) == -1) {
@@ -45,12 +45,12 @@ static Value numerobis_builtin_indexof(Value *args) {
   GArray *self = args[2].list;
   Value target = args[1];
 
-  for (guint i = 0; i < self->len; i++) {
+  for (unsigned int i = 0; i < self->len; i++) {
     Value *item = g_array_index(self, Value *, i);
     Value eq_result = __eq__(*item, target);
 
     if (eq_result.boolean) {
-      return int__init__((gint64)i, U_ONE);
+      return int__init__((long)i, U_ONE);
     }
   }
 
@@ -77,7 +77,7 @@ static Value numerobis_builtin_split(Value *args) {
       p = next;
     }
   } else {
-    gchar **parts = g_strsplit(self->str, sep->str, -1);
+    char **parts = g_strsplit(self->str, sep->str, -1);
 
     if (parts) {
       for (int i = 0; parts[i] != NULL; i++) {
@@ -93,7 +93,7 @@ static Value numerobis_builtin_split(Value *args) {
 }
 
 static inline Value numerobis_builtin_list_len(Value *args) {
-  return int__init__((gint64)_list_len(args[1].list), U_ONE);
+  return int__init__((long)_list_len(args[1].list), U_ONE);
 }
 
 static inline Value numerobis_builtin_str_len(Value *args) {

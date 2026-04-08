@@ -7,9 +7,9 @@ struct Value;
 typedef struct Value Value;
 
 typedef struct Range {
-  gint64 start;
-  gint64 stop;
-  gdouble step;
+  long start;
+  long stop;
+  double step;
 } Range;
 
 Value range__init__(Range x);

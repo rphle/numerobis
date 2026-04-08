@@ -105,13 +105,13 @@ typedef struct {
 typedef struct {
   UnitFactor *data;
   uint16_t len;
-  gdouble scalar;
+  double scalar;
 } UnitFactorList;
 
 typedef struct Unit {
   uint64_t hash;
   uint16_t len;
-  gdouble scalar;
+  double scalar;
   UnitFactor data[];
 } Unit;
 
@@ -129,7 +129,7 @@ static inline ComboKey u_combo_key(uint64_t a, uint64_t b) {
 void units_init(void);
 void units_shutdown(void);
 
-uint64_t unit_new(uint16_t count, const UnitFactor *factors, gdouble scalar);
+uint64_t unit_new(uint16_t count, const UnitFactor *factors, double scalar);
 
 Unit *dimensionless_unit(void);
 
@@ -150,9 +150,9 @@ static inline Unit *unit_get(uint64_t hash) {
 
 bool is_one(const Unit *u);
 uint64_t unit_mul(const Unit *a, const Unit *b, bool invert);
-uint64_t unit_pow(const Unit *u, gdouble exp);
+uint64_t unit_pow(const Unit *u, double exp);
 UnitFactorList unit_simplify(const UnitFactor *data, uint16_t len,
-                             gdouble scalar);
+                             double scalar);
 GString *unit_print(const Unit *u);
 
 /* ==== MACROS ==== */
@@ -162,8 +162,7 @@ GString *unit_print(const Unit *u);
 #define _U_BUILD(scalar, ...)                                                  \
   ({                                                                           \
     const UnitFactor _uf[] = {__VA_ARGS__};                                    \
-    unit_new((uint16_t)(sizeof(_uf) / sizeof(_uf[0])), _uf,                    \
-             (gdouble)(scalar));                                               \
+    unit_new((uint16_t)(sizeof(_uf) / sizeof(_uf[0])), _uf, (double)(scalar)); \
   })
 
 #define U(...) _U_BUILD(1, __VA_ARGS__)

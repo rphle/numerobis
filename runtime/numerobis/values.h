@@ -35,8 +35,8 @@ typedef struct {
   NumberKind kind;
   uint64_t unit;
   union {
-    gint64 i64;
-    gdouble f64;
+    long i64;
+    double f64;
   };
 } Number;
 
