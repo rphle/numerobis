@@ -1,6 +1,6 @@
 #include "eval.h"
+#include "../libs/sds.h"
 #include "../values.h"
-#include "glib.h"
 #include "units.h"
 
 #include <math.h>
@@ -66,26 +66,23 @@ double eval_number(Number *n, const uint64_t *_unit_hash) {
   return value;
 }
 
-GString *print_number(Number *n) {
+sds print_number(Number *n) {
   double value = eval_number(n, NULL);
 
-  GString *out = g_string_new("");
-  g_string_printf(out, "%g", value);
+  sds out = sdscatprintf(sdsempty(), "%g", value);
 
   const Unit *u = unit_get(n->unit);
   if (is_one(u) && u->scalar == 1.0) {
     return out;
   }
 
-  GString *unit = unit_print(u);
-  size_t len = g_utf8_strlen(unit->str, unit->len);
-
-  if (len > 0) {
-    g_string_append(out, " ");
-    g_string_append(out, unit->str);
+  sds unit_s = unit_print(u);
+  if (sdslen(unit_s) > 0) {
+    out = sdscat(out, " ");
+    out = sdscatlen(out, unit_s, sdslen(unit_s));
   }
 
-  g_string_free(unit, TRUE);
+  sdsfree(unit_s);
 
   return out;
 }

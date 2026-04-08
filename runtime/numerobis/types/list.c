@@ -1,6 +1,7 @@
 #include "list.h"
 #include "../constants.h"
 #include "../extern.h"
+#include "../libs/sds.h"
 #include "../utils/utils.h"
 #include "../values.h"
 #include "bool.h"
@@ -282,23 +283,22 @@ static Value list__ge__(Value self, Value other) {
 
 // serialization
 static Value list__str__(Value self) {
-  GString *result = g_string_new("");
-
-  g_string_append_c(result, '[');
+  sds result = sdsnew("[");
   GArray *arr = self.list;
+
   for (size_t i = 0; i < arr->len; i++) {
     if (i > 0)
-      g_string_append(result, ", ");
+      result = sdscat(result, ", ");
 
     Value elem = g_array_index(arr, Value, i);
     if (elem.type == VALUE_STR) {
-      g_string_append_printf(result, "\"%s\"", elem.str->str);
+      result = sdscatprintf(result, "\"%s\"", elem.str);
     } else {
       Value elem_str = __str__(elem, NULL);
-      g_string_append(result, elem_str.str->str);
+      result = sdscat(result, elem_str.str);
     }
   }
-  g_string_append_c(result, ']');
+  result = sdscat(result, "]");
 
   return str__init__(result);
 }

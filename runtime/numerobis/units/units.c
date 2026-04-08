@@ -1,4 +1,5 @@
 #include "units.h"
+#include "../libs/sds.h"
 
 #include <assert.h>
 #include <math.h>
@@ -13,8 +14,6 @@ uint64_t NUMEROBIS_UNIT_ONE_HASH = 0;
 
 _Thread_local UnitCacheSlot _unit_tls_cache[UNIT_CACHE_SIZE];
 
-/* FNV-1a over sorted factors, then fold in the scalar's bit pattern so that
- * 1000*m and 1*m hash differently. */
 static uint64_t hash_factors(const UnitFactor *data, uint16_t len,
                              double scalar) {
   uint64_t h = 0xcbf29ce484222325ULL;
@@ -24,7 +23,6 @@ static uint64_t hash_factors(const UnitFactor *data, uint16_t len,
     h ^= (uint64_t)(uint16_t)data[i].exp;
     h *= 0x100000001b3ULL;
   }
-  /* Fold scalar in via its IEEE-754 bit pattern. */
   uint64_t sbits;
   memcpy(&sbits, &scalar, sizeof sbits);
   h ^= sbits;
@@ -43,7 +41,7 @@ Unit *dimensionless_unit(void) {
   if (u)
     return u;
 
-  u = (Unit *)g_malloc(sizeof(Unit));
+  u = (Unit *)malloc(sizeof(Unit));
   u->hash = h;
   u->len = 0;
   u->scalar = 1.0;
@@ -65,7 +63,7 @@ void units_shutdown(void) {
   if (NUMEROBIS_UNITS.slots) {
     for (uint32_t i = 0; i < NUMEROBIS_UNITS.cap; i++) {
       if (NUMEROBIS_UNITS.slots[i].key != 0)
-        g_free(NUMEROBIS_UNITS.slots[i].val);
+        free(NUMEROBIS_UNITS.slots[i].val);
     }
     umap_free(&NUMEROBIS_UNITS);
   }
@@ -82,7 +80,7 @@ UnitFactorList unit_simplify(const UnitFactor *data, uint16_t len,
   if (!data || len == 0)
     return (UnitFactorList){.data = NULL, .len = 0, .scalar = scalar};
 
-  UnitFactor *tmp = (UnitFactor *)g_malloc(len * sizeof *tmp);
+  UnitFactor *tmp = (UnitFactor *)malloc(len * sizeof *tmp);
   memcpy(tmp, data, len * sizeof *tmp);
   qsort(tmp, len, sizeof *tmp, cmp_factor_by_id);
 
@@ -101,11 +99,11 @@ UnitFactorList unit_simplify(const UnitFactor *data, uint16_t len,
   }
 
   if (final == 0) {
-    g_free(tmp);
+    free(tmp);
     return (UnitFactorList){.data = NULL, .len = 0, .scalar = scalar};
   }
 
-  tmp = (UnitFactor *)g_realloc(tmp, final * sizeof *tmp);
+  tmp = (UnitFactor *)realloc(tmp, final * sizeof *tmp);
   return (UnitFactorList){.data = tmp, .len = final, .scalar = scalar};
 }
 
@@ -122,19 +120,19 @@ uint64_t unit_new(uint16_t count, const UnitFactor *factors, double scalar) {
 
   UnitFactorList sl = unit_simplify(factors, count, scalar);
   if (sl.len == 0 && sl.scalar == 1.0 && NUMEROBIS_UNIT_ONE_HASH) {
-    g_free(sl.data);
+    free(sl.data);
     return NUMEROBIS_UNIT_ONE_HASH;
   }
 
   uint64_t h = hash_factors(sl.data, sl.len, sl.scalar);
 
   if (umap_contains(&NUMEROBIS_UNITS, h)) {
-    g_free(sl.data);
+    free(sl.data);
     return h;
   }
 
   size_t sz = sizeof(Unit) + sl.len * sizeof(UnitFactor);
-  Unit *u = (Unit *)g_malloc(sz);
+  Unit *u = (Unit *)malloc(sz);
   u->hash = h;
   u->len = sl.len;
   u->scalar = sl.scalar;
@@ -142,7 +140,7 @@ uint64_t unit_new(uint16_t count, const UnitFactor *factors, double scalar) {
   if (sl.len > 0)
     memcpy(u->data, sl.data, sl.len * sizeof(UnitFactor));
 
-  g_free(sl.data);
+  free(sl.data);
 
   umap_insert(&NUMEROBIS_UNITS, h, u);
   return h;
@@ -176,14 +174,12 @@ uint64_t unit_mul(const Unit *a, const Unit *b, bool invert) {
     return cached->hash;
   }
 
-  /* Combine scalars. */
   double result_scalar =
       invert ? (a->scalar / b->scalar) : (a->scalar * b->scalar);
 
-  /* Merge factor lists. */
   uint16_t merged_len = a->len + b->len;
   UnitFactor *merged =
-      merged_len ? (UnitFactor *)g_malloc(merged_len * sizeof *merged) : NULL;
+      merged_len ? (UnitFactor *)malloc(merged_len * sizeof *merged) : NULL;
 
   if (a->len)
     memcpy(merged, a->data, a->len * sizeof *merged);
@@ -193,7 +189,7 @@ uint64_t unit_mul(const Unit *a, const Unit *b, bool invert) {
   }
 
   uint64_t result_hash = unit_new(merged_len, merged, result_scalar);
-  g_free(merged);
+  free(merged);
 
   Unit *result = unit_get(result_hash);
   umap_insert(&NUMEROBIS_UNIT_COMBOS, ck, result);
@@ -211,7 +207,7 @@ uint64_t unit_pow(const Unit *u, double exp) {
 
   double new_scalar = pow(u->scalar, exp);
 
-  UnitFactor *factors = (UnitFactor *)g_malloc(u->len * sizeof *factors);
+  UnitFactor *factors = (UnitFactor *)malloc(u->len * sizeof *factors);
   for (uint16_t i = 0; i < u->len; i++) {
     double raw = (double)u->data[i].exp * exp;
     double rounded = round(raw);
@@ -224,58 +220,55 @@ uint64_t unit_pow(const Unit *u, double exp) {
   }
 
   uint64_t hash = unit_new(u->len, factors, new_scalar);
-  g_free(factors);
+  free(factors);
   return hash;
 }
 
-GString *unit_print(const Unit *u) {
+sds unit_print(const Unit *u) {
   assert(u != NULL);
-
-  GString *result = g_string_new(NULL);
 
   if (is_one(u)) {
     if (u->scalar == 1.0)
-      g_string_assign(result, "1");
+      return sdsnew("1");
     else
-      g_string_printf(result, "%g", u->scalar);
-    return result;
+      return sdscatprintf(sdsempty(), "%g", u->scalar);
   }
 
-  GString *numer = g_string_new(NULL);
-  GString *denom = g_string_new(NULL);
+  sds numer = sdsempty();
+  sds denom = sdsempty();
 
   for (uint16_t i = 0; i < u->len; i++) {
     uint16_t id = u->data[i].id;
     int16_t exp = u->data[i].exp;
 
     const char *name = NUMEROBIS_UNIT_NAMES[id];
-
-    GString *half = (exp > 0) ? numer : denom;
+    sds *half = (exp > 0) ? &numer : &denom;
     int16_t abs_exp = (int16_t)(exp > 0 ? exp : -exp);
 
-    if (half->len > 0)
-      g_string_append_c(half, '*');
+    if (sdslen(*half) > 0)
+      *half = sdscat(*half, "*");
 
-    g_string_append(half, name);
+    *half = sdscat(*half, name);
     if (abs_exp != 1)
-      g_string_append_printf(half, "^%d", (int)abs_exp);
+      *half = sdscatprintf(*half, "^%d", (int)abs_exp);
   }
 
+  sds result = sdsempty();
   if (u->scalar != 1.0)
-    g_string_printf(result, "%g*", u->scalar);
+    result = sdscatprintf(result, "%g*", u->scalar);
 
-  if (numer->len == 0)
-    g_string_append_c(result, '1');
+  if (sdslen(numer) == 0)
+    result = sdscat(result, "1");
   else
-    g_string_append_len(result, numer->str, (gssize)numer->len);
+    result = sdscatlen(result, numer, sdslen(numer));
 
-  if (denom->len > 0) {
-    g_string_append_c(result, '/');
-    g_string_append_len(result, denom->str, (gssize)denom->len);
+  if (sdslen(denom) > 0) {
+    result = sdscat(result, "/");
+    result = sdscatlen(result, denom, sdslen(denom));
   }
 
-  g_string_free(numer, TRUE);
-  g_string_free(denom, TRUE);
+  sdsfree(numer);
+  sdsfree(denom);
 
   return result;
 }

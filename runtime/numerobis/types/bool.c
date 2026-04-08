@@ -24,7 +24,7 @@ static inline Value bool__eq__(Value self, Value other) {
 }
 
 static inline Value bool__str__(Value self) {
-  return str__init__(g_string_new(self.boolean ? "true" : "false"));
+  return str__init__(sdsnew(self.boolean ? "true" : "false"));
 }
 
 static inline Value bool__int__(Value self) {

@@ -1,6 +1,8 @@
 #ifndef NUMEROBIS_UNITS_H
 #define NUMEROBIS_UNITS_H
 
+#include "../libs/sds.h"
+
 #include <glib.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -153,7 +155,7 @@ uint64_t unit_mul(const Unit *a, const Unit *b, bool invert);
 uint64_t unit_pow(const Unit *u, double exp);
 UnitFactorList unit_simplify(const UnitFactor *data, uint16_t len,
                              double scalar);
-GString *unit_print(const Unit *u);
+sds unit_print(const Unit *u);
 
 /* ==== MACROS ==== */
 

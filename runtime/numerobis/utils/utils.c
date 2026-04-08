@@ -1,5 +1,7 @@
 #include "../constants.h"
+
 #include <stddef.h>
+#include <stdlib.h>
 #include <sys/types.h>
 
 ssize_t normalize_index(ssize_t index, ssize_t len) {
@@ -39,4 +41,16 @@ void normalize_slice(ssize_t len, ssize_t *start, ssize_t *stop,
   *start = s;
   *stop = e;
   *step = st;
+}
+
+// Source - https://stackoverflow.com/a/32936928
+// Posted by chqrlie, modified by community. See post 'Timeline' for change
+// history Retrieved 2026-04-08, License - CC BY-SA 4.0
+
+size_t count_utf8_code_points(const char *s) {
+  size_t count = 0;
+  while (*s) {
+    count += (*s++ & 0xC0) != 0x80;
+  }
+  return count;
 }

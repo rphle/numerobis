@@ -1,5 +1,6 @@
 #include "../constants.h"
 #include "../extern.h"
+#include "../libs/sds.h"
 #include "../runtime.h"
 #include "../types/list.h"
 #include "../types/number.h"
@@ -12,6 +13,7 @@
 #include "random_builtins.h"
 #include "time_builtins.h"
 
+#include <ctype.h>
 #include <glib.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -27,15 +29,20 @@ static Value numerobis_builtin_input(Value *args) {
   char *line = NULL;
   size_t n = 0;
 
-  if (getline((char **)&line, &n, stdin) == -1) {
+  if (getline(&line, &n, stdin) == -1) {
     if (line)
       free(line);
-    return str__init__(g_string_new(""));
+    return str__init__(sdsnew(""));
   }
 
-  g_strchomp(line);
+  // Remove trailing whitespace
+  char *end = line + strlen(line) - 1;
+  while (end >= line && isspace((unsigned char)*end)) {
+    *end = '\0';
+    end--;
+  }
 
-  Value result = str__init__(g_string_new(line));
+  Value result = str__init__(sdsnew(line));
   free(line);
 
   return result;
@@ -46,47 +53,52 @@ static Value numerobis_builtin_indexof(Value *args) {
   Value target = args[1];
 
   for (unsigned int i = 0; i < self->len; i++) {
-    Value *item = g_array_index(self, Value *, i);
-    Value eq_result = __eq__(*item, target);
+    Value item = g_array_index(self, Value, i);
+    Value eq_result = __eq__(item, target);
 
     if (eq_result.boolean) {
       return int__init__((long)i, U_ONE);
     }
   }
 
-  return int__init__(G_GINT64_CONSTANT(-1), U_ONE);
+  return int__init__(-1L, U_ONE);
 }
 
 static Value numerobis_builtin_split(Value *args) {
-  GString *self = args[2].str;
-  GString *sep = args[1].type == VALUE_EMPTY ? g_string_new(" ") : args[1].str;
+  sds self = args[2].str;
+  sds sep = args[1].type == VALUE_EMPTY ? sdsnew(" ") : args[1].str;
 
-  GArray *result_arr = g_array_new(FALSE, FALSE, sizeof(Value *));
+  GArray *result_arr = g_array_new(FALSE, FALSE, sizeof(Value));
 
-  if (sep->len == 0) {
-    const char *p = self->str;
-    while (*p) {
-      const char *next = g_utf8_next_char(p);
-      gssize char_len = next - p;
+  if (sdslen(sep) == 0) {
+    const char *p = self;
+    const char *end = self + sdslen(self);
+    while (p < end) {
+      const char *next = utf8_next_char(p, end);
+      size_t char_len = (size_t)(next - p);
 
-      GString *char_str = g_string_new_len(p, char_len);
-      Value *val = g_new(Value, 1);
-      *val = str__init__(char_str);
+      sds char_sds = sdsnewlen(p, char_len);
+      Value val = str__init__(char_sds);
       g_array_append_val(result_arr, val);
 
       p = next;
     }
   } else {
-    char **parts = g_strsplit(self->str, sep->str, -1);
+    int count;
+    sds *parts =
+        sdssplitlen(self, (int)sdslen(self), sep, (int)sdslen(sep), &count);
 
     if (parts) {
-      for (int i = 0; parts[i] != NULL; i++) {
-        Value *val = g_new(Value, 1);
-        *val = str__init__(g_string_new(parts[i]));
+      for (int i = 0; i < count; i++) {
+        Value val = str__init__(sdsnew(parts[i]));
         g_array_append_val(result_arr, val);
       }
-      g_strfreev(parts);
+      sdsfreesplitres(parts, count);
     }
+  }
+
+  if (args[1].type == VALUE_EMPTY) {
+    sdsfree(sep);
   }
 
   return list__init__(result_arr);
@@ -103,7 +115,7 @@ static inline Value numerobis_builtin_str_len(Value *args) {
 static Value numerobis_builtin_exit(Value *args) {
   if (args[2].type != VALUE_EMPTY && args[2].boolean)
     execv(NUMEROBIS__ARGV__[0], NUMEROBIS__ARGV__);
-  int exit_code = args[1].type == VALUE_EMPTY ? 0 : _i64(args[1]);
+  int exit_code = args[1].type == VALUE_EMPTY ? 0 : (int)_i64(args[1]);
   exit(exit_code);
   return NONE;
 }

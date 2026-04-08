@@ -673,7 +673,7 @@ class Compiler:
     def string_(self, node: String, link: int) -> tstr:
         self.include.add("numerobis/types/str")
         self.include.add("numerobis/types/number")  # str.c includes number.h
-        return tstr(f"str__init__(g_string_new({node.value}))")
+        return tstr(f"str__init__(sdsnew({node.value}))")
 
     def struct_(self, node: Struct, link: int) -> tstr:
         fingerprint = f"{self.uid}_{node.meta['#struct']._fingerprint[:8]}"

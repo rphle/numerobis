@@ -2,6 +2,7 @@
 #define VALUES_H
 
 #include "exceptions/throw.h"
+#include "libs/sds.h"
 #include "types/methods.h"
 
 #include <assert.h>
@@ -45,7 +46,7 @@ typedef struct Value {
   union {
     Number number;
     bool boolean;
-    GString *str;
+    sds str;
     GArray *list;
     struct Range *range;
     struct Closure *closure;

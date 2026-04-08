@@ -75,17 +75,6 @@ echo(l[5:])
 echo(l[5]+5)
 
 # ---
-a = "h e l l o"
-b = "1234"
-for i in 1..9..2 do {
-    echo((i-1) / 2)
-    a[i] = b[math.round((i-1) / 2)]
-}
-echo(a)
-a[0] = "world"
-echo(a)
-
-# ---
 greet!(name: Str, greeting: Str = "Hello", punct: Str = "!"): Str = greeting + " " + name + punct
 echo(greet("World", punct="."))
 

@@ -87,10 +87,6 @@ typetable: dict[str, MethodStruct] = {
                     return_type=StrType(),
                 ),
             ),
-            "__setitem__": FunctionType(
-                params=[StrType(), IntType(), StrType()],
-                return_type=NoneType(),
-            ),
             **{
                 f"__{op}__": FunctionType(
                     params=[StrType(), StrType()], return_type=BoolType()

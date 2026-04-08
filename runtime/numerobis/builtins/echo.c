@@ -1,9 +1,11 @@
 #include "echo.h"
 #include "../constants.h"
+#include "../libs/sds.h"
 #include "../types/str.h"
 #include "../types/struct.h"
 #include "../units/eval.h"
 #include "../values.h"
+
 #include <glib.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -12,21 +14,21 @@ static __thread bool _echo_in_list = false;
 
 static inline void echo_garray(GArray *arr) {
   if (!arr) {
-    g_print("[]");
+    printf("[]");
     return;
   }
   bool was_in_list = _echo_in_list;
   _echo_in_list = true;
 
-  g_print("[");
+  printf("[");
   for (size_t i = 0; i < arr->len; i++) {
     if (i > 0)
-      g_print(", ");
+      printf(", ");
     Value elem = g_array_index(arr, Value, i);
     Value args[] = {EMPTY, elem, EMPTY_STR};
     echo(args);
   }
-  g_print("]");
+  printf("]");
 
   _echo_in_list = was_in_list;
 }
@@ -40,43 +42,48 @@ Value echo(Value *args) {
   }
 
   switch (val.type) {
-  case VALUE_NUMBER:
-    g_print("%s", print_number(&val.number)->str);
+  case VALUE_NUMBER: {
+    sds num_str = print_number(&val.number);
+    printf("%s", num_str);
     break;
+  }
   case VALUE_STR:
     if (_echo_in_list)
-      g_print("\"%s\"", val.str->str);
+      printf("\"%s\"", val.str);
     else
-      g_print("%s", val.str->str);
+      printf("%s", val.str);
     break;
   case VALUE_BOOL:
-    g_print("%s", val.boolean ? "true" : "false");
+    printf("%s", val.boolean ? "true" : "false");
     break;
   case VALUE_LIST:
     echo_garray(val.list);
     break;
   case VALUE_RANGE:
-    g_print("<Range %p>", val.range);
+    printf("<Range %p>", (void *)val.range);
     break;
   case VALUE_CLOSURE:
-    g_print("<Function %p>", val.closure);
+    printf("<Function %p>", (void *)val.closure);
     break;
   case VALUE_EXTERN_FN:
-    g_print("<Extern Function %p>", val.extern_fn);
+    printf("<Extern Function %p>", (void *)val.extern_fn);
     break;
-  case VALUE_STRUCT:
-    g_print("%s", struct__cstr__(val)->str);
+  case VALUE_STRUCT: {
+    sds struct_str = struct__cstr__(val);
+    printf("%s", struct_str);
+    sdsfree(struct_str);
     break;
+  }
   case VALUE_NONE:
   case VALUE_EMPTY:
-    g_print("None");
+    printf("None");
     break;
   }
 
   if (end.type == VALUE_STR) {
-    g_print("%s", end.str->str);
+    printf("%s", end.str);
   } else {
-    g_print("\n");
+    printf("\n");
   }
 
   return NONE;

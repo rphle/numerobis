@@ -4,7 +4,6 @@
 #include "bool.h"
 #include "methods.h"
 #include "str.h"
-#include <glib.h>
 #include <math.h>
 #include <stdbool.h>
 #include <stdint.h>

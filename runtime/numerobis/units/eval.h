@@ -13,7 +13,7 @@ extern double is_logarithmic(uint16_t id);
 
 bool unit_is_logarithmic(const Unit *u);
 double eval_unit(const Unit *u, double number, EvalMode mode);
-GString *print_number(Number *n);
+sds print_number(Number *n);
 double eval_number(Number *n, const uint64_t *_unit_hash);
 
 #endif

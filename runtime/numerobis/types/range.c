@@ -27,7 +27,7 @@ static Value range__eq__(Value _self, Value _other) {
 }
 
 static inline Value range__str__(Value self) {
-  return str__init__(g_string_new("[Range]"));
+  return str__init__(sdsnew("[Range]"));
 }
 
 static const ValueMethods _range_methods = {

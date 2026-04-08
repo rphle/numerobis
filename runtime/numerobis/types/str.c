@@ -7,39 +7,46 @@
 #include "methods.h"
 #include "number.h"
 
-#include <glib.h>
+#include "../libs/sds.h"
+#include <assert.h>
+#include <ctype.h>
+#include <limits.h>
 #include <stdbool.h>
 #include <stddef.h>
+#include <stdlib.h>
+#include <string.h>
 
 static const ValueMethods _str_methods;
 
-Value str__init__(GString *x) {
+Value str__init__(sds x) {
   Value v;
   v.type = VALUE_STR;
   v.str = x;
   return v;
 }
 
-static const char **build_char_positions(const GString *self, size_t len) {
-  const char **positions = g_malloc((len + 1) * sizeof(char *));
-  const char *p = self->str;
-  const char *end = self->str + self->len;
+static const char **build_char_positions(const sds self, size_t len) {
+  const char **positions = malloc((len + 1) * sizeof(char *));
+  const char *p = self;
+  const char *end = self + sdslen(self);
 
   for (size_t i = 0; i < len && p < end; i++) {
     positions[i] = p;
-    p = g_utf8_next_char(p);
+    p = utf8_next_char(p, end);
   }
   positions[len] = end;
 
   return positions;
 }
 
-static Value str__bool__(Value self) { return bool__init__(self.str->len > 0); }
-static bool str__cbool__(Value self) { return self.str->len > 0; }
+static Value str__bool__(Value self) {
+  return bool__init__(sdslen(self.str) > 0);
+}
+static bool str__cbool__(Value self) { return sdslen(self.str) > 0; }
 
 static Value str__getitem__(Value _self, Value _index) {
-  GString *self = _self.str;
-  g_assert(_index.type == VALUE_NUMBER && _index.number.kind == NUM_INT64);
+  sds self = _self.str;
+  assert(_index.type == VALUE_NUMBER && _index.number.kind == NUM_INT64);
   long index = _index.number.i64;
 
   if (!self)
@@ -51,23 +58,21 @@ static Value str__getitem__(Value _self, Value _index) {
   if (nidx < 0 || nidx >= len)
     return EMPTY;
 
-  const char *p = self->str;
+  const char *p = self;
+  const char *end = self + sdslen(self);
   for (ssize_t i = 0; i < nidx; i++)
-    p = g_utf8_next_char(p);
+    p = utf8_next_char(p, end);
 
-  gunichar ch = g_utf8_get_char(p);
-  char buf[8];
-  int utf8_len = g_unichar_to_utf8(ch, buf);
-  buf[utf8_len] = '\0';
+  const char *next = utf8_next_char(p, end);
 
-  return str__init__(g_string_new(buf));
+  return str__init__(sdsnewlen(p, next - p));
 }
 
 static Value str__getslice__(Value _self, Value _start, Value _stop,
                              Value _step) {
-  GString *self = _self.str;
+  sds self = _self.str;
   if (!self)
-    return str__init__(g_string_new(""));
+    return str__init__(sdsempty());
 
   ssize_t len = (ssize_t)_str_len(self);
 
@@ -79,93 +84,55 @@ static Value str__getslice__(Value _self, Value _start, Value _stop,
       (_step.type == VALUE_NUMBER) ? (ssize_t)_step.number.i64 : SLICE_NONE;
 
   if (len == 0 || step == 0)
-    return str__init__(g_string_new(""));
+    return str__init__(sdsempty());
 
   normalize_slice(len, &start, &end, &step);
 
   if ((step > 0 && start >= end) || (step < 0 && start <= end))
-    return str__init__(g_string_new(""));
+    return str__init__(sdsempty());
 
   const char **positions = build_char_positions(self, len);
-  GString *result = g_string_new("");
+  sds result = sdsempty();
 
   for (ssize_t i = start; step > 0 ? i < end : i > end; i += step) {
     if (i >= 0 && i < len) {
-      g_string_append_len(result, positions[i],
-                          positions[i + 1] - positions[i]);
+      result = sdscatlen(result, positions[i], positions[i + 1] - positions[i]);
     }
   }
 
-  g_free(positions);
+  free(positions);
   return str__init__(result);
 }
 
-static Value str__setitem__(Value _self, Value _index, Value _value) {
-  GString *self = _self.str;
-  g_assert(_index.type == VALUE_NUMBER && _index.number.kind == NUM_INT64);
-  g_assert(_value.type == VALUE_STR);
-
-  long index = _index.number.i64;
-  GString *value = _value.str;
-
-  if (!self || !value)
-    return EMPTY;
-
-  ssize_t len = (ssize_t)_str_len(self);
-  ssize_t nidx = normalize_index(index, len);
-
-  if (nidx < 0 || nidx >= len)
-    return EMPTY;
-
-  const char *p = self->str;
-  for (ssize_t i = 0; i < nidx; i++)
-    p = g_utf8_next_char(p);
-
-  const char *next = g_utf8_next_char(p);
-  int old_char_len = next - p;
-
-  // get the new char (first character of value str)
-  gunichar new_ch = g_utf8_get_char(value->str);
-  char buf[8];
-  int new_char_len = g_unichar_to_utf8(new_ch, buf);
-
-  int offset = p - self->str;
-
-  g_string_erase(self, offset, old_char_len);
-  g_string_insert_len(self, offset, buf, new_char_len);
-
-  return _self;
-}
-
 static Value str__add__(Value _self, Value _other) {
-  GString *self = _self.str;
-  GString *other = _other.str;
+  sds self = _self.str;
+  sds other = _other.str;
 
   if (!self || !other)
-    return str__init__(g_string_new(""));
+    return str__init__(sdsempty());
 
-  GString *result = g_string_sized_new(self->len + other->len);
-  g_string_append_len(result, self->str, self->len);
-  g_string_append_len(result, other->str, other->len);
+  sds result = sdsnewlen(self, sdslen(self));
+  result = sdscatlen(result, other, sdslen(other));
 
   return str__init__(result);
 }
 
 static Value str__mul__(Value _self, Value _n) {
-  GString *self = _self.str;
+  sds self = _self.str;
   long n = _n.number.i64;
 
   if (!self || n <= 0)
-    return str__init__(g_string_new(""));
+    return str__init__(sdsempty());
 
   /* Guard overflow */
   unsigned long long total =
-      (unsigned long long)self->len * (unsigned long long)n;
-  size_t capacity = (total > G_MAXUINT) ? G_MAXUINT : (size_t)total;
+      (unsigned long long)sdslen(self) * (unsigned long long)n;
+  size_t capacity = (total > UINT_MAX) ? UINT_MAX : (size_t)total;
 
-  GString *result = g_string_sized_new(capacity);
+  sds result = sdsempty();
+  result = sdsMakeRoomFor(result, capacity);
   for (ssize_t i = 0; i < n; i++)
-    g_string_append_len(result, self->str, self->len);
+    result = sdscatlen(result, self, sdslen(self));
 
   return str__init__(result);
 }
@@ -175,7 +142,9 @@ static Value str__eq__(Value a, Value b) {
     return VTRUE;
   if (!a.str || !b.str)
     return VFALSE;
-  return bool__init__(g_string_equal(a.str, b.str));
+  bool eq = (sdslen(a.str) == sdslen(b.str)) &&
+            (memcmp(a.str, b.str, sdslen(a.str)) == 0);
+  return bool__init__(eq);
 }
 
 static Value str__lt__(Value self, Value other) {
@@ -205,10 +174,10 @@ static Value str__ge__(Value self, Value other) {
 static inline Value str__str__(Value self) { return self; }
 
 static Value str__int__(Value self) {
-  const char *str = self.str->str;
+  const char *str = self.str;
   char *endptr = NULL;
 
-  while (g_ascii_isspace(*str)) {
+  while (isspace((unsigned char)*str)) {
     str++;
   }
 
@@ -216,9 +185,9 @@ static Value str__int__(Value self) {
     return EMPTY;
   }
 
-  long result = g_ascii_strtoll(str, &endptr, 10);
+  long result = strtoll(str, &endptr, 10);
 
-  while (g_ascii_isspace(*endptr)) {
+  while (isspace((unsigned char)*endptr)) {
     endptr++;
   }
 
@@ -233,10 +202,10 @@ static Value str__num__(Value self) {
   if (!self.str)
     return EMPTY;
 
-  const char *str = self.str->str;
+  const char *str = self.str;
   char *endptr = NULL;
 
-  while (g_ascii_isspace(*str)) {
+  while (isspace((unsigned char)*str)) {
     str++;
   }
 
@@ -244,9 +213,9 @@ static Value str__num__(Value self) {
     return EMPTY;
   }
 
-  double result = g_ascii_strtod(str, &endptr);
+  double result = strtod(str, &endptr);
 
-  while (g_ascii_isspace(*endptr)) {
+  while (isspace((unsigned char)*endptr)) {
     endptr++;
   }
 
@@ -266,7 +235,6 @@ static const ValueMethods _str_methods = {
     .__ge__ = str__ge__,
     .__eq__ = str__eq__,
     .__getitem__ = str__getitem__,
-    .__setitem__ = str__setitem__,
     .__getslice__ = str__getslice__,
     .__add__ = str__add__,
     .__mul__ = str__mul__,

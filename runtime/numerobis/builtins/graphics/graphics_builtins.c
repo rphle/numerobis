@@ -38,7 +38,7 @@ static int _parse_style_list(Value style_val) {
     Value item = g_array_index(arr, Value, i);
     if (item.type != VALUE_STR || !item.str)
       continue;
-    const char *s = item.str->str;
+    const char *s = item.str;
     if (strcmp(s, "bold") == 0)
       flags |= TTF_STYLE_BOLD;
     if (strcmp(s, "italic") == 0)
