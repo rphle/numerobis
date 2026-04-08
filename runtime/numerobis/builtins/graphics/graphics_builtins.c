@@ -322,6 +322,8 @@ static Value numerobis_builtin_blit(Value *args) {
   }
 
   SDL_RenderPresent(_renderer);
+  memset(_queue->data, 0,
+         _queue->len * sizeof(DrawCmd)); // make GC release pointers
   g_array_set_size(_queue, 0);
   return NONE;
 }

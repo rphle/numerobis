@@ -6,7 +6,7 @@
 /* Redirect GLib allocation to Boehm GC */
 #define g_malloc(size) GC_MALLOC(size)
 #define g_realloc(ptr, size) GC_REALLOC(ptr, size)
-#define g_free(ptr) ((void)0)
+#define g_free(ptr) GC_FREE(ptr)
 
 #include <glib.h>
 

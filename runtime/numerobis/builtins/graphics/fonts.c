@@ -81,7 +81,7 @@ const gchar *_resolve_font_name(const gchar *name) {
   if (!name || *name == '\0')
     return NULL;
   if (!_fc_cache)
-    _fc_cache = g_hash_table_new(g_str_hash, g_str_equal);
+    _fc_cache = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, g_free);
 
   gchar *cached = g_hash_table_lookup(_fc_cache, name);
   if (cached)
@@ -108,9 +108,9 @@ const gchar *_resolve_font_name(const gchar *name) {
   if (olen > 0 && output[olen - 1] == '\'')
     output[olen - 1] = '\0';
 
-  gchar *path = GC_STRDUP(output);
+  gchar *path = g_strdup(output);
   g_free(output);
-  g_hash_table_insert(_fc_cache, GC_STRDUP(name), path);
+  g_hash_table_insert(_fc_cache, g_strdup(name), path);
   return path;
 }
 
@@ -140,7 +140,7 @@ TTF_Font *_get_font(const gchar *path, gint32 size, gint32 style) {
   if (!path)
     return NULL;
   if (!_font_cache)
-    _font_cache = g_hash_table_new(_fk_hash, _fk_equal);
+    _font_cache = g_hash_table_new_full(_fk_hash, _fk_equal, g_free, NULL);
 
   FontKey lookup = {path, size, style};
   TTF_Font *font = g_hash_table_lookup(_font_cache, &lookup);
@@ -155,8 +155,8 @@ TTF_Font *_get_font(const gchar *path, gint32 size, gint32 style) {
   }
   TTF_SetFontStyle(font, style);
 
-  FontKey *key = GC_MALLOC(sizeof(FontKey));
-  key->path = GC_STRDUP(path);
+  FontKey *key = g_malloc(sizeof(FontKey));
+  key->path = g_strdup(path);
   key->size = size;
   key->style = style;
   g_hash_table_insert(_font_cache, key, font);
