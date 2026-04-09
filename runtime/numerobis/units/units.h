@@ -3,6 +3,7 @@
 
 #include "../libs/sds.h"
 
+#include <gc.h>
 #include <glib.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -23,13 +24,12 @@ typedef struct {
 } UMap;
 
 static inline void umap_init(UMap *m, uint32_t cap) {
-  m->slots = (UMapSlot *)g_malloc0(cap * sizeof(UMapSlot));
+  m->slots = (UMapSlot *)GC_MALLOC(cap * sizeof(UMapSlot));
   m->cap = cap;
   m->used = 0;
 }
 
 static inline void umap_free(UMap *m) {
-  g_free(m->slots);
   m->slots = NULL;
   m->cap = m->used = 0;
 }
@@ -41,7 +41,7 @@ static inline void umap_grow(UMap *m) {
   UMapSlot *old_slots = m->slots;
   uint32_t new_cap = old_cap * 2;
 
-  m->slots = (UMapSlot *)g_malloc0(new_cap * sizeof(UMapSlot));
+  m->slots = (UMapSlot *)GC_MALLOC(new_cap * sizeof(UMapSlot));
   m->cap = new_cap;
   m->used = 0;
 
@@ -49,7 +49,6 @@ static inline void umap_grow(UMap *m) {
     if (old_slots[i].key != 0)
       umap_insert_raw(m, old_slots[i].key, old_slots[i].val);
   }
-  g_free(old_slots);
 }
 
 static inline void umap_insert_raw(UMap *m, uint64_t key, void *val) {

@@ -15,30 +15,10 @@
 #define U_UNPACK_OPT_ARG(name, i, def)                                         \
   Value name = (__args[i].type != VALUE_EMPTY ? __args[i] : (def));
 
-#define CLOSURE_SLAB_CHUNK 256
-
-typedef struct ClosureFreeNode {
-  struct ClosureFreeNode *next;
-} ClosureFreeNode;
-
-extern _Thread_local ClosureFreeNode *_closure_free_list;
-
-static inline Closure *closure_slab_alloc(void);
-
-void _closure_slab_refill(void);
-
-static inline Closure *closure_slab_alloc(void) {
-  if (__builtin_expect(_closure_free_list == NULL, 0))
-    _closure_slab_refill();
-  ClosureFreeNode *node = _closure_free_list;
-  _closure_free_list = node->next;
-  return (Closure *)node;
-}
-
-void *closure_capture(size_t size, void *stack_env);
-
 Value closure__init__(Value (*func)(void *, Value *), void *env,
                       Value bound_arg);
+
+void *closure_capture(size_t size, void *stack_env);
 
 #define U_NEW_CLOSURE(impl, env_type, ...)                                     \
   closure__init__(impl,                                                        \

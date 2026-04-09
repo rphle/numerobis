@@ -1,5 +1,6 @@
 #include "../constants.h"
 #include "../extern.h"
+#include "../libs/gc_stb_ds.h"
 #include "../libs/sds.h"
 #include "../runtime.h"
 #include "../types/list.h"
@@ -49,11 +50,11 @@ static Value numerobis_builtin_input(Value *args) {
 }
 
 static Value numerobis_builtin_indexof(Value *args) {
-  GArray *self = args[2].list;
+  Value *self = args[2].list->items;
   Value target = args[1];
 
-  for (unsigned int i = 0; i < self->len; i++) {
-    Value item = g_array_index(self, Value, i);
+  for (unsigned int i = 0; i < arrlen(self); i++) {
+    Value item = self[i];
     Value eq_result = __eq__(item, target);
 
     if (eq_result.boolean) {
@@ -68,7 +69,7 @@ static Value numerobis_builtin_split(Value *args) {
   sds self = args[2].str;
   sds sep = args[1].type == VALUE_EMPTY ? sdsnew(" ") : args[1].str;
 
-  GArray *result_arr = g_array_new(FALSE, FALSE, sizeof(Value));
+  Value *result_arr = NULL;
 
   if (sdslen(sep) == 0) {
     const char *p = self;
@@ -79,7 +80,7 @@ static Value numerobis_builtin_split(Value *args) {
 
       sds char_sds = sdsnewlen(p, char_len);
       Value val = str__init__(char_sds);
-      g_array_append_val(result_arr, val);
+      arrput(result_arr, val);
 
       p = next;
     }
@@ -91,7 +92,7 @@ static Value numerobis_builtin_split(Value *args) {
     if (parts) {
       for (int i = 0; i < count; i++) {
         Value val = str__init__(sdsnew(parts[i]));
-        g_array_append_val(result_arr, val);
+        arrput(result_arr, val);
       }
       sdsfreesplitres(parts, count);
     }

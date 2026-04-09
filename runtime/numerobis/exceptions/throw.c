@@ -26,7 +26,7 @@ static Location *_location_split(const Location *self, size_t *out_len) {
   }
 
   size_t count = (size_t)(end - start + 1);
-  Location *lines = malloc(sizeof(Location) * count);
+  Location *lines = GC_MALLOC(sizeof(Location) * count);
   if (!lines) {
     *out_len = 0;
     return NULL;
@@ -115,8 +115,6 @@ static void print_preview(const Location *span) {
     sdsfree(highlight);
     sdsfree(after);
   }
-
-  free(lines);
 }
 
 void u_throw(const int code, const RuntimeMessage *msg, const Location *span) {

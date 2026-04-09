@@ -2,8 +2,10 @@
 #include "../libs/sds.h"
 
 #include <assert.h>
+#include <gc.h>
 #include <math.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -41,7 +43,7 @@ Unit *dimensionless_unit(void) {
   if (u)
     return u;
 
-  u = (Unit *)malloc(sizeof(Unit));
+  u = (Unit *)GC_MALLOC(sizeof(Unit));
   u->hash = h;
   u->len = 0;
   u->scalar = 1.0;
@@ -61,10 +63,6 @@ void units_init(void) {
 
 void units_shutdown(void) {
   if (NUMEROBIS_UNITS.slots) {
-    for (uint32_t i = 0; i < NUMEROBIS_UNITS.cap; i++) {
-      if (NUMEROBIS_UNITS.slots[i].key != 0)
-        free(NUMEROBIS_UNITS.slots[i].val);
-    }
     umap_free(&NUMEROBIS_UNITS);
   }
   if (NUMEROBIS_UNIT_COMBOS.slots) {
@@ -80,7 +78,7 @@ UnitFactorList unit_simplify(const UnitFactor *data, uint16_t len,
   if (!data || len == 0)
     return (UnitFactorList){.data = NULL, .len = 0, .scalar = scalar};
 
-  UnitFactor *tmp = (UnitFactor *)malloc(len * sizeof *tmp);
+  UnitFactor *tmp = (UnitFactor *)GC_MALLOC(len * sizeof *tmp);
   memcpy(tmp, data, len * sizeof *tmp);
   qsort(tmp, len, sizeof *tmp, cmp_factor_by_id);
 
@@ -99,11 +97,10 @@ UnitFactorList unit_simplify(const UnitFactor *data, uint16_t len,
   }
 
   if (final == 0) {
-    free(tmp);
     return (UnitFactorList){.data = NULL, .len = 0, .scalar = scalar};
   }
 
-  tmp = (UnitFactor *)realloc(tmp, final * sizeof *tmp);
+  tmp = (UnitFactor *)GC_REALLOC(tmp, final * sizeof *tmp);
   return (UnitFactorList){.data = tmp, .len = final, .scalar = scalar};
 }
 
@@ -119,20 +116,19 @@ uint64_t unit_new(uint16_t count, const UnitFactor *factors, double scalar) {
   }
 
   UnitFactorList sl = unit_simplify(factors, count, scalar);
+  GC_reachable_here(sl.data);
   if (sl.len == 0 && sl.scalar == 1.0 && NUMEROBIS_UNIT_ONE_HASH) {
-    free(sl.data);
     return NUMEROBIS_UNIT_ONE_HASH;
   }
 
   uint64_t h = hash_factors(sl.data, sl.len, sl.scalar);
 
   if (umap_contains(&NUMEROBIS_UNITS, h)) {
-    free(sl.data);
     return h;
   }
 
   size_t sz = sizeof(Unit) + sl.len * sizeof(UnitFactor);
-  Unit *u = (Unit *)malloc(sz);
+  Unit *u = (Unit *)GC_MALLOC(sz);
   u->hash = h;
   u->len = sl.len;
   u->scalar = sl.scalar;
@@ -140,7 +136,7 @@ uint64_t unit_new(uint16_t count, const UnitFactor *factors, double scalar) {
   if (sl.len > 0)
     memcpy(u->data, sl.data, sl.len * sizeof(UnitFactor));
 
-  free(sl.data);
+  GC_reachable_here(sl.data);
 
   umap_insert(&NUMEROBIS_UNITS, h, u);
   return h;
@@ -179,7 +175,7 @@ uint64_t unit_mul(const Unit *a, const Unit *b, bool invert) {
 
   uint16_t merged_len = a->len + b->len;
   UnitFactor *merged =
-      merged_len ? (UnitFactor *)malloc(merged_len * sizeof *merged) : NULL;
+      merged_len ? (UnitFactor *)GC_MALLOC(merged_len * sizeof *merged) : NULL;
 
   if (a->len)
     memcpy(merged, a->data, a->len * sizeof *merged);
@@ -189,7 +185,6 @@ uint64_t unit_mul(const Unit *a, const Unit *b, bool invert) {
   }
 
   uint64_t result_hash = unit_new(merged_len, merged, result_scalar);
-  free(merged);
 
   Unit *result = unit_get(result_hash);
   umap_insert(&NUMEROBIS_UNIT_COMBOS, ck, result);
@@ -207,7 +202,7 @@ uint64_t unit_pow(const Unit *u, double exp) {
 
   double new_scalar = pow(u->scalar, exp);
 
-  UnitFactor *factors = (UnitFactor *)malloc(u->len * sizeof *factors);
+  UnitFactor *factors = (UnitFactor *)GC_MALLOC(u->len * sizeof *factors);
   for (uint16_t i = 0; i < u->len; i++) {
     double raw = (double)u->data[i].exp * exp;
     double rounded = round(raw);
@@ -220,7 +215,6 @@ uint64_t unit_pow(const Unit *u, double exp) {
   }
 
   uint64_t hash = unit_new(u->len, factors, new_scalar);
-  free(factors);
   return hash;
 }
 

@@ -5,6 +5,7 @@
 #include "state.h"
 
 #include <SDL2/SDL.h>
+#include <gc.h>
 #include <glib.h>
 #include <math.h>
 #include <stdbool.h>
@@ -252,7 +253,7 @@ void _prim_polygon(SDL_Point *pts, int n, bool filled) {
   if (ymin == ymax)
     return;
 
-  int *xs = g_malloc(n * sizeof(int));
+  int *xs = GC_MALLOC_ATOMIC(n * sizeof(int));
   if (!xs)
     return;
 
@@ -277,5 +278,4 @@ void _prim_polygon(SDL_Point *pts, int n, bool filled) {
     for (int a = 0; a + 1 < cnt; a += 2)
       hline(xs[a], xs[a + 1], scanY);
   }
-  g_free(xs);
 }

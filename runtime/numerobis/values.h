@@ -26,6 +26,7 @@ typedef enum {
 typedef enum { NUM_INT64, NUM_DOUBLE } NumberKind;
 
 struct Value;
+struct List;
 struct Closure;
 typedef struct Range Range;
 typedef struct Value Value;
@@ -41,13 +42,17 @@ typedef struct {
   };
 } Number;
 
+typedef struct {
+  Value *items;
+} List;
+
 typedef struct Value {
   ValueType type;
   union {
     Number number;
     bool boolean;
     sds str;
-    GArray *list;
+    List *list;
     struct Range *range;
     struct Closure *closure;
     struct Value (*extern_fn)(struct Value *args);

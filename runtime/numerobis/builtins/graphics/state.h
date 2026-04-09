@@ -4,12 +4,10 @@
 #include "color.h"
 
 #include <SDL2/SDL.h>
-#include <glib.h>
 #include <stdbool.h>
 
 extern SDL_Window *_window;
 extern SDL_Renderer *_renderer;
-extern GArray *_queue;
 extern Color _bg;
 
 extern int _mouse_x;
@@ -85,9 +83,9 @@ inline void _set_color(Color c) {
   }
 }
 
-void _ensure_queue(void);
 void _update_input_state(void);
-
 void _cleanup_state(void);
+
+extern DrawCmd *_queue;
 
 #endif

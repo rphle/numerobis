@@ -1,5 +1,6 @@
 #include "echo.h"
 #include "../constants.h"
+#include "../libs/gc_stb_ds.h"
 #include "../libs/sds.h"
 #include "../types/str.h"
 #include "../types/struct.h"
@@ -12,7 +13,7 @@
 
 static __thread bool _echo_in_list = false;
 
-static inline void echo_garray(GArray *arr) {
+static inline void echo_array(Value *arr) {
   if (!arr) {
     printf("[]");
     return;
@@ -21,11 +22,11 @@ static inline void echo_garray(GArray *arr) {
   _echo_in_list = true;
 
   printf("[");
-  for (size_t i = 0; i < arr->len; i++) {
+  for (size_t i = 0; i < arrlen(arr); i++) {
     if (i > 0)
       printf(", ");
-    Value elem = g_array_index(arr, Value, i);
-    Value args[] = {EMPTY, elem, EMPTY_STR};
+    Value elem = arr[i];
+    Value args[4] = {EMPTY, elem, EMPTY_STR, EMPTY};
     echo(args);
   }
   printf("]");
@@ -36,10 +37,6 @@ static inline void echo_garray(GArray *arr) {
 Value echo(Value *args) {
   Value val = args[1];
   Value end = args[2];
-
-  if (val.type == VALUE_NONE) {
-    val = EMPTY_STR;
-  }
 
   switch (val.type) {
   case VALUE_NUMBER: {
@@ -57,7 +54,7 @@ Value echo(Value *args) {
     printf("%s", val.boolean ? "true" : "false");
     break;
   case VALUE_LIST:
-    echo_garray(val.list);
+    echo_array(val.list->items);
     break;
   case VALUE_RANGE:
     printf("<Range %p>", (void *)val.range);

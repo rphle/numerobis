@@ -1,5 +1,6 @@
 #include "str.h"
 #include "../constants.h"
+#include "../libs/sds.h"
 #include "../units/units.h"
 #include "../utils/utils.h"
 #include "../values.h"
@@ -7,9 +8,9 @@
 #include "methods.h"
 #include "number.h"
 
-#include "../libs/sds.h"
 #include <assert.h>
 #include <ctype.h>
+#include <gc.h>
 #include <limits.h>
 #include <stdbool.h>
 #include <stddef.h>
@@ -26,7 +27,7 @@ Value str__init__(sds x) {
 }
 
 static const char **build_char_positions(const sds self, size_t len) {
-  const char **positions = malloc((len + 1) * sizeof(char *));
+  const char **positions = GC_MALLOC((len + 1) * sizeof(char *));
   const char *p = self;
   const char *end = self + sdslen(self);
 
@@ -100,7 +101,6 @@ static Value str__getslice__(Value _self, Value _start, Value _stop,
     }
   }
 
-  free(positions);
   return str__init__(result);
 }
 

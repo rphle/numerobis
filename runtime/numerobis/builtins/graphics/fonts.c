@@ -57,7 +57,7 @@ static void scan_dir(const char *path) {
       if (S_ISDIR(st.st_mode)) {
         scan_dir(full);
       } else if (strstr(dir->d_name, ".ttf") && is_preferred(dir->d_name)) {
-        _font_path = strdup(full);
+        _font_path = GC_STRDUP(full);
       }
     }
     sdsfree(full);
@@ -69,22 +69,21 @@ const char *_default_font(void) {
   if (_font_path)
     return _font_path;
 
-  GPtrArray *paths = g_ptr_array_new_with_free_func(free);
   char *home = getenv("HOME");
+
+  /* Search home dirs first, then system dirs */
   if (home) {
-    g_ptr_array_add(
-        paths, strdup(sdscatprintf(sdsempty(), "%s/.local/share/fonts", home)));
-    g_ptr_array_add(paths, strdup(sdscatprintf(sdsempty(), "%s/.fonts", home)));
+    sds p1 = sdscatprintf(sdsempty(), "%s/.local/share/fonts", home);
+    sds p2 = sdscatprintf(sdsempty(), "%s/.fonts", home);
+    scan_dir(p1);
+    scan_dir(p2);
+    sdsfree(p1);
+    sdsfree(p2);
   }
 
-  for (int i = 0; linux_font_dirs[i]; i++)
-    g_ptr_array_add(paths, strdup(linux_font_dirs[i]));
+  for (int i = 0; linux_font_dirs[i] && !_font_path; i++)
+    scan_dir(linux_font_dirs[i]);
 
-  for (unsigned int i = 0; i < paths->len && !_font_path; i++) {
-    scan_dir(g_ptr_array_index(paths, i));
-  }
-
-  g_ptr_array_unref(paths);
   return _font_path;
 }
 
@@ -92,7 +91,7 @@ const char *_resolve_font_name(const char *name) {
   if (!name || *name == '\0')
     return NULL;
   if (!_fc_cache)
-    _fc_cache = g_hash_table_new_full(g_str_hash, g_str_equal, free, free);
+    _fc_cache = g_hash_table_new_full(g_str_hash, g_str_equal, NULL, NULL);
 
   char *cached = g_hash_table_lookup(_fc_cache, name);
   if (cached)
@@ -108,7 +107,7 @@ const char *_resolve_font_name(const char *name) {
   char output[1024];
   if (fgets(output, sizeof(output), fp) != NULL) {
     pclose(fp);
-    // Strip surrounding quotes and whitespace
+    /* Strip surrounding quotes and whitespace */
     char *start = output;
     while (*start == '\'' || *start == ' ' || *start == '\n')
       start++;
@@ -118,8 +117,8 @@ const char *_resolve_font_name(const char *name) {
       end--;
     }
 
-    char *path = strdup(start);
-    g_hash_table_insert(_fc_cache, strdup(name), path);
+    char *path = GC_STRDUP(start);
+    g_hash_table_insert(_fc_cache, GC_STRDUP(name), path);
     return path;
   }
   pclose(fp);
@@ -149,7 +148,7 @@ TTF_Font *_get_font(const char *path, int size, int style) {
   if (!path)
     return NULL;
   if (!_font_cache)
-    _font_cache = g_hash_table_new_full(_fk_hash, _fk_equal, free, NULL);
+    _font_cache = g_hash_table_new_full(_fk_hash, _fk_equal, NULL, NULL);
 
   FontKey lookup = {(char *)path, size, style};
   TTF_Font *font = g_hash_table_lookup(_font_cache, &lookup);
@@ -177,6 +176,7 @@ void _cleanup_fonts(void) {
     while (g_hash_table_iter_next(&iter, &key, &value)) {
       TTF_CloseFont((TTF_Font *)value);
       free(((FontKey *)key)->path);
+      free(key);
     }
     g_hash_table_destroy(_font_cache);
     _font_cache = NULL;

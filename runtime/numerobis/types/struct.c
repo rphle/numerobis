@@ -4,7 +4,7 @@
 #include "methods.h"
 #include "number.h"
 
-#include <glib.h>
+#include <gc.h>
 #include <stdbool.h>
 #include <stddef.h>
 
@@ -14,7 +14,7 @@ Value struct__init__(long id, long fieldc) {
   const StructInfo *meta = &STRUCT_REGISTRY[id];
   Value v;
   v.type = VALUE_STRUCT;
-  v.strukt = g_new(Value, fieldc + 1);
+  v.strukt = GC_MALLOC((fieldc + 1) * sizeof(Value));
   v.strukt[0] = int__init__(id, U_ONE);
   return v;
 }

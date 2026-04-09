@@ -1,5 +1,6 @@
 #include "../../constants.h"
 #include "../../extern.h"
+#include "../../libs/gc_stb_ds.h"
 #include "../../types/bool.h"
 #include "../../types/number.h"
 #include "../../units/units.h"
@@ -32,10 +33,10 @@ static inline Color _arg_color(Value v) {
 static int _parse_style_list(Value style_val) {
   if (style_val.type != VALUE_LIST)
     return TTF_STYLE_NORMAL;
-  GArray *arr = style_val.list;
+  Value *arr = style_val.list->items;
   int flags = TTF_STYLE_NORMAL;
-  for (unsigned int i = 0; i < arr->len; i++) {
-    Value item = g_array_index(arr, Value, i);
+  for (unsigned int i = 0; i < arrlen(arr); i++) {
+    Value item = arr[i];
     if (item.type != VALUE_STR || !item.str)
       continue;
     const char *s = item.str;
@@ -77,7 +78,6 @@ static Value numerobis_builtin_graphics_init(Value *args) {
     return int__init__(0, U_ONE);
   }
   SDL_SetRenderDrawBlendMode(_renderer, SDL_BLENDMODE_BLEND);
-  _ensure_queue();
   return int__init__(1, U_ONE);
 }
 
@@ -105,75 +105,68 @@ static Value numerobis_builtin_set_font(Value *args) {
 
 /* rect!(x, y, w, h, color, filled) */
 static Value numerobis_builtin_rect(Value *args) {
-  _ensure_queue();
-  int x = _tx_x(_f64(args[1]));
   DrawCmd cmd = {.kind = CMD_RECT,
                  .color = _arg_color(args[5]),
                  .rect = {_tx_x(_f64(args[1])), _tx_y(_f64(args[2])),
                           _tx_dim(_f64(args[3])), _tx_dim(_f64(args[4])),
                           _arg_filled(args[6])}};
-  g_array_append_val(_queue, cmd);
+  arrput(_queue, cmd);
   return NONE;
 }
 
 /* rounded_rect!(x, y, w, h, radius, color, filled) */
 static Value numerobis_builtin_rounded_rect(Value *args) {
-  _ensure_queue();
   DrawCmd cmd = {.kind = CMD_ROUNDED_RECT,
                  .color = _arg_color(args[6]),
                  .rrect = {_tx_x(_f64(args[1])), _tx_y(_f64(args[2])),
                            _tx_dim(_f64(args[3])), _tx_dim(_f64(args[4])),
                            _tx_dim(_f64(args[5])), _arg_filled(args[7])}};
-  g_array_append_val(_queue, cmd);
+  arrput(_queue, cmd);
   return NONE;
 }
 
 /* circle!(x, y, radius, color, filled) */
 static Value numerobis_builtin_circle(Value *args) {
-  _ensure_queue();
   DrawCmd cmd = {.kind = CMD_CIRCLE,
                  .color = _arg_color(args[4]),
                  .circle = {_tx_x(_f64(args[1])), _tx_y(_f64(args[2])),
                             _tx_dim(_f64(args[3])), _arg_filled(args[5])}};
-  g_array_append_val(_queue, cmd);
+  arrput(_queue, cmd);
   return NONE;
 }
 
 /* ellipse!(x, y, rx, ry, color, filled) */
 static Value numerobis_builtin_ellipse(Value *args) {
-  _ensure_queue();
   DrawCmd cmd = {.kind = CMD_ELLIPSE,
                  .color = _arg_color(args[5]),
                  .ellipse = {_tx_x(_f64(args[1])), _tx_y(_f64(args[2])),
                              _tx_dim(_f64(args[3])), _tx_dim(_f64(args[4])),
                              _arg_filled(args[6])}};
-  g_array_append_val(_queue, cmd);
+  arrput(_queue, cmd);
   return NONE;
 }
 
 /* line!(x1, y1, x2, y2, color, thickness) */
 static Value numerobis_builtin_line(Value *args) {
-  _ensure_queue();
   double thickness = args[6].type != VALUE_EMPTY ? _f64(args[6]) : 1.0;
   DrawCmd cmd = {.kind = CMD_LINE,
                  .color = _arg_color(args[5]),
                  .line = {_tx_x(_f64(args[1])), _tx_y(_f64(args[2])),
                           _tx_x(_f64(args[3])), _tx_y(_f64(args[4])),
                           thickness}};
-  g_array_append_val(_queue, cmd);
+  arrput(_queue, cmd);
   return NONE;
 }
 
 /* polygon!(points: List[Num], color, filled) */
 static Value numerobis_builtin_polygon(Value *args) {
-  _ensure_queue();
-  GArray *arr = args[1].list;
-  int n = (int)(arr->len / 2);
+  Value *arr = args[1].list->items;
+  int n = (int)(arrlen(arr) / 2);
   SDL_Point *pts = GC_MALLOC(n * sizeof(SDL_Point));
 
   for (int i = 0; i < n; i++) {
-    double px = _f64(g_array_index(arr, Value, i * 2));
-    double py = _f64(g_array_index(arr, Value, i * 2 + 1));
+    double px = _f64(arr[i * 2]);
+    double py = _f64(arr[i * 2 + 1]);
     pts[i].x = _tx_x(px);
     pts[i].y = _tx_y(py);
   }
@@ -181,35 +174,32 @@ static Value numerobis_builtin_polygon(Value *args) {
   DrawCmd cmd = {.kind = CMD_POLYGON,
                  .color = _arg_color(args[2]),
                  .polygon = {pts, n, _arg_filled(args[3])}};
-  g_array_append_val(_queue, cmd);
+  arrput(_queue, cmd);
   return NONE;
 }
 
 /* arc!(x, y, radius, start, end, color, filled) */
 static Value numerobis_builtin_arc(Value *args) {
-  _ensure_queue();
   DrawCmd cmd = {.kind = CMD_ARC,
                  .color = _arg_color(args[6]),
                  .arc = {_tx_x(_f64(args[1])), _tx_y(_f64(args[2])),
                          _tx_dim(_f64(args[3])), (float)_f64(args[4]),
                          (float)_f64(args[5]), _arg_filled(args[7])}};
-  g_array_append_val(_queue, cmd);
+  arrput(_queue, cmd);
   return NONE;
 }
 
 /* point!(x, y, color) */
 static Value numerobis_builtin_point(Value *args) {
-  _ensure_queue();
   DrawCmd cmd = {.kind = CMD_POINT,
                  .color = _arg_color(args[3]),
                  .point = {_tx_x(_f64(args[1])), _tx_y(_f64(args[2]))}};
-  g_array_append_val(_queue, cmd);
+  arrput(_queue, cmd);
   return NONE;
 }
 
 /* text!(x, y, content, size, color, style: List[Str], font: Str, angle: Num) */
 static Value numerobis_builtin_text(Value *args) {
-  _ensure_queue();
 
   const char *font_arg = args[7].type != VALUE_EMPTY ? _str(args[7]) : NULL;
   const char *font_path =
@@ -236,7 +226,7 @@ static Value numerobis_builtin_text(Value *args) {
               .angle = angle_arg,
           },
   };
-  g_array_append_val(_queue, cmd);
+  arrput(_queue, cmd);
   return NONE;
 }
 
@@ -248,8 +238,8 @@ static Value numerobis_builtin_blit(Value *args) {
   _set_color(_bg);
   SDL_RenderClear(_renderer);
 
-  for (unsigned int qi = 0; qi < _queue->len; qi++) {
-    DrawCmd *c = &g_array_index(_queue, DrawCmd, qi);
+  for (unsigned int qi = 0; qi < arrlen(_queue); qi++) {
+    DrawCmd *c = &_queue[qi];
     _set_color(c->color);
 
     switch (c->kind) {
@@ -322,9 +312,10 @@ static Value numerobis_builtin_blit(Value *args) {
   }
 
   SDL_RenderPresent(_renderer);
-  memset(_queue->data, 0,
-         _queue->len * sizeof(DrawCmd)); // make GC release pointers
-  g_array_set_size(_queue, 0);
+  if (arrlen(_queue) > 0) {
+    memset(_queue, 0, arrlen(_queue) * sizeof(DrawCmd));
+    arrsetlen(_queue, 0);
+  }
   return NONE;
 }
 
