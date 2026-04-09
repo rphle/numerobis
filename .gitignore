@@ -13,6 +13,7 @@ output
 
 src/numerobis/runtime/numerobis
 tests/benchmarking/out
+highlighting/numerobis-vscode/numerobis-*.vsix
 
 notes/
 test.py

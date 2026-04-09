@@ -173,7 +173,7 @@ make test -- echo logic
 
 ### Comments
 
-```python
+```nim
 # single-line comment
 
 #[ multi-line

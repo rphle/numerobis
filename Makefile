@@ -39,6 +39,9 @@ update:
 	git pull
 	make runtimelib
 
+report: # SCC report
+	scc --exclude-dir runtime/numerobis/libs --sort code --no-duplicates
+
 help: # Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?#' $(MAKEFILE_LIST) | \
 		awk 'BEGIN {FS = ":.*?# "}; {printf "  make %-12s %s\n", $$1, $$2}'
