@@ -1,8 +1,6 @@
 #ifndef NUMEROBIS_RANGE_H
 #define NUMEROBIS_RANGE_H
 
-#include "glib.h"
-
 struct Value;
 typedef struct Value Value;
 

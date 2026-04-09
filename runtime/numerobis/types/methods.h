@@ -1,7 +1,6 @@
 #ifndef NUMEROBIS_METHODS_H
 #define NUMEROBIS_METHODS_H
 
-#include <glib.h>
 #include <stdbool.h>
 
 typedef struct Value Value;

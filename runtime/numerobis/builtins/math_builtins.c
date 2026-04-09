@@ -6,7 +6,6 @@
 #include "../utils/utils.h"
 #include "../values.h"
 
-#include <glib.h>
 #include <math.h>
 
 /* Helpers */

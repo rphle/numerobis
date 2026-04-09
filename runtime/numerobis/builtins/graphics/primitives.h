@@ -2,7 +2,6 @@
 #define NUMEROBIS_PRIMITIVES_H
 
 #include <SDL2/SDL.h>
-#include <glib.h>
 #include <stdbool.h>
 
 void _prim_circle(int cx, int cy, int r, bool filled);

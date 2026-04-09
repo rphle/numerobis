@@ -2,7 +2,6 @@
 #define NUMEROBIS_EXTERN_H
 
 #include "values.h"
-#include <glib.h>
 
 typedef struct {
   char *key;

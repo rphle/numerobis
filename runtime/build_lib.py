@@ -106,7 +106,6 @@ cmake_minimum_required(VERSION 3.10)
 project(NumerobisLib_{name} C)
 
 find_package(PkgConfig REQUIRED)
-pkg_check_modules(GLIB REQUIRED glib-2.0)
 pkg_check_modules(GC   REQUIRED bdw-gc)
 {extra_cmake}
 set(LIB_SOURCES
@@ -117,7 +116,6 @@ add_library({name} STATIC ${{LIB_SOURCES}})
 
 target_include_directories({name} PRIVATE
     "{runtime_root.as_posix()}"
-    ${{GLIB_INCLUDE_DIRS}}
     ${{GC_INCLUDE_DIRS}}
 {include_extras}
 )

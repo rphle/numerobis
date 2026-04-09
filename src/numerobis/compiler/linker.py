@@ -69,7 +69,7 @@ class Linker:
 
         for fieldc in fieldcounts:
             # Generic struct init function for structs with `fieldc` fields
-            init = tstr("""static inline Value struct__init__$n(gint64 id, $args)
+            init = tstr("""static inline Value struct__init__$n(long id, $args)
 {
     Value v = struct__init__(id, $n);
     $fields

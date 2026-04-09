@@ -33,18 +33,17 @@ def _prepare_units_h(units: CompiledUnits) -> str:
 
     #include <stdint.h>
     #include <math.h>
-    #include <glib.h>
 
     typedef enum {{
         {",".join(["DUMMY93CF"] + list(units.units.keys()))}
     }} UnitId;
 
-    static inline gdouble logn(gdouble x, gdouble b);
+    static inline double logn(double x, double b);
 
-    gdouble unit_id_eval(uint16_t id, gdouble x);
-    gdouble unit_id_eval_normal(uint16_t id, gdouble x);
-    gdouble base_unit(uint16_t id, gdouble x);
-    gdouble is_logarithmic(uint16_t id);
+    double unit_id_eval(uint16_t id, double x);
+    double unit_id_eval_normal(uint16_t id, double x);
+    double base_unit(uint16_t id, double x);
+    double is_logarithmic(uint16_t id);
 
     #endif
     """
@@ -70,17 +69,16 @@ def _prepare_source_c(modules: list[ModuleMeta], units_h: str, units: CompiledUn
         f'    [{uid}] = "{name}",' for uid, name in units.names.items()
     )
 
-    source = f"""#include <glib.h>
-    #include <math.h>
+    source = f"""#include <math.h>
     #include <stdbool.h>
     #include <stdint.h>
     #include <numerobis/libs/stb_ds.h>
     #include "{units_h}"
 
     typedef struct {{
-        const gchar *path;
+        const char *path;
         const int n_lines;
-        const gchar **source;
+        const char **source;
     }} NumerobisProgram;
 
     typedef struct {{ char *key; NumerobisProgram *value; }} ModuleEntry;
@@ -89,30 +87,30 @@ def _prepare_source_c(modules: list[ModuleMeta], units_h: str, units: CompiledUn
     {chr(10).join(arrays)}
     {chr(10).join(structs)}
 
-    static inline gdouble logn(gdouble b, gdouble x) {{return log(x) / log(b);}}
+    static inline double logn(double b, double x) {{return log(x) / log(b);}}
 
-    gdouble unit_id_eval(uint16_t id, gdouble x) {{
+    double unit_id_eval(uint16_t id, double x) {{
         switch ((UnitId)id) {{
             {"\n".join(f"case {n}: return {expr};" for n, expr in units.inverted.items())}
             default: return 1;
         }}
     }}
 
-    gdouble unit_id_eval_normal(uint16_t id, gdouble x) {{
+    double unit_id_eval_normal(uint16_t id, double x) {{
         switch ((UnitId)id) {{
             {"\n".join(f"case {n}: return {expr};" for n, expr in units.units.items())}
             default: return 1;
         }}
     }}
 
-    gdouble base_unit(uint16_t id, gdouble x) {{
+    double base_unit(uint16_t id, double x) {{
         switch ((UnitId)id) {{
             {"\n".join(f"case {n}: return {expr};" for n, expr in units.bases.items() if expr)}
             default: return 1;
         }}
     }}
 
-    gdouble is_logarithmic(uint16_t id) {{
+    double is_logarithmic(uint16_t id) {{
         switch ((UnitId)id) {{
             {"\n".join(f"case {n}: return true;" for n in units.logarithmic)}
             default: return false;
@@ -142,7 +140,6 @@ def compile(
     use_graphics: bool = False,
     use_ccache: bool = False,
 ):
-    glib_cflags, glib_libs = _pkg("glib-2.0")
     gc_cflags, gc_libs = _pkg("bdw-gc")
 
     if use_graphics:
@@ -192,7 +189,6 @@ def compile(
             + [tmp.name, tmp_source.name]
             + ["-o", str(output)]
             + [f"-I{runtime_path}"]
-            + glib_cflags
             + gc_cflags
             + sdl2_cflags
             + sdl2_ttf_cflags
@@ -202,7 +198,6 @@ def compile(
                 "-Wl,--no-whole-archive",
             ]
             + graphics_libs
-            + glib_libs
             + gc_libs
             + ["-lm"]
             + list(flags)

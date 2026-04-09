@@ -4,8 +4,6 @@
 #include "../exceptions/messages.h"
 #include "source.h"
 
-#include <glib.h>
-
 typedef struct {
   int line;
   int col;

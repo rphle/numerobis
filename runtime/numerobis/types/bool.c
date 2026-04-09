@@ -4,7 +4,6 @@
 #include "number.h"
 #include "str.h"
 
-#include <glib.h>
 #include <stdbool.h>
 
 static const ValueMethods _bool_methods;

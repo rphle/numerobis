@@ -3,7 +3,6 @@
 
 #include "../values.h"
 
-#include <glib.h>
 #include <stdbool.h>
 
 Value int__init__(long x, const uint64_t unit);

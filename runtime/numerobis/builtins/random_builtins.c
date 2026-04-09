@@ -5,32 +5,53 @@
 #include "../units/units.h"
 #include "../values.h"
 
-#include <glib.h>
 #include <math.h>
-#include <stdio.h>
+#include <stdint.h>
+#include <stdlib.h>
+#include <time.h>
 
-static GRand *_rng(void) {
-  static GRand *rng = NULL;
-  if (G_UNLIKELY(rng == NULL))
-    rng = g_rand_new();
-  return rng;
+static void rng_seed_once(void) {
+  static int seeded = 0;
+  if (!seeded) {
+    seeded = 1;
+    uintptr_t entropy = (uintptr_t)&seeded;
+    srand((unsigned)(time(NULL) ^ entropy ^ (entropy >> 16)));
+  }
+}
+
+static double rand_double(void) {
+  rng_seed_once();
+  return rand() / ((double)RAND_MAX + 1.0);
+}
+
+static long rand_int_range(long lo, long hi_exclusive) {
+  rng_seed_once();
+  if (hi_exclusive <= lo)
+    return lo;
+  long span = hi_exclusive - lo;
+  return lo + (long)(rand_double() * span);
+}
+
+static double rand_double_range(double lo, double hi) {
+  return lo + (hi - lo) * rand_double();
 }
 
 static Value numerobis_builtin_random(Value *args) {
-  return num__init__(g_rand_double(_rng()), U_ONE);
+  (void)args;
+  return num__init__(rand_double(), U_ONE);
 }
 
 static Value numerobis_builtin_randint(Value *args) {
   long lo = args[1].number.i64;
   long hi = args[2].number.i64;
-  long result = (long)g_rand_int_range(_rng(), (int)lo, (int)(hi + 1));
+  long result = rand_int_range(lo, hi + 1);
   return int__init__(result, U_ONE);
 }
 
 static Value numerobis_builtin_uniform(Value *args) {
   double lo = args[1].number.f64;
   double hi = args[2].number.f64;
-  double result = g_rand_double_range(_rng(), lo, hi);
+  double result = rand_double_range(lo, hi);
   return num__init__(result, U_ONE);
 }
 
@@ -43,13 +64,13 @@ static Value numerobis_builtin_gaussian(Value *args) {
   if (args[2].type != VALUE_EMPTY)
     stddev = args[2].number.f64;
 
-  double u1 = g_rand_double(_rng());
-  double u2 = g_rand_double(_rng());
+  double u1 = rand_double();
+  double u2 = rand_double();
 
-  if (G_UNLIKELY(u1 <= 0.0))
+  if (u1 < 1e-12)
     u1 = 1e-12;
 
-  double z0 = sqrt(-2.0 * log(u1)) * cos(2.0 * G_PI * u2);
+  double z0 = sqrt(-2.0 * log(u1)) * cos(2.0 * M_PI * u2);
   return num__init__(mean + stddev * z0, U_ONE);
 }
 

@@ -7,14 +7,13 @@
 #include "../../utils/utils.h"
 #include "../../values.h"
 #include "fonts.h"
-#include "glibconfig.h"
 #include "primitives.h"
 #include "state.h"
 
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
 #include <gc.h>
-#include <glib.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -361,7 +360,7 @@ static Value numerobis_builtin_key_pressed(Value *args) {
   const char *key_name = _str(args[1]);
   SDL_Scancode code = SDL_GetScancodeFromName(key_name);
   if (code == SDL_SCANCODE_UNKNOWN) {
-    return bool__init__(FALSE);
+    return bool__init__(false);
   }
   return bool__init__(_keys[code]);
 }

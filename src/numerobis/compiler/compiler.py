@@ -374,7 +374,7 @@ class Compiler:
         loop["iv"] = self.compile(node.iterators[0])
 
         loop["vtype"] = node.meta["value"].name().lower()  # 'int' or 'float'
-        loop["type"] = {"Int": "gint64", "Num": "gdouble"}[node.meta["value"].name()]
+        loop["type"] = {"Int": "long", "Num": "double"}[node.meta["value"].name()]
 
         r = self.unlink(node.iterable)
         if not isinstance(r, Range):
@@ -614,9 +614,7 @@ class Compiler:
         value = node.value
         typ = "num"
         if "." not in str(value) and "." not in str(node.exponent):
-            out["value"] = (
-                f"G_GINT64_CONSTANT({value}{f'E{node.exponent}' if node.exponent else ''})"
-            )
+            out["value"] = f"{value}{f'E{node.exponent}' if node.exponent else ''}L"
             typ = "int"
         elif not node.exponent:
             out["value"] = str(value)

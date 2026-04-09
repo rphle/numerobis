@@ -1,7 +1,6 @@
 #ifndef NUMEROBIS_COLOR_H
 #define NUMEROBIS_COLOR_H
 
-#include <glib.h>
 #include <stdint.h>
 
 typedef struct {

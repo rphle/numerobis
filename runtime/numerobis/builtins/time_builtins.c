@@ -6,19 +6,25 @@
 #include "../utils/utils.h"
 #include "../values.h"
 
-#include <glib.h>
+#include <time.h>
+
+struct timespec ts;
 
 static Value numerobis_builtin_now(Value *args) {
-  long microseconds = g_get_real_time();
-  double seconds = (double)microseconds / 1000000.0;
+  clock_gettime(CLOCK_REALTIME, &ts);
+  double seconds = ts.tv_sec + ts.tv_nsec * 1e-9;
   return num__init__(seconds, U_ONE);
 }
 
 static Value numerobis_builtin_sleep(Value *args) {
   double seconds = _f64(args[1]);
-  if (seconds > 0) {
-    g_usleep((gulong)(seconds * 1000000));
-  }
+  if (seconds <= 0)
+    return NONE;
+
+  ts.tv_sec = (time_t)seconds;
+  ts.tv_nsec = (long)((seconds - ts.tv_sec) * 1e9);
+  nanosleep(&ts, NULL);
+
   return NONE;
 }
 

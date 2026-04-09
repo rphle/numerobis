@@ -51,7 +51,7 @@ static bool list__cbool__(Value self) {
 
 static Value list__getitem__(Value _self, Value _index) {
   List *self = (List *)_self.list;
-  g_assert(_index.type == VALUE_NUMBER);
+  assert(_index.type == VALUE_NUMBER);
 
   ssize_t index = (ssize_t)_index.number.i64;
   ssize_t len = (ssize_t)_list_len(self);
@@ -115,7 +115,7 @@ static Value list__add__(Value _self, Value _other) {
 
 static Value list__mul__(Value _self, Value _n) {
   List *self = (List *)_self.list;
-  g_assert(_n.type == VALUE_NUMBER && _n.number.kind == NUM_INT64);
+  assert(_n.type == VALUE_NUMBER && _n.number.kind == NUM_INT64);
 
   ssize_t n = (ssize_t)_n.number.i64;
   size_t len = _list_len(self);
@@ -199,7 +199,7 @@ Value list__setitem__(Value _self, Value _index, Value val) {
     return EMPTY;
 
   List *self = (List *)_self.list;
-  g_assert(_index.type == VALUE_NUMBER);
+  assert(_index.type == VALUE_NUMBER);
 
   ssize_t index = (ssize_t)_index.number.i64;
   ssize_t len = (ssize_t)_list_len(self);
@@ -217,7 +217,7 @@ Value list__delitem__(Value _self, Value _index) {
     return EMPTY;
 
   List *self = (List *)_self.list;
-  g_assert(_index.type == VALUE_NUMBER);
+  assert(_index.type == VALUE_NUMBER);
 
   ssize_t index = (ssize_t)_index.number.i64;
   ssize_t len = (ssize_t)_list_len(self);
@@ -245,7 +245,7 @@ static Value list_pop(Value *args) {
   if (_index.type == VALUE_EMPTY)
     idx = len - 1;
   else {
-    g_assert(_index.type == VALUE_NUMBER);
+    assert(_index.type == VALUE_NUMBER);
     idx = (ssize_t)_index.number.i64;
   }
 

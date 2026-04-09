@@ -6,7 +6,6 @@
 #include "types/methods.h"
 
 #include <assert.h>
-#include <glib.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -162,7 +161,7 @@ static inline Value __getattr__(Value func, Value self) {
     // the actual logic will be intercepted by __call__ via the tagged env.
     return closure__init__(NULL, TAG_EXTERN(func.extern_fn), self);
   default:
-    g_error("__getattr__: not a closure or extern fn!");
+    fprintf(stderr, "__getattr__: not a closure or extern fn!");
     return (Value){.type = VALUE_NONE};
   }
 }

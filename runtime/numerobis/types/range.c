@@ -3,7 +3,6 @@
 #include "bool.h"
 #include "methods.h"
 #include "str.h"
-#include <glib.h>
 #include <stdbool.h>
 
 static const ValueMethods _range_methods;
@@ -11,7 +10,7 @@ static const ValueMethods _range_methods;
 Value range__init__(Range x) {
   Value v;
   v.type = VALUE_RANGE;
-  v.range = g_new(Range, 1);
+  v.range = GC_MALLOC(sizeof(Range));
   *v.range = x;
   return v;
 }

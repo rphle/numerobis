@@ -17,18 +17,17 @@ def _prepare_units_h(units: CompiledUnits) -> str:
 
     #include <stdint.h>
     #include <math.h>
-    #include <glib.h>
 
     typedef enum {{
         {",".join(["DUMMY93CF"] + list(units.units.keys()))}
     }} UnitId;
 
-    static inline gdouble logn(gdouble x, gdouble b);
+    static inline double logn(double x, double b);
 
-    gdouble unit_id_eval(uint16_t id, gdouble x);
-    gdouble unit_id_eval_normal(uint16_t id, gdouble x);
-    gdouble base_unit(uint16_t id, gdouble x);
-    gdouble is_logarithmic(uint16_t id);
+    double unit_id_eval(uint16_t id, double x);
+    double unit_id_eval_normal(uint16_t id, double x);
+    double base_unit(uint16_t id, double x);
+    double is_logarithmic(uint16_t id);
 
     #endif
     """
@@ -58,17 +57,16 @@ def _prepare_source_c(
         f'    [{uid}] = "{name}",' for uid, name in units.names.items()
     )
 
-    source = f"""#include <glib.h>
-    #include <math.h>
+    source = f"""#include <math.h>
     #include <stdbool.h>
     #include <stdint.h>
     #include <numerobis/libs/stb_ds.h>
     #include "{units_h}"
 
     typedef struct {{
-        const gchar *path;
+        const char *path;
         const int n_lines;
-        const gchar **source;
+        const char **source;
     }} NumerobisProgram;
 
     typedef struct {{ char *key; NumerobisProgram *value; }} ModuleEntry;
@@ -77,30 +75,30 @@ def _prepare_source_c(
     {chr(10).join(arrays)}
     {chr(10).join(structs)}
 
-    static inline gdouble logn(gdouble b, gdouble x) {{return log(x) / log(b);}}
+    static inline double logn(double b, double x) {{return log(x) / log(b);}}
 
-    gdouble unit_id_eval(uint16_t id, gdouble x) {{
+    double unit_id_eval(uint16_t id, double x) {{
         switch ((UnitId)id) {{
             {"\n".join(f"case {n}: return {expr};" for n, expr in units.inverted.items())}
             default: return 1;
         }}
     }}
 
-    gdouble unit_id_eval_normal(uint16_t id, gdouble x) {{
+    double unit_id_eval_normal(uint16_t id, double x) {{
         switch ((UnitId)id) {{
             {"\n".join(f"case {n}: return {expr};" for n, expr in units.units.items())}
             default: return 1;
         }}
     }}
 
-    gdouble base_unit(uint16_t id, gdouble x) {{
+    double base_unit(uint16_t id, double x) {{
         switch ((UnitId)id) {{
             {"\n".join(f"case {n}: return {expr};" for n, expr in units.bases.items() if expr)}
             default: return 1;
         }}
     }}
 
-    gdouble is_logarithmic(uint16_t id) {{
+    double is_logarithmic(uint16_t id) {{
         switch ((UnitId)id) {{
             {"\n".join(f"case {n}: return true;" for n in units.logarithmic)}
             default: return false;
@@ -198,20 +196,17 @@ cmake_minimum_required(VERSION 3.10)
 project(NumerobisNative C)
 
 find_package(PkgConfig REQUIRED)
-pkg_check_modules(GLIB REQUIRED glib-2.0)
 pkg_check_modules(GC   REQUIRED bdw-gc)
 {graphics_pkgconfig}
 add_executable(numerobis_bin main.c source.c)
 
 target_include_directories(numerobis_bin PRIVATE
-    ${{GLIB_INCLUDE_DIRS}}
     ${{GC_INCLUDE_DIRS}}
 {graphics_include_dirs}
     "{runtime_path.as_posix()}"
 )
 
 target_link_directories(numerobis_bin PRIVATE
-    ${{GLIB_LIBRARY_DIRS}}
     ${{GC_LIBRARY_DIRS}}
 {graphics_link_dirs}
 )
@@ -223,7 +218,6 @@ target_link_libraries(numerobis_bin PRIVATE
     "{runtime_lib.as_posix()}"
     "-Wl,--no-whole-archive"
 {graphics_libs}
-    ${{GLIB_LIBRARIES}}
     ${{GC_LIBRARIES}}
     m
 )

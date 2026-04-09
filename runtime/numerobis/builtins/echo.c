@@ -7,7 +7,6 @@
 #include "../units/eval.h"
 #include "../values.h"
 
-#include <glib.h>
 #include <stdbool.h>
 #include <stdio.h>
 

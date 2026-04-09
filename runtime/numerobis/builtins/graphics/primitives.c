@@ -6,7 +6,6 @@
 
 #include <SDL2/SDL.h>
 #include <gc.h>
-#include <glib.h>
 #include <math.h>
 #include <stdbool.h>
 
@@ -180,10 +179,10 @@ void _prim_rounded_rect(int x, int y, int w, int h, int r, bool filled) {
     SDL_RenderDrawLine(_renderer, x + r, y + h, x + w - r, y + h);
     SDL_RenderDrawLine(_renderer, x, y + r, x, y + h - r);
     SDL_RenderDrawLine(_renderer, x + w, y + r, x + w, y + h - r);
-    _prim_arc(x + r, y + r, r, 180.f, 270.f, FALSE);
-    _prim_arc(x + w - r, y + r, r, 270.f, 360.f, FALSE);
-    _prim_arc(x + w - r, y + h - r, r, 0.f, 90.f, FALSE);
-    _prim_arc(x + r, y + h - r, r, 90.f, 180.f, FALSE);
+    _prim_arc(x + r, y + r, r, 180.f, 270.f, false);
+    _prim_arc(x + w - r, y + r, r, 270.f, 360.f, false);
+    _prim_arc(x + w - r, y + h - r, r, 0.f, 90.f, false);
+    _prim_arc(x + r, y + h - r, r, 90.f, 180.f, false);
     return;
   }
 
@@ -219,7 +218,7 @@ void _prim_thick_line(int x1, int y1, int x2, int y2, double t) {
 
   double dx = x2 - x1, dy = y2 - y1, len = sqrt(dx * dx + dy * dy);
   if (len < 0.5) {
-    _prim_circle(x1, y1, (int)(t / 2.0), TRUE);
+    _prim_circle(x1, y1, (int)(t / 2.0), true);
     return;
   }
 
@@ -230,7 +229,7 @@ void _prim_thick_line(int x1, int y1, int x2, int y2, double t) {
       {(int)(x2 - nx + .5), (int)(y2 - ny + .5)},
       {(int)(x1 - nx + .5), (int)(y1 - ny + .5)},
   };
-  _prim_polygon(pts, 4, TRUE);
+  _prim_polygon(pts, 4, true);
 }
 
 void _prim_polygon(SDL_Point *pts, int n, bool filled) {

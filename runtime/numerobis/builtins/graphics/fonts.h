@@ -4,7 +4,6 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
 #include <gc.h>
-#include <glib.h>
 
 extern const char *_font_path;
 

@@ -4,7 +4,6 @@
 #include "../libs/sds.h"
 
 #include <gc.h>
-#include <glib.h>
 #include <stdbool.h>
 #include <stdint.h>
 

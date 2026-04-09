@@ -2,7 +2,6 @@
 #define NUMEROBIS_BOOL_H
 
 #include "../values.h"
-#include <glib.h>
 #include <stdbool.h>
 
 #define VTRUE bool__init__(true)

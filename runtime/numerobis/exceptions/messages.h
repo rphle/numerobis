@@ -1,7 +1,7 @@
 #ifndef NUMEROBIS_MESSAGES_H
 #define NUMEROBIS_MESSAGES_H
 
-#include <glib.h>
+#include <stdio.h>
 
 typedef struct {
   const int code;
