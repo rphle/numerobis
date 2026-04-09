@@ -43,14 +43,10 @@ After installation, the `nbis` CLI entry point is available.
 sudo apt install -y \
   cmake \
   pkg-config \
-  libgc-dev \
   build-essential
 ```
 
-- `cmake` – Used by the compiler and test runner to manage the build process
-- `pkg-config` — discovers `bdw-gc`
-- `libgc-dev` — Boehm–Demers–Weiser garbage collector
-- `build-essential` — C toolchain
+These packages are typically pre-installed on most UNIX-based systems.
 
 #### Graphics (optional)
 

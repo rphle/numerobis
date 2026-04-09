@@ -161,6 +161,9 @@ def compile(
         runtime_lib = runtime_path / "libruntime.a"
         graphics_lib = runtime_path / "libgraphics.a"
 
+        gc_path = runtime_path / "numerobis" / "libs" / "bdwgc"
+        gc_lib_static = gc_path / "lib" / "libgc.a"
+
         with tempfile.TemporaryDirectory() as temp_dir:
             temp_path = Path(temp_dir)
 
@@ -196,18 +199,15 @@ cmake_minimum_required(VERSION 3.10)
 project(NumerobisNative C)
 
 find_package(PkgConfig REQUIRED)
-pkg_check_modules(GC   REQUIRED bdw-gc)
 {graphics_pkgconfig}
 add_executable(numerobis_bin main.c source.c)
 
 target_include_directories(numerobis_bin PRIVATE
-    ${{GC_INCLUDE_DIRS}}
 {graphics_include_dirs}
     "{runtime_path.as_posix()}"
 )
 
 target_link_directories(numerobis_bin PRIVATE
-    ${{GC_LIBRARY_DIRS}}
 {graphics_link_dirs}
 )
 
@@ -218,8 +218,10 @@ target_link_libraries(numerobis_bin PRIVATE
     "{runtime_lib.as_posix()}"
     "-Wl,--no-whole-archive"
 {graphics_libs}
-    ${{GC_LIBRARIES}}
+    "{gc_lib_static.as_posix()}"
     m
+    pthread
+    dl
 )
 """
             (temp_path / "CMakeLists.txt").write_text(cmakelists, encoding="utf-8")

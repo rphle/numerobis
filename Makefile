@@ -19,6 +19,9 @@ runtimelib:
 	@echo "Building static runtime library..."
 	$(PYTHON) runtime/build_lib.py
 
+gc:
+	./scripts/gc.sh
+
 benchmark:
 	$(PYTHON) tests/benchmarking/benchmark.py
 

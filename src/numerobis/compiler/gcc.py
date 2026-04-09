@@ -140,8 +140,6 @@ def compile(
     use_graphics: bool = False,
     use_ccache: bool = False,
 ):
-    gc_cflags, gc_libs = _pkg("bdw-gc")
-
     if use_graphics:
         sdl2_cflags, sdl2_libs = _pkg("sdl2")
         sdl2_ttf_cflags, sdl2_ttf_libs = _pkg("SDL2_ttf")
@@ -170,6 +168,11 @@ def compile(
 
     with resources.as_file(resources.files("numerobis")) as base_path:
         runtime_path = base_path / "runtime"
+
+        gc_lib_static = (
+            runtime_path / "numerobis" / "libs" / "bdwgc" / "lib" / "libgc.a"
+        )
+
         graphics_libs = (
             [
                 "-Wl,--whole-archive",
@@ -181,6 +184,7 @@ def compile(
             if use_graphics
             else []
         )
+
         cmd = (
             (["ccache"] if use_ccache else [])
             + [cc]
@@ -189,7 +193,6 @@ def compile(
             + [tmp.name, tmp_source.name]
             + ["-o", str(output)]
             + [f"-I{runtime_path}"]
-            + gc_cflags
             + sdl2_cflags
             + sdl2_ttf_cflags
             + [
@@ -198,8 +201,7 @@ def compile(
                 "-Wl,--no-whole-archive",
             ]
             + graphics_libs
-            + gc_libs
-            + ["-lm"]
+            + [str(gc_lib_static), "-lm", "-lpthread", "-ldl"]
             + list(flags)
         )
 

@@ -12,6 +12,7 @@ output
 *.gch
 
 src/numerobis/runtime/numerobis
+bdwgc/
 tests/benchmarking/out
 highlighting/numerobis-vscode/numerobis-*.vsix
 

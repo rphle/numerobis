@@ -64,10 +64,14 @@ def build_lib():
             extra_cmake=_graphics_pkgconfig_cmake,
         )
 
-    for h_file in runtime_root.rglob("*.h"):
-        target_path = dest_runtime / h_file.relative_to(runtime_root)
-        target_path.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(h_file, target_path)
+    for file in runtime_root.rglob("*"):
+        if file.is_file() and (
+            file.suffix == ".h"
+            or file.is_relative_to(runtime_root / "numerobis" / "libs")
+        ):
+            target_path = dest_runtime / file.relative_to(runtime_root)
+            target_path.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(file, target_path)
 
     print(
         f"Static libraries and headers created at {dest_runtime} ({time.time() - t0:.2f}s)"
