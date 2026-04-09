@@ -1,10 +1,11 @@
+#include "fonts.h"
+#include "../../libs/gc_stb_ds.h"
 #include "../../libs/sds.h"
 
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
 #include <dirent.h>
 #include <gc.h>
-#include <glib.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
@@ -12,8 +13,7 @@
 #include <unistd.h>
 
 const char *_font_path = NULL;
-
-static GHashTable *_fc_cache = NULL;
+static FcEntry *_fc_cache = NULL;
 
 static const char *linux_font_dirs[] = {"/usr/share/fonts",
                                         "/usr/local/share/fonts",
@@ -90,12 +90,10 @@ const char *_default_font(void) {
 const char *_resolve_font_name(const char *name) {
   if (!name || *name == '\0')
     return NULL;
-  if (!_fc_cache)
-    _fc_cache = g_hash_table_new_full(g_str_hash, g_str_equal, NULL, NULL);
 
-  char *cached = g_hash_table_lookup(_fc_cache, name);
-  if (cached)
-    return cached;
+  FcEntry *entry = shgetp_null(_fc_cache, name);
+  if (entry)
+    return entry->value;
 
   sds cmd = sdscatprintf(sdsempty(), "fc-match --format='%%{file}' '%s'", name);
   FILE *fp = popen(cmd, "r");
@@ -118,71 +116,45 @@ const char *_resolve_font_name(const char *name) {
     }
 
     char *path = GC_STRDUP(start);
-    g_hash_table_insert(_fc_cache, GC_STRDUP(name), path);
+    shput(_fc_cache, name, path);
     return path;
   }
   pclose(fp);
   return NULL;
 }
 
-typedef struct {
-  char *path;
-  int size;
-  int style;
-} FontKey;
-static GHashTable *_font_cache = NULL;
-
-static unsigned int _fk_hash(gconstpointer k) {
-  const FontKey *f = k;
-  unsigned int h = (unsigned int)g_str_hash(f->path);
-  return h ^ (unsigned int)(f->size * 31) ^ (unsigned int)(f->style << 16);
-}
-
-static int _fk_equal(gconstpointer a, gconstpointer b) {
-  const FontKey *fa = a, *fb = b;
-  return (fa->size == fb->size && fa->style == fb->style &&
-          strcmp(fa->path, fb->path) == 0);
-}
+static FontEntry *_font_cache = NULL;
 
 TTF_Font *_get_font(const char *path, int size, int style) {
   if (!path)
     return NULL;
-  if (!_font_cache)
-    _font_cache = g_hash_table_new_full(_fk_hash, _fk_equal, NULL, NULL);
 
-  FontKey lookup = {(char *)path, size, style};
-  TTF_Font *font = g_hash_table_lookup(_font_cache, &lookup);
-  if (font)
-    return font;
+  for (ptrdiff_t i = 0; i < arrlen(_font_cache); i++) {
+    FontEntry *e = &_font_cache[i];
+    if (e->key.size == size && e->key.style == style &&
+        strcmp(e->key.path, path) == 0)
+      return e->value;
+  }
 
-  font = TTF_OpenFont(path, size);
+  TTF_Font *font = TTF_OpenFont(path, size);
   if (!font)
     return NULL;
   TTF_SetFontStyle(font, style);
 
-  FontKey *key = malloc(sizeof(FontKey));
-  key->path = strdup(path);
-  key->size = size;
-  key->style = style;
-  g_hash_table_insert(_font_cache, key, font);
+  FontEntry e = {.key = {.path = strdup(path), .size = size, .style = style},
+                 .value = font};
+  arrput(_font_cache, e);
   return font;
 }
 
 void _cleanup_fonts(void) {
-  if (_font_cache) {
-    GHashTableIter iter;
-    void *key, *value;
-    g_hash_table_iter_init(&iter, _font_cache);
-    while (g_hash_table_iter_next(&iter, &key, &value)) {
-      TTF_CloseFont((TTF_Font *)value);
-      free(((FontKey *)key)->path);
-      free(key);
-    }
-    g_hash_table_destroy(_font_cache);
-    _font_cache = NULL;
+  for (ptrdiff_t i = 0; i < arrlen(_font_cache); i++) {
+    TTF_CloseFont(_font_cache[i].value);
+    free(_font_cache[i].key.path);
   }
-  if (_fc_cache) {
-    g_hash_table_destroy(_fc_cache);
-    _fc_cache = NULL;
-  }
+  arrfree(_font_cache);
+  _font_cache = NULL;
+
+  shfree(_fc_cache);
+  _fc_cache = NULL;
 }

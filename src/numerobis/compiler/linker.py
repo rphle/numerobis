@@ -8,10 +8,9 @@ from typing import Optional
 import rich
 import rich.syntax
 
-from numerobis.typechecker.types import StructType
-
 from ..classes import CompiledModule, CompiledUnits
 from ..exceptions.exceptions import Exceptions
+from ..typechecker.types import StructType
 from ..utils import STDLIB_PATH
 from . import cmake
 from . import gcc as gnucc

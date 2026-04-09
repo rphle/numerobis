@@ -5,13 +5,12 @@
 #include <glib.h>
 
 typedef struct {
-  const char *name;
-  Value *fn;
-} UExternEntry;
+  char *key;
+  Value *value;
+} ExternEntry;
 
-extern GHashTable *NUMEROBIS_EXTERNS;
+extern ExternEntry *NUMEROBIS_EXTERNS;
 
-void u_externs_init(void);
 void u_externs_shutdown(void);
 
 Value *extern_fn__init__(Value (*fn)(Value *args));

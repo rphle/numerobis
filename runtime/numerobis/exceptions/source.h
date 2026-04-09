@@ -9,6 +9,4 @@ typedef struct {
   const char **source;
 } NumerobisProgram;
 
-extern GHashTable *NUMEROBIS_MODULE_REGISTRY;
-
 #endif

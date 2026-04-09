@@ -28,7 +28,7 @@ pkg_check_modules(SDL2_TTF REQUIRED SDL2_ttf)
 
 
 def _is_graphics_source(path: Path) -> bool:
-    return path.parent.name == "graphics" and path.suffix == ".c"
+    return path.parent.name == "graphics"
 
 
 def build_lib():

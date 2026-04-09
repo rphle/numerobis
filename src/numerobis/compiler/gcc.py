@@ -52,11 +52,7 @@ def _prepare_units_h(units: CompiledUnits) -> str:
     return out
 
 
-def _prepare_source_c(
-    modules: list[ModuleMeta],
-    units_h: str,
-    units: CompiledUnits,
-):
+def _prepare_source_c(modules: list[ModuleMeta], units_h: str, units: CompiledUnits):
     arrays, structs, entries = [], [], []
 
     for i, mod in enumerate(modules):
@@ -68,9 +64,7 @@ def _prepare_source_c(
         structs.append(
             f"static NumerobisProgram mod_{i} = {{ {path_str}, {len(src_lines)}, lines_{i} }};"
         )
-        entries.append(
-            f"g_hash_table_insert(NUMEROBIS_MODULE_REGISTRY, (gpointer){path_str}, &mod_{i});"
-        )
+        entries.append(f"shput(NUMEROBIS_MODULE_REGISTRY, {path_str}, &mod_{i});")
 
     unit_names = "\n".join(
         f'    [{uid}] = "{name}",' for uid, name in units.names.items()
@@ -79,6 +73,8 @@ def _prepare_source_c(
     source = f"""#include <glib.h>
     #include <math.h>
     #include <stdbool.h>
+    #include <stdint.h>
+    #include <numerobis/libs/stb_ds.h>
     #include "{units_h}"
 
     typedef struct {{
@@ -87,7 +83,8 @@ def _prepare_source_c(
         const gchar **source;
     }} NumerobisProgram;
 
-    extern GHashTable *NUMEROBIS_MODULE_REGISTRY;
+    typedef struct {{ char *key; NumerobisProgram *value; }} ModuleEntry;
+    extern ModuleEntry *NUMEROBIS_MODULE_REGISTRY;
 
     {chr(10).join(arrays)}
     {chr(10).join(structs)}
@@ -128,9 +125,6 @@ def _prepare_source_c(
 
     __attribute__((constructor))
     void u_init_module_registry() {{
-        if (NUMEROBIS_MODULE_REGISTRY == NULL) {{
-            NUMEROBIS_MODULE_REGISTRY = g_hash_table_new(g_str_hash, g_str_equal);
-        }}
         {chr(10).join(entries)}
     }}
     """

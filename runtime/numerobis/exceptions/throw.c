@@ -1,4 +1,5 @@
 #include "throw.h"
+#include "../libs/gc_stb_ds.h"
 #include "../libs/sds.h"
 #include "../types/str.h"
 #include "../utils/utils.h"
@@ -7,12 +8,12 @@
 #include "source.h"
 
 #include <gc.h>
-#include <glib.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-GHashTable *NUMEROBIS_MODULE_REGISTRY = NULL;
+ModuleEntry *NUMEROBIS_MODULE_REGISTRY = NULL;
+
 extern int NUMEROBIS__FILE__;
 extern char *NUMEROBIS__FILES__[];
 
@@ -47,8 +48,8 @@ static Location *_location_split(const Location *self, size_t *out_len) {
 }
 
 static void print_preview(const Location *span) {
-  NumerobisProgram *program = g_hash_table_lookup(
-      NUMEROBIS_MODULE_REGISTRY, NUMEROBIS__FILES__[NUMEROBIS__FILE__]);
+  NumerobisProgram *program =
+      shget(NUMEROBIS_MODULE_REGISTRY, NUMEROBIS__FILES__[NUMEROBIS__FILE__]);
   size_t n = 0;
   Location *lines = _location_split(span, &n);
   fprintf(stderr, "\n");
