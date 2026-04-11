@@ -1,0 +1,56 @@
+from si import @kg, @Mass
+from math import pi
+
+# ---
+static two!(n: Int) = 2^n
+
+# E020
+x = 0
+static two!(n: Int) = 2^n
+
+# E547
+static s!() = "test"
+
+# E548
+static s!() = 42kg
+
+# E549
+static s!(n: Num[?D]) = n
+
+# E549
+static s!(n: Mass) = n
+
+# E547
+static s!(n: Num) = {echo(n)}
+
+# E548
+static m!() = {
+    echo(1kg)
+    return 1
+}
+
+# E548
+static m!() = {
+    c: Mass
+    return 1
+}
+
+# E548
+static m!() = {
+    c: Mass
+    return 1
+}
+
+# ---
+static f!() = pi
+
+# E027
+static f!() = {
+    global pi
+    pi = 3
+    return pi
+}
+
+# ---
+static two!(n: Int) = 2^n
+echo(two(4))

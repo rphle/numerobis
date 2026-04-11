@@ -4,8 +4,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
 
-
-from .nodes.ast import DimensionDefinition, FromImport, Import, UnitDefinition
+from .nodes.ast import DimensionDefinition, FromImport, Function, Import, UnitDefinition
 
 
 @dataclass
@@ -19,6 +18,7 @@ class Header:
     imports: list[Import | FromImport] = field(default_factory=list)
     units: list[UnitDefinition] = field(default_factory=list)
     dimensions: list[DimensionDefinition] = field(default_factory=list)
+    static_functions: list[Function] = field(default_factory=list)
 
     def merge(self, other: "Header") -> "Header":
         return Header(

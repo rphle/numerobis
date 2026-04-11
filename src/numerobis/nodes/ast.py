@@ -159,6 +159,7 @@ class Function(AstNode):
     params: list[Param]
     return_type: Optional["Type | FunctionAnnotation | Expression | One"]
     body: Optional[AstNode]
+    static: bool = False
 
 
 @dataclass(kw_only=True, frozen=True)

@@ -65,7 +65,7 @@ parameter without a default follows parameter with a default
 Function parameters must have type annotations
 
 [E027 / SyntaxError]
-'global' is only allowed at the beginning of a function body
+'global' is only allowed at the beginning of a non-static function body
 
 [E028 / SyntaxError]
 field without a default follows field with a default
@@ -226,6 +226,19 @@ Field '{field}' declared as {kind} {expected} but defaults to {actual}
 
 [E546 / TypeError]
 Struct fields may not be type 'Any'
+
+[E547 / TypeError]
+Static functions must return a dimensionless number, not {type}
+
+[E548 / TypeError]
+Static functions may not contain units or dimensions
+
+[E549 / TypeError]
+Parameters of static functions must be dimensionless, not {dim}
+
+[E549 / TypeError]
+Parameters of static functions must be dimensionless, not {dim}
+
 
 
 

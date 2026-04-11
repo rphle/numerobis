@@ -107,6 +107,7 @@ class Typechecker:
 
         self.unresolved_funcs: list[FunctionType] = []
         self._globals: list[list[str]] = [[]]  # queue of globals of nested functions
+        self._static: bool = False  # wether inside a static function
 
     def attribute_(self, node: Attribute, env: Env) -> T:
         owner = self.check(node.owner, env=env)
@@ -617,6 +618,9 @@ class Typechecker:
             else:
                 params.append(AnyType(unresolved=link))
 
+            if node.static and not isinstance(params[-1].dim, One):
+                self.errors.throw(549, dim=params[-1].dim, loc=param.loc)
+
             if param.default is not None:
                 default = self.check(param.default, env=env)
                 defaults.append(default)
@@ -685,6 +689,9 @@ class Typechecker:
         new_env.meta["#function"] = signature
         new_env.meta["#loop"] = False
 
+        if node.static:
+            self._static = True
+
         try:
             body = self.check(node.body, env=new_env)
         except UnresolvedAnyParam as e:
@@ -696,6 +703,9 @@ class Typechecker:
                     env.set("names")(name, signature)
                 return signature
             raise e
+
+        if node.static:
+            self._static = False
 
         if not (mismatch := nomismatch(return_type, body, unify=True)):
             assert node.body is not None, node.body
@@ -710,6 +720,13 @@ class Typechecker:
         signature = signature.edit(
             return_type=unify(return_type, body), unresolved=None
         )
+
+        if node.static and (
+            not isinstance(signature.return_type, NumberType)
+            or not isinstance(signature.return_type.dim, One)
+        ):
+            self.errors.throw(547, type=signature.return_type, loc=node.loc)
+
         if name is not None:
             address = env.set("names")(name, signature)
             node.meta["address"] = address
@@ -865,6 +882,8 @@ class Typechecker:
     def number_(self, node: Integer | Num, env: Env) -> NumberType:
         dimension = self.simplify(self.dimchecker.dimensionize(node.unit, mode="unit"))
         assert isinstance(dimension, (Expression, One, AnyDim)), repr(node)
+        if self._static and not isinstance(dimension, One):
+            self.errors.throw(548, loc=node.loc)
         return NumberType(
             typ=type(node).__name__.removesuffix("eger"),  # type: ignore ; 'Integer' to 'Int'
             dim=dimension,
@@ -1124,6 +1143,8 @@ class Typechecker:
                         raise
 
             case Expression():
+                if self._static:
+                    self.errors.throw(548, loc=node.loc)
                 dim = self.simplify(self.dimchecker.dimensionize(node))
                 return NumberType(dim=dim)
 

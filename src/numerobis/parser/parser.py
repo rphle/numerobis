@@ -92,6 +92,7 @@ class Parser(ParserTemplate):
             "FROM",
             "UNIT",
             "DIMENSION",
+            "STATIC",
         ]:
             self.imports_allowed = False
 
@@ -130,7 +131,9 @@ class Parser(ParserTemplate):
         elif first.type == "FROM":
             """From import statement"""
             return self.from_import_stmt()
-        elif first.type == "ID" and self._peek(2).type == "BANG":
+        elif (
+            first.type == "ID" and self._peek(2).type == "BANG"
+        ) or first.type == "STATIC":
             """Function declaration"""
             return self.function()
         elif first.type == "EXTERN":
@@ -357,7 +360,13 @@ class Parser(ParserTemplate):
     def function(
         self, anonymous=False, body=True, name: Optional[Identifier] = None
     ) -> AstNode:
-        if (not anonymous or not body) and not name:
+        static = None
+        if self._peek().type == "STATIC":
+            static = self._consume("STATIC")
+            if not self.imports_allowed:
+                self.errors.throw(20, statement="Static functions", loc=static.loc)
+
+        if static or (not anonymous or not body) and not name:
             _name = self._consume("ID")
             self._check_forbidden(_name, "function")
             name = self._make_id(_name)
@@ -409,11 +418,11 @@ class Parser(ParserTemplate):
             if body:
                 _assign = self._consume("ASSIGN")
 
-        body = self.block(function=True) if body else None
+        body = self.block(function=not static) if body else None
 
         loc = dataclasses.replace(
             nodeloc(
-                name if name is not None else _bang,
+                static if static else (name if name is not None else _bang),
                 body if body else (return_type if return_type else _rparen),
             ),
             checkpoints={"assign": _assign.loc},
@@ -423,8 +432,11 @@ class Parser(ParserTemplate):
             params=params,
             return_type=return_type,
             body=body,
+            static=bool(static),
             loc=loc,
         )
+        if static:
+            self.header.static_functions.append(node)
         return node
 
     def conditional(self, expression: bool = False) -> AstNode:
