@@ -18,13 +18,14 @@ class Header:
     imports: list[Import | FromImport] = field(default_factory=list)
     units: list[UnitDefinition] = field(default_factory=list)
     dimensions: list[DimensionDefinition] = field(default_factory=list)
-    static_functions: list[Function] = field(default_factory=list)
+    constants: list[Function] = field(default_factory=list)
 
     def merge(self, other: "Header") -> "Header":
         return Header(
             imports=self.imports + other.imports,
             units=self.units + other.units,
             dimensions=self.dimensions + other.dimensions,
+            constants=self.constants + other.constants,
         )
 
 

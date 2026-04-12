@@ -1,7 +1,9 @@
 from dataclasses import replace
 
+
 from ..nodes.core import Identifier
 from ..nodes.unit import (
+    AnyDim,
     Expression,
     Neg,
     Power,
@@ -9,6 +11,7 @@ from ..nodes.unit import (
     Scalar,
     Sum,
     UnitNode,
+    VarDim,
 )
 
 
@@ -52,6 +55,18 @@ def contains_sum(node: UnitNode) -> bool:
     if isinstance(node, Power):
         return contains_sum(node.base) or contains_sum(node.exponent)
     return False
+
+
+def is_fixed(node: UnitNode) -> bool:
+    if isinstance(node, (VarDim, AnyDim)):
+        return False
+    if hasattr(node, "values"):
+        return all(is_fixed(v) for v in node.values)  # type: ignore
+    if hasattr(node, "value"):
+        return is_fixed(node.value)  # type: ignore
+    if isinstance(node, Power):
+        return is_fixed(node.base) and is_fixed(node.exponent)
+    return True
 
 
 def _to_x(node: UnitNode) -> UnitNode:

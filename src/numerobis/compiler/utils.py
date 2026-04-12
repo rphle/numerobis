@@ -5,7 +5,16 @@ from pathlib import Path
 from typing import Literal
 
 from ..nodes.core import Identifier, UnitNode
-from ..nodes.unit import Call, Expression, Neg, Power, Product, Scalar, Sum
+from ..nodes.unit import (
+    Expression,
+    Neg,
+    Power,
+    Product,
+    Scalar,
+    Sum,
+    UnitCall,
+    UnitConstant,
+)
 
 BUILTINS = [
     "echo",
@@ -47,23 +56,27 @@ def mangle(name: str) -> str:
     return name.replace("_", "__").replace(".", "_d")
 
 
-def compile_math(node: UnitNode) -> str:
+def compile_math(node: UnitNode, uid: str) -> str:
     match node:
         case Expression():
-            return compile_math(node.value)
+            return compile_math(node.value, uid)
         case Sum() | Product():
             op = "+" if isinstance(node, Sum) else "*"
-            return "(" + op.join(compile_math(v) for v in node.values) + ")"
+            return "(" + op.join(compile_math(v, uid) for v in node.values) + ")"
         case Power():
-            return f"pow({compile_math(node.base)}, {compile_math(node.exponent)})"
+            return f"pow({compile_math(node.base, uid)}, {compile_math(node.exponent, uid)})"
         case Scalar():
             return str(node.value)
-        case Call():
-            return f"{compile_math(node.callee)}({','.join(compile_math(a.value) for a in node.args)})"
+        case UnitCall():
+            return f"{compile_math(node.callee, uid)}({','.join(compile_math(a.value, uid) for a in node.args)})"
         case Identifier():
             return node.name
         case Neg():
-            return "-(" + compile_math(node.value) + ")"
+            return "-(" + compile_math(node.value, uid) + ")"
+        case UnitConstant():
+            if node.param:
+                return f"args[{node.param}]"
+            return f"und_{uid}_{node.name.name}"
         case _:
             raise NotImplementedError(f"Unit node cannot be compiled: {type(node)}")
 

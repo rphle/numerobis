@@ -2,12 +2,14 @@
 
 import re
 from dataclasses import replace
-from typing import Literal, Optional
+from typing import TYPE_CHECKING, Literal, Optional
 
+from numerobis.analysis.utils import is_fixed
 from numerobis.nodes.unit import VarDim
+from numerobis.typechecker.types import FunctionType, NumberType, T
 
 from ..classes import Header
-from ..environment import Namespaces
+from ..environment import Env, Namespaces
 from ..exceptions.exceptions import Exceptions, ModuleMeta
 from ..nodes.ast import DimensionDefinition, UnitDefinition
 from ..nodes.unit import (
@@ -20,11 +22,17 @@ from ..nodes.unit import (
     Product,
     Scalar,
     Sum,
+    UnitCall,
+    UnitConstant,
     UnitNode,
 )
 from ..typechecker.operators import typetable
 from ..utils import camel2snake_pattern
 from .simplifier import Simplifier
+
+if TYPE_CHECKING:
+    from ..typechecker.typechecker import Typechecker
+
 
 modes = Literal["dimension", "unit"]
 
@@ -33,6 +41,7 @@ class Dimchecker:
     def __init__(
         self,
         module: ModuleMeta,
+        typechecker: "Typechecker",
         namespaces: Namespaces,
         header: Optional[Header] = None,
     ):
@@ -41,8 +50,11 @@ class Dimchecker:
         self.simplifier = Simplifier(module=module)
         self.simplify = self.simplifier.simplify
 
-        self.env = namespaces
-        self.header = header
+        self.namespaces = namespaces
+        self.header = header or Header()
+        self.typechecker = typechecker
+
+        self.env: Env
 
     def start(self):
         if self.header is None:
@@ -54,8 +66,8 @@ class Dimchecker:
 
     def _process_dimension(self, node: DimensionDefinition):
         if (
-            node.name.name in self.env.dimensionized
-            or node.name.name in self.env.dimensions
+            node.name.name in self.namespaces.dimensionized
+            or node.name.name in self.namespaces.dimensions
         ):
             self.errors.throw(603, name=node.name.name, loc=node.name.loc)
 
@@ -65,20 +77,22 @@ class Dimchecker:
             dimension = Expression(value=node.name)
 
         dimension = self.simplify(dimension)
-        self.env.dimensions[node.name.name] = dimension  # type: ignore
+        self.namespaces.dimensions[node.name.name] = dimension  # type: ignore
 
-    def _process_unit(self, node: UnitDefinition):
+    def _process_unit(self, node: UnitDefinition, params: dict[str, T] = {}):
         if (
-            node.name.name in self.env.dimensionized
-            or node.name.name in self.env.dimensions
+            node.name.name in self.namespaces.dimensionized
+            or node.name.name in self.namespaces.dimensions
         ):
             self.errors.throw(603, name=node.name.name, loc=node.name.loc)
 
         dimension = AnyDim()
         if node.dimension:
             if node.dimension.name != "1":
-                if node.dimension.name not in self.env.dimensions:
-                    suggestion = self.env.suggest("dimensions", node.dimension.name)
+                if node.dimension.name not in self.namespaces.dimensions:
+                    suggestion = self.namespaces.suggest(
+                        "dimensions", node.dimension.name
+                    )
                     self.errors.throw(
                         602,
                         kind="dimension",
@@ -87,13 +101,19 @@ class Dimchecker:
                         loc=node.dimension.loc,
                     )
 
-                dimension = self.env.dimensions[node.dimension.name]
+                dimension = self.namespaces.dimensions[node.dimension.name]
             else:
                 dimension = One()
 
         value = None
         if node.value:
+            old_env = self.env
+            self.env = self.env.copy()
+            for p, t in params.items():
+                self.env.set("names")(p, t)
             value = self.dimensionize(node.value, mode="unit")
+            self.env = old_env
+
             value = self.simplify(value)
 
             if node.dimension and value != dimension:
@@ -114,16 +134,16 @@ class Dimchecker:
             titled = node.name.name.title()
             dimension = Expression(value=Identifier(name=titled, loc=node.name.loc))
             if (
-                titled in self.env.dimensionized
+                titled in self.namespaces.dimensionized
                 or titled == node.name.name
                 or not re.match(r"[a-zA-Z]", node.name.name[0])
             ):
                 self.errors.throw(705, name=node.name.name, loc=node.name.loc)
 
-            if titled not in self.env.dimensions:
-                self.env.dimensions[titled] = dimension
+            if titled not in self.namespaces.dimensions:
+                self.namespaces.dimensions[titled] = dimension
 
-        self.env.dimensionized[node.name.name] = dimension
+        self.namespaces.dimensionized[node.name.name] = dimension
 
     def dimensionize(self, node: UnitNode, mode: modes = "dimension") -> UnitNode:
         name = camel2snake_pattern.sub("_", type(node).__name__).lower() + "_"
@@ -136,6 +156,29 @@ class Dimchecker:
 
     def any_dim_(self, node: AnyDim, mode: modes = "dimension") -> AnyDim:
         return node
+
+    def unit_call_(self, node: UnitCall, mode: modes = "dimension") -> UnitCall:
+        assert isinstance(node.callee, UnitConstant)
+        name = node.callee.name.name
+        if name not in self.env.names:
+            self.errors.throw(601, name=name, loc=node.callee.name.loc)
+
+        signature = self.env.get("names")(name)
+        if not isinstance(signature, FunctionType):
+            self.errors.throw(506, type=signature, loc=node.loc)
+            raise
+        if not isinstance(signature.return_type, NumberType) or not is_fixed(
+            signature.return_type.dim
+        ):
+            self.errors.throw(548, type=signature.return_type, loc=node.loc)
+
+        call = node.edit(callee=node.callee.name)
+        link = hash(call)
+        # inject into link system
+        self.namespaces.nodes[link] = call  # type: ignore
+        self.typechecker.call_(call, env=self.env, link=link)
+
+        print(name)
 
     def expression_(self, node: Expression, mode: modes = "dimension") -> Expression:
         if node.value is None or isinstance(node.value, (One, AnyDim)):
@@ -151,8 +194,8 @@ class Dimchecker:
 
         _mode = "dimensions" if mode == "dimension" else "dimensionized"
 
-        if node.name not in self.env(_mode):
-            suggestion = self.env.suggest(_mode, node.name)
+        if node.name not in self.namespaces(_mode):
+            suggestion = self.namespaces.suggest(_mode, node.name)
 
             self.errors.throw(
                 602,
@@ -162,7 +205,7 @@ class Dimchecker:
                 loc=node.loc,
             )
 
-        resolved = self.env(_mode)[node.name]
+        resolved = self.namespaces(_mode)[node.name]
         resolved = resolved.value if isinstance(resolved, Expression) else resolved
         return replace(resolved, loc=node.loc)
 
@@ -212,6 +255,22 @@ class Dimchecker:
             else:
                 values.append(value)
         return Sum(values=values)
+
+    def unit_constant_(self, node: UnitConstant, mode: modes = "dimension") -> UnitNode:
+        name = node.name.name
+        if name not in self.env.names:
+            self.errors.throw(601, name=node.name, loc=node.name.loc)
+
+        typ = self.env.names[name]
+        if not isinstance(typ, NumberType) or not is_fixed(typ.dim):
+            self.errors.throw(549, type=typ, loc=node.loc)
+
+        object.__setattr__(
+            node,
+            "param",
+            list(self.params.keys()).index(name) if name in self.params else None,
+        )
+        return node
 
     def var_dim_(self, node: VarDim, mode: modes = "dimension") -> VarDim:
         return node

@@ -9,7 +9,6 @@ from ..classes import ModuleMeta
 from ..exceptions.exceptions import Exceptions
 from ..nodes.unit import (
     AnyDim,
-    Call,
     Expression,
     Neg,
     One,
@@ -17,6 +16,7 @@ from ..nodes.unit import (
     Product,
     Scalar,
     Sum,
+    UnitCall,
     UnitNode,
 )
 from ..utils import camel2snake_pattern
@@ -114,10 +114,16 @@ class Simplifier:
 
         return Decimal(1), node
 
-    def call_(self, node: Call):
+    def call_(self, node: UnitCall):
         """Simplify call arguments."""
         return replace(
-            node, args=[replace(a, value=self._simplify(a.value)) for a in node.args]
+            node,
+            args=[
+                replace(a, value=self._simplify(a.value))
+                if isinstance(a.value, UnitNode)
+                else a
+                for a in node.args
+            ],
         )
 
     def expression_(self, node: Expression):

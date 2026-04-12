@@ -4,14 +4,14 @@ from decimal import Decimal
 
 from ..nodes.core import Identifier
 from ..nodes.unit import (
-    Call,
-    CallArg,
     Expression,
     Neg,
     Power,
     Product,
     Scalar,
     Sum,
+    UnitCall,
+    UnitCallArg,
     UnitNode,
 )
 from .utils import _to_x, contains_var
@@ -57,9 +57,9 @@ def invert_(node: UnitNode, target: UnitNode) -> UnitNode:
 
             # y = a ^ _  => _ = log(a, target)
             else:
-                log_call = Call(
+                log_call = UnitCall(
                     callee=Identifier("logn"),
-                    args=[CallArg(None, base), CallArg(None, target)],
+                    args=[UnitCallArg(None, base), UnitCallArg(None, target)],
                 )
                 return invert_(exponent, log_call)
 

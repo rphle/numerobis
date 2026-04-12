@@ -789,7 +789,7 @@ class Compiler:
                 raise NotImplementedError(f"Unit node cannot be compiled: {type(node)}")
 
     def unit_def(self, node: Expression, name: str, target) -> None:
-        target[unit_uid(name, self.uid)] = compile_math(node.value)
+        target[unit_uid(name, self.uid)] = compile_math(node.value, self.uid)
 
     def variable_(self, node: Variable, link: int) -> tstr:
         out = tstr("$name = $value")
@@ -862,7 +862,7 @@ class Compiler:
 
         for n, b in self.preprocessor.bases.items():
             self.units.bases[unit_uid(n, self.uid)] = (
-                compile_math(b) if not isinstance(b.value, One) else ""
+                compile_math(b, self.uid) if not isinstance(b.value, One) else ""
             )
 
         for n in self.preprocessor.logarithmic:

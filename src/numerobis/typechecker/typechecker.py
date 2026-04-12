@@ -5,13 +5,13 @@ Performs type inference, dimensional consistency checking, and program validatio
 
 import uuid
 from decimal import Decimal
-from typing import TypeVar
+from typing import Optional, TypeVar
 
 import rich
 
 from ..analysis.dimchecker import Dimchecker
 from ..analysis.simplifier import Simplifier
-from ..classes import ModuleMeta
+from ..classes import Header, ModuleMeta
 from ..environment import Env, Namespaces
 from ..exceptions.exceptions import Exceptions, Mismatch
 from ..nodes.ast import (
@@ -94,20 +94,26 @@ class Typechecker:
         ast: list[AstNode],
         module: ModuleMeta,
         namespaces: Namespaces = Namespaces(),
+        header: Optional[Header] = None,
     ):
         self.ast = ast
         self.module = module
         self.errors = Exceptions(module=module)
         self.namespaces = namespaces
+        self.header: Header = header or Header()
         self.console = rich.console.Console(highlight=False)
 
-        self.dimchecker = Dimchecker(module=module, namespaces=namespaces)
+        self.dimchecker = Dimchecker(
+            module=self.module,
+            typechecker=self,
+            namespaces=self.namespaces,
+            header=self.header,
+        )
         self.simplifier = Simplifier(module=module)
         self.simplify = self.simplifier.simplify
 
         self.unresolved_funcs: list[FunctionType] = []
         self._globals: list[list[str]] = [[]]  # queue of globals of nested functions
-        self._static: bool = False  # wether inside a static function
 
     def attribute_(self, node: Attribute, env: Env) -> T:
         owner = self.check(node.owner, env=env)
@@ -597,7 +603,7 @@ class Typechecker:
             else None
         )
 
-        if name and name in env.names:
+        if name and name in env.names and not node.constant:
             self.errors.throw(604, name=name, loc=node.loc)
         if name and "." in name:
             owner = name.split(".")[0]  # type: ignore
@@ -617,9 +623,6 @@ class Typechecker:
                 params.append(self.type_(p.type, env=env))
             else:
                 params.append(AnyType(unresolved=link))
-
-            if node.static and not isinstance(params[-1].dim, One):
-                self.errors.throw(549, dim=params[-1].dim, loc=param.loc)
 
             if param.default is not None:
                 default = self.check(param.default, env=env)
@@ -652,7 +655,13 @@ class Typechecker:
 
         arity = (sum(1 for p in node.params if p.default is None), len(params))
         param_names = [self.unlink(param.name).name for param in node.params]
-        param_addrs = [f"{param}-{uuid.uuid4()}" for param in param_names]
+
+        if node.constant:
+            # use existing param_addrs from the constant signature
+            param_addrs = self.env.get("names")(name).param_addrs  # type: ignore
+        else:
+            param_addrs = [f"{param}-{uuid.uuid4()}" for param in param_names]
+
         self.namespaces.nodes[link].meta["addrs"] = {
             name: addr for name, addr in zip(param_names, param_addrs)
         }
@@ -689,9 +698,6 @@ class Typechecker:
         new_env.meta["#function"] = signature
         new_env.meta["#loop"] = False
 
-        if node.static:
-            self._static = True
-
         try:
             body = self.check(node.body, env=new_env)
         except UnresolvedAnyParam as e:
@@ -703,9 +709,6 @@ class Typechecker:
                     env.set("names")(name, signature)
                 return signature
             raise e
-
-        if node.static:
-            self._static = False
 
         if not (mismatch := nomismatch(return_type, body, unify=True)):
             assert node.body is not None, node.body
@@ -720,12 +723,6 @@ class Typechecker:
         signature = signature.edit(
             return_type=unify(return_type, body), unresolved=None
         )
-
-        if node.static and (
-            not isinstance(signature.return_type, NumberType)
-            or not isinstance(signature.return_type.dim, One)
-        ):
-            self.errors.throw(547, type=signature.return_type, loc=node.loc)
 
         if name is not None:
             address = env.set("names")(name, signature)
@@ -882,8 +879,6 @@ class Typechecker:
     def number_(self, node: Integer | Num, env: Env) -> NumberType:
         dimension = self.simplify(self.dimchecker.dimensionize(node.unit, mode="unit"))
         assert isinstance(dimension, (Expression, One, AnyDim)), repr(node)
-        if self._static and not isinstance(dimension, One):
-            self.errors.throw(548, loc=node.loc)
         return NumberType(
             typ=type(node).__name__.removesuffix("eger"),  # type: ignore ; 'Integer' to 'Int'
             dim=dimension,
@@ -1143,8 +1138,6 @@ class Typechecker:
                         raise
 
             case Expression():
-                if self._static:
-                    self.errors.throw(548, loc=node.loc)
                 dim = self.simplify(self.dimchecker.dimensionize(node))
                 return NumberType(dim=dim)
 
@@ -1297,7 +1290,8 @@ class Typechecker:
     def start(self):
         self.program, nodes = linking.link(self.ast)
         self.namespaces.nodes.update(nodes)
-        env = Env(
+
+        self.env = Env(
             glob=self.namespaces,
             level=0,
             **{
@@ -1305,8 +1299,11 @@ class Typechecker:
                 for n in ("names", "dimensionized", "dimensions")
             },
         )
+
+        self.dimcheck()
+
         for link in self.program:
-            self.check(link, env=env)
+            self.check(link, env=self.env)
 
         for func in self.unresolved_funcs:
             self.call_(
@@ -1314,10 +1311,67 @@ class Typechecker:
                     callee=func,  # type: ignore
                     args=None,  # type: ignore
                 ),
-                env=env,
+                env=self.env,
                 link=-1,
                 dummy=True,
             )
+
+    def dimcheck(self):
+        self.dimchecker.env = self.env
+
+        # First parse dimensions
+        for node in self.header.dimensions:
+            self.dimchecker._process_dimension(node)
+
+        # Then check signatures of constants
+        for node in self.header.constants:
+            match node:
+                case Function():
+                    assert node.name is not None
+
+                    name = self.unlink(node.name)
+
+                    if name.name in self.env.names:
+                        self.errors.throw(604, name=name, loc=node.loc)
+
+                    params = []
+                    node = self.unlink(node, attrs=["params"])
+                    for param in node.params:
+                        p = self.unlink(param)
+                        assert p.type is not None
+                        params.append(self.type_(p.type, env=self.env))
+
+                    assert node.return_type is not None
+                    return_type = self.type_(node.return_type, env=self.env)
+                    arity = (
+                        sum(1 for p in node.params if p.default is None),
+                        len(params),
+                    )
+                    param_names = [
+                        self.unlink(param.name).name for param in node.params
+                    ]
+                    param_addrs = [f"{param}-{uuid.uuid4()}" for param in param_names]
+
+                    signature = FunctionType(
+                        _name=name.name,
+                        _loc=node.loc.span("start", "assign"),
+                        params=params,
+                        param_names=param_names,
+                        param_addrs=param_addrs,
+                        return_type=return_type,
+                        arity=arity,
+                    )
+
+                    self.env.set("names")(name.name, signature)
+                case _:
+                    raise NotImplementedError(f"Constant {node} not implemented!")
+
+        # Then check units which may depend on constants
+        for node in self.header.units:
+            params = {
+                p.name.name: self.type_(p.type, env=self.env) for p in node.params
+            }
+            self.dimchecker._process_unit(node, params=params)
 
     def unlink(self, node: SameType, attrs=None) -> SameType:
         return linking.unlink(self.namespaces.nodes, node, attrs)

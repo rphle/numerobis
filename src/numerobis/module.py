@@ -6,7 +6,6 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Optional
 
-from .analysis.dimchecker import Dimchecker
 from .classes import CompiledModule, Header, ModuleMeta
 from .compiler import cmake
 from .compiler.compiler import Compiler
@@ -148,16 +147,10 @@ class Module:
         if self.builtins:
             self.imports.append("stdlib/builtins.nbis")
 
-    def dimcheck(self):
-        dc = Dimchecker(
-            module=self.meta, namespaces=self.namespaces, header=self.header
-        )
-        dc.start()
-        self.namespaces = dc.env
-
     def typecheck(self):
-        self.dimcheck()
-        ts = Typechecker(self.ast, module=self.meta, namespaces=self.namespaces)
+        ts = Typechecker(
+            self.ast, module=self.meta, namespaces=self.namespaces, header=self.header
+        )
         ts.start()
         self.program = ts.program
 

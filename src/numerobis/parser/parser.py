@@ -92,7 +92,7 @@ class Parser(ParserTemplate):
             "FROM",
             "UNIT",
             "DIMENSION",
-            "STATIC",
+            "CONST",
         ]:
             self.imports_allowed = False
 
@@ -133,7 +133,7 @@ class Parser(ParserTemplate):
             return self.from_import_stmt()
         elif (
             first.type == "ID" and self._peek(2).type == "BANG"
-        ) or first.type == "STATIC":
+        ) or first.type == "CONST":
             """Function declaration"""
             return self.function()
         elif first.type == "EXTERN":
@@ -312,7 +312,7 @@ class Parser(ParserTemplate):
                 if self._peek().type in {"ASSIGN", "COMMA"}:
                     self.errors.throw(6, loc=self._peek().loc)
                 self._consume("COLON")
-                p["type"] = self.unit(standalone=True)
+                p["type"] = self.type()
 
                 if self._peek().type == "ASSIGN":
                     self._consume("ASSIGN")
@@ -322,7 +322,7 @@ class Parser(ParserTemplate):
                     Param(
                         name=p["name"],
                         default=p.get("default"),
-                        type=None,
+                        type=p["type"],
                         loc=nodeloc(p["name"], p.get("default", p["name"])),
                     )
                 )
@@ -360,13 +360,13 @@ class Parser(ParserTemplate):
     def function(
         self, anonymous=False, body=True, name: Optional[Identifier] = None
     ) -> AstNode:
-        static = None
-        if self._peek().type == "STATIC":
-            static = self._consume("STATIC")
+        constant = None
+        if self._peek().type == "CONST":
+            constant = self._consume("CONST")
             if not self.imports_allowed:
-                self.errors.throw(20, statement="Static functions", loc=static.loc)
+                self.errors.throw(20, statement="Constant functions", loc=constant.loc)
 
-        if static or (not anonymous or not body) and not name:
+        if constant or (not anonymous or not body) and not name:
             _name = self._consume("ID")
             self._check_forbidden(_name, "function")
             name = self._make_id(_name)
@@ -401,7 +401,7 @@ class Parser(ParserTemplate):
             params.append(
                 Param(
                     name=p["name"],
-                    type=p.get("type"),
+                    type=p["type"],
                     default=p.get("default"),  # type: ignore
                     loc=nodeloc(p["name"], p.get("default", p.get("type", p["name"]))),
                 )
@@ -417,12 +417,14 @@ class Parser(ParserTemplate):
             return_type = self.type(True)
             if body:
                 _assign = self._consume("ASSIGN")
+        elif constant:
+            self.errors.throw(547, loc=_assign.loc)
 
-        body = self.block(function=not static) if body else None
+        body = self.block(function=not constant) if body else None
 
         loc = dataclasses.replace(
             nodeloc(
-                static if static else (name if name is not None else _bang),
+                constant if constant else (name if name is not None else _bang),
                 body if body else (return_type if return_type else _rparen),
             ),
             checkpoints={"assign": _assign.loc},
@@ -432,11 +434,12 @@ class Parser(ParserTemplate):
             params=params,
             return_type=return_type,
             body=body,
-            static=bool(static),
+            constant=bool(constant),
             loc=loc,
         )
-        if static:
-            self.header.static_functions.append(node)
+        if constant:
+            self.header.constants.append(node)
+            self.imports_allowed = True
         return node
 
     def conditional(self, expression: bool = False) -> AstNode:
@@ -664,7 +667,7 @@ class Parser(ParserTemplate):
 
         return self.postfix()
 
-    def call(self, node: AstNode) -> AstNode:
+    def call(self, node: AstNode) -> Call | StructInit:
         self._consume("LPAREN")
         args = []
         while self._peek().type != "RPAREN":
@@ -816,7 +819,9 @@ class Parser(ParserTemplate):
             addition=addition,
             scalars=scalars,
         )
-        parser = UnitParser(tokens=self.tokens, module=self.module, config=config)
+        parser = UnitParser(
+            tokens=self.tokens, module=self.module, config=config, parser=self
+        )
         unit = parser.start()
         self.tokens = parser.tokens
         return unit if unit else One()

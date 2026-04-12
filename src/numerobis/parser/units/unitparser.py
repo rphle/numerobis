@@ -2,22 +2,27 @@
 
 from dataclasses import dataclass
 from decimal import Decimal
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 from ...classes import ModuleMeta
 from ...nodes.ast import Identifier
-from ...nodes.core import Token
+from ...nodes.core import Token, nodeloc
 from ...nodes.unit import (
-    Constant,
     Expression,
     Neg,
     Power,
     Product,
     Scalar,
     Sum,
+    UnitCall,
+    UnitCallArg,
+    UnitConstant,
     UnitNode,
 )
 from ..template import ParserTemplate
+
+if TYPE_CHECKING:
+    from ..parser import Parser
 
 
 @dataclass()
@@ -32,10 +37,15 @@ class UnitParserConfig:
 
 class UnitParser(ParserTemplate):
     def __init__(
-        self, tokens: list[Token], module: ModuleMeta, config: UnitParserConfig
+        self,
+        tokens: list[Token],
+        module: ModuleMeta,
+        config: UnitParserConfig,
+        parser: "Parser",
     ):
         super().__init__(tokens=tokens, module=module)
         self.config = config
+        self.parser = parser
 
     def peek(self, n: int = 1, ignore_whitespace: bool | None = None):
         return self._peek(
@@ -48,7 +58,7 @@ class UnitParser(ParserTemplate):
     def start(self) -> Optional[Expression]:
         self._clear()
 
-        if self._peek().type not in {"ID", "NUMBER", "LPAREN"}:
+        if self._peek().type not in {"ID", "NUMBER", "LPAREN", "AT"}:
             return None
 
         parenthesized = False
@@ -138,7 +148,7 @@ class UnitParser(ParserTemplate):
         return self.atom()
 
     def atom(self) -> UnitNode:
-        tok = self._consume("ID", "NUMBER", "LPAREN")
+        tok = self._consume("ID", "NUMBER", "LPAREN", "AT")
         match tok.type:
             case "NUMBER":
                 num = self._parse_number(tok)
@@ -153,17 +163,30 @@ class UnitParser(ParserTemplate):
                 return node
             case "AT":
                 """Reference constant/parameter"""
-                if not self.config.constants:
-                    self.errors.unexpectedToken(
-                        tok, help="constants cannot be referenced here"
-                    )
-                if self._peek(ignore_whitespace=False).type != "ID":
-                    self.errors.throw(9, loc=tok.loc)
-                node = self._consume("ID")
-                node.value = "@" + node.value
-                return Constant(name=tok.value, loc=tok.loc)
+                return self._constant(tok)
             case _:
                 raise SyntaxError(f"Unexpected token {tok}")
+
+    def _constant(self, tok: Token) -> UnitConstant | UnitCall:
+        if not self.config.constants:
+            self.errors.unexpectedToken(tok, help="constants cannot be referenced here")
+        if self._peek(ignore_whitespace=False).type != "ID":
+            self.errors.throw(9, loc=tok.loc)
+
+        name = self._make_id(self._consume("ID"))
+        name = name.edit(loc=nodeloc(tok, name))
+        constant = UnitConstant(name=name, loc=tok.loc)
+
+        if self.peek().type == "LPAREN":  # Call
+            call = self.parser.call(constant)  # type: ignore
+            args = []
+            for arg in call.args:
+                arg = arg.__dict__
+                del arg["meta"]
+                args.append(UnitCallArg(**arg))
+            return UnitCall(callee=constant, args=args, loc=call.loc)
+
+        return constant
 
     def _parse_number(self, token: Token) -> Scalar:
         split = token.value.lower().split("e")
@@ -173,7 +196,10 @@ class UnitParser(ParserTemplate):
 
         if self.config.unitful_numbers:
             _unitparser = UnitParser(
-                tokens=self.tokens, module=self.module, config=UnitParserConfig()
+                tokens=self.tokens,
+                module=self.module,
+                config=UnitParserConfig(),
+                parser=self.parser,
             )
             unit = _unitparser.start()
             self.tokens = _unitparser.tokens
@@ -187,7 +213,10 @@ class UnitParser(ParserTemplate):
 
         if self.config.unitful_numbers:
             _unitparser = UnitParser(
-                tokens=self.tokens, module=self.module, config=UnitParserConfig()
+                tokens=self.tokens,
+                module=self.module,
+                config=UnitParserConfig(),
+                parser=self.parser,
             )
             unit = _unitparser.start()
             self.tokens = _unitparser.tokens

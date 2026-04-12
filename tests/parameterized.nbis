@@ -1,0 +1,107 @@
+from si import @kg, @Mass
+from math import pi
+
+# ---
+const two!(n: Int): Num = 2^n
+
+# E547
+const f!() = 42
+
+# ---
+const f!(): Num = pi
+
+# E027
+const f!(): Num = {
+    global pi
+    pi = 3
+    return pi
+}
+
+# ---
+const two!(n: Int): Num = 2^n
+echo(two(4))
+
+# ---
+const len!(s: Str): Int = s.len()
+unit weird = @len("hello")
+
+# E601
+unit test = @test
+
+# E601
+unit test = @test()
+
+# E601
+const f!(x: Int): Int = x
+unit test = @f(x)
+
+# E548
+const f!(): Any = x
+unit test = @f()
+
+# E604
+const f!() = 1
+const f!() = 1
+
+# E604
+const f!() = 1
+f!() = 1
+
+# 602
+unit mul[n: blabla] = @n
+
+# ---
+unit mul[n: Int] = @n
+
+# E549
+unit mul[n: Str] = @n
+
+# E549
+unit mul[n: Num?] = @n
+
+# ---
+unit mul[n: Num[Mass]] = @n
+
+# E549
+const id!(x: ?T): ?T = x
+unit mul[n: Int] = @id
+
+# E548
+const id!(x: ?T): ?T = x
+unit mul[n: Int] = @id(n)
+
+# E549
+const id!(x: Int[?D]): Int[?D] = x
+unit mul[n: Int] = @id
+
+# E548
+const id!(x: Int[?D]): Int[?D] = x
+unit mul[n: Int] = @id(@x)
+
+# E548
+const id!(x: Num?): Num? = x
+unit mul[n: Int] = @id(@x)
+
+# E548
+const id!(x: ?T): ?T = x
+unit mul[n: Int] = @id(@n)
+
+# E548
+const hey!(): Str = "hey"
+unit mul[n: Int] = @hey()
+
+
+# ---
+const dollar!(year: Int): Num = {
+    history = [
+        1.9176, 1.8522, 1.7912, 1.7340, 1.6804, 1.6300, 1.5826, 1.5379, 1.4957,
+        1.4558, 1.4179, 1.3818, 1.3474, 1.3145, 1.2829, 1.2527, 1.2236, 1.1957,
+        1.1687, 1.1427, 1.1175, 1.0931, 1.0694, 1.0464, 1.0240, 1.0021, 1.0000
+    ]
+    return history[year - 2000]
+}
+
+dimension Money
+unit dollar[year: Int] = @dollar(year)
+
+5 dollar[2026]

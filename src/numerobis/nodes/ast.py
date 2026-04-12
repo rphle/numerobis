@@ -149,7 +149,7 @@ class DimensionDefinition(AstNode):
 @dataclass(kw_only=True, frozen=True)
 class Param(AstNode):
     name: Identifier
-    type: Optional["Type | FunctionAnnotation | Expression | One"]
+    type: "Type | FunctionAnnotation | Expression | One"
     default: AstNode | None
 
 
@@ -159,7 +159,7 @@ class Function(AstNode):
     params: list[Param]
     return_type: Optional["Type | FunctionAnnotation | Expression | One"]
     body: Optional[AstNode]
-    static: bool = False
+    constant: bool = False
 
 
 @dataclass(kw_only=True, frozen=True)

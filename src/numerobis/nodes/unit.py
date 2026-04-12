@@ -8,9 +8,9 @@ from collections import Counter
 from dataclasses import dataclass, field
 from decimal import Decimal
 from math import prod
-from typing import Optional
+from typing import Any, Optional
 
-from .core import Identifier, UnitNode, VarEnv
+from .core import AstNode, Identifier, UnitNode, VarEnv
 
 
 @dataclass(frozen=True)
@@ -220,14 +220,15 @@ class Scalar(UnitNode):
 
 
 @dataclass(frozen=True)
-class Constant(UnitNode):
-    name: str
+class UnitConstant(UnitNode):
+    name: Identifier
+    param: Optional[int] = None
 
     def __str__(self):
         return f"@{self.name}"
 
     def __eq__(self, other):
-        if not isinstance(other, Constant):
+        if not isinstance(other, UnitConstant):
             return False
         return self.name == other.name
 
@@ -289,18 +290,19 @@ class Power(UnitNode):
 
 
 @dataclass(frozen=True)
-class CallArg(UnitNode):
+class UnitCallArg(UnitNode):
     name: Identifier | None
-    value: UnitNode
+    value: UnitNode | AstNode
 
     def __str__(self):
         return f"{self.name.name + '=' if self.name else ''}{self.value}"
 
 
 @dataclass(frozen=True)
-class Call(UnitNode):
-    callee: UnitNode
-    args: list[CallArg]
+class UnitCall(UnitNode):
+    callee: UnitConstant | Identifier
+    args: list[UnitCallArg]
+    meta: dict[str, Any] = field(default_factory=dict)
 
     def __str__(self):
         return f"{self.callee}({', '.join(str(a) for a in self.args)})"
