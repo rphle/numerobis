@@ -11,6 +11,8 @@
 #include "state.h"
 
 #include <SDL2/SDL.h>
+#include <SDL2/SDL_thread.h>
+#include <SDL2/SDL_timer.h>
 #include <SDL2/SDL_ttf.h>
 #include <gc.h>
 #include <stdbool.h>
@@ -20,6 +22,11 @@
 static inline int _tx_x(double x) { return (int)((x + _tx) * _scale); }
 static inline int _tx_y(double y) { return (int)((y + _ty) * _scale); }
 static inline int _tx_dim(double dim) { return (int)(dim * _scale); }
+volatile Uint8 *audio_pos; // global pointer to the audio buffer to be played
+volatile Uint32 audio_len; // remaining length of the sample we have to play
+static Uint32 wav_length; // length of our sample
+static Uint8 *wav_buffer; // buffer containing our audio file
+static SDL_AudioSpec wav_spec; // the specs of our piece of music
 
 static inline bool _arg_filled(Value v) {
   return v.type != VALUE_EMPTY ? _bool(v) : true;
@@ -380,6 +387,58 @@ static Value numerobis_builtin_set_origin(Value *args) {
   return NONE;
 }
 
+void audio_callback(void *userdata, Uint8 *stream, int len) {
+	if ( audio_len == 0 ) {
+    return;
+  }
+	
+	len = ( len > audio_len ? audio_len : len );
+	SDL_memcpy (stream, audio_pos, len); // simply copy from one buffer into the other
+	// SDL_MixAudio(stream, audio_pos, len, SDL_MIX_MAXVOLUME); // mix from one buffer into another
+	
+	audio_pos += len;
+	audio_len -= len;
+}
+
+int audio_wait_thread(void *arg) {
+	SDL_LoadWAV(arg, &wav_spec, &wav_buffer, &wav_length);
+
+	wav_spec.callback = audio_callback;
+	wav_spec.userdata = NULL;
+	// set our global static variables
+	audio_pos = wav_buffer; // copy sound buffer
+	audio_len = wav_length; // copy file length
+	
+	/* Open the audio device */
+	if ( SDL_OpenAudio(&wav_spec, NULL) < 0 ){
+	  fprintf(stderr, "Couldn't open audio: %s\n", SDL_GetError());
+	  exit(-1);
+	}
+
+	SDL_PauseAudio(0);
+  while (audio_len > 0) {
+    SDL_Delay(25);
+  }
+
+	// shut everything down
+	SDL_CloseAudio();
+	SDL_FreeWAV(wav_buffer);
+
+  return 1;
+}
+
+static Value numerobis_builtin_play_sound(Value *args) {
+  sds path = _str(args[1]);
+  audio_len = 0;
+  SDL_Delay(60);
+	
+	/* Start playing */
+  SDL_Thread *thread = SDL_CreateThread(audio_wait_thread, "audio_wait", path);
+  SDL_DetachThread(thread);
+
+  return NONE;
+}
+
 __attribute__((constructor)) void numerobis_graphics_register_builtins(void) {
   u_extern_register("init", numerobis_builtin_graphics_init);
   u_extern_register("set__bg", numerobis_builtin_set_bg);
@@ -404,6 +463,7 @@ __attribute__((constructor)) void numerobis_graphics_register_builtins(void) {
   u_extern_register("key__pressed", numerobis_builtin_key_pressed);
   u_extern_register("set__scale", numerobis_builtin_set_scale);
   u_extern_register("set__origin", numerobis_builtin_set_origin);
+  u_extern_register("play__sound", numerobis_builtin_play_sound);
 }
 
 __attribute__((destructor)) void numerobis_graphics_cleanup(void) {
