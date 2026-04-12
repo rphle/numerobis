@@ -6,6 +6,7 @@ build
 wheels
 dist
 output
+test-output
 *.o
 *.so
 *.a

@@ -7,6 +7,7 @@ reporting pass/fail status and performance metrics.
 import argparse
 import os
 import re
+import shutil
 import sys
 import time
 from collections import defaultdict
@@ -25,7 +26,7 @@ from tqdm import tqdm
 from numerobis.module import Module
 from runtime.build_lib import build_lib
 
-os.makedirs("output", exist_ok=True)
+os.makedirs("test-output", exist_ok=True)
 console = Console()
 
 
@@ -64,7 +65,7 @@ def run_single_test(
     output = StringIO()
     times = {}
     thrown_error = None
-    output_bin = f"output/bin_{abs(hash((str(file_path), line)))}"
+    output_bin = f"test-output/bin_{abs(hash((str(file_path), line)))}"
 
     try:
         with redirect_stdout(output), redirect_stderr(output):
@@ -346,6 +347,7 @@ def main():
             highlight=False,
         )
 
+    shutil.rmtree("test-output")
     sys.exit(0 if passed == t else 1)
 
 
