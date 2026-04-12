@@ -2,6 +2,7 @@ extern init!(width: Int?, height: Int?): None;
 extern set_bg!(color: Str): None;
 extern set_title!(title: Str): None;
 extern set_font!(name: Str): None;
+extern play_sound!(path: Str): None;
 
 extern rect!(x: Num?, y: Num?, w: Num?, h: Num?, color: Str = "#000000", filled: Bool = true): None;
 extern rounded_rect!(x: Num?, y: Num?, w: Num?, h: Num?, radius: Num?, color: Str = "#000000", filled: Bool = true): None;
