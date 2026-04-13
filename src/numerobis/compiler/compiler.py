@@ -479,6 +479,7 @@ class Compiler:
                 self.env.nodes, node, link=link, defined_addrs=defined_addrs
             )
         ]
+        free_vars = list(set(free_vars))
         mangled_globals = [
             self._imported_names.get(var, f"und_{self.uid}_") + mangle(var)
             for var in globals
