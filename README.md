@@ -43,7 +43,10 @@ After installation, the `nbis` CLI entry point is available.
 sudo apt install -y \
   cmake \
   pkg-config \
-  build-essential
+  build-essential \
+  automake \
+  autoconf \
+  libtool
 ```
 
 These packages are typically pre-installed on most UNIX-based systems.
