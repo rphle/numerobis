@@ -19,13 +19,13 @@
 #include <stdio.h>
 #include <string.h>
 
-static inline int _tx_x(double x) { return (int)((x + _tx) * _scale); }
-static inline int _tx_y(double y) { return (int)((y + _ty) * _scale); }
+static inline int _tx_x(double x) { return (int)((x * _scale)) + _tx; }
+static inline int _tx_y(double y) { return (int)((y * _scale)) + _ty; }
 static inline int _tx_dim(double dim) { return (int)(dim * _scale); }
 volatile Uint8 *audio_pos; // global pointer to the audio buffer to be played
 volatile Uint32 audio_len; // remaining length of the sample we have to play
-static Uint32 wav_length; // length of our sample
-static Uint8 *wav_buffer; // buffer containing our audio file
+static Uint32 wav_length;  // length of our sample
+static Uint8 *wav_buffer;  // buffer containing our audio file
 static SDL_AudioSpec wav_spec; // the specs of our piece of music
 
 static inline bool _arg_filled(Value v) {
