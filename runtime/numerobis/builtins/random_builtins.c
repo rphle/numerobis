@@ -3,6 +3,7 @@
 #include "../extern.h"
 #include "../types/number.h"
 #include "../units/units.h"
+#include "../utils/utils.h"
 #include "../values.h"
 
 #include <math.h>
@@ -42,15 +43,15 @@ static Value numerobis_builtin_random(Value *args) {
 }
 
 static Value numerobis_builtin_randint(Value *args) {
-  long lo = args[1].number.i64;
-  long hi = args[2].number.i64;
+  long lo = _i64(args[1]);
+  long hi = _i64(args[2]);
   long result = rand_int_range(lo, hi + 1);
   return int__init__(result, U_ONE);
 }
 
 static Value numerobis_builtin_uniform(Value *args) {
-  double lo = args[1].number.f64;
-  double hi = args[2].number.f64;
+  double lo = _f64(args[1]);
+  double hi = _f64(args[2]);
   double result = rand_double_range(lo, hi);
   return num__init__(result, U_ONE);
 }
@@ -60,9 +61,9 @@ static Value numerobis_builtin_gaussian(Value *args) {
   double stddev = 1.0;
 
   if (args[1].type != VALUE_EMPTY)
-    mean = args[1].number.f64;
+    mean = _f64(args[1]);
   if (args[2].type != VALUE_EMPTY)
-    stddev = args[2].number.f64;
+    stddev = _f64(args[2]);
 
   double u1 = rand_double();
   double u2 = rand_double();
