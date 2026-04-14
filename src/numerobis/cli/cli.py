@@ -121,6 +121,7 @@ def build(
         mod = Module(source)
         mod.load()
         mod.link(format=False)
+        t1 = time.time()
         mod.cmake(
             output,
             flags=flags,
@@ -141,7 +142,7 @@ def build(
         )
 
         console.print(
-            f"[green]Built {output}[/green]{graphics_suffix} [green]({time.time() - t0:.2f}s)[/green]",
+            f"[green]Built {output}[/green]{graphics_suffix} [green]({t1 - t0:.2f}s / {time.time() - t0:.2f}s)[/green]",
             highlight=False,
         )
 
