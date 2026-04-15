@@ -699,12 +699,12 @@ class Compiler:
         out = tstr("struct__init__$argc($id, $args)")
 
         name = self.unlink(node.name)
+        uid = self._imported_names.get(node.name, self.uid)
         out["name"] = str(name)
 
         struct = node.meta["#struct"]
-        id_ = f"STRUCT_{name}_{self.uid}_{node.meta['#struct']._fingerprint[:8]}"
+        id_ = f"STRUCT_{name}_{uid}_{node.meta['#struct']._fingerprint[:8]}"
         out["id"] = id_
-
         unlinked_args: list[CallArg] = [self.unlink(arg) for arg in node.args]  # type: ignore
         args = []
 
