@@ -44,4 +44,7 @@ static char *utf8_offset_to_pointer(const char *str, int offset) {
   return (char *)p;
 }
 
+bool is_absolute(const char *path);
+sds get_absolute_resource_path(const char *input_path);
+
 #endif

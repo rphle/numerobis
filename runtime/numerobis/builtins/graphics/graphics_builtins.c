@@ -425,6 +425,7 @@ int audio_wait_thread(void *arg) {
 
 static Value numerobis_builtin_play_sound(Value *args) {
   sds path = _str(args[1]);
+  path = get_absolute_resource_path(path);
   audio_len = 0;
   SDL_Delay(60);
 

@@ -1,5 +1,8 @@
 #include "../constants.h"
+#include "../libs/whereami.h"
 
+#include <gc.h>
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdlib.h>
 #include <sys/types.h>
@@ -53,4 +56,37 @@ size_t count_utf8_code_points(const char *s) {
     count += (*s++ & 0xC0) != 0x80;
   }
   return count;
+}
+
+
+bool is_absolute(const char *path) {
+    if (!path) return 0;
+#ifdef _WIN32
+    // Windows: starts with "C:\" or "\\"
+    return (strlen(path) > 2 && isalpha(path[0]) && path[1] == ':') || (path[0] == '\\' && path[1] == '\\');
+#else
+    // Unix/Linux/macOS: starts with "/"
+    return path[0] == '/';
+#endif
+}
+
+sds get_absolute_resource_path(const char *input_path) {
+    if (is_absolute(input_path)) {
+        return sdsnew(input_path);
+    }
+
+    // Get the directory of the binary
+    int dirlen;
+    int len = wai_getExecutablePath(NULL, 0, &dirlen);
+    char* buffer = GC_MALLOC(len + 1);
+    wai_getExecutablePath(buffer, len, &dirlen);
+
+    sds final_path = sdsnewlen(buffer, dirlen);
+    char last_char = final_path[sdslen(final_path) - 1];
+    if (last_char != '/' && last_char != '\\') {
+        final_path = sdscat(final_path, "/");
+    }
+
+    final_path = sdscat(final_path, input_path);
+    return final_path;
 }
