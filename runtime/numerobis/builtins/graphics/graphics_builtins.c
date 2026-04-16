@@ -27,6 +27,7 @@ volatile Uint32 audio_len; // remaining length of the sample we have to play
 static Uint32 wav_length;  // length of our sample
 static Uint8 *wav_buffer;  // buffer containing our audio file
 static SDL_AudioSpec wav_spec; // the specs of our piece of music
+static volatile int audio_device_open = 0;
 
 static inline bool _arg_filled(Value v) {
   return v.type != VALUE_EMPTY ? _bool(v) : true;
@@ -398,6 +399,10 @@ void audio_callback(void *userdata, Uint8 *stream, int len) {
 }
 
 int audio_wait_thread(void *arg) {
+  while (audio_device_open) {
+    SDL_Delay(5);
+  }
+
   SDL_LoadWAV(arg, &wav_spec, &wav_buffer, &wav_length);
 
   wav_spec.callback = audio_callback;
@@ -405,20 +410,21 @@ int audio_wait_thread(void *arg) {
   audio_pos = wav_buffer;
   audio_len = wav_length;
 
-  /* Open the audio device */
   if (SDL_OpenAudio(&wav_spec, NULL) < 0) {
     fprintf(stderr, "Couldn't open audio: %s\n", SDL_GetError());
-    exit(-1);
+    return -1;
   }
 
+  audio_device_open = 1;
   SDL_PauseAudio(0);
   while (audio_len > 0) {
     SDL_Delay(25);
   }
 
-  /* Shut everything down */
   SDL_CloseAudio();
-  SDL_FreeWAV(wav_buffer);
+  audio_device_open = 0;
+  SDL_free(wav_buffer);
+  wav_buffer = NULL;
 
   return 1;
 }
@@ -426,10 +432,9 @@ int audio_wait_thread(void *arg) {
 static Value numerobis_builtin_play_sound(Value *args) {
   sds path = _str(args[1]);
   path = get_absolute_resource_path(path);
-  audio_len = 0;
-  SDL_Delay(60);
 
-  /* Start playing */
+  audio_len = 0; // signal current thread to stop
+
   SDL_Thread *thread = SDL_CreateThread(audio_wait_thread, "audio_wait", path);
   SDL_DetachThread(thread);
 
