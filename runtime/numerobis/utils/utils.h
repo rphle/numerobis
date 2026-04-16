@@ -16,7 +16,7 @@ inline double _f64(Value value) {
     return (double)n.i64;
   return n.f64;
 }
-inline const char *_str(Value value) { return value.str; }
+inline const sds _str(Value value) { return value.str; }
 inline bool _bool(Value value) {
   return (value.type == VALUE_BOOL) ? (bool)value.boolean
                                     : (bool)value.number.i64;

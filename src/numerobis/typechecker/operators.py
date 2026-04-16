@@ -135,6 +135,7 @@ typetable: dict[str, MethodStruct] = {
     ),
     "Range": MethodStruct({**_eq}),
     "Function": MethodStruct({**_eq}),
+    "StructInstance": MethodStruct({**_eq}),
     "Dimension": MethodStruct({}),
     "None": MethodStruct({**_eq}),
 }
