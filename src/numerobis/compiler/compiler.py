@@ -801,7 +801,7 @@ class Compiler:
 
         name = self.unlink(node.name).name
 
-        if name not in self._defined_addrs:
+        if name not in self._defined_addrs and name not in self._globals[-1]:
             self._defined_addrs[name] = addr
             out = tstr("Value ") + out
 
