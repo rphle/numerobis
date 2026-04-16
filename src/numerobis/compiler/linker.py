@@ -110,6 +110,7 @@ class Linker:
                         $filenames
                     };
                     char **NUMEROBIS__ARGV__;
+                    int NUMEROBIS__ARGC__;
 
                     extern void u_init_module_registry(void);
 
@@ -119,6 +120,8 @@ class Linker:
 
                     int main(int argc, char **argv) {
                         NUMEROBIS__ARGV__ = argv;
+                        NUMEROBIS__ARGC__ = argc;
+
                         u_init_module_registry();
 
                         $output

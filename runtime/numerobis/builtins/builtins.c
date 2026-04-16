@@ -120,6 +120,15 @@ static Value numerobis_builtin_exit(Value *args) {
   return NONE;
 }
 
+static Value numerobis_builtin_cli_args(Value *args) {
+  Value *result_arr = NULL;
+  for (int i = 0; i < NUMEROBIS__ARGC__; i++) {
+    Value val = str__init__(sdsnew(NUMEROBIS__ARGV__[i]));
+    arrput(result_arr, val);
+  }
+  return list__init__(result_arr);
+}
+
 void u_register_builtin_externs(void) {
   u_extern_register("echo", echo);
   u_extern_register("input", numerobis_builtin_input);
@@ -130,6 +139,7 @@ void u_register_builtin_externs(void) {
   u_extern_register("List.len", numerobis_builtin_list_len);
 
   u_extern_register("exit", numerobis_builtin_exit);
+  u_extern_register("cli__args", numerobis_builtin_cli_args);
 
   numerobis_math_register_builtins();
   numerobis_random_register_builtins();

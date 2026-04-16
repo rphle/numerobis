@@ -19,6 +19,8 @@ BUILTINS = [
     "List.pop",
     "List.insert",
     "List.indexof",
+    "List.contains",
+    "cli_args",
 ]
 
 

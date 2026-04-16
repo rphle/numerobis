@@ -1,5 +1,6 @@
 PYTHON := python3
 PIP := $(PYTHON) -m pip
+CODE := code
 
 .PHONY: install build test runtimelib benchmark graph help
 
@@ -30,7 +31,7 @@ graph:
 
 highlight:
 	cd highlighting/numerobis-vscode && npx @vscode/vsce package
-	code --install-extension highlighting/numerobis-vscode/numerobis-0.1.0.vsix
+	$(CODE) --install-extension highlighting/numerobis-vscode/numerobis-0.1.0.vsix
 
 clean:
 	echo "Removing .o, .a, and __pycache__ files..."

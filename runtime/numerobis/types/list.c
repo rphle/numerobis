@@ -305,6 +305,22 @@ static Value list__ge__(Value self, Value other) {
                       _list_len((List *)other.list));
 }
 
+static Value list_contains(Value *args) {
+  Value *self = args[2].list->items;
+  Value target = args[1];
+
+  for (unsigned int i = 0; i < arrlen(self); i++) {
+    Value item = self[i];
+    Value eq_result = __eq__(item, target);
+
+    if (eq_result.boolean) {
+      return VTRUE;
+    }
+  }
+
+  return VFALSE;
+}
+
 // serialization
 static Value list__str__(Value self) {
   sds result = sdsnew("[");
@@ -351,4 +367,5 @@ void numerobis_list_register_externs(void) {
   u_extern_register("List.extend", list_extend);
   u_extern_register("List.insert", list_insert);
   u_extern_register("List.pop", list_pop);
+  u_extern_register("List.contains", list_contains);
 }
