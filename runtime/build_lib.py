@@ -89,6 +89,10 @@ def _build_static_lib(
     if not sources:
         return
 
+    gc_base_path = runtime_root / "numerobis" / "libs" / "bdwgc"
+    gc_lib = gc_base_path / "lib" / "libgc.a"
+    gc_include = gc_base_path / "include"
+
     source_list = "\n    ".join(str(s.as_posix()) for s in sources)
 
     if name == "graphics":
@@ -110,7 +114,6 @@ cmake_minimum_required(VERSION 3.10)
 project(NumerobisLib_{name} C)
 
 find_package(PkgConfig REQUIRED)
-pkg_check_modules(GC   REQUIRED bdw-gc)
 {extra_cmake}
 set(LIB_SOURCES
     {source_list}
@@ -120,7 +123,7 @@ add_library({name} STATIC ${{LIB_SOURCES}})
 
 target_include_directories({name} PRIVATE
     "{runtime_root.as_posix()}"
-    ${{GC_INCLUDE_DIRS}}
+    "{gc_include.as_posix()}"
 {include_extras}
 )
 
@@ -128,6 +131,8 @@ target_compile_options({name} PRIVATE
     -fPIC -O3 -fno-plt -march=native
 {compile_extras}
 )
+
+target_link_libraries({name} PRIVATE "{gc_lib.as_posix()}")
 
 set_target_properties({name} PROPERTIES
     ARCHIVE_OUTPUT_DIRECTORY "{temp_path.as_posix()}/build"
