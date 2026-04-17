@@ -242,12 +242,23 @@ Value number__convert__(Value self, const uint64_t target) {
   Number *n = &self.number;
   double value = n->kind == NUM_INT64 ? (double)(n->i64) : n->f64;
   Unit *u = unit_get(target);
-  bool dimless = (is_one(u) && u->scalar == 1.0);
+  bool dimless_target = (is_one(u) && u->scalar == 1.0);
+  bool dimless_value =
+      (is_one(unit_get(n->unit)) && unit_get(n->unit)->scalar == 1.0);
 
-  if (dimless) {
+  if (dimless_target) {
     value = eval_number(n, NULL);
     Unit *src = unit_get(n->unit);
     value *= src->scalar;
+  } else if (dimless_value) {
+    double base = eval_unit(u, value, EVAL_BASE);
+    double inverted = eval_unit(u, value, EVAL_INVERTED);
+    if (inverted == 0.0)
+      value = 0.0;
+    else {
+      double res = base / inverted;
+      value = unit_is_logarithmic(u) ? res : value * res;
+    }
   }
 
   if (n->kind == NUM_INT64)
