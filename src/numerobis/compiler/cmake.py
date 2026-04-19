@@ -247,11 +247,11 @@ endif()
                 ".",
                 f"-DCMAKE_C_COMPILER={cc}",
                 "-DCMAKE_C_COMPILER_LAUNCHER=ccache" if use_ccache else "",
-                "-DCMAKE_EXE_LINKER_FLAGS=-static"
-                + (f" -fuse-ld={linker}" if linker else ""),
                 "-G",
                 "Ninja",
             ]
+            if linker:
+                cmake_config.append(f"-fuse-ld={linker}")
 
             _run_subprocess(cmake_config, cwd=temp_path)
 

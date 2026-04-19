@@ -168,7 +168,7 @@ def compile(
 
     flags = {"-O3", "-march=native"} | flags
     if is_unix:
-        flags.add("-fno_plt")
+        flags.add("-fno-plt")
 
     with resources.as_file(resources.files("numerobis")) as base_path:
         runtime_path = base_path / "runtime"
@@ -194,7 +194,6 @@ def compile(
             + [cc]
             + ([f"-fuse-ld={linker}"] if linker else [])
             + ["-pipe"]
-            + ["-static"]
             + [tmp.name, tmp_source.name]
             + ["-o", str(output)]
             + [f"-I{runtime_path}"]
