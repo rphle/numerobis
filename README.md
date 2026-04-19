@@ -30,14 +30,14 @@ You can override the Python executable used by the build system by setting the `
 
 ### Linux
 
-1.  **Install Dependencies** Ensure your system has the core build utilities installed:
+1.  **Install Dependencies** — Ensure your system has the core build utilities installed:
     ```bash
     sudo apt update && sudo apt install -y \
       cmake pkg-config build-essential \
       automake autoconf libtool
     ```
 
-2.  **Build & Install** Run the following command to build the runtime library and the compiler:
+2.  **Build & Install** — Run the following command to build the runtime library and the compiler:
     ```bash
     make build
     ```
@@ -47,13 +47,13 @@ You can override the Python executable used by the build system by setting the `
 
 Windows support currently utilizes Anaconda/Conda to manage the build environment. 
 
-1.  **Environment Setup** Open an Anaconda PowerShell Prompt and create a dedicated environment:
+1.  **Environment Setup** — Open an Anaconda PowerShell Prompt and create a dedicated environment:
     ```powershell
     conda create -n numerobis
     conda activate numerobis
     ```
 
-2.  **Install Build Tools** Install the necessary toolchain from the Conda repositories:
+2.  **Install Build Tools** — Install the necessary toolchain from the Conda repositories:
     ```powershell
     conda install m2w64-gcc cmake msys2-make ninja pkg-config
     ```
@@ -78,6 +78,8 @@ sudo apt install libsdl2-dev libsdl2-ttf-dev
 conda install sdl2 sdl2_ttf
 ```
 
+-----
+
 #### CCache (optional)
 
 To speed up repeated builds, install `ccache`:
@@ -99,6 +101,8 @@ To run benchmarks, install `hyperfine` for statistically robust timing:
 ```bash
 sudo apt install hyperfine
 ```
+
+-----
 
 ### Editor Support
 
