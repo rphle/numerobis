@@ -69,7 +69,7 @@ double eval_number(Number *n, const uint64_t *_unit_hash) {
 sds print_number(Number *n) {
   double value = eval_number(n, NULL);
 
-  sds out = sdscatprintf(sdsempty(), "%g", value);
+  sds out = sdscatprintf(sdsempty(), "%.15g", value);
 
   const Unit *u = unit_get(n->unit);
   if (is_one(u) && u->scalar == 1.0) {

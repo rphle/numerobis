@@ -85,13 +85,11 @@ for step in 1..steps do {
     }
 
     # Statistics
-    r_ae = r_mag -> AU
-    if r_ae < perihelion then { perihelion = r_ae }
-    if r_ae > aphelion then { aphelion = r_ae }
+    if r_mag < perihelion then { perihelion = r_mag }
+    if r_mag > aphelion then { aphelion = r_mag }
 
-    v_km_s = v_mag -> km/s
-    if v_km_s < min_v then { min_v = v_km_s }
-    if v_km_s > max_v then { max_v = v_km_s }
+    if v_mag < min_v then { min_v = v_mag }
+    if v_mag > max_v then { max_v = v_mag }
 
     ds = math.sqrt((x-prev_x)^2 + (y-prev_y)^2) -> AU
     distance_total = distance_total + ds
@@ -122,6 +120,6 @@ if period_found then {
 echo("Perihelion: " + (perihelion -> Str))
 echo("Aphelion: " + (aphelion -> Str))
 echo("Eccentricity: " + (eccentricity -> Str))
-echo("Travelled distance: " + ((distance_total -> AU) -> Str))
-echo("Total swept area: " + ((area_total -> AU^2) -> Str))
+echo("Travelled distance: " + (distance_total -> Str))
+echo("Total swept area: " + (area_total -> Str))
 }

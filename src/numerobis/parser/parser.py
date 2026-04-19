@@ -560,8 +560,8 @@ class Parser(ParserTemplate):
             loc=parts[0].loc.merge(getattr(parts[2], "loc", parts[1].loc)),
         )
 
-    def conversion(self) -> AstNode:
-        node = self.logic_or()
+    def conversion(self, node: Optional[AstNode] = None) -> AstNode:
+        node = self.logic_or() if node is None else node
         if len(self.tokens) >= 2 and self._peek().type == "CONVERSION":
             op = self._make_op(self._consume("CONVERSION"))
             display_only = self.tok.value.startswith("(")
@@ -580,6 +580,9 @@ class Parser(ParserTemplate):
                     node, target if not display_only else self._consume("RPAREN")
                 ),
             )
+
+            if len(self.tokens) >= 2 and self._peek().type == "CONVERSION":
+                return self.conversion(node)
         return node
 
     def _logic_chain(self, subrule, op_type: str) -> AstNode:

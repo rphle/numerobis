@@ -1,4 +1,4 @@
-from si import @(metre, kilogram, second, km, gram, hour, Mass, Length, Time)
+from si import @(metre, kilogram, second, km, gram, hour, Mass, Length, Time, m, kg, s, km, g)
 
 # ---
 1000 metre -> km
@@ -161,3 +161,24 @@ x = 5 -> Num[Mass]
 
 # E515
 "5" -> Int[Length]
+
+# ---
+5 -> Str -> Int
+
+# ---
+42 -> Num -> Str
+
+# E301
+3.14 -> Str -> Int
+
+# ---
+2 -> m -> Str
+
+# ---
+3 -> m -> km
+
+# E515
+4kg -> g -> m
+
+# ---
+5s -> 1 -> kg
