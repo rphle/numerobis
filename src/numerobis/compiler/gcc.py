@@ -8,6 +8,8 @@ from importlib import resources
 from pathlib import Path
 from typing import Optional
 
+from numerobis.utils import is_unix
+
 from ..classes import CompiledUnits, ModuleMeta
 from .utils import repr_double
 
@@ -164,7 +166,9 @@ def compile(
     tmp.write(code.encode("utf-8"))
     tmp.close()
 
-    flags = {"-O3", "-fno-plt", "-march=native"} | flags
+    flags = {"-O3", "-march=native"} | flags
+    if is_unix:
+        flags.add("-fno_plt")
 
     with resources.as_file(resources.files("numerobis")) as base_path:
         runtime_path = base_path / "runtime"
@@ -190,6 +194,7 @@ def compile(
             + [cc]
             + ([f"-fuse-ld={linker}"] if linker else [])
             + ["-pipe"]
+            + ["-static"]
             + [tmp.name, tmp_source.name]
             + ["-o", str(output)]
             + [f"-I{runtime_path}"]
@@ -201,9 +206,10 @@ def compile(
                 "-Wl,--no-whole-archive",
             ]
             + graphics_libs
-            + [str(gc_lib_static), "-lm", "-lpthread", "-ldl"]
+            + [str(gc_lib_static), "-lm", "-pthread", "-ldl" if is_unix else ""]
             + list(flags)
         )
+        cmd = [arg for arg in cmd if arg]
 
     try:
         proc = subprocess.run(

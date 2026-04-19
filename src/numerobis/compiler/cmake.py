@@ -7,6 +7,8 @@ from importlib import resources
 from pathlib import Path
 from typing import Optional
 
+from numerobis.utils import is_unix
+
 from ..classes import CompiledUnits, ModuleMeta
 from .utils import repr_double
 
@@ -132,7 +134,7 @@ def _run_subprocess(cmd: list[str], cwd: Path):
         print(f"\n--- BUILD FAILED: {' '.join(cmd)} ---")
         print(f"STDOUT:\n{proc.stdout}")
         print(f"STDERR:\n{proc.stderr}")
-        raise SystemExit(1)
+        raise SystemExit(proc.returncode)
     return proc
 
 
@@ -154,7 +156,8 @@ def compile(
     source_c = _prepare_source_c(modules, "units.h", units)
     main_c = f'#include "units.h"\n{code}'
 
-    combined_flags = " ".join({"-O3", "-fno-plt", "-march=native"} | flags)
+    fno_plt = " -fno-plt" if is_unix else ""
+    combined_flags = " ".join({"-O3", "-march=native"} | flags) + fno_plt
 
     with resources.as_file(resources.files("numerobis")) as base_path:
         runtime_path = base_path / "runtime"
@@ -163,6 +166,10 @@ def compile(
 
         gc_path = runtime_path / "numerobis" / "libs" / "bdwgc"
         gc_lib_static = gc_path / "lib" / "libgc.a"
+
+        find_threads = (
+            "set(THREADS_PREFER_PTHREAD_FLAG ON)\nfind_package(Threads REQUIRED)"
+        )
 
         with tempfile.TemporaryDirectory() as temp_dir:
             temp_path = Path(temp_dir)
@@ -199,7 +206,9 @@ cmake_minimum_required(VERSION 3.10)
 project(NumerobisNative C)
 
 find_package(PkgConfig REQUIRED)
+{find_threads}
 {graphics_pkgconfig}
+
 add_executable(numerobis_bin main.c source.c)
 
 target_include_directories(numerobis_bin PRIVATE
@@ -220,9 +229,13 @@ target_link_libraries(numerobis_bin PRIVATE
 {graphics_libs}
     "{gc_lib_static.as_posix()}"
     m
-    pthread
-    dl
+    Threads::Threads
+    {"dl" if is_unix else ""}
 )
+
+if(UNIX AND NOT APPLE)
+    target_link_options(numerobis_bin PRIVATE "-static-libgcc" "-pthread")
+endif()
 """
             (temp_path / "CMakeLists.txt").write_text(cmakelists, encoding="utf-8")
 
@@ -234,14 +247,22 @@ target_link_libraries(numerobis_bin PRIVATE
                 ".",
                 f"-DCMAKE_C_COMPILER={cc}",
                 "-DCMAKE_C_COMPILER_LAUNCHER=ccache" if use_ccache else "",
-                f"-DCMAKE_EXE_LINKER_FLAGS=-fuse-ld={linker}" if linker else "",
+                "-DCMAKE_EXE_LINKER_FLAGS=-static"
+                + (f" -fuse-ld={linker}" if linker else ""),
+                "-G",
+                "Ninja",
             ]
 
             _run_subprocess(cmake_config, cwd=temp_path)
 
             build_proc = _run_subprocess(["cmake", "--build", "build"], cwd=temp_path)
 
-            built_binary = temp_path / "build" / "numerobis_bin"
+            built_binary = (
+                temp_path
+                / "build"
+                / ("numerobis_bin" if is_unix else "numerobis_bin.exe")
+            )
+
             shutil.copy2(built_binary, output_path)
 
             return build_proc

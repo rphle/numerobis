@@ -131,7 +131,7 @@ class Linker:
         code["include"] = "\n".join([f"#include <{lib}.h>" for lib in self.include])
         code["filehashes"] = ", ".join([f"__FILE__{uid}" for uid in self.order[1]])
         code["filenames"] = ", ".join(
-            [f'"{self._path(file)}"' for file in self.order[0]]
+            [f'"{self._path(file).replace("\\", "\\\\")}"' for file in self.order[0]]
         )
 
         output = []

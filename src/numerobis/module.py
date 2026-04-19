@@ -146,7 +146,7 @@ class Module:
                 self.namespaces.write("imports", node.module.name, module.namespaces)
 
         if self.builtins:
-            self.imports.append("stdlib/builtins.nbis")
+            self.imports.append(str(Path("stdlib") / "builtins.nbis"))
 
     def dimcheck(self):
         dc = Dimchecker(

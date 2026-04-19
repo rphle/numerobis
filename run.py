@@ -24,9 +24,12 @@ from rich.console import Console
 from tqdm import tqdm
 
 from numerobis.module import Module
+from numerobis.utils import is_unix
 from runtime.build_lib import build_lib
 
-os.makedirs("test-output", exist_ok=True)
+OUTPUT_DIR = Path("test-output")
+
+os.makedirs(OUTPUT_DIR, exist_ok=True)
 console = Console()
 
 
@@ -48,6 +51,18 @@ def timeit(func):
     return time.perf_counter() - t0
 
 
+def safe_run(func):
+    code = 0
+    try:
+        code = func()
+    except SystemExit as e:
+        code = e.code
+    code = code if code else 0
+    if code != 0:
+        print(f"[E303]: {code}")
+    return code
+
+
 def run_single_test(
     file_path,
     header_source,
@@ -65,7 +80,9 @@ def run_single_test(
     output = StringIO()
     times = {}
     thrown_error = None
-    output_bin = f"test-output/bin_{abs(hash((str(file_path), line)))}"
+    output_bin = str(OUTPUT_DIR / f"bin_{abs(hash((str(file_path), line)))}")
+    if not is_unix:
+        output_bin += ".exe"
 
     try:
         with redirect_stdout(output), redirect_stderr(output):
@@ -91,28 +108,25 @@ def run_single_test(
                 lambda: mod.link(print_=print_code or format_code, format=format_code)
             )
 
+            comp_success = []
             times["C Compiler"] = timeit(
-                lambda: mod.cmake(
-                    output_path=output_bin,
-                    cc=cc,
-                    linker=linker,
-                    use_cmake=use_cmake,
-                    use_ccache=use_ccache,
+                lambda: comp_success.append(
+                    safe_run(
+                        lambda: mod.cmake(
+                            output_path=output_bin,
+                            cc=cc,
+                            linker=linker,
+                            use_cmake=use_cmake,
+                            use_ccache=use_ccache,
+                        )
+                    )
                 )
             )
 
-            if run_exec:
-
-                def run():
-                    code = 0
-                    try:
-                        code = mod.run(path=output_bin)
-                    except SystemExit as e:
-                        code = e.code
-                    if code != 0:
-                        print(f"[E303]: {code}")
-
-                times["Execution"] = timeit(run)
+            if run_exec and comp_success[0] == 0:
+                times["Execution"] = timeit(
+                    lambda: safe_run(lambda: mod.run(path=output_bin))
+                )
 
     except SystemExit:
         pass
@@ -347,7 +361,7 @@ def main():
             highlight=False,
         )
 
-    shutil.rmtree("test-output")
+    shutil.rmtree(OUTPUT_DIR)
     sys.exit(0 if passed == t else 1)
 
 

@@ -5,6 +5,7 @@ Transforms intermediate representation into compilable C source code.
 
 import dataclasses
 from decimal import Decimal
+from pathlib import Path
 from typing import Any, TypeVar
 
 from ..analysis.invert import _to_x
@@ -949,7 +950,7 @@ class Compiler:
                 self._imported_modules[node.module.name] = uid
 
     def _builtins(self):
-        uid = module_uid("stdlib/builtins.nbis")
+        uid = module_uid(Path("stdlib") / "builtins.nbis")
         self._imported_names.update({name: f"und_{uid}_" for name in BUILTINS})
 
     def _node2type(self, node) -> T:

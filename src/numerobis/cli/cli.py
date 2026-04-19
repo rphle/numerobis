@@ -10,6 +10,8 @@ import rich
 import rich.syntax
 from rich.console import Console
 
+from numerobis.utils import is_unix
+
 from .. import __version__
 from ..compiler import gcc as gnucc
 from ..module import Module
@@ -21,7 +23,7 @@ console = Console()
 @click.version_option(
     version=__version__,
     prog_name="Numerobis",
-    message=f"%(prog)s, version %(version)s (Python {platform.python_version()})",
+    message=f"%(prog)s, version %(version)s (Python {platform.python_version()} on {'UNIX' if is_unix else 'Windows'})",
 )
 def cli() -> None:
     pass
@@ -109,6 +111,8 @@ def build(
             console.print("[red]Output path is a directory[/red]")
             raise SystemExit(1)
         output = str(stem)
+        if not is_unix:
+            output += ".exe"
     else:
         output = str(Path(output).resolve())
 

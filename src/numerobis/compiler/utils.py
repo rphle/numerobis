@@ -1,4 +1,5 @@
 import hashlib
+import re
 from functools import lru_cache
 from hashlib import md5
 from pathlib import Path
@@ -46,7 +47,8 @@ def strip_parens(s: str, char: Literal["(", "[", "{"]) -> str:
 
 
 def mangle(name: str) -> str:
-    return name.replace("_", "__").replace(".", "_d")
+    name = name.replace("_", "__").replace(".", "_d")
+    return re.sub(r"[^a-zA-Z0-9_]", lambda m: f"_u{ord(m.group(0)):04x}", name)
 
 
 def compile_math(node: UnitNode) -> str:

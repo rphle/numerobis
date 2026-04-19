@@ -1,13 +1,15 @@
 #!/bin/bash
 set -euo pipefail
 
-pip install -e .
+PYTHON_CMD="${NBIS_PYTHON:-python3}"
+
+$PYTHON_CMD -m pip install -e .
 
 ./scripts/gc.sh
-python3 runtime/build_lib.py
+$PYTHON_CMD runtime/build_lib.py
 
-pip install -e .
+$PYTHON_CMD -m pip install -e .
 
-pip wheel . -w wheels
+$PYTHON_CMD -m pip wheel . -w wheels
 
 echo "Build complete. Wheel(s) are in wheels/"
