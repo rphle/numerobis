@@ -3,7 +3,7 @@
 A modern, compiled, statically-typed programming language that treats physical units and dimensions as first-class citizens of the type system. Dimension and unit errors are caught **before execution** — and unit conversions happen **automatically**.
 
 > [!WARNING]
-> The language and its documentation are unfinished. While usable, Numerobis is not recommended for production code yet. Only Linux is supported at the moment.
+> The language and its documentation are unfinished. While usable, Numerobis is not recommended for production code yet.
 
 -----
 
@@ -23,48 +23,60 @@ Numerobis compiles to C99, giving it a significant performance advantage over in
 
 ## Installation
 
-Install the Python package locally (editable):
+### Python
 
+Make sure to have Python ≥ 3.12 installed.
+You can override the Python executable used by the build system by setting the `NBIS_PYTHON` environment variable or passing it directly to make: `make build PYTHON=python3.12`.
+
+### Linux
+
+1.  **Install Dependencies** Ensure your system has the core build utilities installed:
+    ```bash
+    sudo apt update && sudo apt install -y \
+      cmake pkg-config build-essential \
+      automake autoconf libtool
+    ```
+
+2.  **Build & Install** Run the following command to build the runtime library and the compiler:
+    ```bash
+    make build
+    ```
+    Once finished, the `nbis` CLI will be available.
+
+### Windows (Experimental)
+
+Windows support currently utilizes Anaconda/Conda to manage the build environment. 
+
+1.  **Environment Setup** Open an Anaconda PowerShell Prompt and create a dedicated environment:
+    ```powershell
+    conda create -n numerobis
+    conda activate numerobis
+    ```
+
+2.  **Install Build Tools** Install the necessary toolchain from the Conda repositories:
+    ```powershell
+    conda install m2w64-gcc cmake msys2-make ninja pkg-config
+    ```
+
+3.  **Build** 
+    ```powershell
+    make build
+    ```
+
+-----
+
+### Graphics Support (Optional)
+
+If you plan to use the `graphics` module, you must install the **SDL2** development libraries. The build system will automatically detect these and enable graphics support.
+
+#### Linux 
 ```bash
-make install
+sudo apt install libsdl2-dev libsdl2-ttf-dev
 ```
-
-Build the runtime library and compiler:
-
-```bash
-make build
+#### Windows
+```powershell
+conda install sdl2 sdl2_ttf
 ```
-
-After installation, the `nbis` CLI entry point is available.
-
-### System dependencies
-
-```bash
-sudo apt install -y \
-  cmake \
-  pkg-config \
-  build-essential \
-  automake \
-  autoconf \
-  libtool
-```
-
-These packages are typically pre-installed on most UNIX-based systems.
-
-#### Graphics (optional)
-
-For graphical programs (using the `graphics` module), install SDL2 and SDL2_ttf:
-
-```bash
-sudo apt install -y \
-  libsdl2-dev \
-  libsdl2-ttf-dev
-```
-
-- `libsdl2-dev` — windowing, input, rendering
-- `libsdl2-ttf-dev` — font rendering support
-
-Graphics support is automatically enabled when required.
 
 #### CCache (optional)
 
