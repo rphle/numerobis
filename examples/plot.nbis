@@ -3,21 +3,20 @@ from random import gaussian;
 from math import round, clamp;
 from time import now;
 
-init(1000, 1000)
+init(800, 800)
 set_bg("#fff")
 set_title("Stochastic Distribution & Smoothing")
 
 bins = 100
-width = 1000 / bins
+width = 800 / bins
 
 # Initialize points: [x, y, x, y...]
 points: List[Int] = []
 for i in 0..bins do {
     points.append(i * width)
-    points.append(1000)
+    points.append(800)
 }
-# Footer points to close the polygon shape
-points.extend([1000, 1000, 0, 1000])
+points.extend([800, 800, 0, 800])
 
 last_t = now()
 samples = 0
@@ -56,6 +55,6 @@ while not quit_requested() do {
     text(20, 20, (fps -> Str) + " FPS – " + (samples -> Str) + " samples", font="monospace", size=24)
     blit()
 
-    # Termination check
+    # Termination check (top boundary check)
     if points[idx] <= 10 then { break }
 }
