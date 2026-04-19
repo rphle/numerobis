@@ -2,36 +2,48 @@
 #include "../../libs/gc_stb_ds.h"
 #include "../../libs/sds.h"
 
+#include "../../libs/bdwgc/include/gc.h"
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
-#include <dirent.h>
-#include "../../libs/bdwgc/include/gc.h"
 #include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
+
+#ifdef _WIN32
+#include <windows.h>
+#define strcasecmp _stricmp
+#else
+#include <dirent.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#endif
 
 const char *_font_path = NULL;
 static FcEntry *_fc_cache = NULL;
 
-static const char *linux_font_dirs[] = {"/usr/share/fonts",
-                                        "/usr/local/share/fonts",
-                                        "/usr/share/fonts/truetype",
-                                        "/usr/share/fonts/opentype",
-                                        "/usr/share/fonts/TTF",
-                                        "/usr/share/fonts/Type1",
-                                        "/usr/share/fonts/misc",
-                                        "/usr/share/X11/fonts",
-                                        "~/.local/share/fonts",
-                                        "~/.fonts",
-                                        NULL};
+#ifdef _WIN32
+static const char *os_font_dirs[] = {"C:\\Windows\\Fonts", NULL};
+#else
+static const char *os_font_dirs[] = {"/usr/share/fonts",
+                                     "/usr/local/share/fonts",
+                                     "/usr/share/fonts/truetype",
+                                     "/usr/share/fonts/opentype",
+                                     "/usr/share/fonts/TTF",
+                                     "/usr/share/fonts/Type1",
+                                     "/usr/share/fonts/misc",
+                                     "/usr/share/X11/fonts",
+                                     "~/.local/share/fonts",
+                                     "~/.fonts",
+                                     NULL};
+#endif
 
 static const char *PREFERRED_FONTS[] = {"Roboto-Regular.ttf",
                                         "Ubuntu-R.ttf",
                                         "DejaVuSans.ttf",
                                         "FreeSans.ttf",
                                         "LiberationSans-Regular.ttf",
+                                        "arial.ttf",
+                                        "segoeui.ttf",
                                         NULL};
 
 static bool is_preferred(const char *name) {
@@ -41,6 +53,34 @@ static bool is_preferred(const char *name) {
   return false;
 }
 
+#ifdef _WIN32
+static void scan_dir(const char *path) {
+  if (_font_path)
+    return;
+
+  WIN32_FIND_DATAA fd;
+  sds search_pattern = sdscatprintf(sdsempty(), "%s\\*", path);
+  HANDLE hFind = FindFirstFileA(search_pattern, &fd);
+  sdsfree(search_pattern);
+
+  if (hFind == INVALID_HANDLE_VALUE)
+    return;
+
+  do {
+    if (fd.cFileName[0] == '.')
+      continue;
+
+    sds full = sdscatprintf(sdsempty(), "%s\\%s", path, fd.cFileName);
+    if (fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
+      scan_dir(full);
+    } else if (strstr(fd.cFileName, ".ttf") && is_preferred(fd.cFileName)) {
+      _font_path = GC_STRDUP(full);
+    }
+    sdsfree(full);
+  } while (FindNextFileA(hFind, &fd) && !_font_path);
+  FindClose(hFind);
+}
+#else
 static void scan_dir(const char *path) {
   DIR *d = opendir(path);
   if (!d || _font_path)
@@ -64,11 +104,13 @@ static void scan_dir(const char *path) {
   }
   closedir(d);
 }
+#endif
 
 const char *_default_font(void) {
   if (_font_path)
     return _font_path;
 
+#ifndef _WIN32
   char *home = getenv("HOME");
 
   /* Search home dirs first, then system dirs */
@@ -80,9 +122,10 @@ const char *_default_font(void) {
     sdsfree(p1);
     sdsfree(p2);
   }
+#endif
 
-  for (int i = 0; linux_font_dirs[i] && !_font_path; i++)
-    scan_dir(linux_font_dirs[i]);
+  for (int i = 0; os_font_dirs[i] && !_font_path; i++)
+    scan_dir(os_font_dirs[i]);
 
   return _font_path;
 }
@@ -95,6 +138,7 @@ const char *_resolve_font_name(const char *name) {
   if (entry)
     return entry->value;
 
+#ifndef _WIN32
   sds cmd = sdscatprintf(sdsempty(), "fc-match --format='%%{file}' '%s'", name);
   FILE *fp = popen(cmd, "r");
   sdsfree(cmd);
@@ -121,6 +165,8 @@ const char *_resolve_font_name(const char *name) {
   }
   pclose(fp);
   return NULL;
+#endif
+  return _default_font();
 }
 
 static FontEntry *_font_cache = NULL;
