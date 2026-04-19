@@ -19,6 +19,9 @@ from pathlib import Path
 from numerobis.compiler.cmake import _run_subprocess
 from numerobis.compiler.utils import repr_double
 from numerobis.exceptions import msgparser
+from numerobis.utils import is_unix
+
+CC = "gcc"
 
 _graphics_pkgconfig_cmake = """\
 find_package(PkgConfig REQUIRED)
@@ -95,6 +98,8 @@ def _build_static_lib(
 
     source_list = "\n    ".join(str(s.as_posix()) for s in sources)
 
+    fno_plt = "-fno-plt" if is_unix else ""
+
     if name == "graphics":
         include_extras = """\
     ${SDL2_INCLUDE_DIRS}
@@ -128,7 +133,7 @@ target_include_directories({name} PRIVATE
 )
 
 target_compile_options({name} PRIVATE
-    -fPIC -O3 -fno-plt -march=native
+    -fPIC -O3 {fno_plt} -march=native
 {compile_extras}
 )
 
@@ -141,7 +146,20 @@ set_target_properties({name} PROPERTIES
 """
         (temp_path / "CMakeLists.txt").write_text(cmakelists, encoding="utf-8")
 
-        _run_subprocess(["cmake", "-B", "build", "-S", "."], cwd=temp_path)
+        _run_subprocess(
+            [
+                "cmake",
+                "-B",
+                "build",
+                "-S",
+                ".",
+                "-G",
+                "Ninja",
+                "-DCMAKE_C_COMPILER=gcc",
+                "-DCMAKE_CXX_COMPILER=g++",
+            ],
+            cwd=temp_path,
+        )
         _run_subprocess(["cmake", "--build", "build"], cwd=temp_path)
 
         built_lib = temp_path / "build" / f"lib{name}.a"

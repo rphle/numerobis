@@ -1,7 +1,7 @@
 #include "closures.h"
 #include "values.h"
 
-#include <gc.h>
+#include "libs/bdwgc/include/gc.h"
 #include <string.h>
 
 Value closure__init__(Value (*func)(void *, Value *), void *env,

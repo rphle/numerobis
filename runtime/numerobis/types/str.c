@@ -10,7 +10,7 @@
 
 #include <assert.h>
 #include <ctype.h>
-#include <gc.h>
+#include "../libs/bdwgc/include/gc.h"
 #include <limits.h>
 #include <stdbool.h>
 #include <stddef.h>

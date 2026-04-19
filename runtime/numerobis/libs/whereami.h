@@ -6,7 +6,7 @@
 #ifndef WHEREAMI_H
 #define WHEREAMI_H
 
-#include <gc.h>
+#include "../libs/bdwgc/include/gc.h"
 
 #define WAI_MALLOC(size) GC_MALLOC(size)
 #define WAI_FREE(p) GC_FREE(p)

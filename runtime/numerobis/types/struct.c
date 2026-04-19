@@ -4,7 +4,7 @@
 #include "methods.h"
 #include "number.h"
 
-#include <gc.h>
+#include "../libs/bdwgc/include/gc.h"
 #include <stdbool.h>
 #include <stddef.h>
 

@@ -47,4 +47,11 @@ static char *utf8_offset_to_pointer(const char *str, int offset) {
 bool is_absolute(const char *path);
 sds get_absolute_resource_path(const char *input_path);
 
+#if !HAVE_GETDELIM
+ssize_t getdelim(char **buf, size_t *bufsiz, int delimiter, FILE *fp);
+#endif
+#if !HAVE_GETLINE
+ssize_t getline(char **buf, size_t *bufsiz, FILE *fp);
+#endif
+
 #endif

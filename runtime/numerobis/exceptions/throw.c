@@ -7,7 +7,7 @@
 #include "messages.h"
 #include "source.h"
 
-#include <gc.h>
+#include "../libs/bdwgc/include/gc.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

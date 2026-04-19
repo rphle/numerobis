@@ -37,7 +37,7 @@
  * the include of your alternate allocator if needed (not needed in order
  * to use the default libc allocator). */
 
-#include <gc.h>
+#include "../libs/bdwgc/include/gc.h"
 
 #define s_malloc GC_MALLOC
 #define s_realloc GC_REALLOC

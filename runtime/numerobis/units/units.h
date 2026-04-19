@@ -2,8 +2,8 @@
 #define NUMEROBIS_UNITS_H
 
 #include "../libs/sds.h"
+#include "../libs/bdwgc/include/gc.h"
 
-#include <gc.h>
 #include <stdbool.h>
 #include <stdint.h>
 

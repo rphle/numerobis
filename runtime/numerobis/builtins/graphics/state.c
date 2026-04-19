@@ -1,7 +1,7 @@
 #include "state.h"
 #include "../../libs/gc_stb_ds.h"
 
-#include <gc.h>
+#include "../../libs/bdwgc/include/gc.h"
 #include <stdbool.h>
 
 SDL_Window *_window = NULL;

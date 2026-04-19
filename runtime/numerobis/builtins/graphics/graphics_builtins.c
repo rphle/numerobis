@@ -14,7 +14,7 @@
 #include <SDL2/SDL_thread.h>
 #include <SDL2/SDL_timer.h>
 #include <SDL2/SDL_ttf.h>
-#include <gc.h>
+#include "../../libs/bdwgc/include/gc.h"
 #include <stdbool.h>
 #include <stdio.h>
 #include <string.h>

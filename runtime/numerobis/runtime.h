@@ -1,7 +1,7 @@
 #ifndef NUMEROBIS_RUNTIME_H
 #define NUMEROBIS_RUNTIME_H
 
-#include <gc.h>
+#include "libs/bdwgc/include/gc.h"
 
 extern int NUMEROBIS__FILE__;
 extern const char *NUMEROBIS__FILES__[];

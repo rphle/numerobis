@@ -2,7 +2,7 @@
 #include "../libs/sds.h"
 
 #include <assert.h>
-#include <gc.h>
+#include "../libs/bdwgc/include/gc.h"
 #include <math.h>
 #include <stdint.h>
 #include <stdio.h>

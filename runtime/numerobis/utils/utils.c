@@ -1,7 +1,7 @@
 #include "../constants.h"
 #include "../libs/whereami.h"
 
-#include <gc.h>
+#include "../libs/bdwgc/include/gc.h"
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdlib.h>
@@ -58,35 +58,90 @@ size_t count_utf8_code_points(const char *s) {
   return count;
 }
 
-
 bool is_absolute(const char *path) {
-    if (!path) return 0;
+  if (!path)
+    return 0;
 #ifdef _WIN32
-    // Windows: starts with "C:\" or "\\"
-    return (strlen(path) > 2 && isalpha(path[0]) && path[1] == ':') || (path[0] == '\\' && path[1] == '\\');
+  // Windows: starts with "C:\" or "\\"
+  return (strlen(path) > 2 && isalpha(path[0]) && path[1] == ':') ||
+         (path[0] == '\\' && path[1] == '\\');
 #else
-    // Unix/Linux/macOS: starts with "/"
-    return path[0] == '/';
+  // Unix/Linux/macOS: starts with "/"
+  return path[0] == '/';
 #endif
 }
 
 sds get_absolute_resource_path(const char *input_path) {
-    if (is_absolute(input_path)) {
-        return sdsnew(input_path);
-    }
+  if (is_absolute(input_path)) {
+    return sdsnew(input_path);
+  }
 
-    // Get the directory of the binary
-    int dirlen;
-    int len = wai_getExecutablePath(NULL, 0, &dirlen);
-    char* buffer = GC_MALLOC(len + 1);
-    wai_getExecutablePath(buffer, len, &dirlen);
+  // Get the directory of the binary
+  int dirlen;
+  int len = wai_getExecutablePath(NULL, 0, &dirlen);
+  char *buffer = GC_MALLOC(len + 1);
+  wai_getExecutablePath(buffer, len, &dirlen);
 
-    sds final_path = sdsnewlen(buffer, dirlen);
-    char last_char = final_path[sdslen(final_path) - 1];
-    if (last_char != '/' && last_char != '\\') {
-        final_path = sdscat(final_path, "/");
-    }
+  sds final_path = sdsnewlen(buffer, dirlen);
+  char last_char = final_path[sdslen(final_path) - 1];
+  if (last_char != '/' && last_char != '\\') {
+    final_path = sdscat(final_path, "/");
+  }
 
-    final_path = sdscat(final_path, input_path);
-    return final_path;
+  final_path = sdscat(final_path, input_path);
+  return final_path;
 }
+
+#if !HAVE_GETDELIM
+/*	$NetBSD: getdelim.c,v 1.2 2015/12/25 20:12:46 joerg Exp $	*/
+/*	NetBSD-src: getline.c,v 1.2 2014/09/16 17:23:50 christos Exp 	*/
+
+ssize_t getdelim(char **buf, size_t *bufsiz, int delimiter, FILE *fp) {
+  char *ptr, *eptr;
+
+  if (*buf == NULL || *bufsiz == 0) {
+    *bufsiz = BUFSIZ;
+    if ((*buf = malloc(*bufsiz)) == NULL)
+      return -1;
+  }
+
+  for (ptr = *buf, eptr = *buf + *bufsiz;;) {
+    int c = fgetc(fp);
+    if (c == -1) {
+      if (feof(fp)) {
+        ssize_t diff = (ssize_t)(ptr - *buf);
+        if (diff != 0) {
+          *ptr = '\0';
+          return diff;
+        }
+      }
+      return -1;
+    }
+    *ptr++ = c;
+    if (c == delimiter) {
+      *ptr = '\0';
+      return ptr - *buf;
+    }
+    if (ptr + 2 >= eptr) {
+      char *nbuf;
+      size_t nbufsiz = *bufsiz * 2;
+      ssize_t d = ptr - *buf;
+      if ((nbuf = realloc(*buf, nbufsiz)) == NULL)
+        return -1;
+      *buf = nbuf;
+      *bufsiz = nbufsiz;
+      eptr = nbuf + nbufsiz;
+      ptr = nbuf + d;
+    }
+  }
+}
+#endif
+
+#if !HAVE_GETLINE
+/*	$NetBSD: getline.c,v 1.2 2015/12/25 20:12:46 joerg Exp $	*/
+/*	NetBSD-src: getline.c,v 1.2 2014/09/16 17:23:50 christos Exp	*/
+
+ssize_t getline(char **buf, size_t *bufsiz, FILE *fp) {
+  return getdelim(buf, bufsiz, '\n', fp);
+}
+#endif

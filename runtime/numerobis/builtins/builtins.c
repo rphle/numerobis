@@ -17,7 +17,10 @@
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
+
+#ifndef _WIN32
 #include <unistd.h>
+#endif
 
 static Value numerobis_builtin_input(Value *args) {
   if (args[1].type != VALUE_NONE) {

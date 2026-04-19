@@ -1,7 +1,7 @@
 #include "extern.h"
 #include "libs/gc_stb_ds.h"
 
-#include <gc.h>
+#include "libs/bdwgc/include/gc.h"
 #include <stdio.h>
 #include <stdlib.h>
 
