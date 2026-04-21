@@ -1,5 +1,5 @@
 from si import @kg, @Mass
-from math import pi
+from constants import pi
 
 # ---
 static two!(n: Int) = 2^n

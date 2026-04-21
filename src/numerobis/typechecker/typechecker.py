@@ -228,17 +228,14 @@ class Typechecker:
                         value=f", not {right.dim}",
                         loc=self.unlink(node.right).loc,
                     )
-                if not left.dim:
-                    return left.edit(typ="Num")
 
                 assert isinstance(right, NumberType)
                 exp = Decimal(right.value)
-                if exp % 1 != 0:
-                    self.errors.throw(
-                        102,
-                        value=exp,
-                        loc=self.unlink(node.right).loc,
-                    )
+                return_typ = "Int" if exp % 1 == 0 else "Num"
+
+                if not left.dim:
+                    return left.edit(typ=return_typ)
+
                 dimension = Power(base=left.dim, exponent=Scalar(exp))
                 dimension = self.simplify(dimension)
                 assert dimension is not None
@@ -247,11 +244,7 @@ class Typechecker:
                     if not isinstance(dimension, Expression)
                     else dimension
                 )
-                return (
-                    NumberType(typ="Num", dim=dimension)
-                    if isinstance(left, Expression)
-                    else left.edit(dim=dimension)
-                )
+                return left.edit(typ=return_typ, dim=dimension)
             case "mod":
                 if not (mismatch := match_dim(left, right)):
                     self.errors.binOpMismatch(node, mismatch)

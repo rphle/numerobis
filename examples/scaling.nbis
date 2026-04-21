@@ -1,6 +1,7 @@
 from graphics import *
 from si import *
-from math import *
+from math import sin, cos, round
+from constants import tau, pi
 
 init(1000, 1000)
 set_bg("#fff")

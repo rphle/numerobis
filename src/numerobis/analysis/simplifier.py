@@ -150,6 +150,11 @@ class Simplifier:
                 return Scalar(base.value**exp.value)
             case Power():  # (x^a)^b -> x^(a*b)
                 new_exp = self._simplify(Product([base.exponent, exp]))
+                if isinstance(new_exp, Scalar):
+                    if new_exp.value == 0:
+                        return Scalar(Decimal(1))
+                    if new_exp.value == 1:
+                        return base.base
                 return replace(base, exponent=new_exp)
             case Product():  # (a*b)^n -> a^n * b^n
                 new_vals: list[UnitNode] = [

@@ -39,8 +39,8 @@ is_escaping = false
 period_steps = 0
 
 for step in 1..steps do {
-    r_mag = math.sqrt(x^2 + y^2) -> AU
-    v_mag = math.sqrt(vx^2 + vy^2) -> km/s
+    r_mag = (x^2 + y^2)^0.5
+    v_mag = (vx^2 + vy^2)^0.5
 
     # Escape Detection
     # Specific Orbital Energy: E = (v^2 / 2) - (GM / r)
@@ -84,11 +84,11 @@ for step in 1..steps do {
     if v_mag < min_v then { min_v = v_mag }
     if v_mag > max_v then { max_v = v_mag }
 
-    ds = math.sqrt((x-prev_x)^2 + (y-prev_y)^2) -> AU
+    ds = ((x-prev_x)^2 + (y-prev_y)^2)^0.5
     distance_total = distance_total + ds
 
     # Kepler 2nd Law: Area = 0.5 * |r x v| * dt
-    h = math.abs(x*vy - y*vx) -> km^2/s
+    h = math.abs(x*vy - y*vx)
     dA = h * dt / 2
     area_total = area_total + dA
 
@@ -104,7 +104,7 @@ if is_escaping then {
 } else {
 
 if period_found then {
-    period_days = period_steps * dt -> day
+    period_days = period_steps * dt
     echo("Detected Period: " + (period_days -> Str))
 } else {
     echo("Outcome: BOUND (Incomplete orbit)")

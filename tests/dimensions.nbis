@@ -1,5 +1,6 @@
 from si import @(Length, Mass, Time, Force, Energy, Power)
-from si import @(metre, kilogram, second, newton, joule, watt, K, m, kg)
+from si import @(metre, kilogram, second, newton, joule, watt, K, m, kg, km)
+from math import sqrt
 
 # ---
 dimension TestDim
@@ -366,3 +367,14 @@ val: Num[Length] = id(10 m)
 # E536
 id!(x: ?T): ?T = x
 wrong: Num[Mass] = id(10 m)
+
+# E536
+x: Int = sqrt(2)
+
+# ---
+x: Length = sqrt(2km)
+
+# ---
+a = 16 km^2
+b: Length = a^0.5
+echo(b)

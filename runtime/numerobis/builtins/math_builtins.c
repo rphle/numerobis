@@ -17,7 +17,7 @@ static inline Value _round_op(Value *args, double (*fn)(double)) {
   Value val = args[1];
   Number *n = &val.number;
   long result = (n->kind == NUM_INT64) ? n->i64 : (long)fn(n->f64);
-  return int__init__(result, U_ONE);
+  return int__init__(result, n->unit);
 }
 
 /* Rounding */
@@ -48,155 +48,131 @@ static Value numerobis_builtin_roundn(Value *args) {
 /* Basic math */
 
 static Value numerobis_builtin_sqrt(Value *args) {
-  return num__init__(sqrt(_f64(args[1])), U_ONE);
+  return num__init__(sqrt(_f64(args[1])), args[1].number.unit);
 }
 
 static Value numerobis_builtin_cbrt(Value *args) {
-  return num__init__(cbrt(_f64(args[1])), U_ONE);
+  return num__init__(cbrt(_f64(args[1])), args[1].number.unit);
 }
 
 static Value numerobis_builtin_abs(Value *args) {
-  return num__init__(fabs(_f64(args[1])), U_ONE);
+  return num__init__(fabs(_f64(args[1])), args[1].number.unit);
 }
 
 static Value numerobis_builtin_pow(Value *args) {
-  return num__init__(pow(_f64(args[1]), _f64(args[2])), U_ONE);
+  return num__init__(pow(_f64(args[1]), _f64(args[2])), args[1].number.unit);
 }
 
 static Value numerobis_builtin_exp(Value *args) {
-  return num__init__(exp(_f64(args[1])), U_ONE);
+  return num__init__(exp(_f64(args[1])), args[1].number.unit);
 }
 
 static Value numerobis_builtin_exp2(Value *args) {
-  return num__init__(exp2(_f64(args[1])), U_ONE);
+  return num__init__(exp2(_f64(args[1])), args[1].number.unit);
 }
 
 static Value numerobis_builtin_hypot(Value *args) {
-  return num__init__(hypot(_f64(args[1]), _f64(args[2])), U_ONE);
+  return num__init__(hypot(_f64(args[1]), _f64(args[2])), args[1].number.unit);
 }
 
 static Value numerobis_builtin_sign(Value *args) {
   double v = _f64(args[1]);
   double s = (v > 0.0) - (v < 0.0); /* -1, 0, or 1 */
-  return num__init__(s, U_ONE);
+  return num__init__(s, args[1].number.unit);
 }
 
 static Value numerobis_builtin_clamp(Value *args) {
   double v = _f64(args[1]);
   double lo = _f64(args[2]);
   double hi = _f64(args[3]);
-  return num__init__(v < lo ? lo : (v > hi ? hi : v), U_ONE);
+  return num__init__(v < lo ? lo : (v > hi ? hi : v), args[1].number.unit);
 }
 
 static Value numerobis_builtin_min(Value *args) {
-  return num__init__(fmin(_f64(args[1]), _f64(args[2])), U_ONE);
+  return num__init__(fmin(_f64(args[1]), _f64(args[2])), args[1].number.unit);
 }
 
 static Value numerobis_builtin_max(Value *args) {
-  return num__init__(fmax(_f64(args[1]), _f64(args[2])), U_ONE);
+  return num__init__(fmax(_f64(args[1]), _f64(args[2])), args[1].number.unit);
 }
 
 /* Logarithms */
 
 static Value numerobis_builtin_log(Value *args) {
-  return num__init__(log(_f64(args[1])), U_ONE);
+  return num__init__(log(_f64(args[1])), args[1].number.unit);
 }
 
 static Value numerobis_builtin_log2(Value *args) {
-  return num__init__(log2(_f64(args[1])), U_ONE);
+  return num__init__(log2(_f64(args[1])), args[1].number.unit);
 }
 
 static Value numerobis_builtin_log10(Value *args) {
-  return num__init__(log10(_f64(args[1])), U_ONE);
+  return num__init__(log10(_f64(args[1])), args[1].number.unit);
 }
 
 static Value numerobis_builtin_log1p(Value *args) {
-  return num__init__(log1p(_f64(args[1])), U_ONE);
+  return num__init__(log1p(_f64(args[1])), args[1].number.unit);
 }
 
 static Value numerobis_builtin_logn(Value *args) {
   /* log_base(x) = log(x) / log(base) */
-  return num__init__(log(_f64(args[1])) / log(_f64(args[2])), U_ONE);
+  return num__init__(log(_f64(args[1])) / log(_f64(args[2])),
+                     args[1].number.unit);
 }
 
 /* Trigonometry (radians) */
 
 static Value numerobis_builtin_sin(Value *args) {
-  return num__init__(sin(_f64(args[1])), U_ONE);
+  return num__init__(sin(_f64(args[1])), args[1].number.unit);
 }
 static Value numerobis_builtin_cos(Value *args) {
-  return num__init__(cos(_f64(args[1])), U_ONE);
+  return num__init__(cos(_f64(args[1])), args[1].number.unit);
 }
 static Value numerobis_builtin_tan(Value *args) {
-  return num__init__(tan(_f64(args[1])), U_ONE);
+  return num__init__(tan(_f64(args[1])), args[1].number.unit);
 }
 static Value numerobis_builtin_asin(Value *args) {
-  return num__init__(asin(_f64(args[1])), U_ONE);
+  return num__init__(asin(_f64(args[1])), args[1].number.unit);
 }
 static Value numerobis_builtin_acos(Value *args) {
-  return num__init__(acos(_f64(args[1])), U_ONE);
+  return num__init__(acos(_f64(args[1])), args[1].number.unit);
 }
 static Value numerobis_builtin_atan(Value *args) {
-  return num__init__(atan(_f64(args[1])), U_ONE);
+  return num__init__(atan(_f64(args[1])), args[1].number.unit);
 }
 static Value numerobis_builtin_atan2(Value *args) {
-  return num__init__(atan2(_f64(args[1]), _f64(args[2])), U_ONE);
-}
-
-/* Trigonometry (degrees) */
-
-static Value numerobis_builtin_sind(Value *args) {
-  return num__init__(sin(_f64(args[1]) * DEG2RAD), U_ONE);
-}
-static Value numerobis_builtin_cosd(Value *args) {
-  return num__init__(cos(_f64(args[1]) * DEG2RAD), U_ONE);
-}
-static Value numerobis_builtin_tand(Value *args) {
-  return num__init__(tan(_f64(args[1]) * DEG2RAD), U_ONE);
-}
-static Value numerobis_builtin_asind(Value *args) {
-  return num__init__(asin(_f64(args[1])) * RAD2DEG, U_ONE);
-}
-static Value numerobis_builtin_acosd(Value *args) {
-  return num__init__(acos(_f64(args[1])) * RAD2DEG, U_ONE);
-}
-static Value numerobis_builtin_atand(Value *args) {
-  return num__init__(atan(_f64(args[1])) * RAD2DEG, U_ONE);
-}
-
-static Value numerobis_builtin_atan2d(Value *args) {
-  return num__init__(atan2(_f64(args[1]), _f64(args[2])) * RAD2DEG, U_ONE);
+  return num__init__(atan2(_f64(args[1]), _f64(args[2])), args[1].number.unit);
 }
 
 /* Hyperbolic */
 
 static Value numerobis_builtin_sinh(Value *args) {
-  return num__init__(sinh(_f64(args[1])), U_ONE);
+  return num__init__(sinh(_f64(args[1])), args[1].number.unit);
 }
 static Value numerobis_builtin_cosh(Value *args) {
-  return num__init__(cosh(_f64(args[1])), U_ONE);
+  return num__init__(cosh(_f64(args[1])), args[1].number.unit);
 }
 static Value numerobis_builtin_tanh(Value *args) {
-  return num__init__(tanh(_f64(args[1])), U_ONE);
+  return num__init__(tanh(_f64(args[1])), args[1].number.unit);
 }
 static Value numerobis_builtin_asinh(Value *args) {
-  return num__init__(asinh(_f64(args[1])), U_ONE);
+  return num__init__(asinh(_f64(args[1])), args[1].number.unit);
 }
 static Value numerobis_builtin_acosh(Value *args) {
-  return num__init__(acosh(_f64(args[1])), U_ONE);
+  return num__init__(acosh(_f64(args[1])), args[1].number.unit);
 }
 static Value numerobis_builtin_atanh(Value *args) {
-  return num__init__(atanh(_f64(args[1])), U_ONE);
+  return num__init__(atanh(_f64(args[1])), args[1].number.unit);
 }
 
 /* Angle conversion */
 
 static Value numerobis_builtin_deg_to_rad(Value *args) {
-  return num__init__(_f64(args[1]) * DEG2RAD, U_ONE);
+  return num__init__(_f64(args[1]) * DEG2RAD, args[1].number.unit);
 }
 
 static Value numerobis_builtin_rad_to_deg(Value *args) {
-  return num__init__(_f64(args[1]) * RAD2DEG, U_ONE);
+  return num__init__(_f64(args[1]) * RAD2DEG, args[1].number.unit);
 }
 
 /* Registration */
@@ -237,15 +213,6 @@ void numerobis_math_register_builtins(void) {
   u_extern_register("acos", numerobis_builtin_acos);
   u_extern_register("atan", numerobis_builtin_atan);
   u_extern_register("atan2", numerobis_builtin_atan2);
-
-  /* Trigonometry (degrees) */
-  u_extern_register("sind", numerobis_builtin_sind);
-  u_extern_register("cosd", numerobis_builtin_cosd);
-  u_extern_register("tand", numerobis_builtin_tand);
-  u_extern_register("asind", numerobis_builtin_asind);
-  u_extern_register("acosd", numerobis_builtin_acosd);
-  u_extern_register("atand", numerobis_builtin_atand);
-  u_extern_register("atan2d", numerobis_builtin_atan2d);
 
   /* Hyperbolic */
   u_extern_register("sinh", numerobis_builtin_sinh);

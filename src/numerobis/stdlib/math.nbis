@@ -1,62 +1,46 @@
-# Constants
-pi      = 3.14159265358979323846
-tau     = 6.28318530717958647692   # 2π
-e       = 2.71828182845904523536
-phi     = 1.61803398874989484820   # golden ratio
-
 # Rounding
-extern floor!(value: Num?): Int;
-extern ceil!(value: Num?): Int;
-extern round!(value: Num?): Int;
-extern trunc!(value: Num?): Int;
+extern floor!(value: Num[?D]): Int[?D];
+extern ceil!(value: Num[?D]): Int[?D];
+extern round!(value: Num[?D]): Int[?D];
+extern trunc!(value: Num[?D]): Int[?D];
 extern roundn!(value: Num[?D], places: Int = 0): Num[?D];
 
-
 # Basic math
-extern sqrt!(value: Num?): Int;
-extern cbrt!(value: Num?): Int;
-extern abs!(value: Num?): Int;
-extern pow!(base: Num?, exponent: Num?): Int;
-extern exp!(value: Num?): Int;
-extern exp2!(value: Num?): Int;
-extern hypot!(x: Num?, y: Num?): Int;
-extern sign!(value: Num?): Int;
-extern clamp!(value: Num?, lo: Num?, hi: Num?): Int;
-extern min!(a: Num?, b: Num?): Int;
-extern max!(a: Num?, b: Num?): Int;
+extern sqrt!(value: Num[?D]): Num[?D];
+extern cbrt!(value: Num[?D]): Num[?D];
+extern abs!(value: Num[?D]): Num[?D];
+extern pow!(base: Num[?D], exponent: Num): Num[?D];
+extern exp!(value: Num[?D]): Num[?D];
+extern exp2!(value: Num[?D]): Num[?D];
+extern hypot!(x: Num[?D], y: Num[?D]): Num[?D];
+extern sign!(value: Num[?D]): Int;
+extern clamp!(value: Num[?D], lo: Num[?D], hi: Num[?D]): Num[?D];
+extern min!(a: Num[?D], b: Num[?D]): Num[?D];
+extern max!(a: Num[?D], b: Num[?D]): Num[?D];
 
 # Logarithms
-extern log!(value: Num?): Int;
-extern log2!(value: Num?): Int;
-extern log10!(value: Num?): Int;
-extern logn!(x: Num?, base: Num?): Int;
+extern log!(value: Num[?D]): Num[?D];
+extern log2!(value: Num[?D]): Num[?D];
+extern log10!(value: Num[?D]): Num[?D];
+extern logn!(x: Num[?D], base: Num[?D]): Num[?D];
 
 # Trigonometry (radians)
-extern sin!(value: Num?): Int;
-extern cos!(value: Num?): Int;
-extern tan!(value: Num?): Int;
-extern asin!(value: Num?): Int;
-extern acos!(value: Num?): Int;
-extern atan!(value: Num?): Int;
-extern atan2!(y: Num?, x: Num?): Int;
-
-# Trigonometry (degrees)
-extern sind!(value: Num?): Int;
-extern cosd!(value: Num?): Int;
-extern tand!(value: Num?): Int;
-extern asind!(value: Num?): Int;
-extern acosd!(value: Num?): Int;
-extern atand!(value: Num?): Int;
-extern atan2d!(y: Num?, x: Num?): Int;
+extern sin!(value: Num[?D]): Num[?D];
+extern cos!(value: Num[?D]): Num[?D];
+extern tan!(value: Num[?D]): Num[?D];
+extern asin!(value: Num[?D]): Num[?D];
+extern acos!(value: Num[?D]): Num[?D];
+extern atan!(value: Num[?D]): Num[?D];
+extern atan2!(y: Num[?D], x: Num[?D]): Num[?D];
 
 # Hyperbolic
-extern sinh!(value: Num?): Int;
-extern cosh!(value: Num?): Int;
-extern tanh!(value: Num?): Int;
-extern asinh!(value: Num?): Int;
-extern acosh!(value: Num?): Int;
-extern atanh!(value: Num?): Int;
+extern sinh!(value: Num[?D]): Num[?D];
+extern cosh!(value: Num[?D]): Num[?D];
+extern tanh!(value: Num[?D]): Num[?D];
+extern asinh!(value: Num[?D]): Num[?D];
+extern acosh!(value: Num[?D]): Num[?D];
+extern atanh!(value: Num[?D]): Num[?D];
 
 # Angle conversion
-extern deg_to_rad!(value: Num?): Int;
-extern rad_to_deg!(value: Num?): Int;
+extern deg_to_rad!(value: Num[?D]): Num[?D];
+extern rad_to_deg!(value: Num[?D]): Num[?D];

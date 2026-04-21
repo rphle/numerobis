@@ -1,4 +1,4 @@
-extern random!(): Int;
-extern randint!(lo: Int?, hi: Int?): Int;
-extern uniform!(lo: Num?, hi: Num?): Num;
-extern gaussian!(mean: Num? = 0.0, stddev: Num? = 1.0): Num;
+extern random!(): Num;
+extern randint!(lo: Int[?D], hi: Int[?D]): Int[?D];
+extern uniform!(lo: Num[?D], hi: Num[?D]): Num[?D];
+extern gaussian!(mean: Num[?D] = 0.0, stddev: Num[?D] = 1.0): Num[?D];
