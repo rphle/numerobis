@@ -947,7 +947,7 @@ class Parser(ParserTemplate):
             module=module, names=names, aliases=aliases, loc=nodeloc(start, end)
         )
         self.header.imports.append(node)
-        self.module_names.append(module.name)
+        # self.module_names.append(module.name)
         return node
 
     def extern_declaration(self) -> ExternDeclaration:

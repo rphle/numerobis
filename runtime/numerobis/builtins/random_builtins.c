@@ -46,14 +46,14 @@ static Value numerobis_builtin_randint(Value *args) {
   long lo = _i64(args[1]);
   long hi = _i64(args[2]);
   long result = rand_int_range(lo, hi + 1);
-  return int__init__(result, U_ONE);
+  return int__init__(result, args[1].number.unit);
 }
 
 static Value numerobis_builtin_uniform(Value *args) {
   double lo = _f64(args[1]);
   double hi = _f64(args[2]);
   double result = rand_double_range(lo, hi);
-  return num__init__(result, U_ONE);
+  return num__init__(result, args[1].number.unit);
 }
 
 static Value numerobis_builtin_gaussian(Value *args) {
@@ -72,7 +72,7 @@ static Value numerobis_builtin_gaussian(Value *args) {
     u1 = 1e-12;
 
   double z0 = sqrt(-2.0 * log(u1)) * cos(2.0 * M_PI * u2);
-  return num__init__(mean + stddev * z0, U_ONE);
+  return num__init__(mean + stddev * z0, args[1].number.unit);
 }
 
 void numerobis_random_register_builtins(void) {

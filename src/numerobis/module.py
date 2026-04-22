@@ -131,14 +131,14 @@ class Module:
                                 )
                             except KeyError:
                                 help = [
-                                    ns
+                                    "unit" if ns == "dimensionized" else "dimension"
                                     for ns in ("dimensionized", "dimensions")
                                     if name.name in module.namespaces(ns)
                                 ]
                                 self.errors.throw(
                                     804,
                                     name=name.name,
-                                    help=f"the module does export a {help[0][:-1]} named '{name.name}', did you forget the '@' prefix?"
+                                    help=f"the module does export a {help[0]} named '{name.name}', did you forget the '@' prefix?"
                                     if help
                                     else "",
                                     loc=name.loc,
