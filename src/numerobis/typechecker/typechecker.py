@@ -116,6 +116,7 @@ class Typechecker:
             raise NotImplementedError(
                 "Chained comparisons in assertions are not supported"
             )
+        self.check(node.expr, env=env)
 
     def attribute_(self, node: Attribute, env: Env) -> T:
         owner = self.check(node.owner, env=env)
@@ -1132,10 +1133,16 @@ class Typechecker:
                     case "Struct":
                         assert isinstance(node.param, Type)
                         name = node.param.name.name
-                        struct = env.get("names")(name)
+                        try:
+                            struct = env.get("names")(name)
+                        except KeyError:
+                            self.errors.nameError(node.param.name)
+                            raise
                         assert isinstance(struct, StructType)
                         return StructInstance(
-                            name_=name, _fingerprint=struct._fingerprint, struct=struct
+                            name_=name,
+                            _fingerprint=struct._fingerprint,
+                            struct=struct,
                         )
                     case _:
                         if node.name.name in typetable:
