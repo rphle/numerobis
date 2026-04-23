@@ -109,7 +109,7 @@ class Parser(ParserTemplate):
         ]:
             self.imports_allowed = False
 
-        if first.type == "ID" and self._peek(2).type in {"ASSIGN", "COLON"}:
+        if first.type == "ID" and self._peek(2).type == "COLON":
             """Variable declaration"""
             return self.variable()
         elif first.type == "DIMENSION":
@@ -149,13 +149,6 @@ class Parser(ParserTemplate):
         ) or first.type == "STATIC":
             """Function declaration"""
             return self.function()
-        elif (
-            first.type == "ID"
-            and self._peek(2).type in self.OPERATORS
-            and self._peek(3).type == "ASSIGN"
-        ):
-            """Variable arithmetic shorthand (compound assignment)"""
-            return self.compound_assignment()
         elif first.type == "EXTERN":
             """Extern declaration"""
             return self.extern_declaration()
@@ -201,28 +194,48 @@ class Parser(ParserTemplate):
             loc = ret.loc.merge(value.loc) if value else ret.loc
             return Return(value=value, loc=loc)
 
-        return self.index_assignment()
+        return self.assignment()
 
-    def index_assignment(self):
+    def assignment(self):
         left = self.expression()
+        self._clear()
 
-        if self._peek().type == "ASSIGN":
-            self._consume("ASSIGN")
-            value = self.expression()
+        is_assignment = self._peek().type == "ASSIGN"
+        is_compound_assignment = (
+            self._peek().type in self.OPERATORS
+            and self._peek(2, ignore_whitespace=False).type == "ASSIGN"
+        )
 
-            if isinstance(left, Index):
+        if not is_assignment and not is_compound_assignment:
+            return left
+
+        op = None
+        if is_compound_assignment:
+            op = self._make_op(self._consume(*self.OPERATORS))
+        self._consume("ASSIGN")
+
+        value = self.expression()
+
+        if op:
+            value = BinOp(op=op, left=left, right=value, loc=nodeloc(left, value))
+
+        match left:
+            case Identifier():
+                self._check_forbidden(Token("ID", left.name), "variable")
+                return Variable(
+                    name=left, value=value, type=None, loc=left.loc.merge(value.loc)
+                )
+            case Index():
                 return IndexAssignment(
                     target=left, value=value, loc=left.loc.merge(value.loc)
                 )
-            elif isinstance(left, Attribute):
+            case Attribute():
                 return StructAssignment(
                     target=left, value=value, loc=left.loc.merge(value.loc)
                 )
-            else:
-                self.errors.throw(21, loc=left.loc)
-                raise
 
-        return left
+        self.errors.throw(21, loc=left.loc)
+        raise
 
     def compound_assignment(self) -> AstNode:
         name = self._make_id(self._consume("ID"))
@@ -257,17 +270,14 @@ class Parser(ParserTemplate):
 
         return self.range_()
 
-    def variable(self, declaration: bool = False) -> AstNode:
+    def variable(self, declaration_only: bool = False) -> AstNode:
         name = self._consume("ID")
         self._check_forbidden(name, "variable")
 
-        type_token = None
-        if declaration or self._peek().type == "COLON":
-            self._consume("COLON")
-            type_token = self.type()
+        self._consume("COLON")
+        type_token = self.type()
 
-        if declaration or (self._peek().type != "ASSIGN" and type_token is not None):
-            assert type_token is not None
+        if declaration_only or self._peek().type != "ASSIGN":
             return VariableDeclaration(
                 name=Identifier(name=name.value, loc=name.loc),
                 type=type_token,
@@ -280,7 +290,7 @@ class Parser(ParserTemplate):
         return Variable(
             name=Identifier(name=name.value, loc=name.loc),
             value=expr,
-            type=type_token if type_token else None,
+            type=type_token,
             loc=nodeloc(name, expr),
         )
 
@@ -662,7 +672,10 @@ class Parser(ParserTemplate):
 
     def _bin_chain(self, subrule, ops: set[str]) -> AstNode:
         node = subrule()
-        while self.tokens and self._peek().type in ops:
+        # match operators but avoid compound assignment operators
+        while (
+            self.tokens and self._peek().type in ops and self._peek(2).type != "ASSIGN"
+        ):
             op = self._make_op(self._consume())
             right = subrule()
             node = BinOp(op=op, left=node, right=right, loc=nodeloc(node, right))
@@ -676,7 +689,11 @@ class Parser(ParserTemplate):
 
     def power(self) -> AstNode:
         node = self.unary()
-        if self.tokens and self._peek().type == "POWER":
+        if (
+            self.tokens
+            and self._peek().type == "POWER"
+            and self._peek(2).type != "ASSIGN"
+        ):
             op = self._make_op(self._consume())
             right = self.power()  # right-associative
             node = BinOp(op=op, left=node, right=right, loc=nodeloc(node, right))
@@ -995,7 +1012,7 @@ class Parser(ParserTemplate):
             )
             value = self.function(name=func_name, body=False)
         else:
-            value = self.variable(declaration=True)
+            value = self.variable(declaration_only=True)
 
         assert isinstance(value, (Function, VariableDeclaration))
         return ExternDeclaration(value=value, loc=nodeloc(_start, value))
