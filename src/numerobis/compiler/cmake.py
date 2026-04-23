@@ -247,9 +247,7 @@ endif()
                 ".",
                 f"-DCMAKE_C_COMPILER={cc}",
                 "-DCMAKE_C_COMPILER_LAUNCHER=ccache" if use_ccache else "",
-                "-G",
-                "Ninja",
-            ]
+            ] + (["-G", "Ninja"] if not is_unix else [])
             if linker:
                 cmake_config.append(f"-fuse-ld={linker}")
 

@@ -147,14 +147,9 @@ set_target_properties({name} PROPERTIES
         (temp_path / "CMakeLists.txt").write_text(cmakelists, encoding="utf-8")
 
         _run_subprocess(
-            [
-                "cmake",
-                "-B",
-                "build",
-                "-S",
-                ".",
-                "-G",
-                "Ninja",
+            ["cmake", "-B", "build", "-S", "."]
+            + (["-G", "Ninja"] if not is_unix else [])
+            + [
                 "-DCMAKE_C_COMPILER=gcc",
                 "-DCMAKE_CXX_COMPILER=g++",
             ],
