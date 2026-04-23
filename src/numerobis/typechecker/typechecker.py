@@ -15,6 +15,7 @@ from ..classes import ModuleMeta
 from ..environment import Env, Namespaces
 from ..exceptions.exceptions import Exceptions, Mismatch
 from ..nodes.ast import (
+    Assertion,
     AstNode,
     Attribute,
     BinOp,
@@ -108,6 +109,13 @@ class Typechecker:
         self.unresolved_funcs: list[FunctionType] = []
         self._globals: list[list[str]] = [[]]  # queue of globals of nested functions
         self._static: bool = False  # wether inside a static function
+
+    def assertion_(self, node: Assertion, env: Env):
+        expr = self.unlink(node.expr)
+        if isinstance(expr, Compare) and len(expr.ops) > 1:
+            raise NotImplementedError(
+                "Chained comparisons in assertions are not supported"
+            )
 
     def attribute_(self, node: Attribute, env: Env) -> T:
         owner = self.check(node.owner, env=env)

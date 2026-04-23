@@ -275,6 +275,12 @@ class Debug(AstNode):
 
 
 @dataclass(kw_only=True, frozen=True)
+class Assertion(AstNode):
+    expr: AstNode | Compare
+    msg: AstNode | None = None
+
+
+@dataclass(kw_only=True, frozen=True)
 class Field(AstNode):
     name: Identifier
     type: "Type | FunctionAnnotation | Expression | One"

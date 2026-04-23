@@ -16,6 +16,7 @@ static const RuntimeMessage NUMEROBIS_MESSAGES[] = {
     {301, "ValueError", "failed to convert value to integer", NULL},
     {302, "ValueError", "failed to convert value to float", NULL},
     {303, "RuntimeError", "...", NULL},
+    {304, "AssertionError", "...", NULL},
     {901, "IndexError", "list index out of range", NULL},
     {902, "IndexError", "string index out of range", NULL},
     {903, "IndexError", "list assignment index out of range", NULL},

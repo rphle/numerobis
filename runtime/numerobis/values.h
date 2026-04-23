@@ -1,6 +1,7 @@
 #ifndef VALUES_H
 #define VALUES_H
 
+#include "exceptions/messages.h"
 #include "exceptions/throw.h"
 #include "libs/sds.h"
 #include "types/methods.h"
@@ -23,6 +24,14 @@ typedef enum {
   VALUE_EMPTY
 } ValueType;
 typedef enum { NUM_INT64, NUM_DOUBLE } NumberKind;
+typedef enum {
+  COMPARE_EQ,
+  COMPARE_NE,
+  COMPARE_LT,
+  COMPARE_LE,
+  COMPARE_GT,
+  COMPARE_GE,
+} CompareOp;
 
 struct Value;
 struct List;
@@ -204,6 +213,73 @@ static inline Value __call__(Value self, Value *args, size_t argc) {
     return raw_ext(args);
   }
   return cl->func(cl->env, args);
+}
+
+static inline void __assert__(Value a, Value b, CompareOp op, char *help,
+                              LocRef loc) {
+  if (b.type == VALUE_EMPTY) {
+    if (__cbool__(a))
+      return;
+
+    Value a_str = __str__(a, loc);
+    const RuntimeMessage msg = {
+        .code = 304,
+        .type = "AssertionError",
+        .message = a_str.str,
+        .help = help,
+    };
+    u_throw(304, &msg, loc);
+    return;
+  }
+
+  bool res = false;
+  char *strop = "";
+  switch (op) {
+  case COMPARE_EQ:
+    res = __eq__(a, b).boolean;
+    strop = "==";
+    break;
+  case COMPARE_NE:
+    res = !__eq__(a, b).boolean;
+    strop = "!=";
+    break;
+  case COMPARE_LT:
+    res = __lt__(a, b).boolean;
+    strop = "<";
+    break;
+  case COMPARE_LE:
+    res = __le__(a, b).boolean;
+    strop = "<=";
+    break;
+  case COMPARE_GT:
+    res = __gt__(a, b).boolean;
+    strop = ">";
+    break;
+  case COMPARE_GE:
+    res = __ge__(a, b).boolean;
+    strop = ">=";
+    break;
+  default:
+    break;
+  }
+
+  if (!res) {
+    Value val_a = __str__(a, loc);
+    Value val_b = __str__(b, loc);
+
+    sds final_msg = sdsnew("Assertion failed: ");
+    final_msg = sdscatfmt(final_msg, "%s %s %s", val_a.str, strop, val_b.str);
+
+    const RuntimeMessage msg = {
+        .code = 304,
+        .type = "AssertionError",
+        .message = final_msg,
+        .help = help,
+    };
+
+    u_throw(304, &msg, loc);
+  }
+  return;
 }
 
 #endif

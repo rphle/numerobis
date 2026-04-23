@@ -16,6 +16,7 @@ from ..compiler.scoping import get_free_vars
 from ..environment import Namespaces
 from ..exceptions.exceptions import Exceptions
 from ..nodes.ast import (
+    Assertion,
     Attribute,
     BinOp,
     Block,
@@ -55,7 +56,7 @@ from ..nodes.ast import (
     Variable,
     WhileLoop,
 )
-from ..nodes.core import AstNode, Identifier, UnitNode
+from ..nodes.core import AstNode, Identifier, Location, UnitNode
 from ..nodes.unit import Expression, Neg, One, Power, Product, Scalar
 from ..typechecker.linking import Link
 from ..typechecker.types import FunctionType, StructInstance, StructType, T
@@ -121,6 +122,25 @@ class Compiler:
 
     # These bypass the full number_binop dispatch for plain dimless integers.
     _FAST_BINOP = {"add": "FAST_ADD", "sub": "FAST_SUB", "mul": "FAST_MUL"}
+
+    def assertion_(self, node: Assertion, link: int) -> tstr:
+        op = None
+        a = self.unlink(node.expr)
+        b = None
+        if isinstance(a, Compare):
+            b = a.comparators[0]
+            op = a.ops[0]
+            a = a.left
+
+        msg = self.compile(node.msg) if node.msg else None
+
+        out = tstr("__assert__($a, $b, $op, $help, $loc)")
+        out["a"] = self.compile(a)
+        out["b"] = self.compile(b) if b else "EMPTY"
+        out["op"] = f"COMPARE_{self.unlink(op).name.upper()}" if op else "NULL"
+        out["help"] = f"__str__({msg}, NULL).str" if msg else "NULL"
+        out["loc"] = self.compile(node.loc)
+        return out
 
     def attribute_(self, node: Attribute, link: int) -> tstr:
         self.include.add("numerobis/closures")
@@ -274,9 +294,7 @@ class Compiler:
         out["func"] = f"{node.target.name.name.lower()}"
 
         if not self.unlink(node.target.name).name == "Bool":
-            out["loc"] = (
-                f", LOC({node.loc.line}, {node.loc.col}, {node.loc.end_line}, {node.loc.end_col})"
-            )
+            out["loc"] = f", {self.compile(node.loc)}"
         else:
             out["loc"] = ""
 
@@ -567,8 +585,7 @@ class Compiler:
         out["iterable"] = str(self.compile(node.iterable))
 
         loc = self.unlink(node.index).loc
-        out["loc"] = f"LOC({loc.line}, {loc.col}, {loc.end_line}, {loc.end_col})"
-
+        out["loc"] = self.compile(loc)
         return out
 
     def index_assignment_(self, node: IndexAssignment, link: int) -> tstr:
@@ -580,7 +597,7 @@ class Compiler:
         out["value"] = str(self.compile(node.value))
 
         loc = self.unlink(target.index).loc
-        out["loc"] = f"LOC({loc.line}, {loc.col}, {loc.end_line}, {loc.end_col})"
+        out["loc"] = self.compile(loc)
 
         return out
 
@@ -598,6 +615,9 @@ class Compiler:
         out["items"] = "{" + items + "}"
 
         return out
+
+    def location_(self, loc: Location, link: int) -> tstr:
+        return tstr(f"LOC({loc.line}, {loc.col}, {loc.end_line}, {loc.end_col})")
 
     def module_access_(self, node: ModuleAccess, link: int) -> tstr:
         out = tstr("$prefix$name", meta={"reference": True})

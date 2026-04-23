@@ -93,6 +93,9 @@ failed to convert value to float
 [E303 / RuntimeError]
 ...
 
+[E304 / AssertionError]
+...
+
 
 
 [E502 / TypeError]

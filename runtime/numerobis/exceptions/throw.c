@@ -136,6 +136,11 @@ void u_throw(const int code, const RuntimeMessage *msg, const Location *span) {
   fprintf(stderr, "  [E%d] " ANSI_RESET "%s\n", code, msg->message);
 
   print_preview(span);
+
+  if (msg->help && msg->help[0] != '\0') {
+    fprintf(stderr, "\n  " ANSI_DIM "%s" ANSI_RESET "\n", msg->help);
+  }
+
   exit(EXIT_FAILURE);
 }
 

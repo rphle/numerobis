@@ -8,6 +8,7 @@ from numerobis.nodes.unit import VarDim
 
 from ..classes import Header, ModuleMeta
 from ..nodes.ast import (
+    Assertion,
     AstNode,
     Attribute,
     BinOp,
@@ -164,7 +165,9 @@ class Parser(ParserTemplate):
         elif first.type == "DEBUG":
             """Debug statement"""
             return self.debug()
-
+        elif first.type == "ASSERT":
+            """Assert statement"""
+            return self.assertion_()
         return self.block()
 
     def block(self, function: bool = False) -> AstNode:
@@ -1026,6 +1029,15 @@ class Parser(ParserTemplate):
         if _paren:
             self._consume("RPAREN")
         return Debug(expr=expr, loc=nodeloc(_start, expr))
+
+    def assertion_(self) -> AstNode:
+        _start = self._consume("ASSERT")
+        expr = self.expression()
+        if self._peek().type == "COMMA":
+            self._consume("COMMA")
+            msg = self.expression()
+            return Assertion(expr=expr, msg=msg, loc=nodeloc(_start, msg))
+        return Assertion(expr=expr, loc=nodeloc(_start, expr))
 
     def type(
         self, vartypes: bool = False

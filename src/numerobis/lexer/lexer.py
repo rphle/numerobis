@@ -33,6 +33,7 @@ class LexTokens:
         "GLOBAL",
         "DEBUG",
         "STATIC",
+        "ASSERT",
     )
 
     tokens = reserved + (
