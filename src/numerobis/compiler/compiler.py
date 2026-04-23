@@ -457,8 +457,10 @@ class Compiler:
         body_node = self.unlink(node.body)
 
         globals = []
-        if isinstance(body_node, Block) and isinstance(
-            self.unlink(body_node.body[0]), Global
+        if (
+            isinstance(body_node, Block)
+            and len(body_node.body) > 0
+            and isinstance(self.unlink(body_node.body[0]), Global)
         ):
             globals_node = self.unlink(body_node.body[0])
             assert isinstance(globals_node, Global)
@@ -468,8 +470,10 @@ class Compiler:
         body = self.compile(self._make_block(node.body, rtrn=True))
         self._globals.pop()
 
-        if isinstance(body_node, Block) and not isinstance(
-            self.unlink(body_node.body[-1]), Return
+        if (
+            isinstance(body_node, Block)
+            and len(body_node.body) > 0
+            and not isinstance(self.unlink(body_node.body[-1]), Return)
         ):
             body = str(body)[:-1] + "\nreturn NONE;\n}"
 
