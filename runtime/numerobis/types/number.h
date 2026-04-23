@@ -19,6 +19,7 @@ typedef enum {
   OP_MOD,
   OP_DADD,
   OP_DSUB,
+  OP_INTDIV,
 } OpKind;
 
 void number_methods_init(void);

@@ -162,6 +162,23 @@ static Value number_binop(Value a, Value b, binop_i64 iop, binop_f64 fop,
     _y_defined = true;
     unit = uha;
     break;
+  case OP_INTDIV:
+    unit = !dimless ? unit_mul(ua, ub, false) : NUMEROBIS_UNIT_ONE_HASH;
+    long res = 0;
+    if (na->kind == NUM_INT64 && nb->kind == NUM_INT64) {
+      long x = na->i64;
+      long y = nb->i64;
+      res = x / y;
+      if ((x % y != 0) && ((x < 0) != (y < 0))) {
+          /* Flooring instead of truncating */
+          res--;
+      }
+    } else {
+      x = number_as_double(na);
+      y = number_as_double(nb);
+      res = (long)floor(x / y);
+    }
+    return int__init__(res, unit);
   default:
     unit = NUMEROBIS_UNIT_ONE_HASH;
     break;
@@ -221,6 +238,9 @@ static inline Value number__dadd__(Value a, Value b) {
 static inline Value number__dsub__(Value a, Value b) {
   return number_binop(a, b, i_sub, f_sub, OP_DSUB);
 }
+static inline Value number__intdiv__(Value a, Value b) {
+  return number_binop(a, b, i_div, f_div, OP_INTDIV);
+}
 
 // Conversions
 
@@ -277,6 +297,7 @@ static const ValueMethods _number_methods = {
     .__mod__ = number__mod__,
     .__dadd__ = number__dadd__,
     .__dsub__ = number__dsub__,
+    .__intdiv__ = number__intdiv__,
     .__lt__ = number__lt__,
     .__le__ = number__le__,
     .__gt__ = number__gt__,

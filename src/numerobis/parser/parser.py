@@ -72,6 +72,18 @@ class Parser(ParserTemplate):
         self.module_names: list[str] = []
         self.struct_names: list[str] = []
 
+    OPERATORS = {
+        "PLUS",
+        "MINUS",
+        "TIMES",
+        "DIVIDE",
+        "INTDIVIDE",
+        "MOD",
+        "POWER",
+        "DPLUS",
+        "DMINUS",
+    }
+
     def start(self) -> list[AstNode]:
         statements = []
         while self._peek().type != "EOF":
@@ -136,6 +148,13 @@ class Parser(ParserTemplate):
         ) or first.type == "STATIC":
             """Function declaration"""
             return self.function()
+        elif (
+            first.type == "ID"
+            and self._peek(2).type in self.OPERATORS
+            and self._peek(3).type == "ASSIGN"
+        ):
+            """Variable arithmetic shorthand (compound assignment)"""
+            return self.compound_assignment()
         elif first.type == "EXTERN":
             """Extern declaration"""
             return self.extern_declaration()
@@ -201,6 +220,14 @@ class Parser(ParserTemplate):
                 raise
 
         return left
+
+    def compound_assignment(self) -> AstNode:
+        name = self._make_id(self._consume("ID"))
+        op = self._make_op(self._consume(*self.OPERATORS))
+        self._consume("ASSIGN", ignore_whitespace=False)
+        value = self.expression()
+        binop = BinOp(op=op, left=name, right=value, loc=nodeloc(name, value))
+        return Variable(name=name, value=binop, type=None, loc=binop.loc)
 
     def expression(self) -> AstNode:
         first = self._peek()

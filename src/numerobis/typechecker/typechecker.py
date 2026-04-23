@@ -196,6 +196,8 @@ class Typechecker:
             )
         else:
             return_typ = "Num" if "Num" in {left.name(), right.name()} else "Int"
+        if node.op.name == "intdiv":
+            return_typ = "Int"
 
         match node.op.name:
             case "add" | "sub" | "dadd" | "dsub":
@@ -208,14 +210,14 @@ class Typechecker:
                     )
 
                 return NumberType(typ=return_typ, dim=left.dim)
-            case "mul" | "div":
+            case "mul" | "div" | "intdiv":
                 if not right.dim:
                     return left.edit(typ=return_typ)
                 elif not left.dim and not node.op.name == "div":
                     return right.edit(typ=return_typ)
 
                 r = right.dim
-                if node.op.name == "div":
+                if node.op.name.endswith("div"):
                     r = Power(base=right.dim, exponent=Scalar(Decimal(-1)))
 
                 dimension = self.simplify(Product([left.dim, r]))

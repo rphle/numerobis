@@ -16,6 +16,7 @@ typedef struct {
   Value (*__mod__)(Value self, Value other);
   Value (*__dadd__)(Value self, Value other);
   Value (*__dsub__)(Value self, Value other);
+  Value (*__intdiv__)(Value self, Value other);
   Value (*__lt__)(Value self, Value other);
   Value (*__le__)(Value self, Value other);
   Value (*__gt__)(Value self, Value other);

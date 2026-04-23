@@ -104,6 +104,9 @@ static inline Value __dadd__(Value self, Value other) {
 static inline Value __dsub__(Value self, Value other) {
   return NUMEROBIS_METHODS[self.type]->__dsub__(self, other);
 }
+static inline Value __intdiv__(Value self, Value other) {
+  return NUMEROBIS_METHODS[self.type]->__intdiv__(self, other);
+}
 
 extern Value bool__init__(bool x);
 
