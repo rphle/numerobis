@@ -34,7 +34,8 @@ double eval_unit(const Unit *u, double number, EvalMode mode) {
       result *= pow(base_val, (double)exp);
   }
 
-  result *= u->scalar;
+  if (mode == EVAL_BASE)
+    result *= u->scalar;
 
   return result;
 }
@@ -69,7 +70,7 @@ double eval_number(Number *n, const uint64_t *_unit_hash) {
 sds print_number(Number *n) {
   double value = eval_number(n, NULL);
 
-  sds out = sdscatprintf(sdsempty(), "%.15g", value);
+  sds out = sdscatprintf(sdsempty(), "%g", value);
 
   const Unit *u = unit_get(n->unit);
   if (is_one(u) && u->scalar == 1.0) {

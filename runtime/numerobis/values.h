@@ -179,6 +179,8 @@ static inline Value __getattr__(Value func, Value self) {
 }
 
 static inline Value __str__(Value self, LocRef loc) {
+  if (__builtin_expect(self.type >= VALUE_NONE, 0))
+    return (Value){.type = VALUE_STR, .str = sdsnew("None")};
   return NUMEROBIS_METHODS[self.type]->__str__(self);
 }
 static inline Value __int__(Value self, LocRef loc) {

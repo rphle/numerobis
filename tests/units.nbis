@@ -15,22 +15,22 @@ unit mile = 1600 m
 unit s: Time
 unit h: Time = 3600 s
 
-echo(42)            # 42
-echo(5(2*km))       # 5 2*km
-echo(1 m^(2*1))     # 1 m^2
-echo(2(1000*m))     # 2 1000*m
-echo(2(100*2^2*m))  # 2 400*m
-echo(3m^3)          # 3 m^3
-echo(100 km/h + 0.05km/s) # 280 km/h
-echo(5m*s)          # 5 m*s
+assert echo(42) == 6*7                              # 42
+assert echo(5(2*km)) == 10km                        # 5 2*km
+assert echo(1 m^(2*1)) == 1 m^2                     # 1 m^2
+assert echo(2(1000*m)) == 2000                      # 2 1000*m
+assert echo(2(100*2^2*m)) == 800                    # 2 400*m
+assert echo(3m^3) == 3                              # 3 m^3
+assert echo(100 km/h + 0.05km/s) == 280 km/h        # 280 km/h
+assert echo(5m*s) == 5 m*s                          # 5 m*s
 
-echo(2km + 500m)    # 2.5 km
-echo(10000ft -> m)  # 3000 m
-echo(55 mile/h -> m/s) # 24.4444 m/s
+assert echo(2km + 500m) == 2.5 km                   # 2.5 km
+assert echo(10000ft -> m) == 3000 m                 # 3000 m
+assert echo(55 mile/h -> m/s) == 24+(4/9)           # 24.4444 m/s
 
-echo(3 ((m/s)^2))   # 3 m^2/s^2
-echo(4 (m/(-s)))    # 4 -1*m/s
-echo(5(2*km) / 1 km)
+assert echo(3 ((m/s)^2)) == 3 m^2/s^2               # 3 m^2/s^2
+assert echo(4 (m/(-s))) == 4 (-1*m/s)               # 4 -1*m/s
+assert echo(5(2*km) / 1 km -> 1) == 10              # 5 2
 
 echo(50 -> km) # 50 km
 
@@ -59,10 +59,10 @@ y = x -> 1
 x1 = x + 3
 y1 = y + 3
 
-echo(x) # 5 2
-echo(y) # 10
-echo(x1) # 6.5 2
-echo(y1) # 13
+assert echo(x) == 10    # 5 2
+assert echo(y) == 10    # 10
+assert echo(x1) == 13   # 6.5 2
+assert echo(y1) == 13   # 13
 
 # ---
 echo(42 kg -> 1) # 42
@@ -76,7 +76,7 @@ from si import @(m, cm)
 unit L: Volume = (0.1m)^3
 unit mL: Volume = 0.001 L
 
-echo(1mL == 1 cm^3)
+assert 1mL == 1 cm^3
 
 # ---
 unit mW = 0.001 W

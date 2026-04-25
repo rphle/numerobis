@@ -1,172 +1,172 @@
-from si import @(metre, second, kilogram, Mass, Length, Time)
+from si import @(metre, second, kilogram, Mass, Length, Time, cm)
 
 # ---
-5 + 3
+assert 5 + 3 == 8
 
 # ---
-10 - 4
+assert 10 - 4 == 6
 
 # ---
-3 * 7
+assert 3 * 7 == 21
 
 # ---
-20 / 4
+assert 20 / 4 == 5
 
 # ---
-10 % 3
+assert 10 % 3 == 1
 
 # ---
-2^3
+assert 2^3 == 8
 
 # ---
-5.5 + 2.3
+assert 5.5 + 2.3 == 7.8
 
 # ---
-10.0 - 3.5
+assert 10.0 - 3.5 == 6.5
 
 # ---
-2.5 * 4.0
+assert 2.5 * 4.0 == 10.0
 
 # ---
-15.0 / 3.0
+assert 15.0 / 3.0 == 5.0
 
 # ---
-7.5 % 2.5
+assert 7.5 % 2.5 == 0.0
 
 # ---
-2.0^3.0
+assert 2.0^3.0 == 8.0
 
 # ---
-5 + 3.5
+assert 5 + 3.5 == 8.5
 
 # ---
-10.0 - 2
+assert 10.0 - 2 == 8.0
 
 # ---
-3 * 4.5
+assert 3 * 4.5 == 13.5
 
 # ---
-20.0 / 5
+assert 20.0 / 5 == 4.0
 
 # ---
-2^3.5
+assert 2^3.5 == 11.313708498984761
 
 # ---
--5
+assert -5 == -5
 
 # ---
-+5
+assert +5 == 5
 
 # ---
---5
+assert --5 == 5
 
 # ---
----5
+assert ---5 == -5
 
 # ---
--(10 + 5)
+assert -(10 + 5) == -15
 
 # ---
-+(10 - 3)
+assert +(10 - 3) == 7
 
 # ---
-5 kilogram + 3 kilogram
+assert 5 kilogram + 3 kilogram == 8 kilogram
 
 # ---
-10 metre - 4 metre
+assert 10 metre - 4 metre == 6 metre
 
 # ---
-3 kilogram * 2
+assert 3 kilogram * 2 == 6 kilogram
 
 # ---
-2 * 3 kilogram
+assert 2 * 3 kilogram == 6 kilogram
 
 # ---
-10 metre / 2
+assert 10 metre / 2 == 5 metre
 
 # ---
-10 metre / 2.0
+assert 10 metre / 2.0 == 5.0 metre
 
 # ---
-10 metre % 3 metre
+assert 10 metre % 3 metre == 1 metre
 
 # ---
-5 kilogram * 2 metre
+assert 5 kilogram * 2 metre == 10 kilogram*metre
 
 # ---
-10 metre / 2 second
+assert 10 metre / 2 second == 5 metre/second
 
 # ---
-10 metre^2
+assert 10 metre^2 == 1e5 cm^2
 
 # ---
-(5 metre)^3
+assert (5 metre)^3 == 125 metre^3
 
 # ---
-(10 metre/second) * 5 second
+assert (10 metre/second) * 5 second == 50 metre
 
 # ---
-100 kilogram * 10 metre/second^2
+assert 100 kilogram * 10 metre/second^2 == 1000 kilogram*metre/second^2
 
 # ---
--(5 kilogram)
+assert -(5 kilogram) == -5 kilogram
 
 # ---
-+(10 metre)
+assert +(10 metre) == 10 metre
 
 # ---
--(-5 metre)
+assert -(-5 metre) == 5 metre
 
 # ---
-5 + 3 * 2
+assert 5 + 3 * 2 == 11
 
 # ---
-(5 + 3) * 2
+assert (5 + 3) * 2 == 16
 
 # ---
-10 - 4 / 2
+assert 10 - 4 / 2 == 8
 
 # ---
-2^3 + 1
+assert 2^3 + 1 == 9
 
 # ---
-2^(3 + 1)
+assert 2^(3 + 1) == 16
 
 # ---
-10 metre + 5 metre - 3 metre
+assert 10 metre + 5 metre - 3 metre == 12 metre
 
 # ---
-5 kilogram * 2 * 3
+assert 5 kilogram * 2 * 3 == 30 kilogram
 
 # ---
-100 metre / 10 / 2
+assert 100 metre / 10 / 2 == 5 metre
 
 # ---
-2 metre^2 * 3 metre
+assert 2 metre^2 * 3 metre == 6 metre^3
 
 # ---
-10 kilogram * 5 metre / 2 second
+assert 10 kilogram * 5 metre / 2 second == 25 kilogram*metre/second
 
 # ---
-1_000
+assert 1_000 == 1000
 
 # ---
-1_234.567_89
+assert 1_234.567_89 == 1234.56789
 
 # ---
-1e3
+assert 1e3 == 1000
 
 # ---
-1.5e-2
+assert 1.5e-2 == 0.015
 
 # ---
-6.022e23
+assert 6.022e23 == 6.022e23
 
 # ---
-1_000 kilogram
+assert 1_000 kilogram == 1000 kilogram
 
 # ---
-1.5e3 metre
+assert 1.5e3 metre == 1500 metre
 
 # E703
 5 kilogram + 10 metre
@@ -235,48 +235,59 @@ x + = 1
 # ---
 x = 0
 x += 1
+assert x == 1
 
 # ---
 x = 4
 x*=4
+assert x == 16
 
 # ---
 x = 0
 x -= 1
+assert x == -1
 
 # ---
 x = 0.0
 x /= 1
+assert x == 0.0
 
 # ---
 x = 0
 x |+|= 1
+assert x == 1
 
 # ---
 x = 0
 x |-|= 1
+assert x == -1
 
 # ---
-x = 0
-x ^= 1
+x = 3
+x ^= 3
+assert x == 27
 
 # ---
 x = 11
 x //= 2
+assert x == 5
 
 # ---
 x = 11.2
 x //= 2.5
+assert x == 4
 
 # ---
 x = 0
 x %= 1
+assert x == 0
 
 # ---
 i = 0
 for j in 0..10 do {
   i += j
 }
+assert i == 45
 
 # E001
 x = 0
@@ -286,4 +297,4 @@ x = y += 1
 # ---
 x = [1,2,3]
 x += [4,5,6]
-echo(x)
+assert x == [1,2,3,4,5,6]

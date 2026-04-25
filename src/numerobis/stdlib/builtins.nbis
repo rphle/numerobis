@@ -1,4 +1,4 @@
-extern echo!(value: Any, end: Str = "\n"): None;
+extern echo!(value: ?T, end: Str = "\n"): ?T;
 extern input!(prompt: Str = ""): Str;
 
 extern Str.split!(s: Str, sep: Str = " "): List[Str];

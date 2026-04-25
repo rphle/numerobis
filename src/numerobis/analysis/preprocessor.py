@@ -22,7 +22,7 @@ from ..nodes.unit import (
 )
 from ..typechecker.linking import Link
 from .invert import _to_x, invert
-from .simplifier import Simplifier, cancel, cancel_
+from .simplifier import Simplifier, cancel_
 from .utils import contains_sum, is_linear
 
 SameType = TypeVar("SameType")
@@ -54,7 +54,7 @@ class Preprocessor:
     def number_(self, node: Integer | Num, link: int):
         if not node.unit:
             return
-        res = self.resolve(Scalar(value=Decimal(node.value), unit=cancel(node.unit)))  # type: ignore
+        res = self.resolve(Scalar(value=Decimal(node.value), unit=node.unit))  # type: ignore
 
         num = self.simplify(res, do_cancel=False)
         assert isinstance(num, Expression) and isinstance(num.value, Scalar), repr(num)
@@ -188,8 +188,10 @@ class Preprocessor:
 
     def to_base(self, node: UnitNode) -> UnitNode:
         match node:
-            case Expression() | Neg():
+            case Expression():
                 return replace(node, value=self.to_base(node.value))
+            case Neg():
+                return self.to_base(node.value)
             case Product() | Sum():
                 values = [self.to_base(value) for value in node.values]
                 values = [value for value in values if not isinstance(value, Scalar)]
@@ -243,7 +245,6 @@ class Preprocessor:
                     if isinstance(rewritten, Scalar):
                         scalar_value *= rewritten.value
                         if rewritten.unit is not None:
-                            scalar_value *= rewritten.value
                             u = (
                                 rewritten.unit.value
                                 if isinstance(rewritten.unit, Expression)

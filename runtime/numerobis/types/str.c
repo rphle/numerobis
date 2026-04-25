@@ -8,9 +8,9 @@
 #include "methods.h"
 #include "number.h"
 
+#include "../libs/bdwgc/include/gc.h"
 #include <assert.h>
 #include <ctype.h>
-#include "../libs/bdwgc/include/gc.h"
 #include <limits.h>
 #include <stdbool.h>
 #include <stddef.h>
