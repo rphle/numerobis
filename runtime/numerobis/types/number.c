@@ -141,14 +141,11 @@ static Value number_binop(Value a, Value b, binop_i64 iop, binop_f64 fop,
   case OP_DSUB:
     x = eval_number(na, &uha);
     y = eval_number(nb, &uha);
-    printf("%f %f\n", x, y);
 
     x = fop(x, y);
     y = 0;
-    printf("%f %f\n", x, y);
 
     x = eval_unit(ua, x, EVAL_NORMAL);
-    printf("%f %f\n", x, y);
 
     _x_defined = true;
     _y_defined = true;

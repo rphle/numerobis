@@ -31,6 +31,7 @@ typedef enum {
   COMPARE_LE,
   COMPARE_GT,
   COMPARE_GE,
+  COMPARE_NONE
 } CompareOp;
 
 struct Value;

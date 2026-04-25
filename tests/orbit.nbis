@@ -115,4 +115,8 @@ echo("Aphelion: " + (aphelion -> Str))
 echo("Eccentricity: " + (eccentricity -> Str))
 echo("Travelled distance: " + (distance_total -> Str))
 echo("Total swept area: " + (area_total -> Str))
+
 }
+
+assert not is_escaping
+assert period_steps == 731

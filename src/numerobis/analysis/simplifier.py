@@ -40,10 +40,11 @@ def cancel_(node: UnitNode | One) -> UnitNode | None:
             if len(values) == 1:
                 return values[0]
             return replace(node, values=values)
-        case Neg() | Power() as n:
-            attr = "value" if isinstance(n, Neg) else "base"
-            val = cancel(getattr(n, attr))
-            return replace(n, **{attr: val}) if val else None
+        case Neg():
+            return node.value
+        case Power() as n:
+            val = cancel(n.base)
+            return replace(n, base=val) if val else None
         case Scalar():
             return None if not node.unit else cancel(node.unit.value)
     return node

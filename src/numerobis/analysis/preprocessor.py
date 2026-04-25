@@ -188,10 +188,8 @@ class Preprocessor:
 
     def to_base(self, node: UnitNode) -> UnitNode:
         match node:
-            case Expression():
+            case Expression() | Neg():
                 return replace(node, value=self.to_base(node.value))
-            case Neg():
-                return self.to_base(node.value)
             case Product() | Sum():
                 values = [self.to_base(value) for value in node.values]
                 values = [value for value in values if not isinstance(value, Scalar)]

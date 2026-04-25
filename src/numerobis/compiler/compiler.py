@@ -137,7 +137,7 @@ class Compiler:
         out = tstr("__assert__($a, $b, $op, $help, $loc)")
         out["a"] = self.compile(a)
         out["b"] = self.compile(b) if b else "EMPTY"
-        out["op"] = f"COMPARE_{self.unlink(op).name.upper()}" if op else "NULL"
+        out["op"] = f"COMPARE_{self.unlink(op).name.upper()}" if op else "COMPARE_NONE"
         out["help"] = f"__str__({msg}, NULL).str" if msg else "NULL"
         out["loc"] = self.compile(node.loc)
         return out
