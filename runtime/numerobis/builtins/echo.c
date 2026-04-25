@@ -81,6 +81,5 @@ Value echo(Value *args) {
   } else {
     printf("\n");
   }
-
-  return NONE;
+  return val;
 }

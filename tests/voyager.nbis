@@ -9,6 +9,7 @@ from si import @Power
 from si import @(m, km, s, GHz, W)
 from information import @(bit, bps)
 from constants import π, c, ℏ
+from math import round
 
 # ---
 
@@ -50,3 +51,6 @@ photons_per_bit = photon_rate_receiver / datarate -> photon/bit
 echo("")
 echo("This corresponds to " + (photon_rate_receiver->Str) + ".")
 echo("Which means " + (photons_per_bit->Str) + ".")
+
+assert round(photon_rate_receiver) == 205599
+assert round(photons_per_bit) == 1285

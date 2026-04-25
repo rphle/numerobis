@@ -125,20 +125,6 @@ static Value number_binop(Value a, Value b, binop_i64 iop, binop_f64 fop,
   case OP_ADD:
   case OP_SUB:
     unit = uha;
-
-    // if nb is dimensionless and ua has a scalar, convert nb into ua's space
-    if (!dimless && (is_one(ub) && ub->scalar == 1.0) &&
-        (is_one(ua) && ua->scalar != 1.0)) {
-      double nb_val = nb->kind == NUM_INT64 ? (double)nb->i64 : nb->f64;
-      double na_val = na->kind == NUM_INT64 ? (double)na->i64 : na->f64;
-      double converted = nb_val / ua->scalar;
-      double result = kind == OP_ADD ? na_val + converted : na_val - converted;
-
-      if (result == (double)(long)result && na->kind != NUM_DOUBLE &&
-          nb->kind != NUM_DOUBLE)
-        return int__init__((long)result, unit);
-      return num__init__(result, unit);
-    }
     break;
   case OP_MUL:
     unit = !dimless ? unit_mul(ua, ub, false) : NUMEROBIS_UNIT_ONE_HASH;
@@ -155,9 +141,15 @@ static Value number_binop(Value a, Value b, binop_i64 iop, binop_f64 fop,
   case OP_DSUB:
     x = eval_number(na, &uha);
     y = eval_number(nb, &uha);
+    printf("%f %f\n", x, y);
+
     x = fop(x, y);
     y = 0;
+    printf("%f %f\n", x, y);
+
     x = eval_unit(ua, x, EVAL_NORMAL);
+    printf("%f %f\n", x, y);
+
     _x_defined = true;
     _y_defined = true;
     unit = uha;
@@ -170,8 +162,8 @@ static Value number_binop(Value a, Value b, binop_i64 iop, binop_f64 fop,
       long y = nb->i64;
       res = x / y;
       if ((x % y != 0) && ((x < 0) != (y < 0))) {
-          /* Flooring instead of truncating */
-          res--;
+        /* Flooring instead of truncating */
+        res--;
       }
     } else {
       x = number_as_double(na);
