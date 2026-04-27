@@ -553,6 +553,7 @@ class Compiler:
         prefix = self._imported_names.get(node.name, f"und_{self.uid}_")
         star = "(*" if node.name in self._globals[-1] else ""
         suffix = ")" if star else ""
+
         return tstr(
             star + prefix + mangle(node.name) + suffix, meta={"reference": True}
         )
@@ -723,8 +724,12 @@ class Compiler:
     def struct_init_(self, node: StructInit, link: int) -> tstr:
         out = tstr("struct__init__$argc($id, $args)")
 
-        name = self.unlink(node.name)
-        uid = self._imported_names.get(node.name, self.uid)
+        name = self.unlink(node.name).name
+        uid = (
+            self._imported_names.get(name, self.uid)
+            .removeprefix("und_")
+            .removesuffix("_")
+        )
         out["name"] = str(name)
 
         struct = node.meta["#struct"]
@@ -932,6 +937,11 @@ class Compiler:
 
         code = "\n".join(code).strip()
 
+        self.env.foreign = {
+            name: uid.removeprefix("und_").removesuffix("_")
+            for name, uid in self._imported_names.items()
+        }
+
         return CompiledModule(
             meta=self.module,
             imports=self.imports,
@@ -957,7 +967,11 @@ class Compiler:
                     names = [name.name for name in node.names]
 
                 self._imported_names.update(
-                    {name: f"und_{uid}_" for name in names if not name.startswith("@")}
+                    {
+                        name: f"und_{ns.foreign.get(name, uid)}_"
+                        for name in names
+                        if not name.startswith("@")
+                    }
                 )
                 self._imported_units.update(
                     {

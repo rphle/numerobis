@@ -46,7 +46,6 @@ from ..nodes.ast import (
     String,
     Struct,
     StructAssignment,
-    StructInit,
     Tuple,
     Type,
     UnaryOp,
@@ -71,7 +70,6 @@ class Parser(ParserTemplate):
         self.header = Header()
 
         self.module_names: list[str] = []
-        self.struct_names: list[str] = []
 
     OPERATORS = {
         "PLUS",
@@ -540,7 +538,6 @@ class Parser(ParserTemplate):
     def struct(self) -> AstNode:
         _struct = self._consume("STRUCT")
         name = self._make_id(self._consume("ID"))
-        self.struct_names.append(name.name)
 
         self._consume("LBRACE")
 
@@ -734,9 +731,6 @@ class Parser(ParserTemplate):
                 break
             self._consume("COMMA")
         _end = self._consume("RPAREN")
-
-        if isinstance(node, Identifier) and node.name in self.struct_names:
-            return StructInit(name=node, args=args, loc=nodeloc(node, _end))
         return Call(callee=node, args=args, loc=nodeloc(node, _end))
 
     def index(self, node: AstNode) -> AstNode:
@@ -1193,14 +1187,6 @@ class Parser(ParserTemplate):
                 type=type_,
                 loc=name.loc,
                 help="there is already a module with this name",
-            )
-        elif name.value in self.struct_names:
-            self.errors.throw(
-                606,
-                name=name.value,
-                type=type_,
-                loc=name.loc,
-                help="there is already a struct with this name",
             )
         elif name.value in ["_"]:
             self.errors.throw(606, name=name.value, type=type_, loc=name.loc)

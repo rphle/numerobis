@@ -21,6 +21,7 @@ class Namespaces:
         dimensionized: dict[str, Expression | One | AnyDim] | None = None,
         units: dict[str, Expression] | None = None,
         imports: dict[str, "Namespaces"] | None = None,
+        foreign: dict[str, str] | None = None,
         nodes: dict[int, AstNode] | None = None,
         typed: dict[int, str] | None = None,
         externs: dict[str, dict] | None = None,
@@ -30,6 +31,7 @@ class Namespaces:
         self.dimensionized = dimensionized or {}
         self.units = units or {}
         self.imports = imports or {}
+        self.foreign = foreign or {}
         self.nodes = nodes or {}
         self.typed = typed or {}
         self.externs = externs or {}
@@ -41,6 +43,7 @@ class Namespaces:
             self.dimensionized.copy(),
             self.units.copy(),
             self.imports.copy(),
+            self.foreign.copy(),
             self.nodes.copy(),
             self.typed.copy(),
             self.externs.copy(),
@@ -51,6 +54,7 @@ class Namespaces:
         self.dimensions.update(other.dimensions)
         self.dimensionized.update(other.dimensionized)
         self.units.update(other.units)
+        self.foreign.update(other.foreign)
         self.nodes.update(other.nodes)
         self.typed.update(other.typed)
         self.externs.update(other.externs)

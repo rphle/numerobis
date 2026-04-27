@@ -302,6 +302,23 @@ class Typechecker:
         return NoneType()
 
     def call_(self, node: Call, env: Env, link: int, dummy: bool = False):
+        callee_name = self.unlink(node.callee)
+        callee_name = callee_name.name if isinstance(callee_name, Identifier) else None
+        if (
+            callee_name
+            and callee_name in env.names
+            and isinstance(env.get("names")(callee_name), StructType)
+        ):
+            self.namespaces.nodes[link] = StructInit(
+                name=node.callee,  # type: ignore
+                args=node.args,
+                loc=node.loc,
+            )
+            return self.struct_init_(
+                self.namespaces.nodes[link],  # type: ignore
+                link=link,
+                env=env,
+            )
         try:
             if not dummy:
                 callee = self.check(node.callee, env=env)
