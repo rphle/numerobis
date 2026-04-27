@@ -5,6 +5,8 @@ A modern, compiled, statically-typed programming language that treats physical u
 > [!WARNING]
 > The language and its documentation are unfinished. While usable, Numerobis is not recommended for production code yet.
 
+For an advanced example, see [Falcon9Lander](https://github.com/rphle/Falcon9Lander), a realistic physics-based Falcon 9 landing simulator game with a powerful autonomous landing autopilot, written entirely in Numerobis.
+
 -----
 
 ## Why?
@@ -45,7 +47,7 @@ You can override the Python executable used by the build system by setting the `
 
 ### Windows (Experimental)
 
-Windows support currently utilizes Anaconda/Conda to manage the build environment. 
+Windows support currently utilizes Anaconda/Conda to manage the build environment.
 
 1.  **Environment Setup** — Open an Anaconda PowerShell Prompt and create a dedicated environment:
     ```powershell
@@ -58,7 +60,7 @@ Windows support currently utilizes Anaconda/Conda to manage the build environmen
     conda install m2w64-gcc cmake msys2-make ninja pkg-config
     ```
 
-3.  **Build** 
+3.  **Build**
     ```powershell
     make build
     ```
@@ -69,7 +71,7 @@ Windows support currently utilizes Anaconda/Conda to manage the build environmen
 
 If you plan to use the `graphics` module, you must install the **SDL2** development libraries. The build system will automatically detect these and enable graphics support.
 
-#### Linux 
+#### Linux
 ```bash
 sudo apt install libsdl2-dev libsdl2-ttf-dev
 ```
