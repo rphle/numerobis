@@ -4,8 +4,8 @@
 #include "primitives.h"
 #include "state.h"
 
-#include <SDL2/SDL.h>
 #include "../../libs/bdwgc/include/gc.h"
+#include <SDL2/SDL.h>
 #include <math.h>
 #include <stdbool.h>
 
@@ -229,16 +229,17 @@ void _prim_thick_line(int x1, int y1, int x2, int y2, double t) {
       {(int)(x2 - nx + .5), (int)(y2 - ny + .5)},
       {(int)(x1 - nx + .5), (int)(y1 - ny + .5)},
   };
-  _prim_polygon(pts, 4, true);
+  _prim_polygon(pts, 4, true, true);
 }
 
-void _prim_polygon(SDL_Point *pts, int n, bool filled) {
+void _prim_polygon(SDL_Point *pts, int n, bool filled, bool closed) {
   if (n < 2)
     return;
 
-  for (int i = 0; i < n; i++)
+  for (int i = 0; i < (closed ? n : n - 1); i++)
     SDL_RenderDrawLine(_renderer, pts[i].x, pts[i].y, pts[(i + 1) % n].x,
                        pts[(i + 1) % n].y);
+
   if (!filled || n < 3)
     return;
 

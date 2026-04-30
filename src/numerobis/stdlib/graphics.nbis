@@ -9,7 +9,7 @@ extern rounded_rect!(x: Num?, y: Num?, w: Num?, h: Num?, radius: Num?, color: St
 extern circle!(x: Num?, y: Num?, radius: Num?, color: Str = "#000000", filled: Bool = true): None;
 extern ellipse!(x: Num?, y: Num?, rx: Num?, ry: Num?, color: Str = "#000000", filled: Bool = true): None;
 extern line!(x1: Num?, y1: Num?, x2: Num?, y2: Num?, color: Str = "#000000", thickness: Num? = 1.0): None;
-extern polygon!(points: List[Num?], color: Str = "#000000", filled: Bool = true): None;
+extern polygon!(points: List[Num?], color: Str = "#000000", filled: Bool = true, closed: Bool = true): None;
 extern arc!(x: Num?, y: Num?, radius: Num?, start: Num?, end: Num?, color: Str = "#000000", filled: Bool = true): None;
 extern point!(x: Num?, y: Num?, color: Str = "#000000"): None;
 

@@ -165,7 +165,7 @@ static Value numerobis_builtin_line(Value *args) {
   return NONE;
 }
 
-/* polygon!(points: List[Num], color, filled) */
+/* polygon!(points: List[Num], color, filled, closed) */
 static Value numerobis_builtin_polygon(Value *args) {
   Value *arr = args[1].list->items;
   int n = (int)(arrlen(arr) / 2);
@@ -180,7 +180,7 @@ static Value numerobis_builtin_polygon(Value *args) {
 
   DrawCmd cmd = {.kind = CMD_POLYGON,
                  .color = _arg_color(args[2]),
-                 .polygon = {pts, n, _arg_filled(args[3])}};
+                 .polygon = {pts, n, _arg_filled(args[3]), _arg_filled(args[4])}};
   arrput(_queue, cmd);
   return NONE;
 }
@@ -275,7 +275,7 @@ static Value numerobis_builtin_blit(Value *args) {
                        c->line.thickness);
       break;
     case CMD_POLYGON:
-      _prim_polygon(c->polygon.pts, c->polygon.n, c->polygon.filled);
+      _prim_polygon(c->polygon.pts, c->polygon.n, c->polygon.filled, c->polygon.closed);
       break;
     case CMD_ARC:
       _prim_arc(c->arc.x, c->arc.y, c->arc.radius, c->arc.start, c->arc.end,

@@ -60,6 +60,7 @@ typedef struct {
       SDL_Point *pts;
       int n;
       bool filled;
+      bool closed;
     } polygon;
     struct {
       int x, y, radius;
