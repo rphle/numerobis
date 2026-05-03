@@ -1,9 +1,12 @@
 #ifndef NUMEROBIS_METHODS_H
 #define NUMEROBIS_METHODS_H
 
+#include "../exceptions/throw.h"
+
 #include <stdbool.h>
 
 typedef struct Value Value;
+typedef const Location *LocRef;
 
 typedef struct {
   Value (*__bool__)(Value self);
@@ -11,8 +14,8 @@ typedef struct {
   Value (*__add__)(Value self, Value other);
   Value (*__sub__)(Value self, Value other);
   Value (*__mul__)(Value self, Value other);
-  Value (*__div__)(Value self, Value other);
-  Value (*__pow__)(Value self, Value other);
+  Value (*__div__)(Value self, Value other, LocRef loc);
+  Value (*__pow__)(Value self, Value other, LocRef loc);
   Value (*__mod__)(Value self, Value other);
   Value (*__dadd__)(Value self, Value other);
   Value (*__dsub__)(Value self, Value other);

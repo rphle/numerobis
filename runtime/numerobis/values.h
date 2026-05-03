@@ -99,14 +99,14 @@ static inline Value __sub__(Value self, Value other) {
 static inline Value __mul__(Value self, Value other) {
   return NUMEROBIS_METHODS[self.type]->__mul__(self, other);
 }
-static inline Value __div__(Value self, Value other) {
-  return NUMEROBIS_METHODS[self.type]->__div__(self, other);
+static inline Value __div__(Value self, Value other, LocRef loc) {
+  return NUMEROBIS_METHODS[self.type]->__div__(self, other, loc);
 }
 static inline Value __mod__(Value self, Value other) {
   return NUMEROBIS_METHODS[self.type]->__mod__(self, other);
 }
-static inline Value __pow__(Value self, Value other) {
-  return NUMEROBIS_METHODS[self.type]->__pow__(self, other);
+static inline Value __pow__(Value self, Value other, LocRef loc) {
+  return NUMEROBIS_METHODS[self.type]->__pow__(self, other, loc);
 }
 static inline Value __dadd__(Value self, Value other) {
   return NUMEROBIS_METHODS[self.type]->__dadd__(self, other);

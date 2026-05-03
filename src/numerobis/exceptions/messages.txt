@@ -96,6 +96,12 @@ failed to convert value to float
 [E304 / AssertionError]
 ...
 
+[E305 / ZeroDivisionError]
+division by zero
+
+[E306 / ZeroDivisionError]
+zero cannot be raised to a negative power
+
 
 
 [E502 / TypeError]

@@ -167,9 +167,10 @@ class Compiler:
             macro = self._FAST_BINOP[op_name]
             return tstr(f"{macro}({left}, {right})")
 
-        out = tstr("__$func__($left, $right)")
+        out = tstr("__$func__($left, $right$loc)")
         out["left"], out["right"] = left, right
         out["func"] = op_name
+        out["loc"] = f", {self.compile(node.loc)}" if op_name in {"div", "pow"} else ""
         return out
 
     def block_(self, node: Block, link: int) -> tstr:

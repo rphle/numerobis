@@ -892,7 +892,7 @@ class Parser(ParserTemplate):
                 if self._peek(ignore_whitespace=False).type != "LBRACKET":
                     node = self.expression()
                     self._consume("RPAREN")
-                    node = dataclasses.replace(node, loc=nodeloc(node, self.tok))
+                    node = dataclasses.replace(node, loc=nodeloc(tok, self.tok))
                     return node
                 else:
                     return self.tuple_()

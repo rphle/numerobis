@@ -212,10 +212,16 @@ static inline Value number__sub__(Value a, Value b) {
 static inline Value number__mul__(Value a, Value b) {
   return number_binop(a, b, i_mul, f_mul, OP_MUL);
 }
-static inline Value number__div__(Value a, Value b) {
+static inline Value number__div__(Value a, Value b, LocRef loc) {
+  if (number_as_double(&(b.number)) == 0) {
+    u_throw(305, NULL, loc);
+  }
   return number_binop(a, b, i_div, f_div, OP_DIV);
 }
-static inline Value number__pow__(Value a, Value b) {
+static inline Value number__pow__(Value a, Value b, LocRef loc) {
+  if (number_as_double(&(a.number)) == 0 && number_as_double(&(b.number)) < 0) {
+    u_throw(306, NULL, loc);
+  }
   return number_binop(a, b, i_pow, f_pow, OP_POW);
 }
 static inline Value number__mod__(Value a, Value b) {
