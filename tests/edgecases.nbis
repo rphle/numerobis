@@ -262,3 +262,18 @@ assert false
 
 # ---
 assert true
+
+# E001
+if true {1}
+
+# E001
+while true {1}
+
+# E001
+f!() !
+
+# E001
+5 (kg * {)
+
+# E002
+a =

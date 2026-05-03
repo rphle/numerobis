@@ -37,6 +37,13 @@ class UnitParser(ParserTemplate):
         super().__init__(tokens=tokens, module=module)
         self.config = config
 
+    def _consume(
+        self, *types: str, ignore_whitespace=True, in_unit: bool = True
+    ) -> Token:
+        return super()._consume(
+            *types, ignore_whitespace=ignore_whitespace, in_unit=in_unit
+        )
+
     def peek(self, n: int = 1, ignore_whitespace: bool | None = None):
         return self._peek(
             n=n,
@@ -155,7 +162,7 @@ class UnitParser(ParserTemplate):
                 """Reference constant/parameter"""
                 if not self.config.constants:
                     self.errors.unexpectedToken(
-                        tok, help="constants cannot be referenced here"
+                        tok, in_unit=True, help="constants cannot be referenced here"
                     )
                 if self._peek(ignore_whitespace=False).type != "ID":
                     self.errors.throw(9, loc=tok.loc)

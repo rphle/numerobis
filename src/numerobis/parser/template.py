@@ -5,6 +5,7 @@ from typing import Optional
 
 from ..classes import ModuleMeta
 from ..exceptions.exceptions import Exceptions
+from ..lexer import lexer
 from ..nodes.ast import Identifier, Operator
 from ..nodes.core import Location, Token
 from ..nodes.unit import Expression, Product, Sum, UnitNode
@@ -16,15 +17,23 @@ class ParserTemplate:
         self.module = module
         self.errors = Exceptions(module=module)
 
-    def _consume(self, *types: str, ignore_whitespace=True) -> Token:
+    def _consume(
+        self, *types: str, ignore_whitespace=True, in_unit: bool = False
+    ) -> Token:
         if self._peek().type == "EOF":
-            self.errors.unexpectedEOF(loc=self._peek().loc)
+            self.errors.unexpectedEOF(in_unit=in_unit, loc=None)
 
         self.tok = self.tokens.pop(0)
         while ignore_whitespace and self.tok.type == "WHITESPACE":
             self.tok = self.tokens.pop(0)
         if types and (self.tok.type not in types):
-            self.errors.unexpectedToken(self.tok)
+            self.errors.unexpectedToken(
+                self.tok,
+                help=f"expected {' or '.join(lexer.get_token(t) for t in types)}"
+                if 0 < len(types) <= 3
+                else None,
+                in_unit=in_unit,
+            )
         return self.tok
 
     def _clear(self):

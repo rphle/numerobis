@@ -197,3 +197,13 @@ def lex(source: str, module: ModuleMeta, debug=False) -> list[Token]:
         print("=" * 80)
 
     return output
+
+
+def get_token(name: str) -> str:
+    """Return the token value for a given token type, e.g. for error messages"""
+    if name in LexTokens.reserved:
+        return "'" + name.lower() + "'"
+    elif name in ("NUMBER", "STRING", "ID", "WHITESPACE"):
+        name = "identifier" if name == "ID" else name
+        return name.lower()
+    return "'" + getattr(LexTokens, f"t_{name}").replace("\\", "") + "'"

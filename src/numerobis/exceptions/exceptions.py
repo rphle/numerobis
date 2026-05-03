@@ -127,11 +127,19 @@ class Exceptions:
         ) as messages_path:
             self.codes = msgparser.parse(messages_path)
 
-    def unexpectedToken(self, tok: Token, help: str | None = None):
-        self.throw(1, token=tok.value, loc=tok.loc, help=help)
+    def unexpectedToken(
+        self, tok: Token, help: str | None = None, in_unit: bool = False
+    ):
+        self.throw(
+            1,
+            token=tok.value,
+            in_unit="in unit" if in_unit else "",
+            loc=tok.loc,
+            help=help,
+        )
 
-    def unexpectedEOF(self, loc: Location | None = None):
-        self.throw(2, loc=loc)
+    def unexpectedEOF(self, loc: Location | None = None, in_unit: bool = False):
+        self.throw(2, loc=loc, in_unit="in unit" if in_unit else "")
 
     def binOpMismatch(self, node: BinOp | BoolOp, mismatch: Mismatch):
         left, right = mismatch.left, mismatch.right

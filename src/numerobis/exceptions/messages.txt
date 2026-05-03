@@ -1,5 +1,5 @@
 [E001 / SyntaxError]
-Unexpected token '{token}'
+Unexpected token '{token}' {in_unit}
 
 [E002 / SyntaxError]
 Unexpected end of file
